@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import { LayoutGrid, Coffee, ListChecks, Settings } from "lucide-react";
 
 const links = [
-    { href: "/dashboard/tables", label: "Tables", icon: LayoutGrid },
-    { href: "/dashboard/orders", label: "Orders", icon: ListChecks },
-    { href: "/dashboard/products", label: "Menu", icon: Coffee },
-    { href: "/dashboard/settings", label: "Settings", icon: Settings },
+    { href: "/dashboard/tables", label: "Mesas", icon: LayoutGrid },
+    { href: "/dashboard/orders", label: "Pedidos", icon: ListChecks },
+    { href: "/dashboard/products", label: "Menú", icon: Coffee },
+    { href: "/dashboard/settings", label: "Configuración", icon: Settings },
 ];
 
 export function Sidebar() {

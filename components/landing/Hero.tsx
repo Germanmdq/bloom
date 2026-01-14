@@ -19,7 +19,7 @@ export function Hero() {
             <motion.div style={{ y, opacity }} className="absolute inset-0 z-0">
                 <Image
                     src="/images/espresso_explosion_1768310537479.png"
-                    alt="Coffee Art"
+                    alt="Arte de Café"
                     fill
                     className="object-cover opacity-80"
                     priority
@@ -42,7 +42,7 @@ export function Hero() {
                     transition={{ delay: 0.4, duration: 1 }}
                     className="text-xl md:text-2xl font-light tracking-widest text-white/80"
                 >
-                    Taste the Extraordinary
+                    Saborea lo Extraordinario
                 </motion.p>
             </div>
         </div>

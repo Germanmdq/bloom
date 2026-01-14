@@ -33,7 +33,7 @@ export function MenuGrid() {
                                         <h3 className="text-xl font-medium text-gray-900">{item.name}</h3>
                                         <p className="text-sm text-gray-500 mt-1">{item.description}</p>
                                     </div>
-                                    <span className="font-semibold text-gray-900">${item.price.toLocaleString()}</span>
+                                    <span className="font-semibold text-gray-900">${item.price.toLocaleString("es-AR")}</span>
                                 </div>
 
                                 {item.image && (

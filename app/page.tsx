@@ -13,7 +13,7 @@ export default function Home() {
           href="/dashboard"
           className="flex items-center gap-2 bg-black/80 backdrop-blur-md text-white px-6 py-3 rounded-full hover:scale-105 transition-transform shadow-2xl font-medium"
         >
-          Employee Login
+          Acceso Personal
         </Link>
       </div>
     </main>
