@@ -17,6 +17,7 @@ export default function TablesPage() {
     const [tables, setTables] = useState<Table[]>([]);
     const [selectedTable, setSelectedTable] = useState<Table | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const supabase = createClient();
 
@@ -26,15 +27,25 @@ export default function TablesPage() {
 
     async function fetchTables() {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('salon_tables')
-            .select('*')
-            .order('id', { ascending: true });
+        setError(null);
+        try {
+            const { data, error } = await supabase
+                .from('salon_tables')
+                .select('*')
+                .order('id', { ascending: true });
 
-        if (!error && data) {
-            setTables(data as Table[]);
+            if (error) {
+                console.error('Error fetching tables:', error);
+                setError(error.message);
+            } else if (data) {
+                setTables(data as Table[]);
+            }
+        } catch (err: any) {
+            console.error('Unexpected error fetching tables:', err);
+            setError(err.message || 'Error inesperado');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }
 
     const handleOrderComplete = () => {
@@ -99,6 +110,20 @@ export default function TablesPage() {
                 <div className="flex flex-col items-center justify-center py-40 gap-4">
                     <Loader2 className="animate-spin text-gray-200" size={64} />
                     <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-xs">Sincronizando salón...</p>
+                </div>
+            ) : error ? (
+                <div className="flex flex-col items-center justify-center py-40 gap-4 text-center">
+                    <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-2">
+                        <span className="text-2xl">⚠️</span>
+                    </div>
+                    <p className="text-red-500 font-bold uppercase tracking-[0.2em] text-xs">Error de Conexión</p>
+                    <p className="text-gray-500 text-sm max-w-md">{error}</p>
+                    <button
+                        onClick={() => fetchTables()}
+                        className="mt-4 px-6 py-2 bg-gray-900 text-white rounded-full text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors"
+                    >
+                        Reintentar
+                    </button>
                 </div>
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">

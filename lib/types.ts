@@ -41,3 +41,14 @@ export type Table = {
     status: TableStatus;
     total: number;
 };
+
+export type PaymentMethod = 'CASH' | 'CARD' | 'MERCADO_PAGO';
+
+export type Order = {
+    id: string;
+    table_id: number;
+    total: number;
+    payment_method: PaymentMethod;
+    created_at: string;
+    created_by?: string;
+};
