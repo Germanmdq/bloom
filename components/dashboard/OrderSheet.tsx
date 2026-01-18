@@ -256,23 +256,25 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
 
                 {/* RIGHT: Square Category & Product Selector */}
                 <div className="flex-1 flex flex-col p-8 overflow-hidden">
-                    <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-1">
-                        {categories.map(cat => (
-                            <button
-                                key={cat.id}
-                                onClick={() => setActiveCategory(cat.id)}
-                                className={`px-6 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shadow-sm border-2 ${activeCategory === cat.id
-                                    ? "bg-black text-white border-black scale-105 shadow-xl"
-                                    : "bg-white text-gray-400 border-white hover:border-gray-100"
-                                    }`}
-                            >
-                                {cat.name}
-                            </button>
-                        ))}
-                    </div>
+                    {categories.length > 1 && (
+                        <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-1">
+                            {categories.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setActiveCategory(cat.id)}
+                                    className={`px-6 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shadow-sm border-2 ${activeCategory === cat.id
+                                        ? "bg-black text-white border-black scale-105 shadow-xl"
+                                        : "bg-white text-gray-400 border-white hover:border-gray-100"
+                                        }`}
+                                >
+                                    {cat.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     <div className="flex-1 overflow-y-auto pr-2 no-scrollbar">
-                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-12">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-12">
                             {products.filter(p => p.category_id === activeCategory).map(item => (
                                 <button
                                     key={item.id}
