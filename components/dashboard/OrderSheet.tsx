@@ -102,7 +102,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                 case 'F4': finishOrder(); break;
                 case 'F5': onClose(); break;
                 case 'F7': document.getElementById('invoice-selector')?.focus(); break;
-                case 'F11': alert("Enviando a cocina..."); break;
+                case 'F11': sendToKitchen(); break;
                 case 'F12':
                     if (total > 0 && !isFinishing) {
                         if (showPaymentModal) {
@@ -205,6 +205,30 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
             alert(`¡Mesa cobrada exitosamente!`);
             if (onOrderComplete) onOrderComplete();
             onClose();
+        }
+        setIsFinishing(false);
+    };
+
+
+    const sendToKitchen = async () => {
+        if (cart.length === 0) return;
+        setIsFinishing(true);
+
+        const { error } = await supabase.from('kitchen_tickets').insert([{
+            table_id: tableId,
+            items: cart.map(i => ({
+                name: i.name,
+                price: i.price,
+                quantity: i.quantity
+            })),
+            notes: notes,
+            status: 'PENDING'
+        }]);
+
+        if (error) {
+            alert(`Error al enviar a cocina: ${error.message}`);
+        } else {
+            alert(`¡Comanda enviada a cocina para la Mesa ${tableId}!`);
         }
         setIsFinishing(false);
     };
@@ -427,7 +451,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                         <ShortcutBtn label="F2 Cliente" icon={<Users size={16} />} color="bg-[#FFD60A]" onClick={() => document.getElementById('client-input')?.focus()} />
                         <ShortcutBtn label="F5 Cerrar" icon={<Check size={16} />} color="bg-cyan-500" onClick={onClose} />
                         <ShortcutBtn label="F7 Comprob" icon={<Receipt size={16} />} color="bg-blue-500" onClick={() => document.getElementById('invoice-selector')?.focus()} />
-                        <ShortcutBtn label="F11 Cocina" icon={<Send size={16} />} color="bg-indigo-500" onClick={() => alert("Enviando...")} />
+                        <ShortcutBtn label="F11 Cocina" icon={<Send size={16} />} color="bg-indigo-500" onClick={sendToKitchen} />
                         <ShortcutBtn label="F12 Cobrar" icon={<CreditCard size={16} />} color="bg-black text-[#FFD60A]" onClick={() => setShowPaymentModal(true)} />
                     </div>
                 </div>
