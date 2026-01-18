@@ -61,6 +61,45 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
         setLoading(false);
     }
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // F5: Cerrar
+            if (e.key === 'F5') {
+                e.preventDefault();
+                onClose();
+            }
+            // F7: Enfocar Comprobante (o toggle)
+            if (e.key === 'F7') {
+                e.preventDefault();
+                // Focusing the select could be complex, but we can at least open it or cycle
+                const select = document.getElementById('invoice-selector') as HTMLSelectElement;
+                if (select) select.focus();
+            }
+            // F12: Cobrar
+            if (e.key === 'F12') {
+                e.preventDefault();
+                if (total > 0 && !isFinishing) {
+                    if (showPaymentModal) {
+                        finishOrder();
+                    } else {
+                        setShowPaymentModal(true);
+                    }
+                }
+            }
+            // Escape: Cerrar modal o sheet
+            if (e.key === 'Escape') {
+                if (showPaymentModal) {
+                    setShowPaymentModal(false);
+                } else {
+                    onClose();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose, total, isFinishing, showPaymentModal]);
+
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) + extraTotal;
     const discount = 0; // Future implementation
     const total = subtotal - discount;
@@ -144,6 +183,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                     <div className="flex flex-col">
                         <span className="text-[9px] font-black text-black/40 uppercase">Comprobante (F7)</span>
                         <select
+                            id="invoice-selector"
                             value={invoiceType}
                             onChange={(e) => setInvoiceType(e.target.value)}
                             className="bg-white/80 border-none rounded-lg px-3 py-1 text-sm font-bold outline-none focus:ring-2 ring-black/10"
