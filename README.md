@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌸 Bloom OS v2.0 Premium
+### Sistema de Gestión Integral para Gastronomía y Retail
 
-## Getting Started
+Bloom OS es una solución de Punto de Venta (POS) moderna, rápida y visualmente impactante, diseñada para optimizar la operación de restaurantes, cafeterías y bares.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Características Principales
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 🖥️ Terminal POS de Alta Velocidad
+- **Atajos de Teclado Full (F1-F12)**: Operación 100% optimizada para teclado, minimizando el uso del mouse.
+- **Grilla de Productos Inteligente**: Organización en 5 categorías lógicas con nombres cortos para una selección ultra veloz.
+- **Gestión de Mesas**: Control visual del estado de las mesas (Libre/Ocupada).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 👨‍🍳 Panel de Cocina (Comandas) en Tiempo Real
+- **Sincronización Instantánea**: Las comandas enviadas desde el POS aparecen al instante en cocina.
+- **Flujo de Trabajo**: Estados dinámicos (Pendiente -> Preparando -> ¡Listo! -> Entregado).
+- **Notas de Pedido**: Comunicación directa mozo-cocinero.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 💳 Integración con Mercado Pago
+- **Generación Dinámica de QR**: Cobros instantáneos generando un código QR real que el cliente puede escanear desde su celular.
+- **Múltiples Métodos de Pago**: Soporte para Efectivo, Tarjeta y MP.
 
-## Learn More
+### 📊 Gestión Avanzada
+- **Historial de Ventas**: Registro detallado de cada orden procesada.
+- **Facturación Flexible**: Soporte para Factura A, B, C y Tickets.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Stack Tecnológico
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Frontend**: Next.js 15+ (App Router), React 19, Tailwind CSS.
+- **Backend/Base de Datos**: Supabase (PostgreSQL) con Realtime enabled.
+- **Animaciones**: Framer Motion.
+- **Pagos**: Mercado Pago SDK.
+- **Iconografía**: Lucide React.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## ⚙️ Configuración del Entorno
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Clonar el repositorio**:
+   ```bash
+   git clone https://github.com/Germanmdq/bloom.git
+   cd bloom
+   ```
+
+2. **Instalar dependencias**:
+   ```bash
+   npm install
+   ```
+
+3. **Variables de Entorno**:
+   Crear un archivo `.env.local` con las siguientes claves:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=tu_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_key
+   MERCADO_PAGO_ACCESS_TOKEN=tu_token
+   NEXT_PUBLIC_BASE_URL=http://localhost:3000
+   ```
+
+4. **Base de Datos**:
+   Ejecutar los scripts ubicados en `/supabase`:
+   - `complete_setup.sql`: Estructura base y menú.
+   - `kitchen_setup.sql`: Sistema de comandas.
+
+5. **Iniciar Desarrollo**:
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 🎨 Diseño & UX
+El sistema sigue una estética **Premium Dark/Yellow**, inspirada en los sistemas POS industriales más avanzados, pero con la fluidez de una aplicación web moderna.
+
+---
+
+Desarrollado con ❤️ para **Bloom**.
