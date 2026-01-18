@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Plus, Check, User, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { Plus, Check, User, Loader2, Printer, Send, Clock, LayoutGrid, Users, Receipt, CreditCard, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
 
 type OrderSheetProps = {
     tableId: number;
@@ -17,6 +18,27 @@ type CartItem = {
     price: number;
     quantity: number;
 };
+
+type ShortcutBtnProps = {
+    label: string;
+    icon: React.ReactNode;
+    color: string;
+    onClick: () => void;
+};
+
+function ShortcutBtn({ label, icon, color, onClick }: ShortcutBtnProps) {
+    return (
+        <button
+            onClick={onClick}
+            className={`${color} p-4 rounded-2xl flex flex-col items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg text-white group`}
+        >
+            <div className="bg-white/20 p-2 rounded-xl group-hover:bg-white/40 transition-colors">
+                {icon}
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+        </button>
+    );
+}
 
 export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProps) {
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -32,6 +54,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [extraTotal, setExtraTotal] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [notes, setNotes] = useState("");
+    const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+    const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
     const supabase = createClient();
 
@@ -61,38 +86,36 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
         setLoading(false);
     }
 
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) + extraTotal;
+    const discount = 0; // Future implementation
+    const total = subtotal - discount;
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // F5: Cerrar
-            if (e.key === 'F5') {
-                e.preventDefault();
-                onClose();
-            }
-            // F7: Enfocar Comprobante (o toggle)
-            if (e.key === 'F7') {
-                e.preventDefault();
-                // Focusing the select could be complex, but we can at least open it or cycle
-                const select = document.getElementById('invoice-selector') as HTMLSelectElement;
-                if (select) select.focus();
-            }
-            // F12: Cobrar
-            if (e.key === 'F12') {
-                e.preventDefault();
-                if (total > 0 && !isFinishing) {
-                    if (showPaymentModal) {
-                        finishOrder();
-                    } else {
-                        setShowPaymentModal(true);
+            // Prevenir comportamientos por defecto para las F keys
+            if (e.key.startsWith('F')) e.preventDefault();
+
+            switch (e.key) {
+                case 'F1': document.getElementById('product-search')?.focus(); break;
+                case 'F2': document.getElementById('client-input')?.focus(); break;
+                case 'F3': document.getElementById('waiter-selector')?.focus(); break;
+                case 'F4': finishOrder(); break;
+                case 'F5': onClose(); break;
+                case 'F7': document.getElementById('invoice-selector')?.focus(); break;
+                case 'F11': alert("Enviando a cocina..."); break;
+                case 'F12':
+                    if (total > 0 && !isFinishing) {
+                        if (showPaymentModal) {
+                            finishOrder();
+                        } else {
+                            setShowPaymentModal(true);
+                        }
                     }
-                }
-            }
-            // Escape: Cerrar modal o sheet
-            if (e.key === 'Escape') {
-                if (showPaymentModal) {
-                    setShowPaymentModal(false);
-                } else {
-                    onClose();
-                }
+                    break;
+                case 'Escape':
+                    if (showPaymentModal) setShowPaymentModal(false);
+                    else onClose();
+                    break;
             }
         };
 
@@ -100,9 +123,39 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose, total, isFinishing, showPaymentModal]);
 
-    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) + extraTotal;
-    const discount = 0; // Future implementation
-    const total = subtotal - discount;
+    // Generar QR cuando se selecciona Mercado Pago
+    useEffect(() => {
+        if (showPaymentModal && paymentMethod === 'MERCADO_PAGO' && !qrCodeUrl) {
+            generateQR();
+        }
+    }, [showPaymentModal, paymentMethod]);
+
+    const generateQR = async () => {
+        setIsGeneratingQR(true);
+        try {
+            const resp = await fetch('/api/mercadopago/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    items: cart.map(i => ({
+                        productId: i.productId,
+                        name: i.name,
+                        price: i.price,
+                        quantity: i.quantity
+                    })),
+                    orderId: `table-${tableId}-${Date.now()}`
+                })
+            });
+            const data = await resp.json();
+            if (data.init_point) {
+                setQrCodeUrl(data.init_point);
+            }
+        } catch (err) {
+            console.error("Error generating QR:", err);
+        } finally {
+            setIsGeneratingQR(false);
+        }
+    };
 
     const addToCart = async (product: any) => {
         const itemPrice = Number(product.price);
@@ -196,8 +249,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                     </div>
 
                     <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-black/40 uppercase">Cliente</span>
+                        <span className="text-[9px] font-black text-black/40 uppercase">Cliente (F2)</span>
                         <input
+                            id="client-input"
                             type="text"
                             value={clientName}
                             onChange={(e) => setClientName(e.target.value)}
@@ -206,8 +260,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                     </div>
 
                     <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-black/40 uppercase">Mozo asignado</span>
+                        <span className="text-[9px] font-black text-black/40 uppercase">Mozo (F3)</span>
                         <select
+                            id="waiter-selector"
                             value={selectedWaiter}
                             onChange={(e) => setSelectedWaiter(e.target.value)}
                             className="bg-white/80 border-none rounded-lg px-3 py-1 text-sm font-bold outline-none focus:ring-2 ring-black/10"
@@ -216,6 +271,17 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                                 <option key={w.id} value={w.id}>{w.full_name}</option>
                             ))}
                         </select>
+                    </div>
+
+                    <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-black/40 uppercase">Notas Internas</span>
+                        <input
+                            type="text"
+                            placeholder="Agregar notas..."
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            className="bg-white/80 border-none rounded-lg px-3 py-1 text-sm font-bold outline-none focus:ring-2 ring-black/10 w-40"
+                        />
                     </div>
                 </div>
 
@@ -271,6 +337,27 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
 
                     {/* Table Footer / Summary */}
                     <div className="p-8 bg-gray-900 text-white mt-auto">
+                        {/* Interactive Quick Inputs (matching image) */}
+                        <div className="grid grid-cols-2 gap-4 mb-6 border-b border-white/10 pb-6">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-black uppercase text-white/40">Producto (F1)</label>
+                                <input
+                                    id="product-search"
+                                    type="text"
+                                    placeholder="Buscar o código..."
+                                    className="bg-white/10 border-none rounded-xl px-4 py-2 text-sm font-bold text-white outline-none focus:ring-2 ring-[#FFD60A]/50 placeholder:text-white/20"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-black uppercase text-white/40">Cantidad</label>
+                                <input
+                                    type="number"
+                                    defaultValue={1}
+                                    className="bg-white/10 border-none rounded-xl px-4 py-2 text-sm font-bold text-white outline-none focus:ring-2 ring-[#FFD60A]/50"
+                                />
+                            </div>
+                        </div>
+
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-[10px] font-black uppercase text-white/40 tracking-widest">Subtotal</span>
                             <span className="font-bold">${subtotal.toLocaleString()}</span>
@@ -334,22 +421,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                         </div>
                     </div>
 
-                    {/* Bottom Action Bar */}
-                    <div className="mt-auto flex gap-4 pt-8">
-                        <button
-                            onClick={onClose}
-                            className="flex-1 py-6 rounded-[2rem] bg-white text-gray-400 font-black uppercase tracking-widest hover:bg-gray-100 transition-all border border-gray-100"
-                        >
-                            F5 Cerrar
-                        </button>
-                        <button
-                            disabled={total === 0 || isFinishing}
-                            onClick={() => setShowPaymentModal(true)}
-                            className="flex-[2] py-6 rounded-[2rem] bg-black text-[#FFD60A] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl disabled:opacity-20 flex items-center justify-center gap-3"
-                        >
-                            <span className="text-xl">💰</span>
-                            F12 Cobrar Selección
-                        </button>
+                    {/* Bottom Action Bar - Simplified as per reference image */}
+                    <div className="mt-auto grid grid-cols-6 gap-2 pt-8">
+                        <ShortcutBtn label="F1 Platos" icon={<LayoutGrid size={16} />} color="bg-green-500" onClick={() => { }} />
+                        <ShortcutBtn label="F2 Cliente" icon={<Users size={16} />} color="bg-[#FFD60A]" onClick={() => document.getElementById('client-input')?.focus()} />
+                        <ShortcutBtn label="F5 Cerrar" icon={<Check size={16} />} color="bg-cyan-500" onClick={onClose} />
+                        <ShortcutBtn label="F7 Comprob" icon={<Receipt size={16} />} color="bg-blue-500" onClick={() => document.getElementById('invoice-selector')?.focus()} />
+                        <ShortcutBtn label="F11 Cocina" icon={<Send size={16} />} color="bg-indigo-500" onClick={() => alert("Enviando...")} />
+                        <ShortcutBtn label="F12 Cobrar" icon={<CreditCard size={16} />} color="bg-black text-[#FFD60A]" onClick={() => setShowPaymentModal(true)} />
                     </div>
                 </div>
             </div>
@@ -383,14 +462,17 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                                         {(['CASH', 'CARD', 'MERCADO_PAGO'] as const).map((method) => (
                                             <button
                                                 key={method}
-                                                onClick={() => setPaymentMethod(method)}
+                                                onClick={() => {
+                                                    setPaymentMethod(method);
+                                                    if (method !== 'MERCADO_PAGO') setQrCodeUrl(null);
+                                                }}
                                                 className={`py-8 rounded-[2.5rem] flex flex-col items-center justify-center gap-3 transition-all border-2 ${paymentMethod === method
                                                     ? "bg-black text-[#FFD60A] border-black shadow-2xl scale-105"
                                                     : "bg-gray-50 text-gray-300 border-transparent hover:border-gray-100"
                                                     }`}
                                             >
                                                 {method === 'CASH' && <Check size={24} />}
-                                                {method === 'CARD' && <User size={24} />}
+                                                {method === 'CARD' && <CreditCard size={24} />}
                                                 {method === 'MERCADO_PAGO' && <Plus size={24} />}
                                                 <span className="text-[10px] font-black uppercase tracking-widest">
                                                     {method === 'CASH' ? 'Efectivo' : method === 'CARD' ? 'Tarjeta' : 'MP Pago'}
@@ -399,6 +481,26 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                                         ))}
                                     </div>
                                 </div>
+
+                                {paymentMethod === 'MERCADO_PAGO' && (
+                                    <div className="flex flex-col items-center justify-center bg-gray-50 rounded-[3rem] p-10 border-2 border-dashed border-gray-200">
+                                        {isGeneratingQR ? (
+                                            <div className="flex flex-col items-center gap-4">
+                                                <Loader2 className="animate-spin text-black" size={40} />
+                                                <p className="text-[10px] font-black text-gray-400 lg:uppercase tracking-widest">Generando QR...</p>
+                                            </div>
+                                        ) : qrCodeUrl ? (
+                                            <div className="flex flex-col items-center gap-6">
+                                                <div className="bg-white p-6 rounded-[2rem] shadow-2xl">
+                                                    <QRCodeSVG value={qrCodeUrl} size={180} />
+                                                </div>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Escaneá para pagar con Mercado Pago</p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-red-500 font-bold">Error al generar QR</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mt-16 flex gap-4">
