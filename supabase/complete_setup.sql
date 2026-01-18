@@ -76,23 +76,28 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 -- Políticas de Mesas
 DROP POLICY IF EXISTS "Public read tables" ON public.salon_tables;
 DROP POLICY IF EXISTS "Update tables" ON public.salon_tables;
+DROP POLICY IF EXISTS "Full access tables" ON public.salon_tables;
 CREATE POLICY "Full access tables" ON public.salon_tables FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Políticas de Categorías
 DROP POLICY IF EXISTS "Read categories" ON public.categories;
+DROP POLICY IF EXISTS "Full access categories" ON public.categories;
 CREATE POLICY "Full access categories" ON public.categories FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Políticas de Productos
 DROP POLICY IF EXISTS "Read products" ON public.products;
+DROP POLICY IF EXISTS "Full access products" ON public.products;
 CREATE POLICY "Full access products" ON public.products FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Políticas de Órdenes
 DROP POLICY IF EXISTS "Authenticated create orders" ON public.orders;
 DROP POLICY IF EXISTS "Authenticated view orders" ON public.orders;
+DROP POLICY IF EXISTS "Full access orders" ON public.orders;
 CREATE POLICY "Full access orders" ON public.orders FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Políticas de Perfiles
 DROP POLICY IF EXISTS "View own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Full access profiles" ON public.profiles;
 CREATE POLICY "Full access profiles" ON public.profiles FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- ==========================================
