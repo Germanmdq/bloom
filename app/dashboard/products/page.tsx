@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Plus, Filter, Edit3, Trash2, Coffee, Tag, DollarSign, Image as ImageIcon } from "lucide-react";
+import { Search, Plus, Filter, Edit3, Trash2, Coffee, Tag, DollarSign, Image as ImageIcon, Check } from "lucide-react";
 import Image from "next/image";
 
 export default function ProductsPage() {
@@ -22,6 +22,8 @@ export default function ProductsPage() {
         category_id: "",
         image_url: ""
     });
+    const [isAddingCategory, setIsAddingCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState("");
 
     const supabase = createClient();
 
@@ -70,6 +72,26 @@ export default function ProductsPage() {
         fetchData();
     }
 
+    async function handleAddCategory() {
+        if (!newCategoryName.trim()) return;
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('categories')
+            .insert([{ name: newCategoryName }])
+            .select()
+            .single();
+
+        if (error) {
+            alert(error.message);
+        } else if (data) {
+            setCategories([...categories, data]);
+            setCurrentProduct({ ...currentProduct, category_id: data.id });
+            setIsAddingCategory(false);
+            setNewCategoryName("");
+        }
+        setLoading(false);
+    }
+
     async function handleDelete(id: string) {
         if (!confirm("¿Seguro que quieres eliminar este producto?")) return;
         const { error } = await supabase.from('products').delete().eq('id', id);
@@ -103,8 +125,9 @@ export default function ProductsPage() {
                     </div>
                     <button
                         onClick={() => {
-                            setCurrentProduct({ id: "", name: "", description: "", price: "", category_id: categories[0]?.id || "", image_url: "" });
+                            setCurrentProduct({ id: "", name: "", description: "", price: "", category_id: categories.length > 0 ? categories[0].id : "", image_url: "" });
                             setIsEditing(true);
+                            setIsAddingCategory(false);
                         }}
                         className="bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:scale-[1.02] transition-all shadow-xl shadow-black/10"
                     >
@@ -140,6 +163,7 @@ export default function ProductsPage() {
                                     onClick={() => {
                                         setCurrentProduct(product);
                                         setIsEditing(true);
+                                        setIsAddingCategory(false);
                                     }}
                                     className="p-4 rounded-2xl bg-white text-black hover:scale-110 transition-transform shadow-lg"
                                 >
@@ -224,17 +248,48 @@ export default function ProductsPage() {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Categoría</label>
-                                        <select
-                                            required
-                                            value={currentProduct.category_id}
-                                            onChange={e => setCurrentProduct({ ...currentProduct, category_id: e.target.value })}
-                                            className="w-full bg-white/60 border border-black/5 rounded-[1.5rem] px-5 py-4 focus:ring-4 focus:ring-black/5 outline-none appearance-none font-bold"
-                                        >
-                                            {categories.map(cat => (
-                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                            ))}
-                                        </select>
+                                        <div className="flex justify-between items-center mb-3 ml-1">
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Categoría</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAddingCategory(!isAddingCategory)}
+                                                className="text-[10px] font-black text-black bg-[#FFD60A] px-2 py-1 rounded-md uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                                            >
+                                                {isAddingCategory ? "Cancelar" : "+ Nueva"}
+                                            </button>
+                                        </div>
+
+                                        {isAddingCategory ? (
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={newCategoryName}
+                                                    onChange={e => setNewCategoryName(e.target.value)}
+                                                    className="flex-1 bg-white/60 border border-black/5 rounded-[1.2rem] px-4 py-3 focus:ring-4 focus:ring-black/5 outline-none font-bold text-sm"
+                                                    placeholder="Nombre de categoría..."
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAddCategory}
+                                                    className="bg-black text-white px-4 rounded-[1.2rem] font-bold hover:scale-105 transition-all"
+                                                >
+                                                    <Check size={18} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <select
+                                                required
+                                                value={currentProduct.category_id}
+                                                onChange={e => setCurrentProduct({ ...currentProduct, category_id: e.target.value })}
+                                                className="w-full bg-white/60 border border-black/5 rounded-[1.5rem] px-5 py-4 focus:ring-4 focus:ring-black/5 outline-none appearance-none font-bold text-black"
+                                            >
+                                                <option value="" disabled>Seleccionar...</option>
+                                                {categories.map(cat => (
+                                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </div>
                                 </div>
 
