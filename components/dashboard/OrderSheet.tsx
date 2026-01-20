@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { ChevronDown, Search, ArrowLeft, Trash2, Edit2, Plus, CreditCard, Receipt, Printer, X, LayoutGrid, User, Users, Send, Check, Loader2 } from 'lucide-react';
+import { ChevronDown, Search, ArrowLeft, Trash2, Edit2, Plus, CreditCard, Receipt, Printer, X, LayoutGrid, User, Users, Send, Check, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket } from "@/lib/hooks/use-pos-data";
+import { getUpsellSuggestions, Suggestion } from "@/lib/ai/groq-service";
 
 type OrderSheetProps = {
     tableId: number;
@@ -62,11 +63,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
     const [isGeneratingQR, setIsGeneratingQR] = useState(false);
     const [productSearch, setProductSearch] = useState("");
-    const [waiters, setWaiters] = useState<any[]>([]); // Keep waiters local for now or optimize later
+    const [waiters, setWaiters] = useState<any[]>([]);
+
+    // AI Suggestions State
+    const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
     const supabase = createClient();
 
-    // Initial Fetch for non-cached data (Table totals, Waiters)
+    // Initial Fetch
     useEffect(() => {
         const fetchExtras = async () => {
             const { data: waiterData } = await supabase.from('profiles').select('id, full_name').eq('role', 'WAITER');
@@ -80,7 +85,85 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
         fetchExtras();
     }, [tableId]);
 
-    const subtotal = useOrderStore(state => state.getTotal()); // Gets cart total
+    // AI Suggestions Effect (Debounced)
+    useEffect(() => {
+        const fetchSuggestions = async () => {
+            if (cart.length === 0) {
+                setSuggestions([]);
+                return;
+            }
+            setLoadingSuggestions(true);
+            try {
+                // 🔒 Pasa los productos disponibles para que la IA SOLO sugiera del menú
+                const aiSuggestions = await getUpsellSuggestions(cart, products);
+
+                // Validación defensiva
+                let validSuggestions: Suggestion[] = [];
+                if (Array.isArray(aiSuggestions)) {
+                    validSuggestions = aiSuggestions;
+                } else if (aiSuggestions && (aiSuggestions as any).suggestions) {
+                    validSuggestions = (aiSuggestions as any).suggestions;
+                }
+
+                // 🔒 DOBLE VALIDACIÓN: Asegura que las sugerencias sean productos reales
+                const verifiedSuggestions = validSuggestions.filter(s => {
+                    const realProduct = products.find((p: any) =>
+                        p.name.toLowerCase() === s.item.toLowerCase()
+                    );
+                    return !!realProduct;
+                });
+
+                // Hidrata con datos reales del producto
+                const hydratedSuggestions = verifiedSuggestions.map(s => {
+                    const realProduct = products.find((p: any) =>
+                        p.name.toLowerCase() === s.item.toLowerCase()
+                    );
+
+                    return {
+                        ...s,
+                        item: realProduct?.name || s.item, // Nombre exacto del menú
+                        price: realProduct?.price || s.price, // Precio exacto del menú
+                        realProduct
+                    };
+                });
+
+                console.log('✅ Verified suggestions from menu:', hydratedSuggestions);
+                setSuggestions(hydratedSuggestions);
+            } catch (error) {
+                console.error("Groq Fetch Error:", error);
+                setSuggestions([]);
+            }
+            setLoadingSuggestions(false);
+        };
+
+        const timer = setTimeout(fetchSuggestions, 1500); // 1.5s debounce
+        return () => clearTimeout(timer);
+    }, [cart, products]); // Re-run when cart changes
+
+    useEffect(() => {
+        console.log('🎨 [Render] Suggestions Updated:', suggestions);
+    }, [suggestions]);
+
+    // SYNC TABLE STATUS (Debounced)
+    useEffect(() => {
+        if (cart.length === 0) return;
+
+        const syncTable = async () => {
+            const currentTotal = useOrderStore.getState().getTotal() + extraTotal;
+            await supabase
+                .from('salon_tables')
+                .update({
+                    status: 'OCCUPIED',
+                    total: currentTotal
+                })
+                .eq('id', tableId);
+        };
+
+        const timer = setTimeout(syncTable, 2000); // Update DB every 2s after changes
+        return () => clearTimeout(timer);
+    }, [cart, extraTotal, tableId, supabase]);
+
+    const subtotal = useOrderStore(state => state.getTotal());
     const total = subtotal + extraTotal;
     const isLoading = catLoading || prodLoading;
 
@@ -127,7 +210,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     items: cart.map(i => ({
-                        // Use name as ID proxy if needed or ensure productId is in cart type
                         title: i.name,
                         unit_price: i.price,
                         quantity: i.quantity
@@ -150,8 +232,25 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
             price: Number(product.price),
             quantity: 1
         });
-        // Optimistic update for table status handled by backend usually, 
-        // but here we might want to sync 'OCCUPIED' status if needed. 
+    };
+
+    const handleAddSuggestion = (suggestion: any) => {
+        // Usa el producto real del menú, NO la sugerencia de la IA
+        if (suggestion.realProduct) {
+            addToCart({
+                name: suggestion.realProduct.name,
+                price: Number(suggestion.realProduct.price),
+                quantity: 1
+            });
+            // console.log('✨ Usuario agregó sugerencia de IA:', suggestion.item);
+        } else {
+            // Fallback logic incase realProduct is missing but name/price are valid
+            addToCart({
+                name: suggestion.item,
+                price: Number(suggestion.price),
+                quantity: 1
+            });
+        }
     };
 
     const finishOrder = async () => {
@@ -164,10 +263,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                 total: total,
                 payment_method: paymentMethod,
                 waiter_id: selectedWaiter || null,
-                items: cart // Store items in order history too?
+                items: cart
             });
 
-            // Clear table status
             await supabase.from('salon_tables').update({ status: 'FREE', total: 0 }).eq('id', tableId);
 
             alert(`¡Mesa cobrada exitosamente!`);
@@ -193,7 +291,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                 notes: notes
             });
             alert(`¡Comanda enviada a cocina! 👨‍🍳`);
-            // clearCart(); // Dependent on workflow
         } catch (error: any) {
             alert(`Error: ${error.message}`);
         }
@@ -304,12 +401,42 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                 </div>
 
                 {/* RIGHT: PRODUCTS */}
-                <div className="flex-1 flex flex-col p-8 overflow-hidden">
+                <div className="flex-1 flex flex-col p-8 overflow-hidden relative">
+                    {/* AI SUGGESTIONS - SIEMPRE VISIBLES */}
+                    <AnimatePresence>
+                        {suggestions.length > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -20, height: 0 }}
+                                animate={{ opacity: 1, y: 0, height: 'auto' }}
+                                exit={{ opacity: 0, y: -20, height: 0 }}
+                                className="mb-6 overflow-hidden"
+                            >
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Sparkles size={16} className="text-[#FFD60A]" fill="#FFD60A" />
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-black/50">Sugerencias Inteligentes (IA)</h3>
+                                </div>
+                                <div className="flex gap-4">
+                                    {suggestions.map((s, idx) => (
+                                        <button key={idx} onClick={() => handleAddSuggestion(s)} className="flex items-center gap-3 p-3 pr-6 rounded-2xl bg-white border border-[#FFD60A] shadow-md hover:bg-[#FFD60A]/10 transition-colors text-left group">
+                                            <div className="w-10 h-10 rounded-full bg-[#FFD60A] flex items-center justify-center text-black font-black text-xs shadow-sm">+</div>
+                                            <div>
+                                                <p className="font-bold text-sm text-gray-900 leading-tight">{s.item}</p>
+                                                <p className="text-[10px] font-medium text-black/40 leading-tight">{s.reason}</p>
+                                            </div>
+                                            <div className="ml-2 font-black text-xs text-black">${s.price}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     <div className="flex items-center gap-4 mb-8">
                         {(activeCategory || productSearch) && (
                             <button onClick={() => { setActiveCategory(null); setProductSearch(""); }} className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-black hover:text-white transition-colors"><ChevronDown className="rotate-90" size={24} /></button>
                         )}
                         <h3 className="text-2xl font-black text-gray-900 tracking-tight">{productSearch ? `Resultados: "${productSearch}"` : activeCategory ? categories.find((c: any) => c.id === activeCategory)?.name : "Categorías"}</h3>
+                        {loadingSuggestions && <Loader2 size={16} className="animate-spin text-black/20" />}
                     </div>
 
                     <div className="flex-1 overflow-y-auto pr-2 no-scrollbar">

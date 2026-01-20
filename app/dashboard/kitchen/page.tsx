@@ -1,12 +1,13 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useKitchenTickets } from "@/lib/hooks/use-pos-data";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, CheckCircle2, ChevronRight, CookingPot, Timer, MessageSquare, Loader2 } from "lucide-react";
+import { Clock, CheckCircle2, ChevronRight, CookingPot, Timer, MessageSquare, Loader2, Sparkles } from "lucide-react";
+import { predictPrepTime } from "@/lib/ai/groq-service";
 
 type KitchenTicket = {
     id: string;
@@ -21,6 +22,28 @@ export default function KitchenPage() {
     const queryClient = useQueryClient();
     const { data: tickets = [], isLoading } = useKitchenTickets();
     const supabase = createClient();
+    const [estTime, setEstTime] = useState<number>(15);
+
+    // AI Prep Time Calculation
+    useEffect(() => {
+        const updateEstTime = async () => {
+            const activeTicketsCount = tickets.filter((t: KitchenTicket) => t.status !== 'DELIVERED').length;
+
+            // Only call AI if there's significant load, otherwise simple math or default
+            if (activeTicketsCount > 0) {
+                // Pass simplified items to avoid huge payloads
+                const simplifiedItems = tickets
+                    .filter((t: KitchenTicket) => t.status !== 'DELIVERED')
+                    .flatMap((t: KitchenTicket) => t.items);
+
+                const time = await predictPrepTime(simplifiedItems);
+                setEstTime(time);
+            } else {
+                setEstTime(15);
+            }
+        };
+        updateEstTime();
+    }, [tickets]);
 
     useEffect(() => {
         // Subscribe to real-time changes with Optimistic Updates
@@ -53,11 +76,6 @@ export default function KitchenPage() {
     }, [queryClient, supabase]);
 
     async function updateStatus(id: string, currentStatus: string) {
-        // Optimistic Update can be added here technically, but the Realtime subscription 
-        // will handle the UI update immediately upon confirmation from DB. 
-        // For true instant UI, we'd use useMutation's onMutate. 
-        // Keeping it simple with the Supabase call for now as per instructions to use Realtime.
-
         const statusMap: Record<string, string> = {
             'PENDING': 'PREPARING',
             'PREPARING': 'READY',
@@ -90,9 +108,15 @@ export default function KitchenPage() {
                         Sistema en Tiempo Real • {tickets.length} comandas activas
                     </p>
                 </div>
-                <div className="bg-black text-[#FFD60A] px-6 py-4 rounded-3xl font-black flex items-center gap-3 shadow-xl">
-                    <CookingPot size={24} />
-                    Cocina Bloom v1.0
+                <div className="flex gap-4">
+                    <div className="bg-white px-6 py-4 rounded-3xl font-black shadow-sm border border-black/5 flex flex-col items-end min-w-[140px]">
+                        <span className="flex items-center gap-1 text-[10px] text-gray-400 uppercase tracking-widest"><Sparkles size={10} /> Espera Est. (IA)</span>
+                        <span className="text-2xl font-black text-black">{estTime} min</span>
+                    </div>
+                    <div className="bg-black text-[#FFD60A] px-6 py-4 rounded-3xl font-black flex items-center gap-3 shadow-xl">
+                        <CookingPot size={24} />
+                        Cocina Bloom v1.0
+                    </div>
                 </div>
             </header>
 
