@@ -1,10 +1,66 @@
 "use client";
-
-import { menuData } from "@/lib/data";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
+interface Product {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    image_url: string;
+    category_id: string;
+}
+
+interface Category {
+    id: string;
+    name: string;
+    items: Product[];
+}
+
 export function MenuGrid() {
+    const [menuData, setMenuData] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(true);
+    const supabase = createClient();
+
+    useEffect(() => {
+        async function fetchData() {
+            setLoading(true);
+            const { data: categories, error: catError } = await supabase.from('categories').select('*').order('name');
+            const { data: products, error: prodError } = await supabase.from('products').select('*');
+
+            if (catError) console.error("Error fetching categories:", catError);
+            if (prodError) console.error("Error fetching products:", prodError);
+
+            if (categories && products) {
+                // Group products by category
+                const groupedData = categories.map(category => {
+                    const categoryProducts = products.filter(p => p.category_id === category.id);
+                    return {
+                        id: category.id,
+                        name: category.name,
+                        items: categoryProducts
+                    };
+                }).filter(cat => cat.items.length > 0); // Only show categories with items
+
+                console.log("Grouped Data:", groupedData);
+                setMenuData(groupedData);
+            }
+            setLoading(false);
+        }
+
+        fetchData();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="py-32 flex justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+            </div>
+        );
+    }
+
     return (
         <div className="py-32 px-4 md:px-8 max-w-7xl mx-auto">
             {menuData.map((category) => (
@@ -36,9 +92,9 @@ export function MenuGrid() {
                                     <span className="font-semibold text-gray-900">${item.price.toLocaleString("es-AR")}</span>
                                 </div>
 
-                                {item.image && (
+                                {item.image_url && (
                                     <div className="relative h-48 w-full rounded-2xl overflow-hidden mt-4">
-                                        <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        <Image src={item.image_url} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                                     </div>
                                 )}
                             </motion.div>

@@ -1,9 +1,12 @@
+
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useKitchenTickets } from "@/lib/hooks/use-pos-data";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, CheckCircle2, ChevronRight, CookingPot, Timer, MessageSquare } from "lucide-react";
+import { Clock, CheckCircle2, ChevronRight, CookingPot, Timer, MessageSquare, Loader2 } from "lucide-react";
 
 type KitchenTicket = {
     id: string;
@@ -15,39 +18,46 @@ type KitchenTicket = {
 };
 
 export default function KitchenPage() {
-    const [tickets, setTickets] = useState<KitchenTicket[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+    const { data: tickets = [], isLoading } = useKitchenTickets();
     const supabase = createClient();
 
     useEffect(() => {
-        fetchTickets();
-
-        // Subscribe to real-time changes
+        // Subscribe to real-time changes with Optimistic Updates
         const channel = supabase
-            .channel('kitchen_changes')
+            .channel('kitchen_realtime')
             .on('postgres_changes',
                 { event: '*', schema: 'public', table: 'kitchen_tickets' },
-                () => fetchTickets()
+                (payload) => {
+                    queryClient.setQueryData(['kitchen_tickets'], (oldTickets: KitchenTicket[] = []) => {
+                        if (payload.eventType === 'INSERT') {
+                            return [...oldTickets, payload.new as KitchenTicket];
+                        } else if (payload.eventType === 'UPDATE') {
+                            const updated = payload.new as KitchenTicket;
+                            if (updated.status === 'DELIVERED') {
+                                return oldTickets.filter(t => t.id !== updated.id);
+                            }
+                            return oldTickets.map(t => t.id === updated.id ? updated : t);
+                        } else if (payload.eventType === 'DELETE') {
+                            return oldTickets.filter(t => t.id !== payload.old.id);
+                        }
+                        return oldTickets;
+                    });
+                }
             )
             .subscribe();
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, []);
-
-    async function fetchTickets() {
-        const { data, error } = await supabase
-            .from('kitchen_tickets')
-            .select('*')
-            .neq('status', 'DELIVERED')
-            .order('created_at', { ascending: true });
-
-        if (data) setTickets(data as KitchenTicket[]);
-        setLoading(false);
-    }
+    }, [queryClient, supabase]);
 
     async function updateStatus(id: string, currentStatus: string) {
+        // Optimistic Update can be added here technically, but the Realtime subscription 
+        // will handle the UI update immediately upon confirmation from DB. 
+        // For true instant UI, we'd use useMutation's onMutate. 
+        // Keeping it simple with the Supabase call for now as per instructions to use Realtime.
+
         const statusMap: Record<string, string> = {
             'PENDING': 'PREPARING',
             'PREPARING': 'READY',
@@ -63,7 +73,12 @@ export default function KitchenPage() {
             .eq('id', id);
     }
 
-    if (loading) return <div className="p-10 text-center font-black uppercase tracking-widest text-gray-400">Cargando Cocina...</div>;
+    if (isLoading) return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-10 font-black uppercase tracking-widest text-gray-400 gap-4">
+            <Loader2 className="animate-spin text-[#FFD60A]" size={48} />
+            Cargando Cocina...
+        </div>
+    );
 
     return (
         <div className="p-8 bg-[#F8F9FA] min-h-screen">
@@ -83,7 +98,7 @@ export default function KitchenPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <AnimatePresence mode="popLayout">
-                    {tickets.map((ticket) => (
+                    {tickets.map((ticket: KitchenTicket) => (
                         <motion.div
                             key={ticket.id}
                             layout
@@ -91,8 +106,8 @@ export default function KitchenPage() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.8, x: -50 }}
                             className={`bg-white rounded-[3rem] p-8 shadow-sm border-2 transition-all flex flex-col ${ticket.status === 'READY' ? 'border-green-500 bg-green-50/20' :
-                                    ticket.status === 'PREPARING' ? 'border-orange-400 bg-orange-50/20' :
-                                        'border-transparent shadow-2xl'
+                                ticket.status === 'PREPARING' ? 'border-orange-400 bg-orange-50/20' :
+                                    'border-transparent shadow-2xl'
                                 }`}
                         >
                             <div className="flex justify-between items-start mb-6">
@@ -109,8 +124,8 @@ export default function KitchenPage() {
                                     </div>
                                 </div>
                                 <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${ticket.status === 'READY' ? 'bg-green-500 text-white' :
-                                        ticket.status === 'PREPARING' ? 'bg-orange-400 text-white' :
-                                            'bg-gray-100 text-gray-400'
+                                    ticket.status === 'PREPARING' ? 'bg-orange-400 text-white' :
+                                        'bg-gray-100 text-gray-400'
                                     }`}>
                                     {ticket.status === 'PENDING' ? 'Pendiente' :
                                         ticket.status === 'PREPARING' ? 'Preparando' : '¡Listo!'}
@@ -138,8 +153,8 @@ export default function KitchenPage() {
                             <button
                                 onClick={() => updateStatus(ticket.id, ticket.status)}
                                 className={`w-full py-6 rounded-[2rem] font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3 ${ticket.status === 'READY' ? 'bg-green-600 text-white hover:bg-green-700' :
-                                        ticket.status === 'PREPARING' ? 'bg-black text-[#FFD60A] hover:scale-105' :
-                                            'bg-black text-white hover:scale-105'
+                                    ticket.status === 'PREPARING' ? 'bg-black text-[#FFD60A] hover:scale-105' :
+                                        'bg-black text-white hover:scale-105'
                                     }`}
                             >
                                 {ticket.status === 'PENDING' && (
