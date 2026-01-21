@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-<<<<<<< HEAD
+
 import { Search, Plus, Filter, Edit3, Trash2, Coffee, Tag, DollarSign, Image as ImageIcon, Check, X, ChevronRight } from "lucide-react";
 import Image from "next/image";
 
