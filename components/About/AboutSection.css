@@ -1,0 +1,66 @@
+.about-section {
+    padding: 10rem 0 8rem;
+    background-color: var(--color-crema);
+    text-align: center;
+}
+
+.about-section .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.about-section .brand-name {
+    font-size: 6rem;
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    color: var(--color-terracota);
+    font-family: 'Playfair Display', serif;
+    margin-bottom: 0.5rem;
+}
+
+.about-section .tagline {
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--color-marron);
+    font-style: italic;
+    margin-bottom: 2rem;
+}
+
+.about-section .location {
+    font-size: 2.5rem;
+    color: var(--color-marron);
+    margin-bottom: 4rem;
+    font-weight: 300;
+}
+
+.about-section .location .accent {
+    color: var(--color-terracota);
+    font-style: italic;
+}
+
+.about-section .story {
+    max-width: 750px;
+    margin: 0 auto;
+}
+
+.about-section .story p {
+    font-size: 1.25rem;
+    line-height: 1.9;
+    color: var(--color-marron);
+    margin-bottom: 2rem;
+}
+
+.about-section .story .lead {
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--color-terracota);
+}
+
+.about-section .story .opening {
+    font-size: 1.3rem;
+    font-style: italic;
+    color: var(--color-mostaza);
+    margin-top: 3rem;
+    font-weight: 500;
+}

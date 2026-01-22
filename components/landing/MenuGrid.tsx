@@ -1,10 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
-interface Product {
+export interface Product {
     id: string;
     name: string;
     description: string;
@@ -13,95 +11,108 @@ interface Product {
     category_id: string;
 }
 
-interface Category {
+export interface Category {
     id: string;
     name: string;
-    items: Product[];
+    items?: Product[];
 }
 
-export function MenuGrid() {
-    const [menuData, setMenuData] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(true);
-    const supabase = createClient();
+interface MenuGridProps {
+    categories: Category[];
+    products: Product[];
+}
 
-    useEffect(() => {
-        async function fetchData() {
-            setLoading(true);
-            const { data: categories, error: catError } = await supabase.from('categories').select('*').order('name');
-            const { data: products, error: prodError } = await supabase.from('products').select('*');
+function formatName(name: string): string {
+    if (!name) return "";
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+}
 
-            if (catError) console.error("Error fetching categories:", catError);
-            if (prodError) console.error("Error fetching products:", prodError);
-
-            if (categories && products) {
-                // Group products by category
-                const groupedData = categories.map(category => {
-                    const categoryProducts = products.filter(p => p.category_id === category.id);
-                    return {
-                        id: category.id,
-                        name: category.name,
-                        items: categoryProducts
-                    };
-                }).filter(cat => cat.items.length > 0); // Only show categories with items
-
-                console.log("Grouped Data:", groupedData);
-                setMenuData(groupedData);
-            }
-            setLoading(false);
-        }
-
-        fetchData();
-    }, []);
-
-    if (loading) {
-        return (
-            <div className="py-32 flex justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
-            </div>
-        );
-    }
+export function MenuGrid({ categories, products }: MenuGridProps) {
+    const menuData = categories.map(category => {
+        const categoryProducts = products.filter(p => p.category_id === category.id);
+        return {
+            id: category.id,
+            name: category.name,
+            items: categoryProducts
+        };
+    }).filter(cat => cat.items.length > 0);
 
     return (
-        <div className="py-32 px-4 md:px-8 max-w-7xl mx-auto">
-            {menuData.map((category) => (
-                <div key={category.id} className="mb-24">
+        <section className="bg-[#3E2723] py-32 text-[#EFEBE9] relative" id="menu">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4AF37] opacity-5 blur-[100px] rounded-full pointer-events-none" />
+
+            <div className="container mx-auto px-8 max-w-7xl relative z-10">
+                <div className="text-center mb-24">
                     <motion.h2
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-3xl font-semibold tracking-tight text-gray-900 mb-8 ml-2"
+                        className="text-5xl font-black mb-4 font-display text-[#EFEBE9]"
                     >
-                        {category.name}
+                        Nuestra Selección Premium
                     </motion.h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {category.items.map((item) => (
-                            <motion.div
-                                key={item.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                whileHover={{ scale: 1.02 }}
-                                className="group relative bg-white/60 backdrop-blur-xl rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-white/20"
-                            >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 className="text-xl font-medium text-gray-900">{item.name}</h3>
-                                        <p className="text-sm text-gray-500 mt-1">{item.description}</p>
-                                    </div>
-                                    <span className="font-semibold text-gray-900">${item.price.toLocaleString("es-AR")}</span>
-                                </div>
-
-                                {item.image_url && (
-                                    <div className="relative h-48 w-full rounded-2xl overflow-hidden mt-4">
-                                        <Image src={item.image_url} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                                    </div>
-                                )}
-                            </motion.div>
-                        ))}
-                    </div>
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.1 }}
+                        className="text-xl text-[#D4AF37] italic font-display"
+                    >
+                        Descubre sabores que despiertan los sentidos
+                    </motion.p>
                 </div>
-            ))}
-        </div>
+
+                {menuData.map((category) => (
+                    <div key={category.id} className="mb-24 last:mb-0">
+                        <motion.h3
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            className="text-3xl font-bold mb-12 text-[#D4AF37] border-b border-[#D4AF37]/20 pb-4 font-display inline-block"
+                        >
+                            {formatName(category.name)}
+                        </motion.h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12">
+                            {category.items?.map((item, index) => (
+                                <motion.div
+                                    key={item.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: index * 0.05 }}
+                                    className="group flex gap-6 items-start p-6 rounded-3xl hover:bg-[#EFEBE9]/5 transition-all duration-300 border border-transparent hover:border-[#D4AF37]/10 hover:-translate-y-1"
+                                >
+                                    <div className="relative w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden border border-[#D4AF37]/20 shadow-lg group-hover:scale-110 transition-transform duration-500 bg-[#2C1B18]">
+                                        {item.image_url ? (
+                                            <Image
+                                                src={item.image_url}
+                                                alt={item.name}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-[#D4AF37]/30">
+                                                <span className="text-xs uppercase font-bold">Bloom</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-baseline mb-3 border-b border-dashed border-[#EFEBE9]/10 pb-2">
+                                            <h4 className="text-xl font-bold text-[#EFEBE9] font-display group-hover:text-[#D4AF37] transition-colors">{formatName(item.name)}</h4>
+                                            <span className="text-xl font-bold text-[#D4AF37] ml-4 font-display">${item.price}</span>
+                                        </div>
+                                        <p className="text-[#EFEBE9]/60 text-sm leading-relaxed font-light line-clamp-2 group-hover:text-[#EFEBE9]/90 transition-colors">
+                                            {item.description || "Una deliciosa experiencia para tu paladar, preparada con los mejores ingredientes."}
+                                        </p>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </section>
     );
 }

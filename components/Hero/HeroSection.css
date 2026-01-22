@@ -1,0 +1,153 @@
+/* CSS del Hero: FIXED VISIBILITY & HOVER */
+
+.hero-section {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+    background: var(--color-marron);
+}
+
+.hero-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.hero-column {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: flex 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-column:hover {
+    flex: 1.5;
+}
+
+/* Updated Logic: Letter Appears on Hover (User Preference) */
+.hero-column:hover .hero-letter {
+    opacity: 1 !important;
+    /* Force visible on hover */
+    transform: translate(-50%, -50%) scale(1.1);
+    text-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.hero-column:hover img {
+    transform: scale(1.1);
+    filter: brightness(0.9);
+    /* Slightly brighter on hover */
+}
+
+.hero-letter {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.9);
+    /* Bright color */
+    opacity: 0;
+    /* Hidden by default */
+    z-index: 2;
+    pointer-events: none;
+    font-family: 'Playfair Display', serif;
+    transition: all 0.6s ease;
+}
+
+.hero-column img {
+    /* Ensure position absolute for filling the relative container */
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.75);
+    /* Default brightness */
+    opacity: 1 !important;
+    /* FORCE VISIBILITY */
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+}
+
+.location-badge {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    z-index: 10;
+    padding: 0.8rem 1.8rem;
+    background: var(--color-terracota);
+    color: white;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(193, 113, 84, 0.4);
+}
+
+.scroll-indicator {
+    position: absolute;
+    bottom: 3rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+}
+
+.scroll-indicator span {
+    color: var(--color-salmon);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+}
+
+.scroll-arrow {
+    width: 30px;
+    height: 50px;
+    border: 2px solid var(--color-salmon);
+    border-radius: 25px;
+    position: relative;
+}
+
+.scroll-arrow::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    background: var(--color-salmon);
+    border-radius: 50%;
+    animation: scrollDot 2s infinite;
+}
+
+@keyframes scrollDot {
+    0% {
+        opacity: 1;
+        top: 10px;
+    }
+
+    100% {
+        opacity: 0;
+        top: 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-container {
+        flex-direction: column;
+    }
+
+    .hero-letter {
+        font-size: 8rem;
+    }
+}

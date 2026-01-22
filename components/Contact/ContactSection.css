@@ -1,0 +1,66 @@
+.contact-section {
+    padding: 8rem 0;
+    background: linear-gradient(135deg, var(--color-salmon), var(--color-terracota));
+    color: white;
+    text-align: center;
+}
+
+.contact-section h2 {
+    font-size: 4rem;
+    font-family: 'Playfair Display', serif;
+    margin-bottom: 1.5rem;
+}
+
+.contact-section .contact-intro {
+    font-size: 1.4rem;
+    margin-bottom: 5rem;
+    opacity: 0.95;
+}
+
+.contact-section .contact-info {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4rem;
+    max-width: 1000px;
+    margin: 0 auto 4rem;
+}
+
+.contact-section .info-item h3 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+}
+
+.contact-section .info-item p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    opacity: 0.9;
+}
+
+.contact-section .social-links {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+}
+
+.contact-section .social-btn {
+    padding: 1rem 3rem;
+    background: white;
+    color: var(--color-terracota);
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.contact-section .social-btn:hover {
+    background: var(--color-crema);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+    .contact-section .contact-info {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+    }
+}

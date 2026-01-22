@@ -1,29 +1,68 @@
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #F5F5F7;
-  --color-surface: rgba(255, 255, 255, 0.7);
-  --color-surface-dark: rgba(28, 28, 30, 0.7);
-  --color-accent: #FF9500;
+  --color-terracota: #C17154;
+  --color-salmon: #E8A387;
+  --color-beige: #F5E6D3;
+  --color-crema: #FFF8F0;
+  --color-marron: #6B4E3D;
+  --color-verde-oliva: #8B9556;
+  --color-mostaza: #D4A574;
+  --color-blanco: #FFFFFF;
+  --color-gris-claro: #F0EBE3;
 
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: "Playfair Display", serif;
+  --font-body: "Inter", sans-serif;
+
+  /* Animations kept from previous version if useful, or standard ones can be added back if needed by components */
+  --animate-fade-in: fadeIn 0.8s ease forwards;
+  --animate-slide-up: slideUp 1s ease-out forwards;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(100px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 body {
-  font-family: var(--font-sans);
-  background-color: var(--color-canvas);
-  color: #1D1D1F;
+  font-family: var(--font-body);
+  background-color: var(--color-crema);
+  color: var(--color-marron);
   -webkit-font-smoothing: antialiased;
 }
 
-.glass {
-  background-color: var(--color-surface);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
 }
 
-.glass-dark {
-  background-color: var(--color-surface-dark);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+.glass {
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
