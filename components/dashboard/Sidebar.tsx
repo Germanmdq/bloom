@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot } from "lucide-react";
+import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package } from "lucide-react";
 
 const links = [
     { href: "/dashboard/tables", label: "Mesas", icon: LayoutGrid },
@@ -12,6 +12,7 @@ const links = [
     { href: "/dashboard/reports", label: "Reportes", icon: PieChart },
     { href: "/dashboard/expenses", label: "Gastos", icon: Receipt },
     { href: "/dashboard/kitchen", label: "Cocina", icon: CookingPot },
+    { href: "/dashboard/stock", label: "Stock", icon: Package },
     { href: "/dashboard/settings", label: "Ajustes", icon: Settings },
 ];
 

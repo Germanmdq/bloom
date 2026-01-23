@@ -1,4 +1,4 @@
-/* CSS del Hero: FIXED VISIBILITY & HOVER */
+/* CSS del Hero: FIXED VISIBILITY & HOVER - INVERTED LOGIC */
 
 .hero-section {
     width: 100vw;
@@ -6,6 +6,7 @@
     position: relative;
     overflow: hidden;
     background: var(--color-marron);
+    /* Default background color */
 }
 
 .hero-container {
@@ -20,26 +21,17 @@
     overflow: hidden;
     cursor: pointer;
     transition: flex 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--color-marron);
+    /* Ensure column has background */
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    /* Subtle separator */
 }
 
 .hero-column:hover {
     flex: 1.5;
 }
 
-/* Updated Logic: Letter Appears on Hover (User Preference) */
-.hero-column:hover .hero-letter {
-    opacity: 1 !important;
-    /* Force visible on hover */
-    transform: translate(-50%, -50%) scale(1.1);
-    text-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-}
-
-.hero-column:hover img {
-    transform: scale(1.1);
-    filter: brightness(0.9);
-    /* Slightly brighter on hover */
-}
-
+/* LETTER LOGIC: Always visible, maybe slight effect on hover */
 .hero-letter {
     position: absolute;
     top: 50%;
@@ -49,30 +41,43 @@
     font-weight: 900;
     color: rgba(255, 255, 255, 0.9);
     /* Bright color */
-    opacity: 0;
-    /* Hidden by default */
+    opacity: 1;
+    /* VISIBLE BY DEFAULT */
     z-index: 2;
     pointer-events: none;
     font-family: 'Playfair Display', serif;
     transition: all 0.6s ease;
 }
 
+.hero-column:hover .hero-letter {
+    transform: translate(-50%, -50%) scale(1.1);
+    text-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    opacity: 0.9;
+    /* Slight fade or keep at 1 */
+}
+
+/* IMAGE LOGIC: Hidden by default, appears on hover */
 .hero-column img {
-    /* Ensure position absolute for filling the relative container */
     position: absolute !important;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: brightness(0.75);
-    /* Default brightness */
-    opacity: 1 !important;
-    /* FORCE VISIBILITY */
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: brightness(0.8);
+    opacity: 0 !important;
+    /* HIDDEN BY DEFAULT */
+    transition: opacity 0.6s ease, transform 0.6s ease;
     z-index: 1;
 }
 
+.hero-column:hover img {
+    opacity: 1 !important;
+    /* VISIBLE ON HOVER */
+    transform: scale(1.05);
+}
+
+/* Location Badge & Scroll Indicator remain same */
 .location-badge {
     position: absolute;
     top: 2rem;

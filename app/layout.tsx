@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Playfair_Display, Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 
@@ -11,6 +11,12 @@ const playfair = Playfair_Display({
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-body",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-poppins",
 });
 
 export const metadata: Metadata = {
@@ -25,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${playfair.variable} ${inter.variable} antialiased text-gray-900 bg-canvas selection:bg-[#D4AF37] selection:text-[#3E2723]`} suppressHydrationWarning>
+      <body className={`${playfair.variable} ${inter.variable} ${poppins.variable} antialiased text-gray-900 bg-canvas selection:bg-[#D4AF37] selection:text-[#3E2723]`} suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

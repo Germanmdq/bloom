@@ -86,3 +86,51 @@ export function useKitchenTickets() {
         staleTime: 1000 * 60, // 1 minute
     });
 }
+
+export function useStock() {
+    return useQuery({
+        queryKey: ['stock'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('v_stock')
+                .select('*')
+                .order('name');
+            if (error) throw error;
+            return data;
+        },
+        staleTime: 0, // Always fetch fresh stock
+    });
+}
+
+export function useInventoryMovements() {
+    return useQuery({
+        queryKey: ['inventory_movements'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('inventory_movements')
+                .select('*, products(name, unit)')
+                .order('created_at', { ascending: false })
+                .limit(50);
+            if (error) throw error;
+            return data;
+        },
+    });
+}
+
+export function useCreateMovement() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (movement: any) => {
+            const { data, error } = await supabase
+                .from('inventory_movements')
+                .insert([movement])
+                .select();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['stock'] });
+            queryClient.invalidateQueries({ queryKey: ['inventory_movements'] });
+        }
+    });
+}
