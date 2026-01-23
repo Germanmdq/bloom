@@ -1,5 +1,5 @@
 'use client';
-
+import Link from "next/link";
 export function Footer() {
     return (
         <footer className="bg-[#6B4E3D] text-[#F5E6D3] py-16">
@@ -14,7 +14,7 @@ export function Footer() {
                         <p className="text-base leading-relaxed mb-4">Mar del Plata, Buenos Aires</p>
                     </div>
                 </div>
-                <div className="text-center text-sm opacity-70">
+                <div className="text-center text-sm opacity-70 mt-8 pt-8 border-t border-[#F5E6D3]/10">
                     <p>© 2025 Bloom - Hecho con ❤️ por Bárbara y Agustín</p>
                 </div>
             </div>

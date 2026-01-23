@@ -18,14 +18,17 @@ export default function Home() {
       <ContactSection />
       <Footer />
 
-      <div className="fixed bottom-8 right-8 z-50">
+      {/* Staff Access - Static at bottom */}
+      <div className="bg-[#6B4E3D] py-4 text-center">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 bg-[#D4AF37] text-[#3E2723] px-6 py-3 rounded-full hover:scale-105 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.4)] font-bold uppercase tracking-widest border-2 border-[#3E2723]"
+          className="text-[#F5E6D3]/30 text-[10px] hover:text-[#F5E6D3] uppercase tracking-widest transition-colors font-sans"
         >
-          Acceso Personal
+          Staff
         </Link>
       </div>
+
+
     </main>
   );
 }

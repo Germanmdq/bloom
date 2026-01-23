@@ -80,7 +80,7 @@
 /* Location Badge & Scroll Indicator remain same */
 .location-badge {
     position: absolute;
-    top: 2rem;
+    bottom: 2rem;
     right: 2rem;
     z-index: 10;
     padding: 0.8rem 1.8rem;

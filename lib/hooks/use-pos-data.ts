@@ -134,3 +134,26 @@ export function useCreateMovement() {
         }
     });
 }
+
+export function useUserRole() {
+    return useQuery({
+        queryKey: ['user_role'],
+        queryFn: async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return 'WAITER'; // Default safe fallback
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            if (error) {
+                // If profile doesn't exist yet, return waiter/default
+                return 'WAITER';
+            }
+            return data?.role || 'WAITER';
+        },
+        staleTime: 1000 * 60 * 10, // Cache for 10 min
+    });
+}
