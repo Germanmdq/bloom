@@ -1,4 +1,4 @@
-'use client';
+
 
 import './ContactSection.css';
 

@@ -147,15 +147,86 @@ export default function SettingsPage() {
                         <h2 className="text-xl font-black text-gray-900">Datos & Dispositivos</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <button className="h-24 rounded-2xl bg-gray-50 hover:bg-gray-100 flex flex-col items-center justify-center gap-2 group transition-all">
+                        <button
+                            onClick={() => {
+                                const currentPrinter = localStorage.getItem('bloom_printer_ip') || '';
+                                const newPrinter = prompt("Ingresa la IP o Nombre de la Impresora de Red (simulada):", currentPrinter);
+                                if (newPrinter !== null) {
+                                    localStorage.setItem('bloom_printer_ip', newPrinter);
+                                    alert(`Impresora configurada a: ${newPrinter}`);
+                                    // Trigger browser print as test
+                                    window.print();
+                                }
+                            }}
+                            className="h-24 rounded-2xl bg-gray-50 hover:bg-gray-100 flex flex-col items-center justify-center gap-2 group transition-all"
+                        >
                             <Printer className="text-gray-400 group-hover:text-black transition-colors" />
                             <span className="text-xs font-black uppercase text-gray-400 group-hover:text-black">Configurar Impresora</span>
                         </button>
-                        <button className="h-24 rounded-2xl bg-gray-50 hover:bg-gray-100 flex flex-col items-center justify-center gap-2 group transition-all">
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const { createClient } = await import("@/lib/supabase/client");
+                                    const supabase = createClient();
+
+                                    const { data: sales, error } = await supabase
+                                        .from('orders')
+                                        .select('*')
+                                        .order('created_at', { ascending: false });
+
+                                    if (error) throw error;
+
+                                    if (!sales || sales.length === 0) {
+                                        alert("No hay ventas para exportar.");
+                                        return;
+                                    }
+
+                                    // Generate CSV
+                                    const headers = ["ID", "Fecha", "Total", "Estado", "Mesa"];
+                                    const rows = sales.map(sale => [
+                                        sale.id,
+                                        new Date(sale.created_at).toLocaleString(),
+                                        sale.total,
+                                        sale.status,
+                                        sale.table_id || '-'
+                                    ]);
+
+                                    const csvContent = "data:text/csv;charset=utf-8,"
+                                        + [headers, ...rows].map(e => e.join(",")).join("\n");
+
+                                    const encodedUri = encodeURI(csvContent);
+                                    const link = document.createElement("a");
+                                    link.setAttribute("href", encodedUri);
+                                    link.setAttribute("download", `ventas_bloom_${new Date().toISOString().slice(0, 10)}.csv`);
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+
+                                } catch (error: any) {
+                                    alert("Error al exportar: " + error.message);
+                                }
+                            }}
+                            className="h-24 rounded-2xl bg-gray-50 hover:bg-gray-100 flex flex-col items-center justify-center gap-2 group transition-all"
+                        >
                             <Download className="text-gray-400 group-hover:text-black transition-colors" />
                             <span className="text-xs font-black uppercase text-gray-400 group-hover:text-black">Exportar Ventas CSV</span>
                         </button>
-                        <button className="h-24 rounded-2xl bg-red-50 hover:bg-red-100 flex flex-col items-center justify-center gap-2 group transition-all">
+                        <button
+                            onClick={() => {
+                                if (confirm("ADVERTENCIA: ¿Estás seguro de que quieres resetear la configuración local del dispositivo? Se cerrará la sesión.")) {
+                                    localStorage.clear();
+                                    sessionStorage.clear();
+                                    // Clear cookies manually if needed or let supabase handle signout
+                                    document.cookie.split(";").forEach((c) => {
+                                        document.cookie = c
+                                            .replace(/^ +/, "")
+                                            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                                    });
+                                    window.location.href = "/";
+                                }
+                            }}
+                            className="h-24 rounded-2xl bg-red-50 hover:bg-red-100 flex flex-col items-center justify-center gap-2 group transition-all"
+                        >
                             <Shield className="text-red-300 group-hover:text-red-500 transition-colors" />
                             <span className="text-xs font-black uppercase text-red-300 group-hover:text-red-500">Resetear Sistema</span>
                         </button>

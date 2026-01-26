@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useStock, useInventoryMovements, useCreateMovement, useProducts } from "@/lib/hooks/use-pos-data";
-import { Loader2, Plus, ArrowDown, ArrowUp, AlertTriangle, History, Package } from "lucide-react";
+import { Loader2, Plus, ArrowDown, ArrowUp, AlertTriangle, History, Package, Search } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function StockPage() {
@@ -10,6 +10,9 @@ export default function StockPage() {
     const { data: movements = [], isLoading: movLoading } = useInventoryMovements();
     const { data: rawProducts = [] } = useProducts(); // We need to filter for raw only locally or use another hook if products list is huge
     const createMovement = useCreateMovement();
+
+    // Filter raw products for the dropdown (assuming useProducts returns all active)
+    const rawOptions = rawProducts.filter((p: any) => p.kind === 'raw');
 
     const [activeTab, setActiveTab] = useState<'stock' | 'movements'>('stock');
     const [showModal, setShowModal] = useState(false);
@@ -19,6 +22,12 @@ export default function StockPage() {
     const [qty, setQty] = useState("");
     const [type, setType] = useState<'purchase' | 'waste' | 'adjustment'>('purchase');
     const [note, setNote] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    const filteredOptions = rawOptions.filter((p: any) =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,14 +61,15 @@ export default function StockPage() {
             setShowModal(false);
             setQty("");
             setNote("");
+            setSearchTerm("");
+            setSelectedProduct("");
             alert("Movimiento registrado ✅");
         } catch (error: any) {
             alert("Error: " + error.message);
         }
     };
 
-    // Filter raw products for the dropdown (assuming useProducts returns all active)
-    const rawOptions = rawProducts.filter((p: any) => p.kind === 'raw');
+
 
     if (stockLoading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>;
 
@@ -72,13 +82,23 @@ export default function StockPage() {
                 </div>
                 <div className="flex gap-4">
                     <button
-                        onClick={() => { setType('purchase'); setShowModal(true); }}
+                        onClick={() => {
+                            setType('purchase');
+                            setShowModal(true);
+                            setSearchTerm("");
+                            setSelectedProduct("");
+                        }}
                         className="bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-lg"
                     >
                         <Plus size={20} /> Registrar Compra
                     </button>
                     <button
-                        onClick={() => { setType('waste'); setShowModal(true); }}
+                        onClick={() => {
+                            setType('waste');
+                            setShowModal(true);
+                            setSearchTerm("");
+                            setSelectedProduct("");
+                        }}
                         className="bg-red-100 text-red-600 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:scale-105 transition-transform"
                     >
                         <ArrowDown size={20} /> Registrar Merma
@@ -125,12 +145,22 @@ export default function StockPage() {
                                 <h3 className="text-xl font-black text-gray-900 mb-1">{item.name}</h3>
                                 <div className="flex items-baseline gap-1">
                                     <span className={`text-4xl font-black ${isLow ? 'text-red-500' : 'text-gray-900'}`}>
-                                        {Number(item.current_stock).toLocaleString()}
+                                        {/* @ts-ignore */}
+                                        {(['g', 'grams', 'gr', 'gramos'].includes(item.unit?.toLowerCase())
+                                            ? Number(item.current_stock / 1000).toLocaleString()
+                                            : Number(item.current_stock).toLocaleString())}
                                     </span>
-                                    <span className="text-sm font-bold text-gray-400 uppercase">{item.unit}</span>
+                                    <span className="text-sm font-bold text-gray-400 uppercase">
+                                        {/* @ts-ignore */}
+                                        {['g', 'grams', 'gr', 'gramos'].includes(item.unit?.toLowerCase()) ? 'kg' : item.unit}
+                                    </span>
                                 </div>
                                 <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-400">
-                                    <span>Mínimo: {item.min_stock} {item.unit}</span>
+                                    <span>
+                                        Mínimo: {['g', 'grams', 'gr', 'gramos'].includes(item.unit?.toLowerCase())
+                                            ? `${item.min_stock / 1000} kg`
+                                            : `${item.min_stock} ${item.unit}`}
+                                    </span>
                                     <span>ID: {item.id.slice(0, 4)}...</span>
                                 </div>
                             </motion.div>
@@ -204,17 +234,48 @@ export default function StockPage() {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-black uppercase text-gray-400 mb-2">Producto</label>
-                                <select
-                                    value={selectedProduct}
-                                    onChange={(e) => setSelectedProduct(e.target.value)}
-                                    className="w-full h-12 px-4 rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none"
-                                    required
-                                >
-                                    <option value="">Seleccionar...</option>
-                                    {rawOptions.map((p: any) => (
-                                        <option key={p.id} value={p.id}>{p.name} ({p.unit})</option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <div className="relative">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar producto..."
+                                            value={searchTerm}
+                                            onChange={(e) => {
+                                                setSearchTerm(e.target.value);
+                                                setIsSearchOpen(true);
+                                                if (!e.target.value) setSelectedProduct("");
+                                            }}
+                                            onFocus={() => setIsSearchOpen(true)}
+                                            className="w-full h-12 pl-12 pr-4 rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none"
+                                        />
+                                    </div>
+
+                                    {isSearchOpen && searchTerm && (
+                                        <div className="absolute z-10 w-full mt-2 bg-white rounded-xl shadow-xl max-h-60 overflow-y-auto border border-gray-100">
+                                            {filteredOptions.length > 0 ? (
+                                                filteredOptions.map((p: any) => (
+                                                    <div
+                                                        key={p.id}
+                                                        onClick={() => {
+                                                            setSelectedProduct(p.id);
+                                                            setSearchTerm(p.name);
+                                                            setIsSearchOpen(false);
+                                                        }}
+                                                        className="p-3 hover:bg-gray-50 cursor-pointer flex justify-between items-center"
+                                                    >
+                                                        <span className="font-bold text-gray-900">{p.name}</span>
+                                                        <span className="text-xs text-gray-400 font-bold uppercase">{p.unit}</span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-4 text-center text-gray-400 text-sm font-bold">
+                                                    No encontrado
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div>
@@ -241,7 +302,11 @@ export default function StockPage() {
                                 />
                             </div>
 
-                            <button type="submit" className="w-full h-14 bg-black text-white rounded-2xl font-black text-lg hover:scale-[1.02] transition-transform mt-4">
+                            <button
+                                type="submit"
+                                disabled={!selectedProduct || !qty}
+                                className="w-full h-14 bg-black text-white rounded-2xl font-black text-lg hover:scale-[1.02] transition-transform mt-4 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                            >
                                 Guardar Movimiento
                             </button>
                         </form>

@@ -1,20 +1,20 @@
-import { HeroSection } from "@/components/Hero/HeroSection";
-import { AboutSection } from "@/components/About/AboutSection";
-import { OfferSection } from "@/components/Landing/OfferSection";
-import { SpacesSection } from "@/components/Landing/SpacesSection";
-import { BigImageSection } from "@/components/Landing/BigImageSection";
-import { ContactSection } from "@/components/Contact/ContactSection";
-import { Footer } from "@/components/Landing/Footer";
+import dynamic from 'next/dynamic';
+import { Hero } from "@/components/Landing/Hero";
+
+const AboutSection = dynamic(() => import("@/components/About/AboutSection").then(mod => mod.AboutSection));
+const OfferSection = dynamic(() => import("@/components/Landing/OfferSection").then(mod => mod.OfferSection));
+const SpacesSection = dynamic(() => import("@/components/Landing/SpacesSection").then(mod => mod.SpacesSection));
+const ContactSection = dynamic(() => import("@/components/Contact/ContactSection").then(mod => mod.ContactSection));
+const Footer = dynamic(() => import("@/components/Landing/Footer").then(mod => mod.Footer));
 import Link from "next/link";
 
 export default function Home() {
   return (
     <main className="min-h-screen">
-      <HeroSection />
+      <Hero />
       <AboutSection />
       <OfferSection />
       <SpacesSection />
-      <BigImageSection />
       <ContactSection />
       <Footer />
 

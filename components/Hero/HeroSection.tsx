@@ -33,7 +33,7 @@ export function HeroSection() {
                         alt="Café con arte"
                         fill
                         className="hero-image"
-                        priority
+                        sizes="(max-width: 768px) 100vw, 20vw"
                     />
                 </div>
 
@@ -45,7 +45,7 @@ export function HeroSection() {
                         alt="Medialunas"
                         fill
                         className="hero-image"
-                        priority
+                        sizes="(max-width: 768px) 100vw, 20vw"
                     />
                 </div>
 
@@ -57,7 +57,7 @@ export function HeroSection() {
                         alt="Comida casera"
                         fill
                         className="hero-image"
-                        priority
+                        sizes="(max-width: 768px) 100vw, 20vw"
                     />
                 </div>
 
@@ -69,7 +69,7 @@ export function HeroSection() {
                         alt="Ambiente familiar"
                         fill
                         className="hero-image"
-                        priority
+                        sizes="(max-width: 768px) 100vw, 20vw"
                     />
                 </div>
 
@@ -81,7 +81,7 @@ export function HeroSection() {
                         alt="Nuestro espacio"
                         fill
                         className="hero-image"
-                        priority
+                        sizes="(max-width: 768px) 100vw, 20vw"
                     />
                 </div>
             </div>

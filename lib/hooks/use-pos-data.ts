@@ -29,6 +29,23 @@ export function useCategories() {
                 .select('*')
                 .order('name');
             if (error) throw error;
+
+            // Sort Drinks/Cafeteria to the end
+            data.sort((a, b) => {
+                const isDrink = (name: string) => {
+                    const n = name.toLowerCase();
+                    return n.includes('bebida') || n.includes('cafeter') || n.includes('jugo') || n.includes('licuado');
+                };
+
+                const aIsDrink = isDrink(a.name);
+                const bIsDrink = isDrink(b.name);
+
+                if (aIsDrink && !bIsDrink) return 1;
+                if (!aIsDrink && bIsDrink) return -1;
+
+                return a.name.localeCompare(b.name);
+            });
+
             return data;
         },
         staleTime: 1000 * 60 * 60, // 1 hour
