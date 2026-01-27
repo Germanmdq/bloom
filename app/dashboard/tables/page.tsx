@@ -7,11 +7,7 @@ import { OrderSheet } from "@/components/dashboard/OrderSheet";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 
-const initialTables: Table[] = Array.from({ length: 30 }, (_, i) => ({
-    id: i + 1,
-    status: "FREE",
-    total: 0
-}));
+
 
 export default function TablesPage() {
     const [tables, setTables] = useState<Table[]>([]);

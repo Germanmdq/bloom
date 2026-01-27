@@ -29,6 +29,23 @@ export function useCategories() {
                 .select('*')
                 .order('name');
             if (error) throw error;
+
+            // Sort Drinks/Cafeteria to the end
+            data.sort((a, b) => {
+                const isDrink = (name: string) => {
+                    const n = name.toLowerCase();
+                    return n.includes('bebida') || n.includes('cafeter') || n.includes('jugo') || n.includes('licuado');
+                };
+
+                const aIsDrink = isDrink(a.name);
+                const bIsDrink = isDrink(b.name);
+
+                if (aIsDrink && !bIsDrink) return 1;
+                if (!aIsDrink && bIsDrink) return -1;
+
+                return a.name.localeCompare(b.name);
+            });
+
             return data;
         },
         staleTime: 1000 * 60 * 60, // 1 hour
@@ -84,5 +101,76 @@ export function useKitchenTickets() {
             return data;
         },
         staleTime: 1000 * 60, // 1 minute
+    });
+}
+
+export function useStock() {
+    return useQuery({
+        queryKey: ['stock'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('v_stock')
+                .select('*')
+                .order('name');
+            if (error) throw error;
+            return data;
+        },
+        staleTime: 0, // Always fetch fresh stock
+    });
+}
+
+export function useInventoryMovements() {
+    return useQuery({
+        queryKey: ['inventory_movements'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('inventory_movements')
+                .select('*, products(name, unit)')
+                .order('created_at', { ascending: false })
+                .limit(50);
+            if (error) throw error;
+            return data;
+        },
+    });
+}
+
+export function useCreateMovement() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (movement: any) => {
+            const { data, error } = await supabase
+                .from('inventory_movements')
+                .insert([movement])
+                .select();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['stock'] });
+            queryClient.invalidateQueries({ queryKey: ['inventory_movements'] });
+        }
+    });
+}
+
+export function useUserRole() {
+    return useQuery({
+        queryKey: ['user_role'],
+        queryFn: async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return 'WAITER'; // Default safe fallback
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            if (error) {
+                // If profile doesn't exist yet, return waiter/default
+                return 'WAITER';
+            }
+            return data?.role || 'WAITER';
+        },
+        staleTime: 1000 * 60 * 10, // Cache for 10 min
     });
 }

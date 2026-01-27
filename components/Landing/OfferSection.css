@@ -1,0 +1,78 @@
+.offer-section {
+    padding: 8rem 0;
+    background: linear-gradient(135deg, var(--color-terracota), var(--color-salmon));
+    color: white;
+}
+
+.offer-section .container-wide {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 4rem;
+}
+
+.offer-section .offer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8rem;
+    align-items: center;
+}
+
+.offer-section .offer-images {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+.offer-section .image-box {
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    transition: transform 0.4s ease;
+}
+
+.offer-section .image-box:hover {
+    transform: translateY(-10px);
+}
+
+.offer-section .image-box img {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+}
+
+.offer-section .offer-text .intro {
+    font-size: 2rem;
+    font-style: italic;
+    opacity: 0.9;
+    margin-bottom: 1rem;
+}
+
+.offer-section .offer-text h2 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 3rem;
+    font-family: 'Playfair Display', serif;
+}
+
+.offer-section .offer-text .description {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    margin-bottom: 2rem;
+    opacity: 0.95;
+}
+
+.offer-section .offer-text .description:last-child {
+    margin-bottom: 0;
+}
+
+@media (max-width: 1024px) {
+    .offer-section .offer-grid {
+        grid-template-columns: 1fr;
+        gap: 4rem;
+    }
+
+    .offer-section .offer-images {
+        grid-template-columns: 1fr;
+    }
+}
