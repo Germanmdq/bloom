@@ -25,13 +25,12 @@
 }
 
 .contact-section .contact-info {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 4rem;
     max-width: 1400px;
     margin: 0 auto 4rem;
-    justify-content: center;
-    justify-items: center;
 }
 
 .contact-section .info-item h3 {
