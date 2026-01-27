@@ -19,7 +19,7 @@ export function OfferSection() {
                         </div>
                     </div>
                     <div>
-                        <p className="text-2xl italic opacity-90 mb-4">En Bloom,</p>
+                        <p className="text-2xl italic opacity-90 mb-4">En <span className="font-poppins">Bloom</span>,</p>
                         <h2 className="text-5xl font-bold mb-8 leading-tight font-serif">
                             cada plato y cada café se preparan con el mismo amor que pondríamos en nuestra propia casa
                         </h2>

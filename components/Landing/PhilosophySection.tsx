@@ -43,7 +43,7 @@ export function PhilosophySection() {
                             el café es un arte y cada taza es una experiencia única
                         </h2>
                         <p className="text-[1.2rem] leading-[1.8] mb-8 text-[#A1887F]">
-                            En Bloom seleccionamos meticulosamente granos de las mejores
+                            En <span className="font-poppins">Bloom</span> seleccionamos meticulosamente granos de las mejores
                             regiones cafeteras del mundo. Cada blend es una creación
                             cuidadosa que busca resaltar las notas y sabores únicos de
                             cada origen.

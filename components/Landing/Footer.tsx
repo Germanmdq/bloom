@@ -6,7 +6,7 @@ export function Footer() {
             <div className="max-w-6xl mx-auto px-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-16 pb-12 border-b border-[#F5E6D3]/20 mb-8">
                     <div>
-                        <h3 className="text-4xl font-bold text-[#E8A387] font-serif mb-2">BLOOM</h3>
+                        <h3 className="text-4xl font-bold text-[#E8A387] font-serif mb-2 font-poppins">BLOOM</h3>
                         <p className="text-lg mb-4">Coffee & More</p>
                         <p className="text-base italic opacity-80">Una cafetería familiar</p>
                     </div>

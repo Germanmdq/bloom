@@ -17,7 +17,7 @@ export function Hero() {
     const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
     return (
-        <div ref={ref} className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-black">
+        <div ref={ref} className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-black font-poppins">
             {/* Top Navigation */}
             <nav className="absolute top-0 left-0 w-full z-50 flex justify-between items-center px-8 py-6">
                 <div className="font-serif text-white text-xl font-bold tracking-widest relative z-50">BLOOM</div>

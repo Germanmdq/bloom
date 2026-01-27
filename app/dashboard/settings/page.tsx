@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, Store, Receipt, Sliders, Database, Printer, Bell, Shield, Download } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -16,12 +16,24 @@ export default function SettingsPage() {
     const [stockTracking, setStockTracking] = useState(true);
     const [printTickets, setPrintTickets] = useState(true);
 
+    // Load settings from local storage
+    useEffect(() => {
+        const storedPhone = localStorage.getItem("bloom_whatsapp_number");
+        if (storedPhone) setPhone(storedPhone);
+
+        const storedPrinter = localStorage.getItem("bloom_printer_ip");
+        if (storedPrinter) {
+            // Just for consistency if we wanted to show it
+        }
+    }, []);
+
     const handleSave = () => {
         setIsLoading(true);
-        // Simulate API call
+        // Simulate API call and save to LocalStorage
         setTimeout(() => {
+            localStorage.setItem("bloom_whatsapp_number", phone);
             setIsLoading(false);
-            alert("Ajustes guardados correctamente (Simulación)");
+            alert("Ajustes guardados correctamente.");
         }, 1000);
     };
 

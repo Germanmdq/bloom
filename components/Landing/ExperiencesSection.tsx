@@ -35,7 +35,7 @@ export function ExperiencesSection() {
         <section className="bg-[#EFEBE9] py-32" id="experiencias">
             <div className="container mx-auto px-8 max-w-[1200px]">
                 <h2 className="text-[4rem] text-center mb-20 font-display text-[#3E2723] tracking-widest">
-                    La Experiencia Bloom
+                    La Experiencia <span className="font-poppins">Bloom</span>
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">

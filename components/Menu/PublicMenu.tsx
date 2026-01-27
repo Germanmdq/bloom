@@ -56,7 +56,13 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
             return;
         }
 
-        const PHONE_NUMBER = "5492231234567"; // Customize this
+        const storedPhone = localStorage.getItem("bloom_whatsapp_number");
+        const PHONE_NUMBER = storedPhone || "5492231234567";
+
+        if (!storedPhone) {
+            // Optional: Warn user they are using the default number
+            console.warn("Using default WhatsApp number. Configure in Settings.");
+        }
 
         let message = `Hola BLOOM! Quiero hacer un pedido: \n\n`;
         cart.forEach(item => {
