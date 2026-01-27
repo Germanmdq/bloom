@@ -8,13 +8,13 @@ export function OfferSection() {
             <div className="max-w-7xl mx-auto px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                     <div className="grid grid-cols-3 gap-4">
-                        <div className="relative rounded-xl overflow-hidden h-96 shadow-2xl hover:-translate-y-2 transition-transform duration-300">
+                        <div className="relative rounded-2xl overflow-hidden h-96 shadow-2xl hover:-translate-y-2 transition-transform duration-300">
                             <Image src="/images/pasta.jpg" alt="Pasta casera" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
                         </div>
-                        <div className="relative rounded-xl overflow-hidden h-96 shadow-2xl hover:-translate-y-2 transition-transform duration-300 translate-y-12">
+                        <div className="relative rounded-2xl overflow-hidden h-96 shadow-2xl hover:-translate-y-2 transition-transform duration-300 translate-y-12">
                             <Image src="/images/alfajor.jpg" alt="Alfajor artesanal" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
                         </div>
-                        <div className="relative rounded-xl overflow-hidden h-96 shadow-2xl hover:-translate-y-2 transition-transform duration-300">
+                        <div className="relative rounded-2xl overflow-hidden h-96 shadow-2xl hover:-translate-y-2 transition-transform duration-300">
                             <Image src="/images/wrap1.jpg" alt="Wrap fresco" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
                         </div>
                     </div>

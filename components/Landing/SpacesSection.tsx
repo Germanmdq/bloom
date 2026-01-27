@@ -18,7 +18,7 @@ export function SpacesSection() {
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {SPACES.map((space, i) => (
-                        <article key={i} className={`relative bg-white overflow-hidden hover:-translate-y-2 transition-all duration-300 shadow-lg group ${space.featured ? 'lg:col-span-2 lg:grid lg:grid-cols-2' : ''}`}>
+                        <article key={i} className={`relative bg-white overflow-hidden hover:-translate-y-2 transition-all duration-300 shadow-lg rounded-2xl group ${space.featured ? 'lg:col-span-2 lg:grid lg:grid-cols-2' : ''}`}>
                             <div className={`relative h-96 w-full ${space.featured ? 'h-full' : ''}`}>
                                 <Image
                                     src={space.image}
