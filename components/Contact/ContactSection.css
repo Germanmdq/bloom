@@ -30,6 +30,8 @@
     gap: 4rem;
     max-width: 1400px;
     margin: 0 auto 4rem;
+    justify-content: center;
+    justify-items: center;
 }
 
 .contact-section .info-item h3 {
