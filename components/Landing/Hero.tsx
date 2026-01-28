@@ -2,7 +2,7 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
-import Image from "next/image";
+
 
 import Link from "next/link";
 
@@ -86,35 +86,19 @@ export function Hero() {
                 </div>
             </nav>
             <motion.div style={{ y, opacity }} className="absolute inset-0 z-0">
-                <Image
-                    src="/images/hero-new.jpg"
-                    alt="Bloom Coffee"
-                    fill
-                    className="object-cover opacity-80"
-                    priority
-                />
+                <div className="absolute inset-0 w-full h-full">
+                    <iframe
+                        src="https://customer-ii0xa5crj23jlkm0.cloudflarestream.com/1c3f4cc54fddfab097bc8aa3e610018c/iframe?autoplay=true&loop=true&muted=true&controls=false&preload=true"
+                        className="w-full h-full object-cover"
+                        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                        allowFullScreen={false}
+                        style={{ border: 'none', pointerEvents: 'none', transform: 'scale(1.1)' }}
+                    ></iframe>
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
             </motion.div>
 
-            <div className="relative z-10 text-center text-white p-4 max-w-4xl mx-auto flex flex-col items-center">
-                <motion.h1
-                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-8xl md:text-9xl font-semibold tracking-tighter mb-4 drop-shadow-2xl relative"
-                >
-                    <span className="absolute inset-0 blur-2xl bg-black/50 rounded-full scale-125 -z-10" />
-                    BLOOM
-                </motion.h1>
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4, duration: 1 }}
-                    className="text-xl md:text-2xl font-light tracking-widest text-white/90 drop-shadow-lg font-serif"
-                >
-                    Saborea lo Extraordinario
-                </motion.p>
-            </div>
+
         </div>
     );
 }

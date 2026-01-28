@@ -1,67 +1,68 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
 import { useEffect } from 'react';
-import { useWhatsAppStore } from '@/lib/store/whatsappStore';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { createClient } from '../supabase/client';
+import { useWhatsAppStore, WhatsAppOrder, WhatsAppOrderStatus } from '../store/whatsappStore';
+import { toast } from 'sonner';
+
+const NOTIFICATION_SOUND_URL = '/notification.mp3'; // Ensure you add a sound file to public folder or use an external URL
 
 export function useWhatsAppPedidos() {
     const supabase = createClient();
     const queryClient = useQueryClient();
-    const { addPedido, updatePedido } = useWhatsAppStore();
+    const { setPedidos, addPedido, updatePedido, pedidos } = useWhatsAppStore();
 
-    // Query para obtener pedidos
-    const { data: pedidos, isLoading } = useQuery({
-        queryKey: ['pedidos-whatsapp'],
+    // --- Fetch Initial Data ---
+    const { data, isLoading, error } = useQuery({
+        queryKey: ['whatsapp_pedidos'],
         queryFn: async () => {
             const { data, error } = await supabase
                 .from('pedidos_whatsapp')
                 .select('*')
-                .order('timestamp', { ascending: false })
+                .order('created_at', { ascending: false })
                 .limit(50);
 
             if (error) throw error;
-            return data;
+            return data as WhatsAppOrder[];
         },
-        refetchInterval: 30000, // Refetch cada 30 segundos
+        staleTime: 1000 * 60 * 5, // 5 minutes
     });
 
-    // Suscripción en tiempo real
+    // Sync with store
+    useEffect(() => {
+        if (data) {
+            setPedidos(data);
+        }
+    }, [data, setPedidos]);
+
+    // --- Realtime Subscription ---
     useEffect(() => {
         const channel = supabase
-            .channel('pedidos-whatsapp-changes')
+            .channel('whatsapp-realtime')
             .on(
                 'postgres_changes',
                 {
-                    event: 'INSERT',
+                    event: '*',
                     schema: 'public',
-                    table: 'pedidos_whatsapp'
+                    table: 'pedidos_whatsapp',
                 },
-                (payload) => {
-                    console.log('New order received:', payload.new);
-                    addPedido(payload.new as any);
-                    queryClient.invalidateQueries({ queryKey: ['pedidos-whatsapp'] });
+                (payload: any) => {
+                    console.log('🔔 Realtime change:', payload);
 
-                    // Notificación del navegador
-                    if ('Notification' in window && Notification.permission === 'granted') {
-                        new Notification('Nuevo pedido de WhatsApp!', {
-                            body: `Pedido de ${payload.new.nombre_cliente}`,
-                            // icon: '/icon-whatsapp.png',
-                            tag: `pedido-${payload.new.id}`
-                        });
+                    if (payload.eventType === 'INSERT') {
+                        const newOrder = payload.new as WhatsAppOrder;
+                        addPedido(newOrder);
+
+                        // Play sound
+                        const audio = new Audio(NOTIFICATION_SOUND_URL);
+                        audio.play().catch(e => console.log('Audio play failed', e));
+
+                        // Show toast
+                        toast.success(`Nuevo pedido de ${newOrder.nombre_cliente || newOrder.numero_cliente}`);
                     }
-
-                    // Audio could be added here
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'pedidos_whatsapp'
-                },
-                (payload) => {
-                    updatePedido(payload.new.id, payload.new as any);
-                    queryClient.invalidateQueries({ queryKey: ['pedidos-whatsapp'] });
+                    else if (payload.eventType === 'UPDATE') {
+                        const updatedOrder = payload.new as WhatsAppOrder;
+                        updatePedido(updatedOrder.id, updatedOrder);
+                    }
                 }
             )
             .subscribe();
@@ -69,34 +70,39 @@ export function useWhatsAppPedidos() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [addPedido, updatePedido, queryClient, supabase]);
+    }, [supabase, addPedido, updatePedido]);
 
-    // Mutation para cambiar estado
-    const cambiarEstadoMutation = useMutation({
-        mutationFn: async ({ id, estado }: { id: number; estado: string }) => {
+    // --- Mutations ---
+    const updateStatusMutation = useMutation({
+        mutationFn: async ({ id, status }: { id: number; status: WhatsAppOrderStatus }) => {
             const { error } = await supabase
                 .from('pedidos_whatsapp')
-                .update({ estado })
+                .update({ estado: status })
                 .eq('id', id);
 
             if (error) throw error;
-
-            // Notificar al servicio de WhatsApp
-            await fetch('http://localhost:3001/api/update-pedido', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pedidoId: id, estado })
-            });
+            return { id, status };
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['pedidos-whatsapp'] });
+        onSuccess: ({ id, status }) => {
+            updatePedido(id, { estado: status });
+            toast.success(`Estado actualizado a ${status}`);
+
+            // If status is 'listo' or 'confirmado', we might want to trigger a WhatsApp message
+            // This is ideally handled by the database trigger calling an Edge Function 
+            // or the Node service polling/listening (which we haven't implemented for outbound status yet, 
+            // but the service has an endpoint ready for it)
+        },
+        onError: (err) => {
+            toast.error('Error actualizando estado');
+            console.error(err);
         }
     });
 
     return {
         pedidos,
         isLoading,
-        cambiarEstado: cambiarEstadoMutation.mutate,
-        isUpdating: cambiarEstadoMutation.isPending
+        error,
+        updateStatus: updateStatusMutation.mutate,
+        isUpdating: updateStatusMutation.isPending
     };
 }
