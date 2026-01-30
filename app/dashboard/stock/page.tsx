@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStock, useInventoryMovements, useCreateMovement, useProducts } from "@/lib/hooks/use-pos-data";
 import { Loader2, Plus, ArrowDown, ArrowUp, AlertTriangle, History, Package, Search } from "lucide-react";
 import { motion } from "framer-motion";
@@ -24,6 +24,25 @@ export default function StockPage() {
     const [note, setNote] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    // Main View Search
+    const [viewSearch, setViewSearch] = useState("");
+
+    // F1 Shortcut
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'F1') {
+                e.preventDefault();
+                document.getElementById('stock-search')?.focus();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    const filteredStock = stock.filter((item: any) =>
+        item.name.toLowerCase().includes(viewSearch.toLowerCase())
+    );
 
     const filteredOptions = rawOptions.filter((p: any) =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -106,24 +125,40 @@ export default function StockPage() {
                 </div>
             </header>
 
-            <div className="flex gap-8 mb-8 border-b border-gray-200">
-                <button
-                    onClick={() => setActiveTab('stock')}
-                    className={`pb-4 px-2 font-bold text-lg transition-all border-b-4 ${activeTab === 'stock' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-                >
-                    Stock Actual
-                </button>
-                <button
-                    onClick={() => setActiveTab('movements')}
-                    className={`pb-4 px-2 font-bold text-lg transition-all border-b-4 ${activeTab === 'movements' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-                >
-                    Movimientos Recientes
-                </button>
+            <div className="flex items-center justify-between mb-8 border-b border-gray-200 pb-2 gap-4">
+                <div className="flex gap-8 translate-y-[1px]">
+                    <button
+                        onClick={() => setActiveTab('stock')}
+                        className={`pb-4 px-2 font-bold text-lg transition-all border-b-4 ${activeTab === 'stock' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                    >
+                        Stock Actual
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('movements')}
+                        className={`pb-4 px-2 font-bold text-lg transition-all border-b-4 ${activeTab === 'movements' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                    >
+                        Movimientos Recientes
+                    </button>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative mb-2 w-full max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+                    <input
+                        id="stock-search"
+                        type="text"
+                        value={viewSearch}
+                        onChange={(e) => setViewSearch(e.target.value)}
+                        placeholder="Buscar en stock (F1)..."
+                        className="w-full h-10 pl-10 pr-4 rounded-xl bg-gray-50 hover:bg-white border-transparent focus:bg-white focus:ring-2 ring-black/5 font-bold outline-none text-sm transition-all"
+                        autoComplete="off"
+                    />
+                </div>
             </div>
 
             {activeTab === 'stock' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {stock.map((item: any) => {
+                    {filteredStock.map((item: any) => {
                         const isLow = item.current_stock <= item.min_stock;
                         return (
                             <motion.div

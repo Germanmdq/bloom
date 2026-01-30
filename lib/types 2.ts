@@ -40,7 +40,6 @@ export type Table = {
     id: number;
     status: TableStatus;
     total: number;
-    order_type?: 'LOCAL' | 'DELIVERY';
 };
 
 export type PaymentMethod = 'CASH' | 'CARD' | 'MERCADO_PAGO';

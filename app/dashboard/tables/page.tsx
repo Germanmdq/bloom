@@ -57,7 +57,7 @@ export default function TablesPage() {
 
     return (
         <div className="relative min-h-full">
-            {/* Order Sheet Overlay */}
+            {/* OrderSheet Overlay */}
             {selectedTable && (
                 <div className="fixed inset-0 z-50 overflow-hidden">
                     <motion.div
@@ -145,6 +145,13 @@ export default function TablesPage() {
 
                             {table.status === 'OCCUPIED' && (
                                 <div className="mt-auto">
+                                    <div className="mb-2">
+                                        {table.order_type === 'DELIVERY' ? (
+                                            <span className="inline-block px-2 py-1 rounded-md bg-purple-100 text-purple-700 text-[10px] font-black uppercase tracking-widest shadow-sm">Delivery</span>
+                                        ) : (
+                                            <span className="inline-block px-2 py-1 rounded-md bg-black/5 text-black/40 text-[10px] font-black uppercase tracking-widest">Local</span>
+                                        )}
+                                    </div>
                                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total</span>
                                     <div className="text-2xl font-bold text-gray-900">${table.total.toLocaleString("es-AR")}</div>
                                 </div>

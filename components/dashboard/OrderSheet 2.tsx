@@ -27,12 +27,12 @@ function ShortcutBtn({ label, subLabel, icon, color, onClick }: ShortcutBtnProps
     return (
         <button
             onClick={onClick}
-            className={`${color} h-16 px-6 rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-lg group`}
+            className={`${color} h-10 px-4 rounded-full flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-sm group`}
         >
-            <div className="scale-125">{icon}</div>
-            <div className="flex flex-col items-start leading-none gap-0.5">
-                <span className="text-[10px] font-black uppercase text-black/40">{subLabel}</span>
-                <span className="text-lg font-bold text-black">{label}</span>
+            {icon}
+            <div className="flex flex-col items-start leading-none">
+                <span className="text-[10px] font-black uppercase text-black/50">{subLabel}</span>
+                <span className="text-xs font-bold text-black">{label}</span>
             </div>
         </button>
     );
@@ -64,7 +64,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
     const [isGeneratingQR, setIsGeneratingQR] = useState(false);
     const [productSearch, setProductSearch] = useState("");
     const [waiters, setWaiters] = useState<any[]>([]);
-    const [orderType, setOrderType] = useState<'LOCAL' | 'DELIVERY'>('LOCAL');
 
     // AI Suggestions State
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -76,15 +75,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
     useEffect(() => {
         const fetchExtras = async () => {
             const { data: waiterData } = await supabase.from('profiles').select('id, full_name').eq('role', 'WAITER');
-            const { data: tableData } = await supabase.from('salon_tables').select('total, order_type').eq('id', tableId).single();
+            const { data: tableData } = await supabase.from('salon_tables').select('total').eq('id', tableId).single();
             if (waiterData) {
                 setWaiters(waiterData);
                 if (waiterData.length > 0) setSelectedWaiter(waiterData[0].id);
             }
-            if (tableData) {
-                setExtraTotal(Number(tableData.total) || 0);
-                if (tableData.order_type) setOrderType(tableData.order_type);
-            }
+            if (tableData) setExtraTotal(Number(tableData.total) || 0);
         };
         fetchExtras();
     }, [tableId]);
@@ -150,7 +146,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
 
     // SYNC TABLE STATUS (Debounced)
     useEffect(() => {
-        if (cart.length === 0 && extraTotal === 0) return;
+        if (cart.length === 0) return;
 
         const syncTable = async () => {
             const currentTotal = useOrderStore.getState().getTotal() + extraTotal;
@@ -158,15 +154,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                 .from('salon_tables')
                 .update({
                     status: 'OCCUPIED',
-                    total: currentTotal,
-                    order_type: orderType
+                    total: currentTotal
                 })
                 .eq('id', tableId);
         };
 
         const timer = setTimeout(syncTable, 2000); // Update DB every 2s after changes
         return () => clearTimeout(timer);
-    }, [cart, extraTotal, tableId, supabase, orderType]);
+    }, [cart, extraTotal, tableId, supabase]);
 
     const subtotal = useOrderStore(state => state.getTotal());
     const total = subtotal + extraTotal;
@@ -177,12 +172,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key.startsWith('F')) e.preventDefault();
             switch (e.key) {
-                case 'F1': sendToKitchen(); break;
-                case 'F2': setShowReceiptModal(true); break;
-                case 'F3': document.getElementById('product-search')?.focus(); break;
-                case 'F4': document.getElementById('waiter-selector')?.focus(); break; // Moved waiter here
+                case 'F1': document.getElementById('product-search')?.focus(); break;
+                case 'F2': document.getElementById('client-input')?.focus(); break;
+                case 'F3': document.getElementById('waiter-selector')?.focus(); break;
+                case 'F4': finishOrder(); break;
                 case 'F5': onClose(); break;
-                // F7, F11 deprecated/moved
+                case 'F7': setShowReceiptModal(true); break;
+                case 'F11': sendToKitchen(); break;
                 case 'F12':
                     if (total > 0 && !isFinishing) {
                         showPaymentModal ? finishOrder() : setShowPaymentModal(true);
@@ -311,13 +307,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
     }
 
     const displayProducts = productSearch
-        ? products.filter((p: any) => {
-            const term = productSearch.toLowerCase().trim();
-            if (!term) return true;
-            return p.name.toLowerCase().includes(term) ||
-                p.description?.toLowerCase().includes(term) ||
-                categories.find((c: any) => c.id === p.category_id)?.name.toLowerCase().includes(term);
-        })
+        ? products.filter((p: any) => p.name.toLowerCase().includes(productSearch.toLowerCase()))
         : products.filter((p: any) => p.category_id === activeCategory);
 
     return (
@@ -330,10 +320,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                         <span className="font-black text-black uppercase tracking-tighter text-2xl">Mesa Bar {tableId}</span>
                     </div>
                     <div className="flex items-center gap-6">
-                        <div className="flex bg-black/5 rounded-full p-1">
-                            <button onClick={() => setOrderType('LOCAL')} className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all ${orderType === 'LOCAL' ? 'bg-black text-[#FFD60A]' : 'text-black/50 hover:bg-black/5'}`}>Local</button>
-                            <button onClick={() => setOrderType('DELIVERY')} className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all ${orderType === 'DELIVERY' ? 'bg-black text-[#FFD60A]' : 'text-black/50 hover:bg-black/5'}`}>Delivery</button>
-                        </div>
                         <div className="text-right">
                             <p className="text-[9px] font-black text-black/40 uppercase mb-0.5">Estado Venta</p>
                             <span className="bg-[#E5C209] text-black/80 px-3 py-1 rounded-full text-[10px] font-black uppercase ring-1 ring-black/5">Abierta</span>
@@ -344,7 +330,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
 
                 {/* CONTROLS */}
                 <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-4 flex-1">
+                    <div className="flex items-center gap-4">
                         <div className="flex flex-col">
                             <span className="text-[9px] font-black text-black/40 uppercase mb-1 ml-1">Comprobante (F7)</span>
                             <select value={invoiceType} onChange={(e) => setInvoiceType(e.target.value)} className="bg-white/50 hover:bg-white border-none rounded-lg px-3 py-2 text-sm font-bold w-32 outline-none">
@@ -352,44 +338,26 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                             </select>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-black/40 uppercase mb-1 ml-1">Mozo (F4)</span>
+                            <span className="text-[9px] font-black text-black/40 uppercase mb-1 ml-1">Mozo (F3)</span>
                             <select id="waiter-selector" value={selectedWaiter} onChange={(e) => setSelectedWaiter(e.target.value)} className="bg-white/50 hover:bg-white border-none rounded-lg px-3 py-2 text-sm font-bold w-40 outline-none">
                                 {waiters.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
                             </select>
                         </div>
-                        <div className="flex flex-col flex-1 max-w-sm">
-                            <span className="text-[9px] font-black text-black/40 uppercase mb-1 ml-1">Buscador (F3)</span>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" size={14} />
-                                <input
-                                    id="product-search"
-                                    type="text"
-                                    value={productSearch}
-                                    onChange={(e) => setProductSearch(e.target.value)}
-                                    placeholder="Buscar producto..."
-                                    className="w-full bg-white/50 hover:bg-white border-none rounded-lg pl-9 pr-3 py-2 text-sm font-bold outline-none focus:ring-2 ring-black/10 transition-all"
-                                    autoComplete="off"
-                                    autoFocus
-                                />
-                            </div>
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-black/40 uppercase mb-1 ml-1">Notas</span>
+                            <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} className="bg-white/50 hover:bg-white border-none rounded-lg px-3 py-2 text-sm font-bold w-56 outline-none" placeholder="..." />
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4 pl-6 border-l border-black/5">
-                        <ShortcutBtn
-                            subLabel="F2"
-                            label="Ticket"
-                            icon={<Receipt size={20} />}
-                            color="bg-white/60 hover:bg-white"
-                            onClick={() => setShowReceiptModal(true)}
-                        />
-                        <ShortcutBtn
-                            subLabel="F1"
-                            label="Enviar"
-                            icon={<Send size={20} />}
-                            color="bg-white/60 hover:bg-white"
-                            onClick={sendToKitchen}
-                        />
+                    <div className="flex items-center gap-2 pl-6 border-l border-black/5">
+                        <ShortcutBtn subLabel="F1" label="Buscar" icon={<LayoutGrid size={16} />} color="bg-white/40 hover:bg-white" onClick={() => document.getElementById('product-search')?.focus()} />
+                        <ShortcutBtn subLabel="F7" label="Ticket" icon={<Receipt size={16} />} color="bg-white/40 hover:bg-white" onClick={() => setShowReceiptModal(true)} />
+                        <ShortcutBtn subLabel="F11" label="Enviar" icon={<Send size={16} />} color="bg-white/40 hover:bg-white" onClick={sendToKitchen} />
+                        <div className="w-[1px] h-8 bg-black/10 mx-2 self-center"></div>
+                        <button onClick={() => setShowPaymentModal(true)} className="h-10 px-6 rounded-full bg-black text-[#FFD60A] hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-lg">
+                            <CreditCard size={18} />
+                            <div className="flex flex-col items-start leading-none"><span className="text-[9px] font-black uppercase opacity-60">F12</span><span className="text-xs font-bold">Cobrar</span></div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -421,24 +389,28 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                         ))}
                     </div>
                     <div className="p-6 bg-gray-900 text-white mt-auto">
-                        <div className="flex flex-col gap-1 mb-6">
-                            <label className="text-[10px] font-black uppercase text-white/40">Notas de Cocina</label>
-                            <input
-                                type="text"
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                className="bg-white/10 border-none rounded-xl px-4 py-2 text-sm font-bold text-white outline-none focus:ring-2 ring-[#FFD60A]/50 placeholder:text-white/20"
-                                placeholder="Escribe notas aquí..."
-                            />
+                        <div className="grid grid-cols-2 gap-4 mb-6 border-b border-white/10 pb-6">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-black uppercase text-white/40">Producto (F1)</label>
+                                <input
+                                    id="product-search"
+                                    type="text"
+                                    value={productSearch}
+                                    onChange={(e) => setProductSearch(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && displayProducts.length > 0) {
+                                            handleAddToCart(displayProducts[0]);
+                                            setProductSearch("");
+                                        }
+                                    }}
+                                    placeholder="Buscar..."
+                                    className="bg-white/10 border-none rounded-xl px-4 py-2 text-sm font-bold text-white outline-none focus:ring-2 ring-[#FFD60A]/50"
+                                    autoComplete="off"
+                                />
+                            </div>
                         </div>
                         <div className="flex justify-between items-center mb-2"><span className="text-[10px] font-black uppercase text-white/40 tracking-widest">Subtotal</span><span className="font-bold">${subtotal.toLocaleString()}</span></div>
-                        <div className="flex justify-between items-center gap-4">
-                            <div><p className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em] mb-1">Total</p><p className="text-4xl font-black tracking-tighter text-[#FFD60A]">${total.toLocaleString()}</p></div>
-                            <button onClick={() => setShowPaymentModal(true)} className="h-14 px-6 rounded-2xl bg-[#FFD60A] text-black hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-lg flex-1 justify-center">
-                                <CreditCard size={20} />
-                                <div className="flex flex-col items-start leading-none"><span className="text-[9px] font-black uppercase opacity-60">F12</span><span className="text-sm font-bold">Cobrar</span></div>
-                            </button>
-                        </div>
+                        <div className="flex justify-between items-end gap-6"><div><p className="text-[10px] font-black uppercase text-white/40 tracking-[0.2em] mb-1">Total</p><p className="text-5xl font-black tracking-tighter text-[#FFD60A]">${total.toLocaleString()}</p></div></div>
                     </div>
                 </div>
 
@@ -495,8 +467,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
 
                         {(activeCategory || productSearch) && (
                             <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-12">
-                                {displayProducts.map((item: any) => (
-                                    <button key={item.id} onClick={() => handleAddToCart(item)} className="aspect-square flex flex-col items-center justify-center p-6 rounded-[2.5rem] bg-white border-2 border-transparent hover:border-black shadow-sm hover:shadow-2xl transition-all group">
+                                {displayProducts.map((item: any, idx: number) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => handleAddToCart(item)}
+                                        className={`aspect-square flex flex-col items-center justify-center p-6 rounded-[2.5rem] bg-white border-2 hover:border-black shadow-sm hover:shadow-2xl transition-all group relative
+                                            ${productSearch && idx === 0 ? 'border-black ring-2 ring-black/5' : 'border-transparent'}
+                                        `}
+                                    >
+                                        {productSearch && idx === 0 && (
+                                            <div className="absolute top-4 right-4 bg-black text-[#FFD60A] text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">
+                                                Enter
+                                            </div>
+                                        )}
                                         <h4 className="font-bold text-gray-900 text-sm mb-2 group-hover:scale-110 transition-transform">{item.name}</h4>
                                         <p className="text-[10px] font-black text-gray-400 group-hover:text-black transition-colors">${Number(item.price).toLocaleString()}</p>
                                     </button>

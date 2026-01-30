@@ -120,7 +120,7 @@ export default function KitchenPage() {
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 <AnimatePresence mode="popLayout">
                     {tickets.map((ticket: KitchenTicket) => (
                         <motion.div
@@ -147,7 +147,7 @@ export default function KitchenPage() {
                                         </p>
                                     </div>
                                 </div>
-                                <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${ticket.status === 'READY' ? 'bg-green-500 text-white' :
+                                <span className={`shrink-0 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-center min-w-[100px] leading-tight flex items-center justify-center ${ticket.status === 'READY' ? 'bg-green-500 text-white' :
                                     ticket.status === 'PREPARING' ? 'bg-orange-400 text-white' :
                                         'bg-gray-100 text-gray-400'
                                     }`}>
@@ -158,25 +158,27 @@ export default function KitchenPage() {
 
                             <div className="flex-1 space-y-4 mb-8">
                                 {ticket.items.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between items-center bg-gray-50/50 p-4 rounded-2xl border border-black/5">
-                                        <span className="font-bold text-gray-900">{item.name}</span>
-                                        <span className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center text-xs font-black">
+                                    <div key={idx} className="flex justify-between items-center bg-gray-50/50 p-4 rounded-2xl border border-black/5 gap-3">
+                                        <span className="font-bold text-gray-900 flex-1 break-words leading-tight text-sm">{item.name}</span>
+                                        <span className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0">
                                             {item.quantity}
                                         </span>
                                     </div>
                                 ))}
                             </div>
 
-                            {ticket.notes && (
-                                <div className="mb-8 p-4 bg-yellow-50 rounded-2xl border border-yellow-200 flex gap-3">
-                                    <MessageSquare size={16} className="text-yellow-600 shrink-0 mt-1" />
-                                    <p className="text-sm font-medium text-yellow-800 italic">{ticket.notes}</p>
-                                </div>
-                            )}
+                            {
+                                ticket.notes && (
+                                    <div className="mb-8 p-4 bg-yellow-50 rounded-2xl border border-yellow-200 flex gap-3">
+                                        <MessageSquare size={16} className="text-yellow-600 shrink-0 mt-1" />
+                                        <p className="text-sm font-medium text-yellow-800 italic">{ticket.notes}</p>
+                                    </div>
+                                )
+                            }
 
-                            <button
+                            < button
                                 onClick={() => updateStatus(ticket.id, ticket.status)}
-                                className={`w-full py-6 rounded-[2rem] font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3 ${ticket.status === 'READY' ? 'bg-green-600 text-white hover:bg-green-700' :
+                                className={`w-full py-6 rounded-[2rem] font-black uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3 px-4 text-center ${ticket.status === 'READY' ? 'bg-green-600 text-white hover:bg-green-700' :
                                     ticket.status === 'PREPARING' ? 'bg-black text-[#FFD60A] hover:scale-105' :
                                         'bg-black text-white hover:scale-105'
                                     }`}
@@ -194,14 +196,16 @@ export default function KitchenPage() {
                         </motion.div>
                     ))}
                 </AnimatePresence>
-            </div>
+            </div >
 
-            {tickets.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-40 gap-6 opacity-20">
-                    <CookingPot size={100} />
-                    <p className="text-2xl font-black uppercase tracking-widest">No hay comandas pendientes</p>
-                </div>
-            )}
-        </div>
+            {
+                tickets.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-40 gap-6 opacity-20">
+                        <CookingPot size={100} />
+                        <p className="text-2xl font-black uppercase tracking-widest">No hay comandas pendientes</p>
+                    </div>
+                )
+            }
+        </div >
     );
 }
