@@ -100,7 +100,7 @@ export function useKitchenTickets() {
             if (error) throw error;
             return data;
         },
-        staleTime: 1000 * 60, // 1 minute
+        staleTime: 5000, // Fallback: 5 seconds if Realtime fails
     });
 }
 

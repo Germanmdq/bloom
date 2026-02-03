@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Order } from "@/lib/types";
-import { Loader2, Receipt, Calendar, CreditCard, Banknote, Smartphone, ChevronRight, X, Filter } from "lucide-react";
+import * as XLSX from "xlsx";
+import { Loader2, Receipt, Calendar, CreditCard, Banknote, Smartphone, ChevronRight, X, Filter, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type ViewMode = 'day' | 'week' | 'fortnight' | 'month';
@@ -41,6 +42,95 @@ export function OrderList() {
         }
         setLoading(false);
     }
+
+    const exportToExcel = () => {
+        if (orders.length === 0) return;
+
+        const detailRows: any[] = [];
+        let grandTotal = 0;
+
+        orders.forEach((order: any) => {
+            const date = new Date(order.created_at);
+            const dateStr = date.toLocaleDateString("es-AR");
+            const timeStr = date.toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' });
+            const items = order.items || [];
+
+            // Add to Grand Total
+            grandTotal += Number(order.total);
+
+            if (Array.isArray(items) && items.length > 0) {
+                items.forEach((item: any) => {
+                    detailRows.push({
+                        "Fecha": dateStr,
+                        "Hora": timeStr,
+                        "Mesa": order.table_id,
+                        "Orden #": order.id.slice(0, 8),
+                        "Método Pago": getPaymentLabel(order.payment_method),
+                        "Producto": item.name,
+                        "Cantidad": item.quantity || 1,
+                        "Precio Unit.": item.price || 0,
+                        "Subtotal Item": (item.price || 0) * (item.quantity || 1)
+                    });
+                });
+            } else {
+                detailRows.push({
+                    "Fecha": dateStr,
+                    "Hora": timeStr,
+                    "Mesa": order.table_id,
+                    "Orden #": order.id.slice(0, 8),
+                    "Método Pago": getPaymentLabel(order.payment_method),
+                    "Producto": "Venta General",
+                    "Cantidad": 1,
+                    "Precio Unit.": order.total,
+                    "Subtotal Item": order.total
+                });
+            }
+        });
+
+        // Summary Rows (e.g. Total by Payment Method)
+        const summaryByMethod = orders.reduce((acc: any, curr: any) => {
+            const method = getPaymentLabel(curr.payment_method);
+            acc[method] = (acc[method] || 0) + Number(curr.total);
+            return acc;
+        }, {});
+
+        const summaryRows = [
+            { "Concepto": "TOTAL FACTURADO", "Monto": grandTotal }, // Empty row for spacing
+            { "Concepto": "", "Monto": "" },
+            ...Object.keys(summaryByMethod).map(method => ({
+                "Concepto": `Total ${method}`,
+                "Monto": summaryByMethod[method]
+            })),
+            { "Concepto": "", "Monto": "" },
+            { "Concepto": "Cantidad de Órdenes", "Monto": orders.length }
+        ];
+
+        const workbook = XLSX.utils.book_new();
+
+        // Sheet 1: Resumen
+        const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
+        XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumen General");
+
+        // Sheet 2: Detalle (with footer total)
+        detailRows.push({}); // Space
+        detailRows.push({ "Producto": "TOTAL GENERAL", "Subtotal Item": grandTotal });
+
+        const detailSheet = XLSX.utils.json_to_sheet(detailRows);
+
+        // Auto-width columns roughly
+        const wscols = [
+            { wch: 12 }, { wch: 8 }, { wch: 6 }, { wch: 10 }, { wch: 15 },
+            { wch: 30 }, { wch: 8 }, { wch: 12 }, { wch: 12 }
+        ];
+        detailSheet['!cols'] = wscols;
+
+        XLSX.utils.book_append_sheet(workbook, detailSheet, "Detalle de Items");
+
+        // Filename: Reporte_Bloom_dia_mes.xlsx
+        const today = new Date();
+        const niceDate = today.toLocaleDateString('es-AR').replace(/\//g, '-');
+        XLSX.writeFile(workbook, `Reporte_Bloom_${niceDate}.xlsx`);
+    };
 
     // GROUPING LOGIC
     const groupedOrders = useMemo(() => {
@@ -128,22 +218,32 @@ export function OrderList() {
     return (
         <div className="space-y-8">
             {/* CONTROLS */}
-            <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-wrap gap-2 w-fit">
-                {(['day', 'week', 'fortnight', 'month'] as ViewMode[]).map((mode) => (
-                    <button
-                        key={mode}
-                        onClick={() => setViewMode(mode)}
-                        className={`px-4 py-2 rounded-xl text-sm font-black uppercase tracking-wide transition-all ${viewMode === mode
+            <div className="flex flex-wrap gap-4 items-center mb-8">
+                <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-wrap gap-2 w-fit">
+                    {(['day', 'week', 'fortnight', 'month'] as ViewMode[]).map((mode) => (
+                        <button
+                            key={mode}
+                            onClick={() => setViewMode(mode)}
+                            className={`px-4 py-2 rounded-xl text-sm font-black uppercase tracking-wide transition-all ${viewMode === mode
                                 ? "bg-[#FFD60A] text-black shadow-md"
                                 : "bg-transparent text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-                            }`}
-                    >
-                        {mode === 'day' && 'Día'}
-                        {mode === 'week' && 'Semana'}
-                        {mode === 'fortnight' && 'Quincena'}
-                        {mode === 'month' && 'Mes'}
-                    </button>
-                ))}
+                                }`}
+                        >
+                            {mode === 'day' && 'Día'}
+                            {mode === 'week' && 'Semana'}
+                            {mode === 'fortnight' && 'Quincena'}
+                            {mode === 'month' && 'Mes'}
+                        </button>
+                    ))}
+                </div>
+
+                <button
+                    onClick={exportToExcel}
+                    className="ml-auto flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-2xl font-bold shadow-lg transition-transform active:scale-95"
+                >
+                    <Download size={18} />
+                    <span>Exportar Excel</span>
+                </button>
             </div>
 
             {/* GRID OF GROUPS */}

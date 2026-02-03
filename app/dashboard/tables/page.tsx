@@ -19,9 +19,23 @@ export default function TablesPage() {
 
     useEffect(() => {
         fetchTables();
+
+        // 🟢 Realtime Subscription
+        const channel = supabase
+            .channel('salon_tables_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'salon_tables' }, (payload) => {
+                // Optimistic update or just refetch. Refetch is safer for totals.
+                fetchTables();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     async function fetchTables() {
+        // ... existing fetchTables code ...
         setLoading(true);
         setError(null);
         try {
@@ -65,7 +79,7 @@ export default function TablesPage() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="absolute inset-0 bg-white/40 backdrop-blur-3xl"
-                        onClick={() => setSelectedTable(null)}
+                        onClick={() => { setSelectedTable(null); fetchTables(); }}
                     />
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -82,7 +96,7 @@ export default function TablesPage() {
                         <div className="bg-white/90 backdrop-blur-2xl w-full h-full rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50 overflow-hidden flex flex-col">
                             <OrderSheet
                                 tableId={selectedTable.id}
-                                onClose={() => setSelectedTable(null)}
+                                onClose={() => { setSelectedTable(null); fetchTables(); }}
                                 onOrderComplete={() => handleOrderComplete()}
                             />
                         </div>
