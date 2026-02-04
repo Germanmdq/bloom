@@ -5,16 +5,10 @@ const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// ============================================
-// 1. VALIDAR STOCK (OPTIMIZED - PARALLEL & NON-BLOCKING)
-// ============================================
 export async function validateStock(items: { product_id: string, quantity: number }[]) {
     const warnings: any[] = [];
 
-    // Use Promise.all to fetch/validate in parallel
-    // This executes all product checks simultaneously instead of one by one
-    await Promise.all(items.map(async (item) => {
-        // 1. Fetch product info
+    for (const item of items) {
         const { data: product } = await supabase
             .from('products')
             .select('*, category:categories(*)')
@@ -24,87 +18,64 @@ export async function validateStock(items: { product_id: string, quantity: numbe
 
         if (!product) {
             warnings.push({ product_id: item.product_id, error: 'Producto no encontrado' });
-            return;
+            continue;
         }
 
-        // 2. Fetch recipe
-        // Added raw_product_id to selection to avoid TS array issues
         const { data: recipe } = await supabase
             .from('recipes')
-            .select(`
-        qty,
-        raw_product_id,
-        raw_product:products!recipes_raw_product_id_fkey(
-          id,
-          name,
-          unit,
-          price
-        )
-      `)
+            .select('qty, raw_product_id')
             .eq('menu_product_id', item.product_id);
 
-        if (!recipe || recipe.length === 0) return;
+        if (!recipe || recipe.length === 0) continue;
 
-        // 3. Check ingredients stock in parallel
-        await Promise.all(recipe.map(async (ingredient) => {
+        for (const ingredient of recipe) {
             const needed = ingredient.qty * item.quantity;
 
-            // Use raw_product_id directly
+            const { data: rawProduct } = await supabase
+                .from('products')
+                .select('id, name, unit, price')
+                .eq('id', ingredient.raw_product_id)
+                .single();
+
             const { data: stockData } = await supabase
-                .rpc('get_current_stock', {
-                    product_id: ingredient.raw_product_id
-                });
+                .rpc('get_current_stock', { product_id: ingredient.raw_product_id });
 
             const currentStock = stockData || 0;
 
             if (currentStock < needed) {
-                // Handle potential array type for raw_product
-                const rp = Array.isArray(ingredient.raw_product) ? ingredient.raw_product[0] : ingredient.raw_product;
-
                 warnings.push({
                     product: product.name,
-                    ingredient: rp?.name || 'Ingrediente',
-                    needed: needed,
+                    ingredient: rawProduct?.name,
+                    needed,
                     available: currentStock,
                     missing: needed - currentStock,
-                    unit: rp?.unit || 'u',
-                    warning: '⚠️ Stock insuficiente - se permitirá stock negativo'
+                    unit: rawProduct?.unit,
+                    warning: '⚠️ Stock insuficiente'
                 });
             }
-        }));
-    }));
+        }
+    }
 
-    return {
-        available: true, // SIEMPRE TRUE - NO BLOQUEA
-        warnings
-    };
+    return { available: true, warnings };
 }
 
-// ============================================
-// 2. PROCESAR VENTA (OPTIMIZED)
-// ============================================
 export async function processOrder(orderData: {
     table_id: number;
     items: { product_id: string; quantity: number; price: number; name: string }[];
     payment_method: string;
     waiter_id: string;
 }) {
-    console.time('Order Processing');
-
-    // 1. Validar stock (Parallel)
     const validation = await validateStock(
         orderData.items.map(i => ({ product_id: i.product_id, quantity: i.quantity }))
     );
 
-    // 2. Calcular total
     const total = orderData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    // 3. Crear orden
     const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
             table_id: orderData.table_id,
-            total: total,
+            total,
             payment_method: orderData.payment_method,
             waiter_id: orderData.waiter_id,
             items: orderData.items,
@@ -115,71 +86,40 @@ export async function processOrder(orderData: {
 
     if (orderError) throw orderError;
 
-    // 4. Descontar stock (Parallel)
     await applyStockDeduction(order.id, orderData.items);
 
-    // 5. Marcar stock aplicado
-    await supabase
-        .from('orders')
-        .update({ stock_applied: true })
-        .eq('id', order.id);
+    await supabase.from('orders').update({ stock_applied: true }).eq('id', order.id);
 
-    console.timeEnd('Order Processing');
-
-    // Retornar orden con warnings
-    return {
-        ...order,
-        stock_warnings: validation.warnings
-    };
+    return { ...order, stock_warnings: validation.warnings };
 }
 
-// ============================================
-// 3. DESCONTAR STOCK (OPTIMIZED - PARALLEL & BATCH)
-// ============================================
 async function applyStockDeduction(
     orderId: string,
     items: { product_id: string; quantity: number; name: string }[]
 ) {
-    // Process all items in parallel
-    await Promise.all(items.map(async (item) => {
+    for (const item of items) {
         const { data: recipe } = await supabase
             .from('recipes')
-            .select(`
-        qty,
-        raw_product_id,
-        raw_product:products!recipes_raw_product_id_fkey(
-          id,
-          name,
-          unit
-        )
-      `)
+            .select('qty, raw_product_id')
             .eq('menu_product_id', item.product_id);
 
-        if (!recipe || recipe.length === 0) return;
+        if (!recipe || recipe.length === 0) continue;
 
-        // Prepare movements for this item's ingredients
-        const movements = recipe.map(ingredient => {
+        for (const ingredient of recipe) {
             const qtyToDeduct = ingredient.qty * item.quantity;
-            return {
+
+            await supabase.from('inventory_movements').insert({
                 raw_product_id: ingredient.raw_product_id,
                 qty: -qtyToDeduct,
                 reason: 'sale',
                 ref_table: 'orders',
                 ref_id: orderId,
                 note: `Venta: ${item.name} (${item.quantity} uni)`
-            };
-        });
-
-        // Batch insert for this item's measurements
-        if (movements.length > 0) {
-            await supabase.from('inventory_movements').insert(movements);
+            });
         }
-    }));
+    }
 }
 
-// ============================================
-// 4. CALCULAR COSTO DE PRODUCTO
-// ============================================
 export async function calculateProductCost(productId: string, quantity: number = 1) {
     const { data: product } = await supabase
         .from('products')
@@ -191,14 +131,7 @@ export async function calculateProductCost(productId: string, quantity: number =
 
     const { data: recipe } = await supabase
         .from('recipes')
-        .select(`
-      qty,
-      raw_product:products!recipes_raw_product_id_fkey(
-        name,
-        price,
-        unit
-      )
-    `)
+        .select('qty, raw_product_id')
         .eq('menu_product_id', productId);
 
     if (!recipe || recipe.length === 0) {
@@ -213,22 +146,26 @@ export async function calculateProductCost(productId: string, quantity: number =
     }
 
     let totalCost = 0;
-    const ingredients = [];
+    const ingredients: any[] = [];
 
     for (const item of recipe) {
-        // Handle potential array
-        const rp = Array.isArray(item.raw_product) ? item.raw_product[0] : item.raw_product;
-        const price = rp?.price || 0;
+        const { data: rawProduct } = await supabase
+            .from('products')
+            .select('name, price, unit')
+            .eq('id', item.raw_product_id)
+            .single();
 
-        const itemCost = item.qty * price;
-        totalCost += itemCost;
+        if (rawProduct) {
+            const itemCost = item.qty * rawProduct.price;
+            totalCost += itemCost;
 
-        ingredients.push({
-            name: rp?.name || 'Ingrediente',
-            qty: item.qty,
-            unit: rp?.unit || 'u',
-            cost: itemCost
-        });
+            ingredients.push({
+                name: rawProduct.name,
+                qty: item.qty,
+                unit: rawProduct.unit,
+                cost: itemCost
+            });
+        }
     }
 
     const finalCost = totalCost * quantity;
@@ -247,9 +184,6 @@ export async function calculateProductCost(productId: string, quantity: number =
     };
 }
 
-// ============================================
-// 5. REPORTE DE RENTABILIDAD
-// ============================================
 export async function profitabilityReport() {
     const { data: products } = await supabase
         .from('products')
@@ -259,52 +193,32 @@ export async function profitabilityReport() {
 
     if (!products) return [];
 
-    const report = [];
+    const report: any[] = [];
 
-    // Use Promise.allSettled
-    const results = await Promise.allSettled(products.map(p => calculateProductCost(p.id, 1)));
-
-    results.forEach((res, index) => {
-        if (res.status === 'fulfilled') {
-            const catName = Array.isArray(products[index].category) ? products[index].category[0]?.name : products[index].category?.name;
-            report.push({
-                category: catName,
-                ...res.value
-            });
-        } else {
-            console.warn(`No se pudo calcular ${products[index].name}:`, res.reason);
+    for (const product of products) {
+        try {
+            const analysis = await calculateProductCost(product.id, 1);
+            report.push({ category: product.category?.name, ...analysis });
+        } catch (error) {
+            console.warn(`Error: ${product.name}`, error);
         }
-    });
+    }
 
-    return report.sort((a: any, b: any) => b.margin - a.margin);
+    return report.sort((a, b) => b.margin - a.margin);
 }
 
-// ============================================
-// 6. AGREGAR STOCK (COMPRAS)
-// ============================================
-export async function addStock(
-    rawProductId: string,
-    quantity: number,
-    note?: string
-) {
-    const { data, error } = await supabase
-        .from('inventory_movements')
-        .insert({
-            raw_product_id: rawProductId,
-            qty: quantity,
-            reason: 'purchase',
-            note: note || 'Compra de mercadería'
-        })
-        .select()
-        .single();
+export async function addStock(rawProductId: string, quantity: number, note?: string) {
+    const { data, error } = await supabase.from('inventory_movements').insert({
+        raw_product_id: rawProductId,
+        qty: quantity,
+        reason: 'purchase',
+        note: note || 'Compra de mercadería'
+    }).select().single();
 
     if (error) throw error;
     return data;
 }
 
-// ============================================
-// 7. OBTENER STOCK ACTUAL
-// ============================================
 export async function getCurrentStock() {
     const { data: rawProducts } = await supabase
         .from('products')
@@ -316,12 +230,10 @@ export async function getCurrentStock() {
 
     const stockReport: any[] = [];
 
-    await Promise.all(rawProducts.map(async (product) => {
-        const { data: stockData } = await supabase
-            .rpc('get_current_stock', { product_id: product.id });
+    for (const product of rawProducts) {
+        const { data: stockData } = await supabase.rpc('get_current_stock', { product_id: product.id });
 
         const currentStock = stockData || 0;
-
         const status = currentStock < 0 ? 'NEGATIVE' :
             currentStock < product.min_stock ? 'CRITICAL' :
                 currentStock < product.min_stock * 1.5 ? 'LOW' : 'OK';
@@ -334,14 +246,11 @@ export async function getCurrentStock() {
             unit: product.unit,
             status
         });
-    }));
+    }
 
-    return stockReport.sort((a, b) => a.name.localeCompare(b.name));
+    return stockReport;
 }
 
-// ============================================
-// 8. REPORTE DIARIO
-// ============================================
 export async function dailySalesReport(date?: string) {
     const targetDate = date || new Date().toISOString().split('T')[0];
 
@@ -400,9 +309,6 @@ export async function dailySalesReport(date?: string) {
     };
 }
 
-// ============================================
-// 9. FÓRMULAS DE MERMA
-// ============================================
 export const MERMA_FACTORS = {
     ESPINACA_HERVIDA: 3.8,
     PAPA_PURE: 1.87,
@@ -416,9 +322,6 @@ export function applyMerma(qty: number, mermaKey: keyof typeof MERMA_FACTORS): n
     return qty * MERMA_FACTORS[mermaKey];
 }
 
-// ============================================
-// EXPORTAR TODO
-// ============================================
 export const BloomAgent = {
     validateStock,
     processOrder,
