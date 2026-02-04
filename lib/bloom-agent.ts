@@ -187,7 +187,7 @@ export async function calculateProductCost(productId: string, quantity: number =
 export async function profitabilityReport() {
     const { data: products } = await supabase
         .from('products')
-        .select('id, name, price, category:categories(name)')
+        .select('id, name, price')
         .eq('kind', 'menu')
         .eq('active', true);
 
@@ -198,7 +198,7 @@ export async function profitabilityReport() {
     for (const product of products) {
         try {
             const analysis = await calculateProductCost(product.id, 1);
-            report.push({ category: product.category?.name, ...analysis });
+            report.push(analysis);
         } catch (error) {
             console.warn(`Error: ${product.name}`, error);
         }
