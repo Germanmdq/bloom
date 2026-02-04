@@ -28,10 +28,12 @@ export async function validateStock(items: { product_id: string, quantity: numbe
         }
 
         // 2. Fetch recipe
+        // Added raw_product_id to selection to avoid TS array issues
         const { data: recipe } = await supabase
             .from('recipes')
             .select(`
         qty,
+        raw_product_id,
         raw_product:products!recipes_raw_product_id_fkey(
           id,
           name,
@@ -47,21 +49,25 @@ export async function validateStock(items: { product_id: string, quantity: numbe
         await Promise.all(recipe.map(async (ingredient) => {
             const needed = ingredient.qty * item.quantity;
 
+            // Use raw_product_id directly
             const { data: stockData } = await supabase
                 .rpc('get_current_stock', {
-                    product_id: ingredient.raw_product.id
+                    product_id: ingredient.raw_product_id
                 });
 
             const currentStock = stockData || 0;
 
             if (currentStock < needed) {
+                // Handle potential array type for raw_product
+                const rp = Array.isArray(ingredient.raw_product) ? ingredient.raw_product[0] : ingredient.raw_product;
+
                 warnings.push({
                     product: product.name,
-                    ingredient: ingredient.raw_product.name,
+                    ingredient: rp?.name || 'Ingrediente',
                     needed: needed,
                     available: currentStock,
                     missing: needed - currentStock,
-                    unit: ingredient.raw_product.unit,
+                    unit: rp?.unit || 'u',
                     warning: '⚠️ Stock insuficiente - se permitirá stock negativo'
                 });
             }
@@ -86,7 +92,6 @@ export async function processOrder(orderData: {
     console.time('Order Processing');
 
     // 1. Validar stock (Parallel)
-    // We await this, but now it runs completely in parallel so it should be fast.
     const validation = await validateStock(
         orderData.items.map(i => ({ product_id: i.product_id, quantity: i.quantity }))
     );
@@ -111,7 +116,6 @@ export async function processOrder(orderData: {
     if (orderError) throw orderError;
 
     // 4. Descontar stock (Parallel)
-    // We still await to ensure compilation, but the internal loop is parallelized.
     await applyStockDeduction(order.id, orderData.items);
 
     // 5. Marcar stock aplicado
@@ -168,7 +172,6 @@ async function applyStockDeduction(
 
         // Batch insert for this item's measurements
         if (movements.length > 0) {
-            // Parallel insert is better than sequential
             await supabase.from('inventory_movements').insert(movements);
         }
     }));
@@ -213,13 +216,17 @@ export async function calculateProductCost(productId: string, quantity: number =
     const ingredients = [];
 
     for (const item of recipe) {
-        const itemCost = item.qty * item.raw_product.price;
+        // Handle potential array
+        const rp = Array.isArray(item.raw_product) ? item.raw_product[0] : item.raw_product;
+        const price = rp?.price || 0;
+
+        const itemCost = item.qty * price;
         totalCost += itemCost;
 
         ingredients.push({
-            name: item.raw_product.name,
+            name: rp?.name || 'Ingrediente',
             qty: item.qty,
-            unit: item.raw_product.unit,
+            unit: rp?.unit || 'u',
             cost: itemCost
         });
     }
@@ -254,16 +261,14 @@ export async function profitabilityReport() {
 
     const report = [];
 
-    // Parallelize Cost Calculation too (Optional, but user asked for report speed maybe?)
-    // User didn't ask for report speed. Keep it simple or safe parallelism.
-    // We can stick to Promise.allSettled
+    // Use Promise.allSettled
     const results = await Promise.allSettled(products.map(p => calculateProductCost(p.id, 1)));
 
-    // Map results
     results.forEach((res, index) => {
         if (res.status === 'fulfilled') {
+            const catName = Array.isArray(products[index].category) ? products[index].category[0]?.name : products[index].category?.name;
             report.push({
-                category: products[index].category?.name,
+                category: catName,
                 ...res.value
             });
         } else {
@@ -298,7 +303,7 @@ export async function addStock(
 }
 
 // ============================================
-// 7. OBTENER STOCK ACTUAL (INCLUYE NEGATIVOS)
+// 7. OBTENER STOCK ACTUAL
 // ============================================
 export async function getCurrentStock() {
     const { data: rawProducts } = await supabase
@@ -311,7 +316,6 @@ export async function getCurrentStock() {
 
     const stockReport: any[] = [];
 
-    // Parallelize Get Current Stock
     await Promise.all(rawProducts.map(async (product) => {
         const { data: stockData } = await supabase
             .rpc('get_current_stock', { product_id: product.id });
