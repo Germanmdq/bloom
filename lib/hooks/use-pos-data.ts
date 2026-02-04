@@ -1,6 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { BloomAgent } from "@/lib/bloom-agent";
 
 const supabase = createClient();
 
@@ -27,28 +28,12 @@ export function useCategories() {
             const { data, error } = await supabase
                 .from('categories')
                 .select('*')
-                .order('name');
+                .order('sort_order', { ascending: true }); // ← ORDEN CORRECTO
+
             if (error) throw error;
-
-            // Sort Drinks/Cafeteria to the end
-            data.sort((a, b) => {
-                const isDrink = (name: string) => {
-                    const n = name.toLowerCase();
-                    return n.includes('bebida') || n.includes('cafeter') || n.includes('jugo') || n.includes('licuado');
-                };
-
-                const aIsDrink = isDrink(a.name);
-                const bIsDrink = isDrink(b.name);
-
-                if (aIsDrink && !bIsDrink) return 1;
-                if (!aIsDrink && bIsDrink) return -1;
-
-                return a.name.localeCompare(b.name);
-            });
-
-            return data;
+            return data; // ← SIN SORTING ADICIONAL
         },
-        staleTime: 1000 * 60 * 60, // 1 hour
+        staleTime: 1000 * 60 * 60,
     });
 }
 
@@ -75,12 +60,21 @@ export function useCreateOrder() {
 
     return useMutation({
         mutationFn: async (orderData: any) => {
-            const { data, error } = await supabase
-                .from('orders')
-                .insert([orderData])
-                .select();
-            if (error) throw error;
-            return data;
+            // Map Cart Items to Bloom Agent Format
+            const items = orderData.items.map((i: any) => ({
+                product_id: i.id, // Cart has 'id', Agent needs 'product_id'
+                quantity: i.quantity,
+                price: i.price,
+                name: i.name
+            }));
+
+            // Use Bloom Agent to Validate Stock & Process Sale
+            return await BloomAgent.processOrder({
+                table_id: orderData.table_id,
+                items: items,
+                payment_method: orderData.payment_method,
+                waiter_id: orderData.waiter_id
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });

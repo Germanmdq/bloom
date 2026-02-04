@@ -70,6 +70,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
     // AI Suggestions State
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+    const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     const supabase = createClient();
 
@@ -184,6 +185,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
 
     const subtotal = useOrderStore(state => state.getTotal());
     const total = subtotal + extraTotal;
+    const finalTotal = total - (total * (discount / 100)); // Percentage Discount
     const isLoading = catLoading || prodLoading;
 
     // KEYBOARD SHORTCUTS
@@ -246,6 +248,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
 
     const handleAddToCart = (product: any) => {
         addToCart({
+            id: product.id,
             name: product.name,
             price: Number(product.price),
             quantity: 1
@@ -256,6 +259,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
         // Usa el producto real del menú, NO la sugerencia de la IA
         if (suggestion.realProduct) {
             addToCart({
+                id: suggestion.realProduct.id,
                 name: suggestion.realProduct.name,
                 price: Number(suggestion.realProduct.price),
                 quantity: 1
@@ -264,6 +268,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
         } else {
             // Fallback logic incase realProduct is missing but name/price are valid
             addToCart({
+                id: 'ai-temp-' + Date.now(),
                 name: suggestion.item,
                 price: Number(suggestion.price),
                 quantity: 1
@@ -272,13 +277,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
     };
 
     const finishOrder = async () => {
-        if (total === 0) return;
+        if (finalTotal === 0 && discount === 0) return; // Allow 0 total if fully discounted
         setIsFinishing(true);
 
         try {
             await createOrder.mutateAsync({
                 table_id: tableId,
-                total: total,
+                total: finalTotal,
                 payment_method: paymentMethod,
                 waiter_id: selectedWaiter || null,
                 items: cart
@@ -286,22 +291,28 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
 
             await supabase.from('salon_tables').update({ status: 'FREE', total: 0 }).eq('id', tableId);
 
-            alert(`¡Mesa cobrada exitosamente!`);
-            clearCart();
-            if (onOrderComplete) onOrderComplete();
-            onClose(); // finishOrder usually closes via normal onClose because it resets state.
-            // explicit onClose here is fine, but we should use handleClose if we want to sync?
-            // No, finishOrder resets table to FREE. We don't want handleClose to set it to OCCUPIED again.
-            // So onClose() is correct here.
+            // SUCCESS FEEDBACK
+            setFeedback({ message: "¡Mesa cobrada exitosamente!", type: 'success' });
+
+            setTimeout(() => {
+                setFeedback(null);
+                clearCart();
+                if (onOrderComplete) onOrderComplete();
+                onClose();
+            }, 2000);
+
         } catch (error: any) {
-            alert(`Error al guardar: ${error.message}`);
+            setFeedback({ message: `Error al guardar: ${error.message}`, type: 'error' });
+            setTimeout(() => setFeedback(null), 3000);
         }
+
         setIsFinishing(false);
     };
 
     const sendToKitchen = async () => {
         if (cart.length === 0) {
-            alert("⚠️ La comanda está vacía.");
+            setFeedback({ message: "La comanda está vacía", type: 'error' });
+            setTimeout(() => setFeedback(null), 2000);
             return;
         }
         setIsFinishing(true);
@@ -311,9 +322,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                 items: cart.map(i => ({ name: i.name, quantity: i.quantity })),
                 notes: notes
             });
-            alert(`¡Comanda enviada a cocina! 👨‍🍳`);
+            setFeedback({ message: "¡Comanda enviada a cocina!", type: 'success' });
+            setTimeout(() => setFeedback(null), 2000);
         } catch (error: any) {
-            alert(`Error: ${error.message}`);
+            setFeedback({ message: `Error: ${error.message}`, type: 'error' });
+            setTimeout(() => setFeedback(null), 3000);
         }
         setIsFinishing(false);
     };
@@ -365,28 +378,28 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                 < div className="flex items-center justify-between w-full" >
                     <div className="flex items-center gap-4 flex-1">
                         <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-black/40 uppercase mb-1 ml-1">Comprobante (F7)</span>
-                            <select value={invoiceType} onChange={(e) => setInvoiceType(e.target.value)} className="bg-white/50 hover:bg-white border-none rounded-lg px-3 py-2 text-sm font-bold w-32 outline-none">
+                            <span className="text-[10px] font-black text-black uppercase mb-1 ml-1">Comprobante (F7)</span>
+                            <select value={invoiceType} onChange={(e) => setInvoiceType(e.target.value)} className="bg-white/50 hover:bg-white border-2 border-black/10 rounded-lg px-3 py-2 text-sm font-black w-32 outline-none">
                                 <option>Factura C</option><option>Factura B</option><option>Ticket</option>
                             </select>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-black/40 uppercase mb-1 ml-1">Mozo (F4)</span>
-                            <select id="waiter-selector" value={selectedWaiter} onChange={(e) => setSelectedWaiter(e.target.value)} className="bg-white/50 hover:bg-white border-none rounded-lg px-3 py-2 text-sm font-bold w-40 outline-none">
+                            <span className="text-[10px] font-black text-black uppercase mb-1 ml-1">Mozo (F4)</span>
+                            <select id="waiter-selector" value={selectedWaiter} onChange={(e) => setSelectedWaiter(e.target.value)} className="bg-white/50 hover:bg-white border-2 border-black/10 rounded-lg px-3 py-2 text-sm font-black w-40 outline-none">
                                 {waiters.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
                             </select>
                         </div>
                         <div className="flex flex-col flex-1 max-w-sm">
-                            <span className="text-[9px] font-black text-black/40 uppercase mb-1 ml-1">Buscador (F3)</span>
+                            <span className="text-[10px] font-black text-black uppercase mb-1 ml-1">Buscador (F3)</span>
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" size={14} />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-black" size={14} strokeWidth={3} />
                                 <input
                                     id="product-search"
                                     type="text"
                                     value={productSearch}
                                     onChange={(e) => setProductSearch(e.target.value)}
-                                    placeholder="Buscar producto..."
-                                    className="w-full bg-white/50 hover:bg-white border-none rounded-lg pl-9 pr-3 py-2 text-sm font-bold outline-none focus:ring-2 ring-black/10 transition-all"
+                                    placeholder="BUSCAR PRODUCTO..."
+                                    className="w-full bg-white/50 hover:bg-white border-2 border-black/10 rounded-lg pl-9 pr-3 py-2 text-sm font-black outline-none focus:ring-2 ring-black/10 transition-all placeholder:text-black/50"
                                     autoComplete="off"
                                     autoFocus
                                 />
@@ -417,7 +430,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
             < div className="flex-1 flex overflow-hidden" >
                 {/* LEFT: CART */}
                 < div className="w-[33%] flex flex-col bg-white border-r border-black/5" >
-                    <div className="grid grid-cols-[1fr_80px_60px_100px_80px] gap-2 p-4 bg-gray-50 border-b border-black/5 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    <div className="grid grid-cols-[1fr_80px_60px_100px_80px] gap-2 p-4 bg-gray-100 border-b border-black/10 text-[10px] font-black text-black uppercase tracking-widest">
                         <div>Producto</div><div className="text-right">Precio</div><div className="text-right">Cant</div><div className="text-right">Total</div><div className="text-right"></div>
                     </div>
                     <div className="flex-1 overflow-y-auto no-scrollbar">
@@ -430,12 +443,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                             </div>
                         )}
                         {cart.map((item, idx) => (
-                            <div key={idx} className="grid grid-cols-[1fr_80px_60px_100px_80px] gap-2 px-4 py-3 border-b border-gray-50 items-center hover:bg-gray-50">
-                                <div className="font-bold text-sm text-gray-900">{item.name}</div>
-                                <div className="text-right text-xs font-medium text-gray-500">${item.price.toLocaleString()}</div>
-                                <div className="text-right text-xs font-medium text-gray-500">{item.quantity}</div>
-                                <div className="text-right font-black text-gray-900">${(item.price * item.quantity).toLocaleString()}</div>
-                                <div className="text-right"><button onClick={() => removeFromCart(idx)}><Trash2 size={14} className="text-red-300 hover:text-red-500" /></button></div>
+                            <div key={idx} className="grid grid-cols-[1fr_80px_60px_100px_80px] gap-2 px-4 py-3 border-b border-gray-50 items-center hover:bg-gray-50 text-black">
+                                <div className="font-black text-sm text-black uppercase">{item.name}</div>
+                                <div className="text-right text-xs font-black text-black">${item.price.toLocaleString()}</div>
+                                <div className="text-right text-xs font-black text-black">{item.quantity}</div>
+                                <div className="text-right font-black text-black">${(item.price * item.quantity).toLocaleString()}</div>
+                                <div className="text-right"><button onClick={() => removeFromCart(idx)}><Trash2 size={14} className="text-red-500 hover:text-red-700 hover:scale-110" /></button></div>
                             </div>
                         ))}
                     </div>
@@ -464,31 +477,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                 {/* RIGHT: PRODUCTS */}
                 < div className="flex-1 flex flex-col p-4 overflow-hidden relative" >
                     {/* TOP STRIP - CATEGORIES (Small & Scrollable) */}
-                    <div className="w-full shrink-0 mb-4">
-                        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar px-1">
-                            <button
-                                onClick={() => { setActiveCategory(null); setProductSearch(""); }}
-                                className={`shrink-0 px-4 py-2 rounded-full text-xs font-black uppercase transition-all shadow-sm ${!activeCategory && !productSearch ? 'bg-black text-[#FFD60A] scale-105' : 'bg-white text-black/60 hover:bg-gray-100'}`}
-                            >
-                                TODO
-                            </button>
-                            {categories
-                                .filter((c: any) => {
-                                    const n = c.name.toLowerCase();
-                                    const valid = ['cafeter', 'desayun', 'jugo', 'panific', 'pasteler', 'ensalad', 'pasta', 'bebida', 'milanes', 'hamburgues', 'tarta', 'pizza', 'almuerz', 'cena', 'promocion', 'papa', 'postre', 'delivery', 'tortilla', 'salsa'];
-                                    return valid.some(v => n.includes(v)) && !n.includes('otro');
-                                })
-                                .map((cat: any) => (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => setActiveCategory(cat.id)}
-                                        className={`shrink-0 px-4 py-2 rounded-full text-[10px] font-black uppercase transition-all shadow-sm ${activeCategory === cat.id ? 'bg-black text-[#FFD60A] scale-105' : 'bg-white text-black/60 hover:bg-gray-100'}`}
-                                    >
-                                        {cat.name.replace(/^[^\w]+/, '').trim()}
-                                    </button>
-                                ))}
-                        </div>
-                    </div>
+
 
                     {/* AI SUGGESTIONS */}
                     <AnimatePresence>
@@ -520,19 +509,52 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                         }
                     </AnimatePresence >
 
-                    {/* PRODUCT GRID (Compact) */}
+                    {/* MAIN CONTENT AREA: Categories OR Products */}
                     <div className="flex-1 overflow-y-auto pr-1 no-scrollbar">
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-20">
-                            {displayProducts.map((item: any) => (
-                                <button key={item.id} onClick={() => handleAddToCart(item)} className="aspect-[4/3] flex flex-col items-center justify-between p-3 rounded-2xl bg-white border-2 border-transparent hover:border-black shadow-sm hover:shadow-lg transition-all group active:scale-95">
-                                    <div className="flex-1 flex items-center justify-center w-full">
-                                        <h4 className="font-bold text-gray-900 text-xs text-center leading-tight line-clamp-2 group-hover:scale-105 transition-transform">{item.name}</h4>
+                        {(!activeCategory && !productSearch) ? (
+                            // CATEGORY GRID VIEW
+                            // CATEGORY GRID VIEW
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20">
+                                {categories
+                                    .map((cat: any) => (
+                                        <button
+                                            key={cat.id}
+                                            onClick={() => setActiveCategory(cat.id)}
+                                            className="h-28 flex flex-col items-center justify-center p-2 rounded-2xl bg-white border-2 border-transparent hover:border-black/5 hover:shadow-xl transition-all group active:scale-95 gap-1"
+                                        >
+
+                                            <h3 className="font-black text-[10px] text-center uppercase tracking-tight text-gray-900 group-hover:text-black leading-tight px-1">
+                                                {cat.name}
+                                            </h3>
+                                            <span className="text-[8px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">{
+                                                products.filter((p: any) => p.category_id === cat.id).length
+                                            } Prods.</span>
+                                        </button>
+                                    ))}
+                            </div>
+                        ) : (
+                            // PRODUCT GRID VIEW
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-20">
+                                <button
+                                    onClick={() => { setActiveCategory(null); setProductSearch(""); }}
+                                    className="aspect-[4/3] flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-100 border-2 border-transparent hover:border-black/10 hover:bg-gray-200 transition-all group active:scale-95"
+                                >
+                                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl group-hover:-translate-x-1 transition-transform shadow-sm">
+                                        ⬅️
                                     </div>
-                                    <p className="text-[10px] font-black text-gray-400 group-hover:text-black transition-colors bg-gray-50 px-2 py-0.5 rounded-md mt-1">${Number(item.price).toLocaleString()}</p>
+                                    <h4 className="font-black text-gray-500 text-[10px] text-center uppercase mt-2 tracking-widest">VOLVER</h4>
                                 </button>
-                            ))}
-                            {displayProducts.length === 0 && <div className="col-span-full text-center py-20 text-gray-400 font-bold uppercase tracking-widest text-xs">No hay productos en esta categoría</div>}
-                        </div>
+                                {displayProducts.map((item: any) => (
+                                    <button key={item.id} onClick={() => handleAddToCart(item)} className="aspect-[4/3] flex flex-col items-center justify-between p-3 rounded-2xl bg-white border-2 border-transparent hover:border-black shadow-sm hover:shadow-lg transition-all group active:scale-95">
+                                        <div className="flex-1 flex items-center justify-center w-full">
+                                            <h4 className="font-bold text-gray-900 text-xs text-center leading-tight line-clamp-2 group-hover:scale-105 transition-transform">{item.name}</h4>
+                                        </div>
+                                        <p className="text-[10px] font-black text-gray-400 group-hover:text-black transition-colors bg-gray-50 px-2 py-0.5 rounded-md mt-1">${Number(item.price).toLocaleString()}</p>
+                                    </button>
+                                ))}
+                                {displayProducts.length === 0 && <div className="col-span-full text-center py-20 text-gray-400 font-bold uppercase tracking-widest text-xs">No hay productos en esta categoría</div>}
+                            </div>
+                        )}
                     </div>
                 </div >
             </div >
@@ -568,8 +590,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="relative bg-white w-full max-w-5xl h-full max-h-[600px] rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row">
                             <div className="md:w-1/3 bg-[#FFD60A] p-10 flex flex-col justify-between relative overflow-hidden">
                                 <div>
-                                    <h3 className="text-lg font-black uppercase tracking-widest opacity-40 mb-2">Total</h3>
-                                    <p className="text-6xl font-black tracking-tighter text-black mb-8">${total.toLocaleString()}</p>
+                                    <h3 className="text-lg font-black uppercase tracking-widest opacity-40 mb-2">Total a Cobrar</h3>
+                                    <p className="text-6xl font-black tracking-tighter text-black mb-8">${finalTotal.toLocaleString()}</p>
                                 </div>
 
                                 <div className="flex flex-col gap-2 bg-black/5 p-4 rounded-xl">
@@ -579,9 +601,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                                             type="number"
                                             min="0"
                                             max="100"
-                                            value={discount}
+                                            value={discount === 0 ? '' : discount}
                                             onChange={(e) => setDiscount(Math.min(100, Math.max(0, Number(e.target.value))))}
-                                            className="w-full bg-transparent text-2xl font-black outline-none border-b-2 border-black/10 focus:border-black/50 transition-colors py-1"
+                                            placeholder="0"
+                                            className="w-full bg-transparent text-2xl font-black outline-none border-b-2 border-black/10 focus:border-black/50 transition-colors py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                         />
                                         <span className="text-xl font-black opacity-40">%</span>
                                     </div>
@@ -612,6 +635,29 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
                     </div>
                 )
             }
+
+            {/* FEEDBACK POPUP */}
+            <AnimatePresence>
+                {feedback && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 pointer-events-none">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: -20 }}
+                            className={`pointer-events-auto px-10 py-8 rounded-[2rem] shadow-2xl flex flex-col items-center gap-4 border text-center ${feedback.type === 'success' ? 'bg-black text-[#FFD60A] border-[#FFD60A]/20' : 'bg-white text-red-500 border-red-100'
+                                }`}
+                        >
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${feedback.type === 'success' ? 'bg-[#FFD60A] text-black' : 'bg-red-50 text-red-500'
+                                }`}>
+                                {feedback.type === 'success' ? <Check size={32} strokeWidth={3} /> : <X size={32} strokeWidth={3} />}
+                            </div>
+                            <h3 className="text-2xl font-black uppercase tracking-tight max-w-[200px] leading-tight flex-1 flex items-center justify-center">
+                                {feedback.message}
+                            </h3>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div >
     );
 }

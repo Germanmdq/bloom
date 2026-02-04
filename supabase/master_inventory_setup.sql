@@ -1,326 +1,103 @@
--- SCRIPT MAESTRO DE INVENTARIO Y RECETAS BLOOM
--- Este script:
--- 1. Inserta los insumos clave (raw materials) con sus unidades.
--- 2. Crea las recetas (BOM) vinculando productos del menú con sus insumos y cantidades netas.
--- 3. Aplica automáticamente la merma (peso bruto) usando el factor 1.08 o específico en la lógica.
+-- 1. CORRECCIÓN DE RESTRICCIONES (Para permitir Kilos y Litros)
+-- Ejecuta estas líneas para asegurar que la base de datos acepte las nuevas unidades
+ALTER TABLE public.products DROP CONSTRAINT IF EXISTS products_unit_check;
+ALTER TABLE public.products ADD CONSTRAINT products_unit_check CHECK (unit IN ('kg', 'g', 'l', 'ml', 'u', 'un', 'unit'));
 
-BEGIN;
+-- 2. LIMPIEZA DE INSUMOS ANTERIORES
+-- Borramos solo la materia prima para recargarla limpia
+DELETE FROM public.products WHERE kind = 'raw';
 
--------------------------------------------------------
--- 1. PREPARACIÓN Y LIMPIEZA
--------------------------------------------------------
--- Para que funcione el "ON CONFLICT (name)", necesitamos asegurar que 'name' sea único.
--- Ojo: Esto podría fallar si ya hay duplicados.
-ALTER TABLE public.products ADD CONSTRAINT products_name_key UNIQUE (name);
+-- 3. CARGA DE STOCK (CARNICERÍA)
+INSERT INTO public.products (name, kind, unit, track_stock, min_stock, price, cost) VALUES 
+('Lomo Limpio', 'raw', 'kg', true, 5.0, 0, 0),
+('Bife de Chorizo', 'raw', 'kg', true, 10.0, 0, 0),
+('Ojo de Bife', 'raw', 'kg', true, 5.0, 0, 0),
+('Carne Picada Especial', 'raw', 'kg', true, 15.0, 0, 0),
+('Tapa de Asado', 'raw', 'kg', true, 5.0, 0, 0),
+('Bondiola de Cerdo', 'raw', 'kg', true, 8.0, 0, 0),
+('Matambre Vacuno', 'raw', 'kg', true, 4.0, 0, 0),
+('Pollo Entero', 'raw', 'kg', true, 20.0, 0, 0),
+('Pechuga de Pollo', 'raw', 'kg', true, 15.0, 0, 0),
+('Salmón Rosado', 'raw', 'kg', true, 2.0, 0, 0),
+('Langostinos', 'raw', 'kg', true, 2.0, 0, 0);
 
--------------------------------------------------------
--- 2. INSERTAR INSUMOS (RAW MATERIALS)
--------------------------------------------------------
--- Primero, aseguramos que existan los insumos básicos.
+-- 4. CARGA DE STOCK (VERDULERÍA)
+INSERT INTO public.products (name, kind, unit, track_stock, min_stock, price, cost) VALUES 
+('Papa Negra', 'raw', 'kg', true, 100.0, 0, 0),
+('Cebolla Común', 'raw', 'kg', true, 40.0, 0, 0),
+('Cebolla Morada', 'raw', 'kg', true, 10.0, 0, 0),
+('Zanahoria', 'raw', 'kg', true, 15.0, 0, 0),
+('Tomate Redondo', 'raw', 'kg', true, 20.0, 0, 0),
+('Tomate Perita', 'raw', 'kg', true, 10.0, 0, 0),
+('Tomate Cherry', 'raw', 'kg', true, 3.0, 0, 0),
+('Lechuga Capuchina', 'raw', 'kg', true, 10.0, 0, 0),
+('Lechuga Mantecosa', 'raw', 'kg', true, 5.0, 0, 0),
+('Rúcula', 'raw', 'kg', true, 3.0, 0, 0),
+('Espinaca', 'raw', 'kg', true, 4.0, 0, 0),
+('Morrón Rojo', 'raw', 'kg', true, 5.0, 0, 0),
+('Morrón Verde', 'raw', 'kg', true, 3.0, 0, 0),
+('Palta Hass', 'raw', 'kg', true, 4.0, 0, 0),
+('Limón', 'raw', 'kg', true, 10.0, 0, 0),
+('Ajo', 'raw', 'kg', true, 1.0, 0, 0),
+('Perejil', 'raw', 'kg', true, 1.0, 0, 0),
+('Albahaca', 'raw', 'kg', true, 0.5, 0, 0),
+('Batata', 'raw', 'kg', true, 10.0, 0, 0),
+('Zapallo Anco', 'raw', 'kg', true, 10.0, 0, 0),
+('Champiñones', 'raw', 'kg', true, 2.0, 0, 0);
 
-INSERT INTO public.products (name, kind, unit, track_stock, min_stock) VALUES
-('Café en Grano', 'raw', 'g', true, 1000),
-('Leche Entera', 'raw', 'l', true, 10),
-('Barra de Chocolate', 'raw', 'u', true, 20),
-('Sobre de Edulcorante/Azúcar', 'raw', 'u', true, 200),
-('Jamón Cocido', 'raw', 'g', true, 1000),
-('Queso Tybo/Máquina', 'raw', 'g', true, 1000),
-('Pan de Miga (Unidad)', 'raw', 'u', true, 50),
-('Pan Árabe (Unidad)', 'raw', 'u', true, 50),
-('Carne (Nalga/Peceto)', 'raw', 'g', true, 5000),
-('Pan Rallado', 'raw', 'g', true, 2000),
-('Huevo', 'raw', 'u', true, 60),
-('Carne Picada Especial', 'raw', 'g', true, 5000),
-('Pan de Burger', 'raw', 'u', true, 50),
-('Masa de Pizza', 'raw', 'g', true, 2000),
-('Muzzarella', 'raw', 'g', true, 2000),
-('Salsa de Tomate', 'raw', 'ml', true, 2000),
-('Pasta Fresca', 'raw', 'g', true, 2000),
-('Base Verde (Lechuga/Rúcula)', 'raw', 'g', true, 1000),
-('Naranjas (Jugo)', 'raw', 'g', true, 10000),
-('Medialuna', 'raw', 'u', true, 100),
-('Tostada Pan de Campo', 'raw', 'u', true, 50),
-('Queso Crema', 'raw', 'g', true, 500),
-('Palta', 'raw', 'g', true, 1000),
-('Agua Ivess 500ml', 'raw', 'u', true, 24),
-('Coca Cola 500ml', 'raw', 'u', true, 24),
-('Aquarius 500ml', 'raw', 'u', true, 24),
-('Porción Tarta Coco', 'raw', 'u', true, 10),
-('Porción Lemon Pie', 'raw', 'u', true, 10),
-('Porción Brownie', 'raw', 'u', true, 20),
-('Alfajor (Unidad)', 'raw', 'u', true, 30),
-('Arroz', 'raw', 'g', true, 5000),
-('Pollo Pata/Muslo/Pechuga', 'raw', 'g', true, 10000),
-('Papas', 'raw', 'g', true, 10000),
-('Merluza', 'raw', 'g', true, 5000)
-ON CONFLICT (name) DO NOTHING;
+-- 5. CARGA DE STOCK (ALMACÉN Y SECOS)
+INSERT INTO public.products (name, kind, unit, track_stock, min_stock, price, cost) VALUES 
+('Harina 0000', 'raw', 'kg', true, 50.0, 0, 0),
+('Harina Leudante', 'raw', 'kg', true, 10.0, 0, 0),
+('Arroz Carnaroli', 'raw', 'kg', true, 10.0, 0, 0),
+('Arroz Largo Fino', 'raw', 'kg', true, 20.0, 0, 0),
+('Fideos Spaghetti', 'raw', 'kg', true, 10.0, 0, 0),
+('Fideos Penne Rigate', 'raw', 'kg', true, 10.0, 0, 0),
+('Azúcar Blanca', 'raw', 'kg', true, 20.0, 0, 0),
+('Azúcar Mascabo', 'raw', 'kg', true, 5.0, 0, 0),
+('Sal Fina', 'raw', 'kg', true, 10.0, 0, 0),
+('Sal Entrefina', 'raw', 'kg', true, 5.0, 0, 0),
+('Aceite Girasol', 'raw', 'l', true, 40.0, 0, 0),
+('Aceite Oliva Extra Virgen', 'raw', 'l', true, 10.0, 0, 0),
+('Vinagre de Alcohol', 'raw', 'l', true, 5.0, 0, 0),
+('Aceto Balsámico', 'raw', 'l', true, 3.0, 0, 0),
+('Pan Rallado', 'raw', 'kg', true, 15.0, 0, 0),
+('Café en Grano Importado', 'raw', 'kg', true, 10.0, 0, 0),
+('Chocolate Semiamargo', 'raw', 'kg', true, 5.0, 0, 0),
+('Dulce de Leche Repostero', 'raw', 'kg', true, 10.0, 0, 0);
 
--------------------------------------------------------
--- 2. CREAR RECETAS (BOM)
--------------------------------------------------------
--- Vinculamos productos del menú con sus insumos.
--- Las cantidades aquí ya incluyen la merma calculada según la instrucción:
--- Cantidad_Stock = Cantidad_Neta / (1 - Merma)
--- Merma estándar asumida: 8% (0.08) -> Factor divisor 0.92 salvo especificación directa.
+-- 6. CARGA DE STOCK (LÁCTEOS Y FIAMBRES)
+INSERT INTO public.products (name, kind, unit, track_stock, min_stock, price, cost) VALUES 
+('Leche Entera', 'raw', 'l', true, 60.0, 0, 0),
+('Leche Descremada', 'raw', 'l', true, 12.0, 0, 0),
+('Crema de Leche', 'raw', 'l', true, 10.0, 0, 0),
+('Manteca', 'raw', 'kg', true, 10.0, 0, 0),
+('Queso Muzzarella Cilindro', 'raw', 'kg', true, 30.0, 0, 0),
+('Queso Tybo', 'raw', 'kg', true, 15.0, 0, 0),
+('Queso Parmesano', 'raw', 'kg', true, 5.0, 0, 0),
+('Queso Azul', 'raw', 'kg', true, 2.0, 0, 0),
+('Queso Cheddar Feteado', 'raw', 'kg', true, 5.0, 0, 0),
+('Queso Crema', 'raw', 'kg', true, 10.0, 0, 0),
+('Jamón Cocido Natural', 'raw', 'kg', true, 15.0, 0, 0),
+('Jamón Crudo', 'raw', 'kg', true, 3.0, 0, 0),
+('Panceta Ahumada', 'raw', 'kg', true, 5.0, 0, 0),
+('Salame Milán', 'raw', 'kg', true, 2.0, 0, 0),
+('Huevo Blanco Grade A', 'raw', 'u', true, 180.0, 0, 0);
 
-DO $$
-DECLARE
-    -- Insumos IDs
-    id_cafe_grano UUID;
-    id_leche UUID;
-    id_chocolate UUID;
-    id_azucar UUID;
-    id_jamon UUID;
-    id_queso UUID;
-    id_pan_miga UUID;
-    id_pan_arabe UUID;
-    id_carne_milanesa UUID;
-    id_pan_rallado UUID;
-    id_huevo UUID;
-    id_carne_picada UUID;
-    id_pan_burger UUID;
-    id_masa_pizza UUID;
-    id_muzzarella UUID;
-    id_salsa_tomate UUID;
-    id_pasta UUID;
-    id_base_verde UUID;
-    id_naranja UUID;
-    id_medialuna UUID;
-    id_tostada_campo UUID;
-    id_queso_crema UUID;
-    id_palta UUID;
+-- 7. CARGA DE STOCK (PANIFICADOS)
+INSERT INTO public.products (name, kind, unit, track_stock, min_stock, price, cost) VALUES 
+('Pan Burger Brioche', 'raw', 'u', true, 100.0, 0, 0),
+('Pan Lomo/Baguette', 'raw', 'u', true, 50.0, 0, 0),
+('Pan Miga Blanco', 'raw', 'u', true, 20.0, 0, 0),
+('Pan Miga Negro', 'raw', 'u', true, 10.0, 0, 0),
+('Medialuna de Manteca', 'raw', 'u', true, 100.0, 0, 0),
+('Medialuna de Grasa', 'raw', 'u', true, 50.0, 0, 0),
+('Pan de Campo (Hogaza)', 'raw', 'u', true, 10.0, 0, 0),
+('Baguetin', 'raw', 'u', true, 50.0, 0, 0);
 
-    -- Productos Menú IDs (variables temporales para búsquedas)
-    p_id UUID;
-BEGIN
-    -- Obtener IDs de Insumos
-    SELECT id INTO id_cafe_grano FROM public.products WHERE name = 'Café en Grano';
-    SELECT id INTO id_leche FROM public.products WHERE name = 'Leche Entera';
-    SELECT id INTO id_chocolate FROM public.products WHERE name = 'Barra de Chocolate';
-    SELECT id INTO id_azucar FROM public.products WHERE name = 'Sobre de Edulcorante/Azúcar';
-    SELECT id INTO id_jamon FROM public.products WHERE name = 'Jamón Cocido';
-    SELECT id INTO id_queso FROM public.products WHERE name = 'Queso Tybo/Máquina';
-    SELECT id INTO id_pan_miga FROM public.products WHERE name = 'Pan de Miga (Unidad)';
-    SELECT id INTO id_pan_arabe FROM public.products WHERE name = 'Pan Árabe (Unidad)';
-    SELECT id INTO id_carne_milanesa FROM public.products WHERE name = 'Carne (Nalga/Peceto)';
-    SELECT id INTO id_pan_rallado FROM public.products WHERE name = 'Pan Rallado';
-    SELECT id INTO id_huevo FROM public.products WHERE name = 'Huevo';
-    SELECT id INTO id_carne_picada FROM public.products WHERE name = 'Carne Picada Especial';
-    SELECT id INTO id_pan_burger FROM public.products WHERE name = 'Pan de Burger';
-    SELECT id INTO id_masa_pizza FROM public.products WHERE name = 'Masa de Pizza';
-    SELECT id INTO id_muzzarella FROM public.products WHERE name = 'Muzzarella';
-    SELECT id INTO id_salsa_tomate FROM public.products WHERE name = 'Salsa de Tomate';
-    SELECT id INTO id_pasta FROM public.products WHERE name = 'Pasta Fresca';
-    SELECT id INTO id_base_verde FROM public.products WHERE name = 'Base Verde (Lechuga/Rúcula)';
-    SELECT id INTO id_naranja FROM public.products WHERE name = 'Naranjas (Jugo)';
-    SELECT id INTO id_medialuna FROM public.products WHERE name = 'Medialuna';
-    SELECT id INTO id_tostada_campo FROM public.products WHERE name = 'Tostada Pan de Campo';
-    SELECT id INTO id_queso_crema FROM public.products WHERE name = 'Queso Crema';
-    SELECT id INTO id_palta FROM public.products WHERE name = 'Palta';
-
-    -- Borrar recetas anteriores para evitar duplicados/errores
-    DELETE FROM public.recipes;
-
-    -------------------------------------------------------
-    -- CAFETERÍA
-    -------------------------------------------------------
-    
-    -- Café Pocillo / Jarrito (8g net -> 8.7g gross con 8% de desperdicio/calibración)
-    FOR p_id IN SELECT id FROM public.products WHERE name IN ('Café pocillo', 'Café jarrito', 'Café / cortado / lágrima (en jarrito)') LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_cafe_grano, 8.7); -- 8g / 0.92
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_azucar, 1);
-    END LOOP;
-
-    -- Café Doble (14g net -> 15.2g gross)
-    FOR p_id IN SELECT id FROM public.products WHERE name IN ('Café doble / Cortado doble', 'Café c/ leche (doble)') LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_cafe_grano, 15.2);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_azucar, 1);
-    END LOOP;
-
-    -- Leche: Cortado (0.05L -> 0.054L)
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE '%cortado%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_leche, 0.054);
-    END LOOP;
-
-    -- Leche: Café c/ Leche / Lágrima (0.15L -> 0.163L)
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE '%café c/ leche%' OR name ILIKE '%lágrima%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_leche, 0.163);
-    END LOOP;
-
-    -- Leche: Capuccino / Submarino (0.25L -> 0.27L)
-    FOR p_id IN SELECT id FROM public.products WHERE name IN ('Capuccino', 'Submarino', 'Chocolatada') LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_leche, 0.27);
-    END LOOP;
-
-    -- Submarino: Barra Choco
-    SELECT id INTO p_id FROM public.products WHERE name = 'Submarino';
-    IF p_id IS NOT NULL THEN
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_chocolate, 1);
-    END IF;
-
-    -------------------------------------------------------
-    -- COCINA
-    -------------------------------------------------------
-
-    -- Tostados (40g J + 40g Q -> ~43.5g gross each + Pan)
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE '%tostado de miga%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_jamon, 43.5);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_queso, 43.5);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_pan_miga, 1);
-    END LOOP;
-
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE '%tostado pan árabe%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_jamon, 43.5);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_queso, 43.5);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_pan_arabe, 1);
-    END LOOP;
-
-    -- Burger (180g carne picada net -> 195g gross + Pan)
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE '%burger%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_carne_picada, 195);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_pan_burger, 1);
-    END LOOP;
-
-    -- Milanesas (200g carne net -> 217g gross + 50g pan rallado + 1 huevo)
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE '%milanesa%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_carne_milanesa, 217);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_pan_rallado, 54); -- 50g + merma
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_huevo, 1);
-    END LOOP;
-
-    -- Pizzas (300g masa -> 326g gross + 250g muzza -> 271g gross + 80ml salsa)
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE '%pizza%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_masa_pizza, 326);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_muzzarella, 271);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_salsa_tomate, 87);
-    END LOOP;
-
-    -- Pastas (250g pasta -> 271g gross + 150ml salsa)
-    FOR p_id IN SELECT id FROM public.products WHERE name IN ('Spaghettis', 'Ñoquis de papa', 'Ravioles de verdura', 'Canelones verdura y ricota') LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_pasta, 271);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_salsa_tomate, 163); -- 150ml + merma
-    END LOOP;
-
-    -- Ensaladas (150g base verde -> 163g gross)
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE '%ensalada%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_base_verde, 163);
-    END LOOP;
-
-    -------------------------------------------------------
-    -- COMBOS & PROMOS (COMPLEJOS)
-    -------------------------------------------------------
-    
-    -- "Merienda Clásica": Infusión + 3 medialunas + jugo (300g bruto naranja)
-    SELECT id INTO p_id FROM public.products WHERE name = 'Merienda Clásica';
-    IF p_id IS NOT NULL THEN
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_cafe_grano, 8.7); -- Asumimos café
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_azucar, 1);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_medialuna, 3);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_naranja, 300);
-    END IF;
-
-    -- "Merienda Saludable": Infusión + 2 tostadas + 40g queso + jugo
-    SELECT id INTO p_id FROM public.products WHERE name = 'Merienda Saludable';
-    IF p_id IS NOT NULL THEN
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_cafe_grano, 8.7);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_azucar, 1);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_tostada_campo, 2);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_queso_crema, 43.5); -- 40g + merma
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_naranja, 300);
-    END IF;
-
-    -- "Merienda Bloom": Infusión + 2 tostadas + 2 huevos + 80g palta + jugo
-    SELECT id INTO p_id FROM public.products WHERE name = 'Merienda Bloom';
-    IF p_id IS NOT NULL THEN
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_cafe_grano, 8.7);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_tostada_campo, 2);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_huevo, 2);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_palta, 87); -- 80g + merma
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_naranja, 300);
-    END IF;
-
-    -- "Café c/ leche + 2 med J&Q"
-    SELECT id INTO p_id FROM public.products WHERE name = 'Café c/ leche + 2 med J&Q';
-    IF p_id IS NOT NULL THEN
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_cafe_grano, 8.7);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_leche, 0.163);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_azucar, 1);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_medialuna, 2);
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_jamon, 21.7); -- 20g + merma
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_queso, 21.7); -- 20g + merma
-    END IF;
-
-    -------------------------------------------------------
-    -- BEBIDAS ENVASADAS (1:1)
-    -------------------------------------------------------
-    -- Nota: Estos items suelen ser compra-venta directa.
-    -- Buscamos el item del menú y lo vinculamos a su insumo. 
-    -- Si no existe el insumo específico, usamos uno genérico o lo creamos en el bloque 1.
-    -- Para simplificar, asumimos que 'Agua c/s gas Ivess' consume 1 'Agua Ivess 500ml' (Raw)
-    
-    -- Gaseosas y Aguas
-    FOR p_id IN SELECT id FROM public.products WHERE name IN ('Agua c/s gas Ivess', 'Agua con o sin gas Ivess') LOOP
-         INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) 
-         SELECT p_id, id, 1 FROM public.products WHERE name = 'Agua Ivess 500ml' AND kind = 'raw';
-    END LOOP;
-
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE 'Gaseosa%' LOOP
-         INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) 
-         SELECT p_id, id, 1 FROM public.products WHERE name = 'Coca Cola 500ml' AND kind = 'raw';
-    END LOOP;
-
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE 'Agua saborizada%' LOOP
-         INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) 
-         SELECT p_id, id, 1 FROM public.products WHERE name = 'Aquarius 500ml' AND kind = 'raw';
-    END LOOP;
-
-    -------------------------------------------------------
-    -- PASTELERÍA (PORCIONES)
-    -------------------------------------------------------
-    -- Asumimos que "Tarta de coco" del menú consume 1 "Porción Tarta Coco" de stock (elaboración propia o compra)
-    -- Tarta Coco
-    FOR p_id IN SELECT id FROM public.products WHERE name = 'Tarta de coco' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) 
-        SELECT p_id, id, 1 FROM public.products WHERE name = 'Porción Tarta Coco' AND kind = 'raw';
-    END LOOP;
-    -- Lemon Pie
-    FOR p_id IN SELECT id FROM public.products WHERE name = 'Lemon pie' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) 
-        SELECT p_id, id, 1 FROM public.products WHERE name = 'Porción Lemon Pie' AND kind = 'raw';
-    END LOOP;
-    -- Brownie
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE 'Brownie%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) 
-        SELECT p_id, id, 1 FROM public.products WHERE name = 'Porción Brownie' AND kind = 'raw';
-    END LOOP;
-    -- Alfajores
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE 'Alfajores%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) 
-        SELECT p_id, id, 1 FROM public.products WHERE name = 'Alfajor (Unidad)' AND kind = 'raw';
-    END LOOP;
-
-    -------------------------------------------------------
-    -- RESTO FALTANTES (PLATOS ELABORADOS)
-    -------------------------------------------------------
-    -- Arroz con Pollo (150g Arroz + 200g Pollo)
-    SELECT id INTO p_id FROM public.products WHERE name = 'Arroz con pollo';
-    IF p_id IS NOT NULL THEN
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) SELECT p_id, id, 150 FROM public.products WHERE name = 'Arroz' AND kind = 'raw';
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) SELECT p_id, id, 200 FROM public.products WHERE name ILIKE 'Pollo%' AND kind = 'raw' LIMIT 1;
-    END IF;
-
-    -- Pechuga / Patamuslo (250g Pollo + Guarnición)
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE '%Pechuga%' OR name ILIKE '%Patamuslo%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) SELECT p_id, id, 270 FROM public.products WHERE name ILIKE 'Pollo%' AND kind = 'raw' LIMIT 1; -- 250g + merma
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) SELECT p_id, id, 150 FROM public.products WHERE name ILIKE 'Papas%' AND kind = 'raw' LIMIT 1; -- Guarnición papas
-    END LOOP;
-
-    -- Filet Merluza (200g Pescado + Rebozador)
-    FOR p_id IN SELECT id FROM public.products WHERE name ILIKE '%Merluza%' LOOP
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) SELECT p_id, id, 220 FROM public.products WHERE name = 'Merluza' AND kind = 'raw'; 
-        INSERT INTO public.recipes (menu_product_id, raw_product_id, qty) VALUES (p_id, id_pan_rallado, 50);
-    END LOOP;
-
-END $$;
-
-COMMIT;
+-- 8. CARGA DE STOCK (ADEREZOS)
+INSERT INTO public.products (name, kind, unit, track_stock, min_stock, price, cost) VALUES 
+('Mayonesa', 'raw', 'kg', true, 5.0, 0, 0),
+('Mostaza', 'raw', 'kg', true, 3.0, 0, 0),
+('Ketchup', 'raw', 'kg', true, 3.0, 0, 0),
+('Salsa Soja', 'raw', 'l', true, 2.0, 0, 0);

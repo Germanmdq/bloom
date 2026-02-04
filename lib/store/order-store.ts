@@ -2,11 +2,11 @@
 import { create } from 'zustand';
 
 export interface CartItem {
+    id: string; // Product ID required for Stock
     name: string;
     price: number;
     quantity: number;
     description?: string;
-    // Add logic for modifiers later if needed
 }
 
 interface OrderState {
@@ -38,7 +38,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
     cart: [],
     addToCart: (item) => set((state) => {
-        const existingIdx = state.cart.findIndex(i => i.name === item.name);
+        // Match by ID if available, otherwise fallback to Name (legacy safety)
+        const existingIdx = state.cart.findIndex(i => i.id ? i.id === item.id : i.name === item.name);
+
         if (existingIdx >= 0) {
             const newCart = [...state.cart];
             newCart[existingIdx].quantity += item.quantity;
@@ -74,7 +76,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
     getTotal: () => {
         const state = get();
-        const subtotal = state.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        return subtotal * (1 - state.discount / 100);
+        return state.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     }
 }));

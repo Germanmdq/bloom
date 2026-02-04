@@ -76,18 +76,29 @@ export default function StaffPage() {
         setLoading(false);
     }
 
-    async function handleDelete(id: string) {
-        if (!confirm("¿Seguro que quieres eliminar a este empleado del sistema?")) return;
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+
+    // ... existing useState ...
+
+    // ... useEffect ...
+
+    // ... handleUnlock ...
+
+    async function confirmDelete() {
+        if (!deleteId) return;
+        setDeleteId(null); // Close modal first or keep it loading? 
+        // Better UX: keep it loading or close and show global loading.
+        // Existing loading state covers the list.
         setLoading(true);
         try {
-            const res = await fetch(`/api/staff?id=${id}`, {
+            const res = await fetch(`/api/staff?id=${deleteId}`, {
                 method: 'DELETE',
             });
             const result = await res.json();
             if (res.ok) {
                 fetchProfiles();
             } else {
-                alert(`Error: ${result.message}`);
+                alert(`Error: ${result.message}`); // Still alert on error? Maybe fix later.
                 setLoading(false);
             }
         } catch (err) {
@@ -95,6 +106,57 @@ export default function StaffPage() {
             setLoading(false);
         }
     }
+
+    // New handleDelete triggers modal
+    function handleDelete(id: string) {
+        setDeleteId(id);
+    }
+
+    // ... render ...
+    // Inside return, before closing div:
+
+    {/* DELETE CONFIRMATION MODAL */ }
+    <AnimatePresence>
+        {deleteId && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-black/40 backdrop-blur-md"
+                    onClick={() => setDeleteId(null)}
+                />
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="relative bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center"
+                >
+                    <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Trash2 size={28} />
+                    </div>
+                    <h3 className="text-2xl font-black text-gray-900 mb-2">¿Eliminar Empleado?</h3>
+                    <p className="text-gray-500 font-medium text-sm mb-8">Esta acción no se puede deshacer.</p>
+
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setDeleteId(null)}
+                            className="flex-1 py-4 rounded-xl font-bold bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={confirmDelete}
+                            className="flex-1 py-4 rounded-xl font-black bg-red-500 text-white hover:bg-red-600 transition-all shadow-lg shadow-red-500/30"
+                        >
+                            Eliminar
+                        </button>
+                    </div>
+                </motion.div>
+            </div>
+        )}
+    </AnimatePresence>
+
 
     return (
         <div className="pb-20">
