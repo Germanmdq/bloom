@@ -234,13 +234,13 @@ export default function HomePage() {
                         src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=2574&auto=format&fit=crop"
                         alt="Menu Hero"
                         fill
-                        className="object-cover opacity-70 mix-blend-overlay"
+                        className="object-cover opacity-80"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-piedra via-transparent to-transparent opacity-90" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-piedra via-piedra/20 to-transparent" />
                     <div className="absolute bottom-0 left-0 p-8 md:p-12">
-                        <p className="text-crema/60 font-bold tracking-widest uppercase text-xs mb-2">Pedidos Online</p>
+                        <p className="text-crema/80 font-bold tracking-widest uppercase text-xs mb-2">Pedidos Online</p>
                         <h1 className="text-4xl md:text-6xl font-black text-crema mb-2 tracking-tighter uppercase leading-none">Nuestro Menú</h1>
-                        <p className="text-crema/80 font-medium max-w-md text-sm md:text-base">Elegí tus favoritos y recibilos en tu mesa o en tu casa.</p>
+                        <p className="text-crema/90 font-medium max-w-md text-sm md:text-base">Elegí tus favoritos y recibilos en tu mesa o en tu casa.</p>
                     </div>
                 </div>
             </div>
