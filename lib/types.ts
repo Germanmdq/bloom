@@ -41,6 +41,8 @@ export type Table = {
     status: TableStatus;
     total: number;
     order_type?: 'LOCAL' | 'DELIVERY';
+    webOrderId?: string;  // ID original del pedido web
+    clientName?: string;  // Nombre del cliente
 };
 
 export type PaymentMethod = 'CASH' | 'CARD' | 'MERCADO_PAGO';

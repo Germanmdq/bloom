@@ -32,15 +32,21 @@ export function OrderList() {
 
     async function fetchOrders() {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('orders')
-            .select('*')
-            .order('created_at', { ascending: false });
+        try {
+            const response = await fetch('/api/orders/list');
+            const result = await response.json();
 
-        if (!error && data) {
-            setOrders(data as Order[]);
+            if (response.ok && result.data) {
+                setOrders(result.data as Order[]);
+            } else {
+                console.error("Failed to fetch orders via API:", result.error);
+                // Fallback to client-side just in case? Or error toast.
+            }
+        } catch (error) {
+            console.error("Fetch error:", error);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }
 
     const exportToExcel = () => {
@@ -349,7 +355,7 @@ export function OrderList() {
                                                     {new Date(order.created_at).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' })}
                                                 </td>
                                                 <td className="py-4 group-hover:bg-white">
-                                                    <span className="bg-black text-white w-6 h-6 rounded flex items-center justify-center text-xs font-black">
+                                                    <span className="bg-black text-white px-2 py-1 rounded flex items-center justify-center text-xs font-black w-fit whitespace-nowrap">
                                                         {order.table_id}
                                                     </span>
                                                 </td>

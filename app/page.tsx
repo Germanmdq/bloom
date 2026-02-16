@@ -73,10 +73,10 @@ function Navbar() {
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/95 backdrop-blur-md shadow-sm py-4" : "bg-transparent py-6"}`}>
       <div className="container mx-auto px-6 flex items-center justify-between">
         {/* Left: Hamburger */}
-        <div className="flex items-center gap-3 cursor-pointer group">
+        <Link href="/menu" className="flex items-center gap-3 cursor-pointer group">
           <Menu className={`w-6 h-6 ${scrolled ? "text-[#334862]" : "text-white"}`} />
           <span className={`text-xs font-bold tracking-widest ${scrolled ? "text-[#334862]" : "text-white"}`}>MENÚ</span>
-        </div>
+        </Link>
 
         {/* Center: Logo */}
         <div className="absolute left-1/2 -translate-x-1/2">
@@ -141,6 +141,16 @@ function Hero() {
           <h2 className="font-raleway text-5xl md:text-8xl font-thin tracking-[0.1em] uppercase shadow-black drop-shadow-lg">
             {HERO_SLIDES[current].title}
           </h2>
+
+          <Link href="/menu">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="mt-8 bg-[#FFD60A] text-black px-8 py-4 rounded-full font-bold tracking-widest text-xs hover:bg-white hover:text-black transition-colors shadow-lg shadow-black/20"
+            >
+              PEDIR ONLINE
+            </motion.button>
+          </Link>
         </motion.div>
 
         {/* Scroll Indicator */}

@@ -13,12 +13,15 @@ export async function getUpsellSuggestions(currentOrder: any[], availableProduct
             body: JSON.stringify({ currentOrder, availableProducts })
         });
 
-        if (!response.ok) throw new Error('API Error');
+        if (!response.ok) {
+            // Silently fail if API key is missing or server error
+            return [];
+        }
 
         const data = await response.json();
         return data.suggestions || [];
     } catch (error) {
-        console.error('❌ [Client] Error fetching suggestions:', error);
+        // console.error('❌ [Client] Error fetching suggestions:', error);
         return [];
     }
 }

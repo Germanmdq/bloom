@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 
 
-
 export default function TablesPage() {
     const [tables, setTables] = useState<Table[]>([]);
     const [selectedTable, setSelectedTable] = useState<Table | null>(null);
@@ -35,21 +34,47 @@ export default function TablesPage() {
     }, []);
 
     async function fetchTables() {
-        // ... existing fetchTables code ...
         setLoading(true);
         setError(null);
         try {
-            const { data, error } = await supabase
+            // 1. Fetch physical tables from DB
+            const { data: dbTables, error: dbError } = await supabase
                 .from('salon_tables')
                 .select('*')
                 .order('id', { ascending: true });
 
-            if (error) {
-                console.error('Error fetching tables:', error);
-                setError(error.message);
-            } else if (data) {
-                setTables(data as Table[]);
-            }
+            if (dbError) throw dbError;
+
+            // 2. Fetch active web orders via our API to bypass RLS
+            const ordersResponse = await fetch('/api/orders/list');
+            const ordersResult = await ordersResponse.json();
+            const webOrders = ordersResult.data || [];
+            console.log("Web Orders fetched:", webOrders.length, webOrders);
+
+            // 3. Create virtual tables for EACH web order
+            const pendingWebOrders = webOrders.filter((o: any) =>
+                (o.table_id === 998 || o.table_id === 999) &&
+                o.status !== 'PAID' && o.status !== 'CLOSED'
+            );
+
+            const virtualTables: Table[] = pendingWebOrders.map((order: any, idx: number) => {
+                const clientItem = order.items?.find((i: any) => i.is_meta);
+                const clientName = clientItem ? clientItem.name.replace('Cliente: ', '') : 'Web Client';
+
+                return {
+                    id: 10000 + idx, // Virtual ID, just for keying
+                    status: 'OCCUPIED',
+                    total: Number(order.total),
+                    order_type: order.table_id === 999 ? 'DELIVERY' : 'LOCAL',
+                    webOrderId: order.id, // THE REAL ID
+                    clientName: clientName
+                } as Table;
+            });
+
+            // Combine
+            const finalTables = [...(dbTables as Table[]), ...virtualTables];
+            setTables(finalTables);
+
         } catch (err: any) {
             console.error('Unexpected error fetching tables:', err);
             setError(err.message || 'Error inesperado');
@@ -96,6 +121,7 @@ export default function TablesPage() {
                         <div className="bg-white/90 backdrop-blur-2xl w-full h-full rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50 overflow-hidden flex flex-col">
                             <OrderSheet
                                 tableId={selectedTable.id}
+                                webOrderId={selectedTable.webOrderId}
                                 onClose={() => { setSelectedTable(null); fetchTables(); }}
                                 onOrderComplete={() => handleOrderComplete()}
                             />
@@ -146,14 +172,20 @@ export default function TablesPage() {
                             onClick={() => setSelectedTable(table)}
                             className={`aspect-[4/3] rounded-[2rem] p-8 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden backdrop-blur-2xl border border-white/40
                                 ${table.status === 'OCCUPIED'
-                                    ? 'bg-orange-100/60 shadow-[0_20px_40px_rgba(249,115,22,0.25)] border-orange-200/50'
+                                    ? table.webOrderId
+                                        ? 'bg-blue-100/60 shadow-[0_20px_40px_rgba(59,130,246,0.25)] border-blue-200/50'
+                                        : 'bg-orange-100/60 shadow-[0_20px_40px_rgba(249,115,22,0.25)] border-orange-200/50'
                                     : 'bg-white/70 shadow-lg hover:shadow-2xl hover:bg-white/80'}
                             `}
                         >
                             <div className="flex justify-between items-start">
-                                <span className="text-3xl font-semibold text-gray-900">{table.id}</span>
+                                <span className={`text-3xl font-semibold overflow-hidden text-ellipsis whitespace-nowrap ${table.webOrderId ? 'text-blue-900 text-xl font-black uppercase tracking-wider' : 'text-gray-900'
+                                    }`}>
+                                    {table.webOrderId ? table.clientName : table.id}
+                                </span>
                                 {table.status === 'OCCUPIED' && (
-                                    <div className="w-3 h-3 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)] animate-pulse" />
+                                    <div className={`w-3 h-3 rounded-full shadow-[0_0_12px_rgba(0,0,0,0.5)] animate-pulse shrink-0 ${table.webOrderId ? 'bg-blue-500 shadow-blue-500/50' : 'bg-orange-500 shadow-orange-500/80'
+                                        }`} />
                                 )}
                             </div>
 
@@ -162,6 +194,8 @@ export default function TablesPage() {
                                     <div className="mb-2">
                                         {table.order_type === 'DELIVERY' ? (
                                             <span className="inline-block px-2 py-1 rounded-md bg-purple-100 text-purple-700 text-[10px] font-black uppercase tracking-widest shadow-sm">Delivery</span>
+                                        ) : table.webOrderId ? (
+                                            <span className="inline-block px-2 py-1 rounded-md bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-widest shadow-sm">Web/Retiro</span>
                                         ) : (
                                             <span className="inline-block px-2 py-1 rounded-md bg-black/5 text-black/40 text-[10px] font-black uppercase tracking-widest">Local</span>
                                         )}

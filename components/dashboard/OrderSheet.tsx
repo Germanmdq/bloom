@@ -13,6 +13,7 @@ type OrderSheetProps = {
     tableId: number;
     onClose: () => void;
     onOrderComplete?: () => void;
+    webOrderId?: string;
 };
 
 interface ShortcutBtnProps {
@@ -38,13 +39,16 @@ function ShortcutBtn({ label, subLabel, icon, color, onClick }: ShortcutBtnProps
     );
 }
 
-export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProps) {
+export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: OrderSheetProps) {
     // GLOBAL STATE
     const {
         cart, addToCart, removeFromCart, updateQuantity, clearCart,
         getTotal, paymentMethod, setPaymentMethod, notes, setNotes,
         discount, setDiscount
     } = useOrderStore();
+
+    const supabase = createClient();
+
 
     // DATA HOOKS (Cached & Optimized)
     const { data: categories = [], isLoading: catLoading } = useCategories();
@@ -67,29 +71,98 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
     const [waiters, setWaiters] = useState<any[]>([]);
     const [orderType, setOrderType] = useState<'LOCAL' | 'DELIVERY'>('LOCAL');
 
+    // Web Orders State
+    const [webOrders, setWebOrders] = useState<any[]>([]);
+    const [currentWebOrderId, setCurrentWebOrderId] = useState<string | null>(null);
+    const isWebTable = tableId === 998 || tableId === 999;
+
+    // Helper to refresh data
+    const refreshData = async () => {
+        // IF WEB TABLE (998/999), FETCH FROM API
+        if (tableId === 998 || tableId === 999) {
+            try {
+                const resp = await fetch('/api/orders/list');
+                const res = await resp.json();
+                if (res.data) {
+                    const filtered = res.data.filter((o: any) => o.table_id === tableId);
+                    setWebOrders(filtered);
+                }
+            } catch (e) {
+                console.error("Error loading web orders:", e);
+            }
+        } else {
+            // REGULAR TABLE
+            const { data: tableData } = await supabase.from('salon_tables').select('total, order_type').eq('id', tableId).single();
+            if (tableData) {
+                setExtraTotal(Number(tableData.total) || 0);
+                if (tableData.order_type) setOrderType(tableData.order_type);
+            }
+        }
+    };
+
+    const handleSelectWebOrder = (order: any) => {
+        clearCart();
+        setCurrentWebOrderId(order.id);
+
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach((item: any) => {
+                if (item.is_meta) {
+                    setClientName(item.name.replace('Cliente: ', ''));
+                } else {
+                    addToCart({
+                        id: item.id || item.product_id || 'manual-' + Math.random(),
+                        name: item.name,
+                        price: Number(item.price),
+                        quantity: Number(item.quantity)
+                    });
+                }
+            });
+        }
+    };
+
+    const handleBackToWebList = () => {
+        clearCart();
+        setCurrentWebOrderId(null);
+        refreshData();
+    };
+
+    const loadWebOrder = async (id: string) => {
+        try {
+            const resp = await fetch('/api/orders/list');
+            const res = await resp.json();
+            if (res.data) {
+                const order = res.data.find((o: any) => o.id === id);
+                if (order) {
+                    handleSelectWebOrder(order);
+                }
+            }
+        } catch (e) {
+            console.error("Error loading specific web order:", e);
+        }
+    };
+
     // AI Suggestions State
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(false);
     const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-    const supabase = createClient();
-
     // Initial Fetch
     useEffect(() => {
-        const fetchExtras = async () => {
+        const initStart = async () => {
             const { data: waiterData } = await supabase.from('profiles').select('id, full_name').eq('role', 'WAITER');
-            const { data: tableData } = await supabase.from('salon_tables').select('total, order_type').eq('id', tableId).single();
             if (waiterData) {
                 setWaiters(waiterData);
                 if (waiterData.length > 0) setSelectedWaiter(waiterData[0].id);
             }
-            if (tableData) {
-                setExtraTotal(Number(tableData.total) || 0);
-                if (tableData.order_type) setOrderType(tableData.order_type);
+
+            if (webOrderId) {
+                await loadWebOrder(webOrderId);
+            } else {
+                await refreshData();
             }
         };
-        fetchExtras();
-    }, [tableId]);
+        initStart();
+    }, [tableId, webOrderId]);
 
     // AI Suggestions Effect (Debounced)
     useEffect(() => {
@@ -291,14 +364,25 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
 
             await supabase.from('salon_tables').update({ status: 'FREE', total: 0 }).eq('id', tableId);
 
+            // DELETE Original Web Order if applicable
+            if (currentWebOrderId) {
+                await fetch(`/api/orders/delete?id=${currentWebOrderId}`, { method: 'DELETE' });
+            }
+
             // SUCCESS FEEDBACK
-            setFeedback({ message: "¡Mesa cobrada exitosamente!", type: 'success' });
+            setFeedback({ message: "¡Venta registrada exitosamente!", type: 'success' });
 
             setTimeout(() => {
                 setFeedback(null);
                 clearCart();
-                if (onOrderComplete) onOrderComplete();
-                onClose();
+
+                if (isWebTable) {
+                    setCurrentWebOrderId(null);
+                    refreshData(); // Go back to list
+                } else {
+                    if (onOrderComplete) onOrderComplete();
+                    onClose();
+                }
             }, 2000);
 
         } catch (error: any) {
@@ -352,14 +436,83 @@ export function OrderSheet({ tableId, onClose, onOrderComplete }: OrderSheetProp
             ? products.filter((p: any) => p.category_id === activeCategory)
             : products; // If null, show ALL
 
+    // RENDER: WEB ORDER SELECTION LIST
+    if (isWebTable && !currentWebOrderId && webOrders.length > 0) {
+        return (
+            <div className="h-full flex flex-col bg-[#F8F9FA] overflow-hidden text-[#1A1C1E] p-8">
+                <div className="flex justify-between items-center mb-8">
+                    <h2 className="text-3xl font-black uppercase tracking-tight">Pedidos Pendientes: {tableId === 998 ? "Retiro" : "Envío"}</h2>
+                    <button onClick={onClose} className="w-12 h-12 rounded-full bg-black/5 hover:bg-black hover:text-white transition-all flex items-center justify-center"><X /></button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-20">
+                    {webOrders.map((order) => {
+                        const clientItem = order.items.find((i: any) => i.is_meta);
+                        const clientName = clientItem ? clientItem.name : "Cliente Web";
+                        const details = clientItem?.details || {};
+
+                        return (
+                            <button
+                                key={order.id}
+                                onClick={() => handleSelectWebOrder(order)}
+                                className="bg-white p-6 rounded-[2rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border border-gray-100 flex flex-col text-left group"
+                            >
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="bg-black text-white px-3 py-1 rounded-full text-xs font-bold">{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                    <div className="text-2xl font-black text-gray-900">${Number(order.total).toLocaleString()}</div>
+                                </div>
+
+                                <h3 className="text-xl font-bold text-gray-800 mb-1">{clientName.replace('Cliente: ', '')}</h3>
+                                {details.phone && <p className="text-xs text-gray-400 font-bold mb-4">{details.phone}</p>}
+
+                                <div className="flex-1 space-y-1 mb-6">
+                                    {order.items.filter((i: any) => !i.is_meta).slice(0, 3).map((item: any, idx: number) => (
+                                        <div key={idx} className="flex justify-between text-sm text-gray-600">
+                                            <span>{item.quantity}x {item.name}</span>
+                                        </div>
+                                    ))}
+                                    {order.items.filter((i: any) => !i.is_meta).length > 3 && <p className="text-xs text-gray-400 italic">... y {order.items.length - 4} más</p>}
+                                </div>
+
+                                <div className="mt-auto w-full bg-[#FFD60A] text-black py-4 rounded-xl font-black text-center uppercase tracking-wider group-hover:scale-[1.02] transition-transform">
+                                    Cobrar Pedido
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
+
+    // Default render empty state for web table
+    if (isWebTable && !currentWebOrderId && webOrders.length === 0) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center p-8 bg-[#F8F9FA] text-center">
+                <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-6 text-gray-400">
+                    <LayoutGrid size={48} />
+                </div>
+                <h2 className="text-2xl font-black text-gray-400 uppercase tracking-widest mb-4">No hay pedidos pendientes</h2>
+                <button onClick={onClose} className="px-8 py-3 bg-black text-white rounded-xl font-bold">Volver al Salón</button>
+            </div>
+        );
+    }
+
     return (
         <div className="h-full flex flex-col bg-[#F8F9FA] overflow-hidden text-[#1A1C1E]">
             {/* HEADER */}
             <div className="bg-[#FFD60A] pt-3 pb-4 px-6 flex flex-col gap-4 border-b border-black/5 shadow-md shrink-0">
                 <div className="flex items-center justify-between w-full border-b border-black/5 pb-3">
                     <div className="flex items-center gap-3">
-                        <div className="bg-black text-white w-9 h-9 rounded-full flex items-center justify-center font-black text-lg shadow-sm">{tableId}</div>
-                        <span className="font-black text-black uppercase tracking-tighter text-2xl">Mesa Bar {tableId}</span>
+                        {isWebTable && currentWebOrderId && (
+                            <button onClick={handleBackToWebList} className="w-9 h-9 rounded-full bg-black/10 hover:bg-black hover:text-white flex items-center justify-center transition-colors">
+                                <ArrowLeft size={18} />
+                            </button>
+                        )}
+                        <div className="bg-black text-white w-9 h-9 rounded-full flex items-center justify-center font-black text-lg shadow-sm">{tableId === 998 ? 'R' : tableId === 999 ? 'E' : tableId}</div>
+                        <span className="font-black text-black uppercase tracking-tighter text-2xl">
+                            {tableId === 998 ? "Retiro" : tableId === 999 ? "Envío" : `Mesa ${tableId}`}
+                        </span>
                     </div>
                     <div className="flex items-center gap-6">
                         <div className="flex bg-black/5 rounded-full p-1">
