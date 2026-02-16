@@ -12,7 +12,6 @@ const links = [
     { href: "/dashboard/reports", label: "Reportes", icon: PieChart },
     { href: "/dashboard/expenses", label: "Gastos", icon: Receipt },
     { href: "/dashboard/kitchen", label: "Cocina", icon: CookingPot },
-    { href: "/dashboard/whatsapp", label: "WhatsApp", icon: MessageCircle },
     { href: "/dashboard/stock", label: "Stock", icon: Package },
     { href: "/dashboard/settings", label: "Ajustes", icon: Settings },
 ];

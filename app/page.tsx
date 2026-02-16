@@ -1,601 +1,246 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, X, Plus, Minus, ChevronRight, Store, Truck, MapPin, User, Phone, Check, Info, ArrowRight } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
-import { toast } from "sonner";
+import Image from "next/image";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { ArrowRight, Bike, CalendarDays, ChefHat, MapPin, Star, Clock } from "lucide-react";
+import { useRef } from "react";
 
-// Types
-interface ProductOption {
-    name: string;
-    values: string[];
-}
+// --- ANIMATION HELPERS ---
+const FadeIn = ({ children, delay = 0, className = "" }: any) => (
+    <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
+        className={className}
+    >
+        {children}
+    </motion.div>
+);
 
-interface Product {
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    image_url: string;
-    category_id: string;
-    options?: ProductOption[] | null; // JSONB from DB
-    categories?: {
-        name: string;
-    };
-}
-
-interface Category {
-    id: string;
-    name: string;
-}
-
-interface CartItem extends Product {
-    cartItemId: string; // Unique ID for cart item (product + options)
-    quantity: number;
-    selectedOptions?: Record<string, string>;
-    notes?: string;
-}
-
-export default function HomePage() {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<string>("all");
-    const [cart, setCart] = useState<CartItem[]>([]);
-    const [isCartOpen, setIsCartOpen] = useState(false);
-    const [loading, setLoading] = useState(true);
-
-    // Customization State
-    const [productToCustomize, setProductToCustomize] = useState<Product | null>(null);
-    const [currentOptions, setCurrentOptions] = useState<Record<string, string>>({});
-
-    // Checkout State
-    const [step, setStep] = useState<"cart" | "checkout" | "success">("cart");
-    const [orderType, setOrderType] = useState<"pickup" | "delivery">("pickup");
-    const [checkoutForm, setCheckoutForm] = useState({
-        name: "",
-        phone: "",
-        address: "",
-        notes: ""
-    });
-    const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'MERCADO_PAGO'>('CASH');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const supabase = createClient();
-
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    async function fetchData() {
-        setLoading(true);
-        const { data: catData } = await supabase.from('categories').select('*');
-        const { data: prodData } = await supabase.from('products').select('*, categories(name)');
-
-        if (catData) setCategories(catData);
-        if (prodData) setProducts(prodData);
-        setLoading(false);
-    }
-
-    // Cart Functions
-    const handleAddToCartClick = (product: Product) => {
-        if (product.options && product.options.length > 0) {
-            // Open customization modal
-            const initialOptions: Record<string, string> = {};
-            product.options.forEach(opt => {
-                if (opt.values.length > 0) initialOptions[opt.name] = opt.values[0];
-            });
-            setCurrentOptions(initialOptions);
-            setProductToCustomize(product);
-        } else {
-            addToCart(product);
-        }
-    };
-
-    const confirmCustomization = () => {
-        if (!productToCustomize) return;
-        addToCart(productToCustomize, currentOptions);
-        setProductToCustomize(null);
-        setCurrentOptions({});
-        toast.success("Agregado con opciones");
-    };
-
-    const addToCart = (product: Product, options?: Record<string, string>) => {
-        const optionsKey = options ? JSON.stringify(options) : "";
-        const cartItemId = `${product.id}-${optionsKey}`;
-
-        setCart(prev => {
-            const existingItem = prev.find(item => item.cartItemId === cartItemId);
-            if (existingItem) {
-                return prev.map(item =>
-                    item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
-                );
-            }
-            return [...prev, { ...product, quantity: 1, selectedOptions: options, cartItemId }];
-        });
-
-        if (!productToCustomize) toast.success("Agregado al carrito");
-    };
-
-    const removeFromCart = (cartItemId: string) => {
-        setCart(prev => prev.filter(item => item.cartItemId !== cartItemId));
-    };
-
-    const updateQuantity = (cartItemId: string, delta: number) => {
-        setCart(prev => {
-            return prev.map(item => {
-                if (item.cartItemId === cartItemId) {
-                    const newQty = Math.max(0, item.quantity + delta);
-                    return { ...item, quantity: newQty };
-                }
-                return item;
-            }).filter(item => item.quantity > 0);
-        });
-    };
-
-    const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-
-    const filteredProducts = selectedCategory === "all"
-        ? products
-        : products.filter(p => p.categories?.name === selectedCategory || p.category_id === selectedCategory);
-
-    const activeCategories = categories.filter(cat =>
-        products.some(p => p.categories?.name === cat.name || p.category_id === cat.id)
-    );
-
-    const getProductQuantity = (productId: string) => {
-        // Only shows total qty of that product ID regardless of options
-        return cart.filter(item => item.id === productId).reduce((acc, item) => acc + item.quantity, 0);
-    };
-
-    const handleCheckout = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (cart.length === 0) return;
-        setIsSubmitting(true);
-
-        const orderItems = cart.map(item => ({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            subtotal: item.price * item.quantity,
-            options: item.selectedOptions // Backend should handle this field or store in JSON
-        }));
-
-        // Flatten options into name for simple backend compatibility if needed
-        const flattenedItems = orderItems.map(item => ({
-            ...item,
-            name: item.options ? `${item.name} (${Object.values(item.options).join(', ')})` : item.name
-        }));
-
-        const customerMetaItem = {
-            is_meta: true,
-            name: `Cliente: ${checkoutForm.name}`,
-            quantity: 1,
-            price: 0,
-            details: {
-                phone: checkoutForm.phone,
-                address: checkoutForm.address,
-                type: orderType,
-                notes: checkoutForm.notes
-            }
-        };
-
-        const finalItems = [...flattenedItems, customerMetaItem];
-
-        try {
-            const response = await fetch('/api/orders', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    total: cartTotal,
-                    table_id: orderType === 'pickup' ? 998 : 999,
-                    payment_method: paymentMethod,
-                    items: finalItems
-                })
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                alert(`Error al crear pedido: ${result.error}`);
-                setIsSubmitting(false);
-                return;
-            }
-
-            if (paymentMethod === 'MERCADO_PAGO') {
-                try {
-                    const mpResponse = await fetch('/api/mercadopago/preference', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            items: cart, // Envío cart original, backend MP debe procesar nombre
-                            payer: checkoutForm
-                        })
-                    });
-                    const mpResult = await mpResponse.json();
-
-                    if (!mpResponse.ok) throw new Error(mpResult.error || "Error de pago");
-
-                    if (mpResult.init_point) {
-                        window.location.href = mpResult.init_point;
-                        return;
-                    } else {
-                        throw new Error("No se recibió link de pago");
-                    }
-                } catch (mpError: any) {
-                    alert(`Error Mercado Pago: ${mpError.message}`);
-                    setIsSubmitting(false);
-                }
-            } else {
-                setStep("success");
-                setCart([]);
-                setIsSubmitting(false);
-            }
-        } catch (err) {
-            alert("Error de conexión.");
-            setIsSubmitting(false);
-        }
-    };
-
+export default function Home() {
     return (
-        <div className="min-h-screen bg-crema font-sans pb-32 text-piedra">
-            {/* HEADER */}
-            <header className="fixed top-0 inset-x-0 bg-crema/90 backdrop-blur-md z-40 border-b border-chocolate/5">
-                <div className="container mx-auto px-4 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-8">
-                        <Link href="/" className="font-sans text-2xl font-black tracking-widest text-piedra hover:scale-105 transition-transform">
-                            BLOOM
-                        </Link>
-                        <nav className="hidden md:flex gap-6">
-                            <Link href="/about" className="text-xs font-bold tracking-widest text-gris hover:text-chocolate transition-colors uppercase">Nosotros</Link>
-                            <Link href="/dashboard" className="text-xs font-bold tracking-widest text-gris hover:text-chocolate transition-colors uppercase">Acceso</Link>
-                        </nav>
-                    </div>
+        <main className="min-h-screen font-sans bg-white selection:bg-orange-500 selection:text-white">
 
-                    <div className="flex items-center gap-4">
-                        <Link href="/about" className="md:hidden text-gris hover:text-chocolate transition-colors"><Info size={24} /></Link>
-                        <button
-                            onClick={() => setIsCartOpen(true)}
-                            className="relative p-3 hover:bg-chocolate/10 rounded-full transition-colors group"
-                        >
-                            <ShoppingBag className="text-piedra group-hover:text-chocolate transition-colors" />
-                            {cartCount > 0 && (
-                                <span className="absolute top-0 right-0 bg-chocolate text-crema text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-md animate-bounce">
-                                    {cartCount}
-                                </span>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            {/* HERO BANNER */}
-            <div className="pt-20 pb-8 px-4">
-                <div className="relative h-[30vh] md:h-[40vh] bg-piedra rounded-[2.5rem] overflow-hidden shadow-2xl shadow-chocolate/20">
+            {/* --- HERO SECTION --- */}
+            <section className="relative h-[90vh] w-full flex items-center justify-center overflow-hidden">
+                {/* Background Image with Parallax Effect */}
+                <div className="absolute inset-0 z-0">
                     <Image
-                        src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=2574&auto=format&fit=crop"
-                        alt="Menu Hero"
+                        src="https://images.unsplash.com/photo-1544025162-d7669d2d09bd?q=80&w=2674&auto=format&fit=crop"
+                        alt="Bloom Atmosphere"
                         fill
-                        className="object-cover opacity-80"
+                        className="object-cover brightness-[0.35]"
+                        priority
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-piedra via-piedra/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 p-8 md:p-12">
-                        <p className="text-crema/80 font-bold tracking-widest uppercase text-xs mb-2">Pedidos Online</p>
-                        <h1 className="text-4xl md:text-6xl font-black text-crema mb-2 tracking-tighter uppercase leading-none">Nuestro Menú</h1>
-                        <p className="text-crema/90 font-medium max-w-md text-sm md:text-base">Elegí tus favoritos y recibilos en tu mesa o en tu casa.</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+                </div>
+
+                {/* Hero Content */}
+                <div className="relative z-10 container mx-auto px-6 text-center text-white">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 1 }}
+                    >
+                        <span className="inline-block py-1 px-3 border border-white/20 rounded-full bg-white/10 backdrop-blur-md text-sm font-medium tracking-wider mb-6">
+                            EST. 2010 • BUENOS AIRES
+                        </span>
+                        <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter mb-6 leading-none">
+                            BLOOM<span className="text-orange-500">.</span>
+                        </h1>
+                        <p className="text-xl md:text-2xl text-gray-200 font-medium max-w-2xl mx-auto leading-relaxed mb-10">
+                            Cocina de autor honesta. Ingredientes reales. <br className="hidden md:block" />
+                            La experiencia gastronómica que estabas buscando.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                            <Link href="/menu" className="w-full sm:w-auto">
+                                <button className="w-full sm:w-auto px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 shadow-[0_0_40px_-10px_rgba(234,88,12,0.6)] hover:shadow-[0_0_60px_-10px_rgba(234,88,12,0.8)] hover:-translate-y-1">
+                                    <Bike size={20} /> PEDIR DELIVERY
+                                </button>
+                            </Link>
+                            <Link href="/reservations" className="w-full sm:w-auto">
+                                <button className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 hover:-translate-y-1">
+                                    <CalendarDays size={20} /> RESERVAR MESA
+                                </button>
+                            </Link>
+                        </div>
+                    </motion.div>
+                </div>
+            </section>
+
+            {/* --- HIGHLIGHTS / BENTO GRID --- */}
+            <section className="py-24 bg-gray-50">
+                <div className="container mx-auto px-6">
+                    <FadeIn className="text-center mb-16">
+                        <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-4">
+                            Mucho más que comida.
+                        </h2>
+                        <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+                            En Bloom cuidamos cada detalle, desde la selección de proveedores locales hasta el emplatado final.
+                        </p>
+                    </FadeIn>
+
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {/* Card 1 */}
+                        <FadeIn delay={0.1} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col items-start gap-4 hover:scale-[1.02] transition-transform duration-500">
+                            <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mb-2">
+                                <ChefHat size={32} />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900">Cocina de Autor</h3>
+                            <p className="text-gray-500 leading-relaxed">
+                                Recetas clásicas reinventadas con técnicas modernas. Nuestra milanesa no es solo una milanesa.
+                            </p>
+                        </FadeIn>
+
+                        {/* Card 2 */}
+                        <FadeIn delay={0.2} className="bg-black text-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-900/20 flex flex-col items-start gap-4 hover:scale-[1.02] transition-transform duration-500 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white mb-2 backdrop-blur-sm">
+                                <Star size={32} />
+                            </div>
+                            <h3 className="text-2xl font-bold">Calidad Premium</h3>
+                            <p className="text-gray-400 leading-relaxed">
+                                Trabajamos exclusivamente con carnes de pastura y vegetales orgánicos de estación.
+                            </p>
+                        </FadeIn>
+
+                        {/* Card 3 */}
+                        <FadeIn delay={0.3} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col items-start gap-4 hover:scale-[1.02] transition-transform duration-500">
+                            <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 mb-2">
+                                <Clock size={32} />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900">Siempre Listos</h3>
+                            <p className="text-gray-500 leading-relaxed">
+                                Abierto todos los días. Almuerzos ejecutivos, cenas íntimas y delivery rápido.
+                            </p>
+                        </FadeIn>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            {/* COFFEE GALLERY */}
-            <div className="container mx-auto px-4 mb-12">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="relative aspect-square rounded-3xl overflow-hidden shadow-md group">
-                        <Image
-                            src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=800"
-                            alt="Ambiente Cafe"
-                            fill
-                            className="object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                        <div className="absolute inset-0 bg-chocolate/10 group-hover:bg-transparent transition-colors" />
+            {/* --- FEATURED DISHES SPLIT SECTION --- */}
+            <section className="py-24 bg-white overflow-hidden">
+                <div className="container mx-auto px-6">
+                    <div className="flex flex-col lg:flex-row items-center gap-16">
+                        <FadeIn className="lg:w-1/2 relative">
+                            <div className="relative aspect-square w-full max-w-lg mx-auto transform rotate-3 hover:rotate-0 transition-all duration-700">
+                                <Image
+                                    src="https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=2670&auto=format&fit=crop"
+                                    alt="Lomo Plate"
+                                    fill
+                                    className="object-cover rounded-[2.5rem] shadow-2xl"
+                                />
+                                <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-3xl shadow-xl border border-gray-100 max-w-xs animate-bounce-slow">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Star className="text-orange-500 fill-orange-500" size={16} />
+                                        <span className="font-bold text-sm">Plato Estrella</span>
+                                    </div>
+                                    <p className="font-bold text-gray-900 text-lg">Lomo a la Pimienta</p>
+                                    <p className="text-gray-500 text-sm">Con papas rústicas y reducción de Malbec.</p>
+                                </div>
+                            </div>
+                        </FadeIn>
+
+                        <FadeIn className="lg:w-1/2 space-y-8">
+                            <span className="text-orange-600 font-bold tracking-widest uppercase text-sm">Nuestra Carta</span>
+                            <h2 className="text-5xl md:text-6xl font-black text-gray-900 tracking-tighter leading-[1.1]">
+                                Sabores que <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600">cuentan historias.</span>
+                            </h2>
+                            <p className="text-xl text-gray-500 leading-relaxed">
+                                Desde nuestras famosas milanesas napolitanas hasta pastas caseras amasadas cada mañana. Nuestro menú es un homenaje a la cocina argentina con un toque contemporáneo.
+                            </p>
+
+                            <div className="pt-4">
+                                <Link href="/menu">
+                                    <button className="group flex items-center gap-3 text-lg font-bold text-gray-900 hover:text-orange-600 transition-colors">
+                                        Explorar el Menú Completo
+                                        <span className="bg-gray-100 group-hover:bg-orange-100 p-2 rounded-full transition-colors">
+                                            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                        </span>
+                                    </button>
+                                </Link>
+                            </div>
+                        </FadeIn>
                     </div>
-                    <div className="relative aspect-square rounded-3xl overflow-hidden shadow-md group md:col-span-2">
-                        <Image
-                            src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=1200"
-                            alt="Latte Art Social"
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-700"
-                        />
-                        <div className="absolute bottom-4 left-4 bg-crema/90 px-4 py-2 rounded-xl backdrop-blur-md">
-                            <span className="text-piedra font-black text-xs uppercase tracking-widest">Especialidad</span>
+                </div>
+            </section>
+
+            {/* --- CTA BANNER --- */}
+            <section className="py-24 px-6">
+                <div className="container mx-auto">
+                    <FadeIn className="relative bg-black rounded-[3rem] overflow-hidden px-6 py-24 md:px-20 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-10">
+                        {/* Background Texture */}
+                        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat"></div>
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-orange-600 rounded-full blur-[120px] opacity-20 translate-x-1/2 -translate-y-1/2"></div>
+
+                        <div className="relative z-10 max-w-2xl">
+                            <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
+                                ¿Con hambre?
+                            </h2>
+                            <p className="text-gray-400 text-xl font-medium mb-0">
+                                Pide ahora desde nuestra web y recibe descuentos exclusivos. Sin esperas.
+                            </p>
+                        </div>
+
+                        <div className="relative z-10 shrink-0">
+                            <Link href="/menu">
+                                <button className="px-10 py-5 bg-white hover:bg-gray-100 text-black text-lg font-black rounded-full transition-all shadow-[0_0_50px_-10px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95 flex items-center gap-3">
+                                    PIDE AHORA <ArrowRight strokeWidth={3} size={20} />
+                                </button>
+                            </Link>
+                        </div>
+                    </FadeIn>
+                </div>
+            </section>
+
+            {/* --- LOCATION & FOOTER --- */}
+            <footer className="bg-white border-t border-gray-100 pt-20 pb-10">
+                <div className="container mx-auto px-6">
+                    <div className="grid md:grid-cols-4 gap-12 mb-16">
+                        <div className="col-span-1 md:col-span-2">
+                            <h3 className="text-3xl font-black text-gray-900 mb-6 tracking-tighter">BLOOM.</h3>
+                            <p className="text-gray-500 max-w-sm mb-6">
+                                Cocina honesta creada para compartir. <br />
+                                Te esperamos para vivir momentos únicos.
+                            </p>
+                            <div className="flex gap-4">
+                                {/* Social Placeholders */}
+                                <div className="w-10 h-10 bg-gray-100 rounded-full hover:bg-gray-200 cursor-pointer"></div>
+                                <div className="w-10 h-10 bg-gray-100 rounded-full hover:bg-gray-200 cursor-pointer"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="font-bold text-gray-900 mb-4">Ubicación</h4>
+                            <ul className="space-y-2 text-gray-500">
+                                <li className="flex gap-2"><MapPin size={18} /> Av. Libertador 1400</li>
+                                <li>Buenos Aires, Argentina</li>
+                                <li className="mt-4 text-orange-600 font-bold cursor-pointer hover:underline">Ver en Mapa</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 className="font-bold text-gray-900 mb-4">Contacto</h4>
+                            <ul className="space-y-2 text-gray-500">
+                                <li>+54 9 11 1234-5678</li>
+                                <li>reservas@bloom.com</li>
+                                <li>
+                                    <Link href="/menu" className="text-orange-600 font-bold hover:underline">Delivery Online</Link>
+                                </li>
+                            </ul>
                         </div>
                     </div>
-                    <div className="relative aspect-square rounded-3xl overflow-hidden shadow-md group">
-                        <Image
-                            src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=800"
-                            alt="Espresso"
-                            fill
-                            className="object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                        <div className="absolute inset-0 bg-piedra/10 group-hover:bg-transparent transition-colors" />
+
+                    <div className="border-t border-gray-100 pt-8 text-center text-gray-400 text-sm">
+                        &copy; 2026 Bloom Restaurant. Todos los derechos reservados.
                     </div>
                 </div>
-            </div>
-
-            {/* CATEGORIES */}
-            <div className="sticky top-20 z-30 bg-crema/95 backdrop-blur-sm py-4 border-b border-chocolate/5 mb-8">
-                <div className="container mx-auto px-4 overflow-x-auto no-scrollbar">
-                    <div className="flex gap-2 md:gap-3 md:justify-center min-w-max px-2">
-                        <button
-                            onClick={() => setSelectedCategory("all")}
-                            className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all transform active:scale-95 border ${selectedCategory === "all"
-                                ? "bg-[#262220] text-[#F2EBE6] border-[#262220] shadow-lg shadow-black/20"
-                                : "bg-white text-[#7A736E] border-transparent hover:border-[#4A3D35]/20 hover:text-[#4A3D35]"
-                                }`}
-                        >
-                            Todos
-                        </button>
-
-                        {activeCategories.map(cat => (
-                            <button
-                                key={cat.id}
-                                onClick={() => setSelectedCategory(cat.name)}
-                                className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all transform active:scale-95 border ${selectedCategory === cat.name
-                                    ? "bg-[#4A3D35] text-[#F2EBE6] border-[#4A3D35] shadow-lg shadow-black/20"
-                                    : "bg-white text-[#7A736E] border-transparent hover:border-[#4A3D35]/20 hover:text-[#4A3D35]"
-                                    }`}
-                            >
-                                {cat.name}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* PRODUCT GRID */}
-            <main className="container mx-auto px-4 pb-32">
-                {loading ? (
-                    <div className="flex justify-center py-20 text-chocolate">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-chocolate"></div>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filteredProducts.map(product => {
-                            const hasOptions = product.options && product.options.length > 0;
-
-                            return (
-                                <div key={product.id} className="group bg-white rounded-[2rem] p-3 shadow-md hover:shadow-2xl hover:shadow-chocolate/10 transition-all duration-300 border border-transparent hover:border-chocolate/10 hover:-translate-y-1">
-                                    <div className="relative aspect-[4/3] rounded-[1.5rem] overflow-hidden bg-gray-100 mb-4">
-                                        {product.image_url ? (
-                                            <Image
-                                                src={product.image_url}
-                                                alt={product.name}
-                                                fill
-                                                className="object-cover group-hover:scale-110 transition-transform duration-700"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-200">
-                                                <Store size={32} />
-                                            </div>
-                                        )}
-                                        <div className="absolute bottom-2 right-2 bg-crema/90 backdrop-blur px-3 py-1.5 rounded-xl shadow-sm">
-                                            <span className="font-black text-lg text-piedra">${product.price}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="px-2 pb-2">
-                                        <div className="flex justify-between items-start">
-                                            <h3 className="font-bold text-piedra text-lg leading-tight mb-1">{product.name}</h3>
-                                            {hasOptions && <span className="px-2 py-0.5 bg-chocolate/10 text-chocolate text-[10px] font-bold uppercase rounded-md">Opciones</span>}
-                                        </div>
-                                        <p className="text-xs text-gris line-clamp-2 mb-6 min-h-[2.5em]">{product.description}</p>
-
-                                        <button
-                                            onClick={() => handleAddToCartClick(product)}
-                                            className="w-full bg-[#262220] text-[#F2EBE6] py-3.5 rounded-xl font-bold text-xs tracking-widest uppercase hover:bg-[#4A3D35] transition-colors flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-black/20"
-                                        >
-                                            <span>{hasOptions ? 'Elegir Opciones' : 'Agregar'}</span>
-                                            {hasOptions ? <ArrowRight size={16} /> : <Plus size={16} />}
-                                        </button>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                )}
-            </main>
-
-            {/* CUSTOMIZATION MODAL */}
-            <AnimatePresence>
-                {productToCustomize && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setProductToCustomize(null)} className="absolute inset-0 bg-[#262220]/80 backdrop-blur-sm" />
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className="relative bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl"
-                        >
-                            <div className="p-6 bg-[#4A3D35] text-[#F2EBE6] text-center relative">
-                                <h3 className="font-black text-xl uppercase leading-none">{productToCustomize.name}</h3>
-                                <p className="text-sm opacity-80 mt-1">Personaliza tu pedido</p>
-                                <button onClick={() => setProductToCustomize(null)} className="absolute top-4 right-4 text-[#F2EBE6]/60 hover:text-white"><X size={20} /></button>
-                            </div>
-                            <div className="p-6 space-y-6">
-                                {productToCustomize.options?.map(opt => (
-                                    <div key={opt.name}>
-                                        <h4 className="font-bold text-[#262220] text-sm uppercase tracking-widest mb-3">{opt.name}</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {opt.values.map(val => (
-                                                <button
-                                                    key={val}
-                                                    onClick={() => setCurrentOptions(prev => ({ ...prev, [opt.name]: val }))}
-                                                    className={`px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all ${currentOptions[opt.name] === val
-                                                        ? "border-[#4A3D35] bg-[#4A3D35] text-[#F2EBE6] shadow-lg"
-                                                        : "border-gray-100 text-[#7A736E] hover:border-[#4A3D35]/30"
-                                                        }`}
-                                                >
-                                                    {val}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="p-4 border-t border-gray-100 bg-gray-50">
-                                <button
-                                    onClick={confirmCustomization}
-                                    className="w-full bg-[#262220] text-[#F2EBE6] py-4 rounded-xl font-black uppercase tracking-widest hover:bg-[#4A3D35] transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <span>Confirmar</span>
-                                    <Check size={18} />
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* CART DRAWER */}
-            <AnimatePresence>
-                {isCartOpen && (
-                    <div className="fixed inset-0 z-50 flex justify-end">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsCartOpen(false)} className="absolute inset-0 bg-piedra/60 backdrop-blur-sm" />
-
-                        <motion.div
-                            initial={{ x: "100%" }}
-                            animate={{ x: 0 }}
-                            exit={{ x: "100%" }}
-                            className="relative bg-crema w-full max-w-md h-full shadow-2xl flex flex-col border-l border-white/20"
-                        >
-                            <div className="p-6 border-b border-chocolate/5 flex items-center justify-between bg-white/50 shrink-0">
-                                <h2 className="font-black text-xl tracking-tight text-piedra uppercase">Tu Pedido</h2>
-                                <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-chocolate/10 rounded-full text-gris hover:text-chocolate transition-colors">
-                                    <X size={24} />
-                                </button>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
-                                {step === "cart" && (
-                                    <>
-                                        {cart.length === 0 ? (
-                                            <div className="flex flex-col items-center justify-center h-64 text-gris/40">
-                                                <ShoppingBag size={64} className="mb-4 opacity-20" />
-                                                <p className="font-bold uppercase tracking-widest text-xs">Tu carrito está vacío</p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                {cart.map(item => (
-                                                    <div key={item.cartItemId} className="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm border border-transparent hover:border-chocolate/10 transition-colors">
-                                                        <div className="flex-1">
-                                                            <div className="flex justify-between items-start">
-                                                                <h4 className="font-bold text-piedra text-sm uppercase leading-tight">{item.name}</h4>
-                                                                <button onClick={() => removeFromCart(item.cartItemId)} className="text-gray-300 hover:text-red-400 p-1"><X size={14} /></button>
-                                                            </div>
-                                                            {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
-                                                                <div className="flex flex-wrap gap-1 mt-1">
-                                                                    {Object.values(item.selectedOptions).map(val => (
-                                                                        <span key={val} className="text-[10px] bg-gray-100 text-gris px-1.5 py-0.5 rounded-md font-bold">{val}</span>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                            <p className="text-xs font-bold text-chocolate mt-2">${item.price}</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 bg-crema rounded-lg p-1 border border-chocolate/5">
-                                                            <button onClick={() => updateQuantity(item.cartItemId, -1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-piedra hover:text-chocolate"><Minus size={12} /></button>
-                                                            <span className="text-xs font-black w-4 text-center text-piedra">{item.quantity}</span>
-                                                            <button onClick={() => updateQuantity(item.cartItemId, 1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-piedra hover:text-chocolate"><Plus size={12} /></button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-
-                                {/* ... Checkout Form Reuse (Same as before) ... */}
-                                {step === "checkout" && (
-                                    <form id="checkout-form" onSubmit={handleCheckout} className="space-y-6">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <label className={`cursor-pointer border-2 rounded-2xl p-4 flex flex-col items-center gap-2 transition-all ${orderType === 'pickup' ? 'border-chocolate bg-chocolate/5' : 'border-transparent bg-white'}`}>
-                                                <input type="radio" name="type" className="hidden" checked={orderType === 'pickup'} onChange={() => setOrderType('pickup')} />
-                                                <Store size={24} className={orderType === 'pickup' ? 'text-chocolate' : 'text-gris'} />
-                                                <span className="font-bold text-sm text-piedra">Retiro</span>
-                                            </label>
-                                            <label className={`cursor-pointer border-2 rounded-2xl p-4 flex flex-col items-center gap-2 transition-all ${orderType === 'delivery' ? 'border-chocolate bg-chocolate/5' : 'border-transparent bg-white'}`}>
-                                                <input type="radio" name="type" className="hidden" checked={orderType === 'delivery'} onChange={() => setOrderType('delivery')} />
-                                                <Truck size={24} className={orderType === 'delivery' ? 'text-chocolate' : 'text-gris'} />
-                                                <span className="font-bold text-sm text-piedra">Envío</span>
-                                            </label>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <input required type="text" className="w-full bg-white border-0 rounded-xl px-4 py-4 font-bold text-piedra placeholder:text-gris/50 focus:ring-2 ring-chocolate/20 outline-none" placeholder="Tu Nombre" value={checkoutForm.name} onChange={e => setCheckoutForm({ ...checkoutForm, name: e.target.value })} />
-                                            <input required type="tel" className="w-full bg-white border-0 rounded-xl px-4 py-4 font-bold text-piedra placeholder:text-gris/50 focus:ring-2 ring-chocolate/20 outline-none" placeholder="WhatsApp / Teléfono" value={checkoutForm.phone} onChange={e => setCheckoutForm({ ...checkoutForm, phone: e.target.value })} />
-                                            {orderType === 'delivery' && (
-                                                <motion.input initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} required type="text" className="w-full bg-white border-0 rounded-xl px-4 py-4 font-bold text-piedra placeholder:text-gris/50 focus:ring-2 ring-chocolate/20 outline-none" placeholder="Dirección de Entrega" value={checkoutForm.address} onChange={e => setCheckoutForm({ ...checkoutForm, address: e.target.value })} />
-                                            )}
-                                            <textarea className="w-full bg-white border-0 rounded-xl px-4 py-4 font-bold text-piedra placeholder:text-gris/50 focus:ring-2 ring-chocolate/20 outline-none resize-none" rows={2} placeholder="Notas adicionales..." value={checkoutForm.notes} onChange={e => setCheckoutForm({ ...checkoutForm, notes: e.target.value })} />
-                                        </div>
-
-                                        <div className="space-y-3 pt-4">
-                                            <h3 className="text-xs font-bold text-gris uppercase tracking-widest mb-2">Pago</h3>
-                                            <label className={`cursor-pointer border rounded-xl p-4 flex items-center gap-3 bg-white transition-all hover:bg-white/80 ${paymentMethod === 'MERCADO_PAGO' ? 'border-sky-500 ring-1 ring-sky-500 bg-sky-50' : 'border-transparent'}`}>
-                                                <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'MERCADO_PAGO'} onChange={() => setPaymentMethod('MERCADO_PAGO')} />
-                                                <div className="flex-1"><span className="font-bold text-piedra block">Mercado Pago</span><span className="text-xs text-gris">Tarjetas, Dinero en cuenta</span></div>
-                                                <span className="text-sky-500 font-black text-sm">MP</span>
-                                            </label>
-                                            <label className={`cursor-pointer border rounded-xl p-4 flex items-center gap-3 bg-white transition-all hover:bg-white/80 ${paymentMethod === 'CASH' ? 'border-chocolate ring-1 ring-chocolate bg-chocolate/5' : 'border-transparent'}`}>
-                                                <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CASH'} onChange={() => setPaymentMethod('CASH')} />
-                                                <div className="flex-1"><span className="font-bold text-piedra block">{orderType === 'pickup' ? 'Pagar al Retirar' : 'Pagar al Recibir'}</span><span className="text-xs text-gris">Efectivo / Débito</span></div>
-                                                <Store size={20} className="text-chocolate" />
-                                            </label>
-                                        </div>
-                                    </form>
-                                )}
-
-                                {step === "success" && (
-                                    <div className="flex flex-col items-center justify-center text-center h-full py-10">
-                                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6"><Check size={40} strokeWidth={4} /></div>
-                                        <h3 className="text-2xl font-black text-piedra mb-2 uppercase">¡Pedido Recibido!</h3>
-                                        <p className="text-gris text-sm font-medium leading-relaxed max-w-xs mx-auto mb-8">Ya estamos preparando tu pedido. Te avisaremos cualquier novedad.</p>
-                                        <button onClick={() => { setIsCartOpen(false); setStep("cart"); setCheckoutForm({ name: "", phone: "", address: "", notes: "" }); }} className="bg-piedra text-crema px-8 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-chocolate transition-colors">Volver al Menú</button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Footer (Same as before) */}
-                            {step !== "success" && (
-                                <div className="p-6 bg-white/50 border-t border-chocolate/5 shrink-0 backdrop-blur-md">
-                                    <div className="flex justify-between items-end mb-6">
-                                        <span className="text-gris text-xs font-bold uppercase tracking-widest">Total Estimado</span>
-                                        <span className="text-4xl font-black text-piedra tracking-tighter">${cartTotal.toLocaleString()}</span>
-                                    </div>
-
-                                    {step === "cart" ? (
-                                        <button onClick={() => setStep("checkout")} disabled={cart.length === 0} className="w-full bg-piedra text-crema py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-chocolate transition-colors shadow-lg shadow-piedra/20 disabled:opacity-50">
-                                            <span>Continuar Compra</span>
-                                            <ChevronRight size={18} />
-                                        </button>
-                                    ) : (
-                                        <div className="flex gap-3">
-                                            <button onClick={() => setStep("cart")} className="px-6 py-5 rounded-2xl font-bold text-gris hover:bg-white transition-colors">Atrás</button>
-                                            <button form="checkout-form" type="submit" disabled={isSubmitting} className="flex-1 bg-chocolate text-crema py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform shadow-xl shadow-chocolate/30">
-                                                {isSubmitting ? <span>Procesando...</span> : <span>Confirmar Pedido</span>}
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-        </div>
+            </footer>
+        </main>
     );
 }
+
+// Add global styles for smooth scroll if needed, but Tailwind handles most.
