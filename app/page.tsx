@@ -396,10 +396,10 @@ export default function HomePage() {
 
                                         <button
                                             onClick={() => handleAddToCartClick(product)}
-                                            className="w-full bg-piedra text-crema py-3.5 rounded-xl font-bold text-xs tracking-widest uppercase hover:bg-chocolate transition-colors flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-chocolate/20"
+                                            className="w-full bg-[#262220] text-[#F2EBE6] py-3.5 rounded-xl font-bold text-xs tracking-widest uppercase hover:bg-[#4A3D35] transition-colors flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-black/20"
                                         >
-                                            <span>Agregar</span>
-                                            <Plus size={16} />
+                                            <span>{hasOptions ? 'Elegir Opciones' : 'Agregar'}</span>
+                                            {hasOptions ? <ArrowRight size={16} /> : <Plus size={16} />}
                                         </button>
                                     </div>
                                 </div>
@@ -413,30 +413,30 @@ export default function HomePage() {
             <AnimatePresence>
                 {productToCustomize && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setProductToCustomize(null)} className="absolute inset-0 bg-piedra/80 backdrop-blur-sm" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setProductToCustomize(null)} className="absolute inset-0 bg-[#262220]/80 backdrop-blur-sm" />
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             className="relative bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl"
                         >
-                            <div className="p-6 bg-chocolate text-crema text-center relative">
+                            <div className="p-6 bg-[#4A3D35] text-[#F2EBE6] text-center relative">
                                 <h3 className="font-black text-xl uppercase leading-none">{productToCustomize.name}</h3>
                                 <p className="text-sm opacity-80 mt-1">Personaliza tu pedido</p>
-                                <button onClick={() => setProductToCustomize(null)} className="absolute top-4 right-4 text-crema/60 hover:text-white"><X size={20} /></button>
+                                <button onClick={() => setProductToCustomize(null)} className="absolute top-4 right-4 text-[#F2EBE6]/60 hover:text-white"><X size={20} /></button>
                             </div>
                             <div className="p-6 space-y-6">
                                 {productToCustomize.options?.map(opt => (
                                     <div key={opt.name}>
-                                        <h4 className="font-bold text-piedra text-sm uppercase tracking-widest mb-3">{opt.name}</h4>
+                                        <h4 className="font-bold text-[#262220] text-sm uppercase tracking-widest mb-3">{opt.name}</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {opt.values.map(val => (
                                                 <button
                                                     key={val}
                                                     onClick={() => setCurrentOptions(prev => ({ ...prev, [opt.name]: val }))}
                                                     className={`px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all ${currentOptions[opt.name] === val
-                                                            ? "border-chocolate bg-chocolate text-crema shadow-lg"
-                                                            : "border-gray-100 text-gris hover:border-chocolate/30"
+                                                        ? "border-[#4A3D35] bg-[#4A3D35] text-[#F2EBE6] shadow-lg"
+                                                        : "border-gray-100 text-[#7A736E] hover:border-[#4A3D35]/30"
                                                         }`}
                                                 >
                                                     {val}
@@ -449,7 +449,7 @@ export default function HomePage() {
                             <div className="p-4 border-t border-gray-100 bg-gray-50">
                                 <button
                                     onClick={confirmCustomization}
-                                    className="w-full bg-piedra text-crema py-4 rounded-xl font-black uppercase tracking-widest hover:bg-chocolate transition-colors flex items-center justify-center gap-2"
+                                    className="w-full bg-[#262220] text-[#F2EBE6] py-4 rounded-xl font-black uppercase tracking-widest hover:bg-[#4A3D35] transition-colors flex items-center justify-center gap-2"
                                 >
                                     <span>Confirmar</span>
                                     <Check size={18} />
