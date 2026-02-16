@@ -333,8 +333,8 @@ export default function HomePage() {
                         <button
                             onClick={() => setSelectedCategory("all")}
                             className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all transform active:scale-95 border ${selectedCategory === "all"
-                                ? "bg-piedra text-crema border-piedra shadow-lg shadow-piedra/20"
-                                : "bg-white text-gris border-transparent hover:border-chocolate/20 hover:text-chocolate"
+                                ? "bg-[#262220] text-[#F2EBE6] border-[#262220] shadow-lg shadow-black/20"
+                                : "bg-white text-[#7A736E] border-transparent hover:border-[#4A3D35]/20 hover:text-[#4A3D35]"
                                 }`}
                         >
                             Todos
@@ -345,8 +345,8 @@ export default function HomePage() {
                                 key={cat.id}
                                 onClick={() => setSelectedCategory(cat.name)}
                                 className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all transform active:scale-95 border ${selectedCategory === cat.name
-                                    ? "bg-chocolate text-crema border-chocolate shadow-lg shadow-chocolate/20"
-                                    : "bg-white text-gris border-transparent hover:border-chocolate/20 hover:text-chocolate"
+                                    ? "bg-[#4A3D35] text-[#F2EBE6] border-[#4A3D35] shadow-lg shadow-black/20"
+                                    : "bg-white text-[#7A736E] border-transparent hover:border-[#4A3D35]/20 hover:text-[#4A3D35]"
                                     }`}
                             >
                                 {cat.name}

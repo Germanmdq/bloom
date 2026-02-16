@@ -1,11 +1,11 @@
 -- ============================================================================
--- MIGRACIÓN DE MENÚ BLOOM - 2026 (CORREGIDO)
+-- MIGRACIÓN DE MENÚ BLOOM - 2026 (FINAL CON OPCIONES MILANESA)
 -- Instrucciones: Copia y pega todo este contenido en el SQL Editor de Supabase y dale RUN.
 -- ============================================================================
 
 -- 1. Agregar columna de opciones si no existe
 ALTER TABLE products ADD COLUMN IF NOT EXISTS options JSONB;
-ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT; -- Asegurar que existe
+ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT; 
 
 -- 2. Limpiar menú anterior para recargar
 DELETE FROM products;
@@ -34,6 +34,11 @@ DECLARE
     
     -- Opciones Comunes
     opt_guarnicion jsonb := '[{"name": "Guarnición", "values": ["Papas Fritas", "Ensalada", "Puré"]}]';
+    -- Milanesas: Carne/Pollo + Guarnición
+    opt_milanesa_plato jsonb := '[{"name": "Tipo", "values": ["Vacuna", "Pollo"]}, {"name": "Guarnición", "values": ["Papas Fritas", "Ensalada", "Puré"]}]';
+    -- Sandwich Milanesa: Solo Carne/Pollo (Guarnición definida por item)
+    opt_milanesa_sandwich jsonb := '[{"name": "Tipo", "values": ["Vacuna", "Pollo"]}]';
+    
     opt_gusto_empanada jsonb := '[{"name": "Gusto", "values": ["Carne", "Pollo", "Jamón y Queso", "Choclo"]}]';
     opt_salsa_pasta jsonb := '[{"name": "Salsa", "values": ["Bolognesa", "Filetto", "Blanca", "Mixta"]}]';
     opt_cafe_tipo jsonb := '[{"name": "Variedad", "values": ["Café", "Cortado", "Lágrima"]}]';
@@ -102,20 +107,20 @@ BEGIN
     ('Tortilla Clásica', 'Papa, huevo, cebolla y morrón', 7900, cat_tortillas),
     ('Tortilla Bloom', 'Papa, huevo, cebolla, morrón, jamón y queso', 8900, cat_tortillas);
 
-    -- HAMBURGUESAS (Antes solo papas, ahora con opción de guarnición)
+    -- HAMBURGUESAS (Solo guarnición, carne es carne)
     INSERT INTO products (name, description, price, category_id, options) VALUES
     ('Hamburguesa Sola', 'Con guarnición a elección', 10900, cat_hamburguesas, opt_guarnicion),
     ('Hamburguesa JyQ', 'Con jamón y queso, guarnición a elección', 11900, cat_hamburguesas, opt_guarnicion),
     ('Hamburguesa Completa', 'Completa con guarnición a elección', 13200, cat_hamburguesas, opt_guarnicion);
 
-    -- MILANESAS (Ahora con opción de guarnición)
+    -- MILANESAS (Carne/Pollo + Guarnición)
     INSERT INTO products (name, description, price, category_id, options) VALUES
-    ('Milanesa Sola', 'Con guarnición a elección', 10900, cat_milanesas, opt_guarnicion),
-    ('Milanesa JyQ', 'Con jamón y queso, guarnición a elección', 11900, cat_milanesas, opt_guarnicion),
-    ('Napolitana Especial', 'Con guarnición a elección', 14500, cat_milanesas, opt_guarnicion),
-    ('Milanesa Completa', 'Con guarnición a elección', 13200, cat_milanesas, opt_guarnicion),
-    ('Sandwich de Milanesa', 'Solo sandwich', 8900, cat_milanesas, NULL),
-    ('Sandwich Milanesa Completo', 'Lechuga, tomate, jamón, queso y fritas', 10800, cat_milanesas, NULL);
+    ('Milanesa Sola', 'Con guarnición a elección', 10900, cat_milanesas, opt_milanesa_plato),
+    ('Milanesa JyQ', 'Con jamón y queso, guarnición a elección', 11900, cat_milanesas, opt_milanesa_plato),
+    ('Napolitana Especial', 'Con guarnición a elección', 14500, cat_milanesas, opt_milanesa_plato),
+    ('Milanesa Completa', 'Con guarnición a elección', 13200, cat_milanesas, opt_milanesa_plato),
+    ('Sandwich de Milanesa', 'Solo sandwich', 8900, cat_milanesas, opt_milanesa_sandwich),
+    ('Sandwich Milanesa Completo', 'Lechuga, tomate, jamón, queso y fritas', 10800, cat_milanesas, opt_milanesa_sandwich);
 
     -- PASTAS
     INSERT INTO products (name, price, category_id, options) VALUES
