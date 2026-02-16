@@ -245,6 +245,41 @@ export default function HomePage() {
                 </div>
             </div>
 
+            {/* COFFEE GALLERY - NEW SECTION */}
+            <div className="container mx-auto px-4 mb-12">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="relative aspect-square rounded-3xl overflow-hidden shadow-md group">
+                        <Image
+                            src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=800"
+                            alt="Ambiente Cafe"
+                            fill
+                            className="object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                        <div className="absolute inset-0 bg-chocolate/10 group-hover:bg-transparent transition-colors" />
+                    </div>
+                    <div className="relative aspect-square rounded-3xl overflow-hidden shadow-md group md:col-span-2">
+                        <Image
+                            src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=1200"
+                            alt="Latte Art Social"
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-700"
+                        />
+                        <div className="absolute bottom-4 left-4 bg-crema/90 px-4 py-2 rounded-xl backdrop-blur-md">
+                            <span className="text-piedra font-black text-xs uppercase tracking-widest">Especialidad</span>
+                        </div>
+                    </div>
+                    <div className="relative aspect-square rounded-3xl overflow-hidden shadow-md group">
+                        <Image
+                            src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=800"
+                            alt="Espresso"
+                            fill
+                            className="object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                        <div className="absolute inset-0 bg-piedra/10 group-hover:bg-transparent transition-colors" />
+                    </div>
+                </div>
+            </div>
+
             {/* CATEGORIES */}
             <div className="sticky top-20 z-30 bg-crema/95 backdrop-blur-sm py-4 border-b border-chocolate/5 mb-8">
                 <div className="container mx-auto px-4 overflow-x-auto no-scrollbar">
