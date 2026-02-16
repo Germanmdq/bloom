@@ -3,12 +3,17 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, X, Plus, Minus, ChevronRight, Store, Truck, MapPin, User, Phone, Check, Info } from "lucide-react";
+import { ShoppingBag, X, Plus, Minus, ChevronRight, Store, Truck, MapPin, User, Phone, Check, Info, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 
 // Types
+interface ProductOption {
+    name: string;
+    values: string[];
+}
+
 interface Product {
     id: string;
     name: string;
@@ -16,6 +21,7 @@ interface Product {
     price: number;
     image_url: string;
     category_id: string;
+    options?: ProductOption[] | null; // JSONB from DB
     categories?: {
         name: string;
     };
@@ -27,7 +33,9 @@ interface Category {
 }
 
 interface CartItem extends Product {
+    cartItemId: string; // Unique ID for cart item (product + options)
     quantity: number;
+    selectedOptions?: Record<string, string>;
     notes?: string;
 }
 
@@ -38,6 +46,10 @@ export default function HomePage() {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // Customization State
+    const [productToCustomize, setProductToCustomize] = useState<Product | null>(null);
+    const [currentOptions, setCurrentOptions] = useState<Record<string, string>>({});
 
     // Checkout State
     const [step, setStep] = useState<"cart" | "checkout" | "success">("cart");
@@ -68,27 +80,53 @@ export default function HomePage() {
     }
 
     // Cart Functions
-    const addToCart = (product: Product) => {
+    const handleAddToCartClick = (product: Product) => {
+        if (product.options && product.options.length > 0) {
+            // Open customization modal
+            const initialOptions: Record<string, string> = {};
+            product.options.forEach(opt => {
+                if (opt.values.length > 0) initialOptions[opt.name] = opt.values[0];
+            });
+            setCurrentOptions(initialOptions);
+            setProductToCustomize(product);
+        } else {
+            addToCart(product);
+        }
+    };
+
+    const confirmCustomization = () => {
+        if (!productToCustomize) return;
+        addToCart(productToCustomize, currentOptions);
+        setProductToCustomize(null);
+        setCurrentOptions({});
+        toast.success("Agregado con opciones");
+    };
+
+    const addToCart = (product: Product, options?: Record<string, string>) => {
+        const optionsKey = options ? JSON.stringify(options) : "";
+        const cartItemId = `${product.id}-${optionsKey}`;
+
         setCart(prev => {
-            const existingParams = prev.find(item => item.id === product.id);
-            if (existingParams) {
+            const existingItem = prev.find(item => item.cartItemId === cartItemId);
+            if (existingItem) {
                 return prev.map(item =>
-                    item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+                    item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
                 );
             }
-            return [...prev, { ...product, quantity: 1 }];
+            return [...prev, { ...product, quantity: 1, selectedOptions: options, cartItemId }];
         });
-        toast.success("Agregado al carrito");
+
+        if (!productToCustomize) toast.success("Agregado al carrito");
     };
 
-    const removeFromCart = (productId: string) => {
-        setCart(prev => prev.filter(item => item.id !== productId));
+    const removeFromCart = (cartItemId: string) => {
+        setCart(prev => prev.filter(item => item.cartItemId !== cartItemId));
     };
 
-    const updateQuantity = (productId: string, delta: number) => {
+    const updateQuantity = (cartItemId: string, delta: number) => {
         setCart(prev => {
             return prev.map(item => {
-                if (item.id === productId) {
+                if (item.cartItemId === cartItemId) {
                     const newQty = Math.max(0, item.quantity + delta);
                     return { ...item, quantity: newQty };
                 }
@@ -109,7 +147,8 @@ export default function HomePage() {
     );
 
     const getProductQuantity = (productId: string) => {
-        return cart.find(item => item.id === productId)?.quantity || 0;
+        // Only shows total qty of that product ID regardless of options
+        return cart.filter(item => item.id === productId).reduce((acc, item) => acc + item.quantity, 0);
     };
 
     const handleCheckout = async (e: React.FormEvent) => {
@@ -122,7 +161,14 @@ export default function HomePage() {
             name: item.name,
             price: item.price,
             quantity: item.quantity,
-            subtotal: item.price * item.quantity
+            subtotal: item.price * item.quantity,
+            options: item.selectedOptions // Backend should handle this field or store in JSON
+        }));
+
+        // Flatten options into name for simple backend compatibility if needed
+        const flattenedItems = orderItems.map(item => ({
+            ...item,
+            name: item.options ? `${item.name} (${Object.values(item.options).join(', ')})` : item.name
         }));
 
         const customerMetaItem = {
@@ -138,7 +184,7 @@ export default function HomePage() {
             }
         };
 
-        const finalItems = [...orderItems, customerMetaItem];
+        const finalItems = [...flattenedItems, customerMetaItem];
 
         try {
             const response = await fetch('/api/orders', {
@@ -166,7 +212,7 @@ export default function HomePage() {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            items: cart,
+                            items: cart, // Envío cart original, backend MP debe procesar nombre
                             payer: checkoutForm
                         })
                     });
@@ -245,7 +291,7 @@ export default function HomePage() {
                 </div>
             </div>
 
-            {/* COFFEE GALLERY - NEW SECTION */}
+            {/* COFFEE GALLERY */}
             <div className="container mx-auto px-4 mb-12">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="relative aspect-square rounded-3xl overflow-hidden shadow-md group">
@@ -319,7 +365,7 @@ export default function HomePage() {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredProducts.map(product => {
-                            const qty = getProductQuantity(product.id);
+                            const hasOptions = product.options && product.options.length > 0;
 
                             return (
                                 <div key={product.id} className="group bg-white rounded-[2rem] p-3 shadow-md hover:shadow-2xl hover:shadow-chocolate/10 transition-all duration-300 border border-transparent hover:border-chocolate/10 hover:-translate-y-1">
@@ -342,28 +388,19 @@ export default function HomePage() {
                                     </div>
 
                                     <div className="px-2 pb-2">
-                                        <h3 className="font-bold text-piedra text-lg leading-tight mb-1">{product.name}</h3>
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="font-bold text-piedra text-lg leading-tight mb-1">{product.name}</h3>
+                                            {hasOptions && <span className="px-2 py-0.5 bg-chocolate/10 text-chocolate text-[10px] font-bold uppercase rounded-md">Opciones</span>}
+                                        </div>
                                         <p className="text-xs text-gris line-clamp-2 mb-6 min-h-[2.5em]">{product.description}</p>
 
-                                        {qty === 0 ? (
-                                            <button
-                                                onClick={() => addToCart(product)}
-                                                className="w-full bg-piedra text-crema py-3.5 rounded-xl font-bold text-xs tracking-widest uppercase hover:bg-chocolate transition-colors flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-chocolate/20"
-                                            >
-                                                <span>Agregar</span>
-                                                <Plus size={16} />
-                                            </button>
-                                        ) : (
-                                            <div className="flex items-center justify-between bg-chocolate text-crema rounded-xl p-1">
-                                                <button onClick={() => updateQuantity(product.id, -1)} className="w-10 h-10 flex items-center justify-center hover:bg-black/20 rounded-lg transition-colors">
-                                                    <Minus size={16} />
-                                                </button>
-                                                <span className="font-black text-lg">{qty}</span>
-                                                <button onClick={() => updateQuantity(product.id, 1)} className="w-10 h-10 flex items-center justify-center hover:bg-black/20 rounded-lg transition-colors">
-                                                    <Plus size={16} />
-                                                </button>
-                                            </div>
-                                        )}
+                                        <button
+                                            onClick={() => handleAddToCartClick(product)}
+                                            className="w-full bg-piedra text-crema py-3.5 rounded-xl font-bold text-xs tracking-widest uppercase hover:bg-chocolate transition-colors flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-chocolate/20"
+                                        >
+                                            <span>Agregar</span>
+                                            <Plus size={16} />
+                                        </button>
                                     </div>
                                 </div>
                             )
@@ -371,6 +408,57 @@ export default function HomePage() {
                     </div>
                 )}
             </main>
+
+            {/* CUSTOMIZATION MODAL */}
+            <AnimatePresence>
+                {productToCustomize && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setProductToCustomize(null)} className="absolute inset-0 bg-piedra/80 backdrop-blur-sm" />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="relative bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl"
+                        >
+                            <div className="p-6 bg-chocolate text-crema text-center relative">
+                                <h3 className="font-black text-xl uppercase leading-none">{productToCustomize.name}</h3>
+                                <p className="text-sm opacity-80 mt-1">Personaliza tu pedido</p>
+                                <button onClick={() => setProductToCustomize(null)} className="absolute top-4 right-4 text-crema/60 hover:text-white"><X size={20} /></button>
+                            </div>
+                            <div className="p-6 space-y-6">
+                                {productToCustomize.options?.map(opt => (
+                                    <div key={opt.name}>
+                                        <h4 className="font-bold text-piedra text-sm uppercase tracking-widest mb-3">{opt.name}</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {opt.values.map(val => (
+                                                <button
+                                                    key={val}
+                                                    onClick={() => setCurrentOptions(prev => ({ ...prev, [opt.name]: val }))}
+                                                    className={`px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all ${currentOptions[opt.name] === val
+                                                            ? "border-chocolate bg-chocolate text-crema shadow-lg"
+                                                            : "border-gray-100 text-gris hover:border-chocolate/30"
+                                                        }`}
+                                                >
+                                                    {val}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="p-4 border-t border-gray-100 bg-gray-50">
+                                <button
+                                    onClick={confirmCustomization}
+                                    className="w-full bg-piedra text-crema py-4 rounded-xl font-black uppercase tracking-widest hover:bg-chocolate transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <span>Confirmar</span>
+                                    <Check size={18} />
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* CART DRAWER */}
             <AnimatePresence>
@@ -402,15 +490,25 @@ export default function HomePage() {
                                         ) : (
                                             <div className="space-y-4">
                                                 {cart.map(item => (
-                                                    <div key={item.id} className="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm border border-transparent hover:border-chocolate/10 transition-colors">
+                                                    <div key={item.cartItemId} className="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm border border-transparent hover:border-chocolate/10 transition-colors">
                                                         <div className="flex-1">
-                                                            <h4 className="font-bold text-piedra text-sm uppercase">{item.name}</h4>
-                                                            <p className="text-xs font-bold text-chocolate">${item.price}</p>
+                                                            <div className="flex justify-between items-start">
+                                                                <h4 className="font-bold text-piedra text-sm uppercase leading-tight">{item.name}</h4>
+                                                                <button onClick={() => removeFromCart(item.cartItemId)} className="text-gray-300 hover:text-red-400 p-1"><X size={14} /></button>
+                                                            </div>
+                                                            {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
+                                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                                    {Object.values(item.selectedOptions).map(val => (
+                                                                        <span key={val} className="text-[10px] bg-gray-100 text-gris px-1.5 py-0.5 rounded-md font-bold">{val}</span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            <p className="text-xs font-bold text-chocolate mt-2">${item.price}</p>
                                                         </div>
                                                         <div className="flex items-center gap-2 bg-crema rounded-lg p-1 border border-chocolate/5">
-                                                            <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-piedra hover:text-chocolate"><Minus size={12} /></button>
+                                                            <button onClick={() => updateQuantity(item.cartItemId, -1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-piedra hover:text-chocolate"><Minus size={12} /></button>
                                                             <span className="text-xs font-black w-4 text-center text-piedra">{item.quantity}</span>
-                                                            <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-piedra hover:text-chocolate"><Plus size={12} /></button>
+                                                            <button onClick={() => updateQuantity(item.cartItemId, 1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-piedra hover:text-chocolate"><Plus size={12} /></button>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -419,6 +517,7 @@ export default function HomePage() {
                                     </>
                                 )}
 
+                                {/* ... Checkout Form Reuse (Same as before) ... */}
                                 {step === "checkout" && (
                                     <form id="checkout-form" onSubmit={handleCheckout} className="space-y-6">
                                         <div className="grid grid-cols-2 gap-4">
@@ -440,6 +539,7 @@ export default function HomePage() {
                                             {orderType === 'delivery' && (
                                                 <motion.input initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} required type="text" className="w-full bg-white border-0 rounded-xl px-4 py-4 font-bold text-piedra placeholder:text-gris/50 focus:ring-2 ring-chocolate/20 outline-none" placeholder="Dirección de Entrega" value={checkoutForm.address} onChange={e => setCheckoutForm({ ...checkoutForm, address: e.target.value })} />
                                             )}
+                                            <textarea className="w-full bg-white border-0 rounded-xl px-4 py-4 font-bold text-piedra placeholder:text-gris/50 focus:ring-2 ring-chocolate/20 outline-none resize-none" rows={2} placeholder="Notas adicionales..." value={checkoutForm.notes} onChange={e => setCheckoutForm({ ...checkoutForm, notes: e.target.value })} />
                                         </div>
 
                                         <div className="space-y-3 pt-4">
@@ -468,6 +568,7 @@ export default function HomePage() {
                                 )}
                             </div>
 
+                            {/* Footer (Same as before) */}
                             {step !== "success" && (
                                 <div className="p-6 bg-white/50 border-t border-chocolate/5 shrink-0 backdrop-blur-md">
                                     <div className="flex justify-between items-end mb-6">
@@ -490,6 +591,7 @@ export default function HomePage() {
                                     )}
                                 </div>
                             )}
+
                         </motion.div>
                     </div>
                 )}
