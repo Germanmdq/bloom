@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket } from "@/lib/hooks/use-pos-data";
-import { getUpsellSuggestions, Suggestion } from "@/lib/ai/groq-service";
+// AI Service removed
+
 
 type OrderSheetProps = {
     tableId: number;
@@ -142,8 +143,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     };
 
     // AI Suggestions State
-    const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-    const [loadingSuggestions, setLoadingSuggestions] = useState(false);
     const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     // Initial Fetch
@@ -165,63 +164,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     }, [tableId, webOrderId]);
 
     // AI Suggestions Effect (Debounced)
-    useEffect(() => {
-        const fetchSuggestions = async () => {
-            if (cart.length === 0) {
-                setSuggestions([]);
-                return;
-            }
-            setLoadingSuggestions(true);
-            try {
-                // 🔒 Pasa los productos disponibles para que la IA SOLO sugiera del menú
-                const aiSuggestions = await getUpsellSuggestions(cart, products);
 
-                // Validación defensiva
-                let validSuggestions: Suggestion[] = [];
-                if (Array.isArray(aiSuggestions)) {
-                    validSuggestions = aiSuggestions;
-                } else if (aiSuggestions && (aiSuggestions as any).suggestions) {
-                    validSuggestions = (aiSuggestions as any).suggestions;
-                }
-
-                // 🔒 DOBLE VALIDACIÓN: Asegura que las sugerencias sean productos reales
-                const verifiedSuggestions = validSuggestions.filter(s => {
-                    const realProduct = products.find((p: any) =>
-                        p.name.toLowerCase() === s.item.toLowerCase()
-                    );
-                    return !!realProduct;
-                });
-
-                // Hidrata con datos reales del producto
-                const hydratedSuggestions = verifiedSuggestions.map(s => {
-                    const realProduct = products.find((p: any) =>
-                        p.name.toLowerCase() === s.item.toLowerCase()
-                    );
-
-                    return {
-                        ...s,
-                        item: realProduct?.name || s.item, // Nombre exacto del menú
-                        price: realProduct?.price || s.price, // Precio exacto del menú
-                        realProduct
-                    };
-                });
-
-                console.log('✅ Verified suggestions from menu:', hydratedSuggestions);
-                setSuggestions(hydratedSuggestions);
-            } catch (error) {
-                console.error("Groq Fetch Error:", error);
-                setSuggestions([]);
-            }
-            setLoadingSuggestions(false);
-        };
-
-        const timer = setTimeout(fetchSuggestions, 1500); // 1.5s debounce
-        return () => clearTimeout(timer);
-    }, [cart, products]); // Re-run when cart changes
-
-    useEffect(() => {
-        console.log('🎨 [Render] Suggestions Updated:', suggestions);
-    }, [suggestions]);
 
     // SYNC TABLE STATUS
     const persistTableState = async () => {
@@ -328,26 +271,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         });
     };
 
-    const handleAddSuggestion = (suggestion: any) => {
-        // Usa el producto real del menú, NO la sugerencia de la IA
-        if (suggestion.realProduct) {
-            addToCart({
-                id: suggestion.realProduct.id,
-                name: suggestion.realProduct.name,
-                price: Number(suggestion.realProduct.price),
-                quantity: 1
-            });
-            // console.log('✨ Usuario agregó sugerencia de IA:', suggestion.item);
-        } else {
-            // Fallback logic incase realProduct is missing but name/price are valid
-            addToCart({
-                id: 'ai-temp-' + Date.now(),
-                name: suggestion.item,
-                price: Number(suggestion.price),
-                quantity: 1
-            });
-        }
-    };
+
 
     const finishOrder = async () => {
         if (finalTotal === 0 && discount === 0) return; // Allow 0 total if fully discounted
@@ -633,34 +557,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
 
 
                     {/* AI SUGGESTIONS */}
-                    <AnimatePresence>
-                        {
-                            suggestions.length > 0 && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -20, height: 0 }}
-                                    animate={{ opacity: 1, y: 0, height: 'auto' }}
-                                    exit={{ opacity: 0, y: -20, height: 0 }}
-                                    className="mb-4 overflow-hidden shrink-0"
-                                >
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Sparkles size={14} className="text-[#FFD60A]" fill="#FFD60A" />
-                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-black/50">Sugerencias (IA)</h3>
-                                    </div>
-                                    <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-                                        {suggestions.map((s, idx) => (
-                                            <button key={idx} onClick={() => handleAddSuggestion(s)} className="shrink-0 flex items-center gap-2 p-2 pr-4 rounded-xl bg-white border border-[#FFD60A] shadow-sm hover:bg-[#FFD60A]/10 transition-colors text-left group">
-                                                <div className="w-8 h-8 rounded-full bg-[#FFD60A] flex items-center justify-center text-black font-black text-[10px] shadow-sm">+</div>
-                                                <div className="max-w-[120px] truncate">
-                                                    <p className="font-bold text-xs text-gray-900 leading-tight">{s.item}</p>
-                                                    <p className="text-[8px] font-bold text-black opacity-40">${s.price}</p>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )
-                        }
-                    </AnimatePresence >
+
 
                     {/* MAIN CONTENT AREA: Categories OR Products */}
                     <div className="flex-1 overflow-y-auto pr-1 no-scrollbar">

@@ -1,266 +1,464 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, MapPin, Instagram, ArrowRight, User } from "lucide-react";
+import { ShoppingBag, X, Plus, Minus, ChevronRight, Store, Truck, MapPin, User, Phone, Check, Info } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { toast } from "sonner";
 
-// ===========================================
-// DATA MOCKS
-// ===========================================
-const HERO_SLIDES = [
-  {
-    id: 1,
-    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=2574&auto=format&fit=crop", // Coffee
-    title: "ESPECIALIDAD",
-    subtitle: "EN CADA TAZA"
-  },
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=2526&auto=format&fit=crop", // Bakery
-    title: "ARTESANAL",
-    subtitle: "HECHO A MANO"
-  },
-  {
-    id: 3,
-    image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=2670&auto=format&fit=crop", // Ambience
-    title: "MOMENTOS",
-    subtitle: "PARA DISFRUTAR"
-  }
-];
-
-const LOCATIONS = [
-  {
-    id: 1,
-    title: "PALERMO",
-    address: "Gorriti 1234",
-    image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=800"
-  },
-  {
-    id: 2,
-    title: "RECOLETA",
-    address: "Av. Alvear 1890",
-    image: "https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&q=80&w=800"
-  },
-  {
-    id: 3,
-    title: "BELGRANO",
-    address: "Juramento 2002",
-    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=800"
-  },
-  {
-    id: 4,
-    title: "SAN ISIDRO",
-    address: "Libertador 15200",
-    image: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=800"
-  }
-];
-
-// ===========================================
-// COMPONENTS
-// ===========================================
-
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/95 backdrop-blur-md shadow-sm py-4" : "bg-transparent py-6"}`}>
-      <div className="container mx-auto px-6 flex items-center justify-between">
-        {/* Left: Hamburger */}
-        <Link href="/menu" className="flex items-center gap-3 cursor-pointer group">
-          <Menu className={`w-6 h-6 ${scrolled ? "text-[#334862]" : "text-white"}`} />
-          <span className={`text-xs font-bold tracking-widest ${scrolled ? "text-[#334862]" : "text-white"}`}>MENÚ</span>
-        </Link>
-
-        {/* Center: Logo */}
-        <div className="absolute left-1/2 -translate-x-1/2">
-          <h1 className={`font-raleway text-3xl font-black tracking-[0.2em] ${scrolled ? "text-[#334862]" : "text-white"}`}>
-            BLOOM
-          </h1>
-        </div>
-
-        {/* Right: Actions */}
-        <div className="flex items-center gap-6">
-          <Link href="/dashboard" className={`hidden md:flex items-center gap-2 text-xs font-bold tracking-widest hover:opacity-80 transition-opacity ${scrolled ? "text-[#334862]" : "text-white"}`}>
-            <User className="w-4 h-4" />
-            <span>ACCESO</span>
-          </Link>
-          <Link href="/dashboard" className={`flex md:hidden ${scrolled ? "text-[#334862]" : "text-white"}`}>
-            <User className="w-5 h-5" />
-          </Link>
-        </div>
-      </div>
-    </nav>
-  );
+// Types
+interface Product {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    image_url: string;
+    category_id: string;
+    categories?: {
+        name: string;
+    };
 }
 
-function Hero() {
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrent(prev => (prev + 1) % HERO_SLIDES.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <header className="relative w-full h-screen overflow-hidden bg-black">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={current}
-          initial={{ opacity: 0, scale: 1.1 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          className="absolute inset-0"
-        >
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${HERO_SLIDES[current].image})` }}
-          />
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
-        </motion.div>
-      </AnimatePresence>
-
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
-        <motion.div
-          key={`text-${current}`}
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.8 }}
-        >
-          <p className="font-raleway text-sm md:text-lg tracking-[0.3em] font-medium mb-4">{HERO_SLIDES[current].subtitle}</p>
-          <h2 className="font-raleway text-5xl md:text-8xl font-thin tracking-[0.1em] uppercase shadow-black drop-shadow-lg">
-            {HERO_SLIDES[current].title}
-          </h2>
-
-          <Link href="/menu">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="mt-8 bg-[#FFD60A] text-black px-8 py-4 rounded-full font-bold tracking-widest text-xs hover:bg-white hover:text-black transition-colors shadow-lg shadow-black/20"
-            >
-              PEDIR ONLINE
-            </motion.button>
-          </Link>
-        </motion.div>
-
-        {/* Scroll Indicator */}
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce"
-        >
-          <span className="text-[10px] tracking-widest uppercase opacity-70">Descubrí más</span>
-          <div className="w-[1px] h-12 bg-gradient-to-b from-white to-transparent" />
-        </motion.div>
-      </div>
-
-      {/* Dots */}
-      <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col gap-4">
-        {HERO_SLIDES.map((_, idx) => (
-          <button
-            key={idx}
-            onClick={() => setCurrent(idx)}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${current === idx ? "bg-white scale-150" : "bg-white/40 hover:bg-white/70"}`}
-          />
-        ))}
-      </div>
-    </header>
-  );
+interface Category {
+    id: string;
+    name: string;
 }
 
-function Locations() {
-  return (
-    <section className="py-24 bg-white">
-      <div className="container mx-auto px-6">
-        <div className="flex items-center justify-center gap-4 mb-16">
-          <div className="h-[1px] w-12 bg-[#334862]/20" />
-          <h3 className="font-raleway text-2xl md:text-3xl text-[#334862] font-light tracking-[0.2em] uppercase">Nuestros Locales</h3>
-          <div className="h-[1px] w-12 bg-[#334862]/20" />
-        </div>
+interface CartItem extends Product {
+    quantity: number;
+    notes?: string;
+}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {LOCATIONS.map(loc => (
-            <motion.div
-              key={loc.id}
-              whileHover={{ y: -10 }}
-              className="group cursor-pointer"
-            >
-              <div className="relative aspect-[3/4] overflow-hidden mb-6">
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                  style={{ backgroundImage: `url(${loc.image})` }}
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-              </div>
-              <div className="text-center">
-                <h4 className="font-raleway text-[#334862] text-xl font-bold tracking-widest mb-2">{loc.title}</h4>
-                <div className="flex items-center justify-center gap-2 text-gray-500 text-xs font-opensans tracking-wide">
-                  <MapPin size={12} />
-                  <span>{loc.address}</span>
+export default function HomePage() {
+    const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string>("all");
+    const [cart, setCart] = useState<CartItem[]>([]);
+    const [isCartOpen, setIsCartOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    // Checkout State
+    const [step, setStep] = useState<"cart" | "checkout" | "success">("cart");
+    const [orderType, setOrderType] = useState<"pickup" | "delivery">("pickup");
+    const [checkoutForm, setCheckoutForm] = useState({
+        name: "",
+        phone: "",
+        address: "",
+        notes: ""
+    });
+    const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'MERCADO_PAGO'>('CASH');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const supabase = createClient();
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    async function fetchData() {
+        setLoading(true);
+        const { data: catData } = await supabase.from('categories').select('*');
+        const { data: prodData } = await supabase.from('products').select('*, categories(name)');
+
+        if (catData) setCategories(catData);
+        if (prodData) setProducts(prodData);
+        setLoading(false);
+    }
+
+    // Cart Functions
+    const addToCart = (product: Product) => {
+        setCart(prev => {
+            const existingParams = prev.find(item => item.id === product.id);
+            if (existingParams) {
+                return prev.map(item =>
+                    item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+                );
+            }
+            return [...prev, { ...product, quantity: 1 }];
+        });
+        toast.success("Agregado al carrito");
+    };
+
+    const removeFromCart = (productId: string) => {
+        setCart(prev => prev.filter(item => item.id !== productId));
+    };
+
+    const updateQuantity = (productId: string, delta: number) => {
+        setCart(prev => {
+            return prev.map(item => {
+                if (item.id === productId) {
+                    const newQty = Math.max(0, item.quantity + delta);
+                    return { ...item, quantity: newQty };
+                }
+                return item;
+            }).filter(item => item.quantity > 0);
+        });
+    };
+
+    const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+    const filteredProducts = selectedCategory === "all"
+        ? products
+        : products.filter(p => p.categories?.name === selectedCategory || p.category_id === selectedCategory);
+
+    const activeCategories = categories.filter(cat =>
+        products.some(p => p.categories?.name === cat.name || p.category_id === cat.id)
+    );
+
+    const getProductQuantity = (productId: string) => {
+        return cart.find(item => item.id === productId)?.quantity || 0;
+    };
+
+    const handleCheckout = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (cart.length === 0) return;
+        setIsSubmitting(true);
+
+        const orderItems = cart.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            subtotal: item.price * item.quantity
+        }));
+
+        const customerMetaItem = {
+            is_meta: true,
+            name: `Cliente: ${checkoutForm.name}`,
+            quantity: 1,
+            price: 0,
+            details: {
+                phone: checkoutForm.phone,
+                address: checkoutForm.address,
+                type: orderType,
+                notes: checkoutForm.notes
+            }
+        };
+
+        const finalItems = [...orderItems, customerMetaItem];
+
+        try {
+            const response = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    total: cartTotal,
+                    table_id: orderType === 'pickup' ? 998 : 999,
+                    payment_method: paymentMethod,
+                    items: finalItems
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                alert(`Error al crear pedido: ${result.error}`);
+                setIsSubmitting(false);
+                return;
+            }
+
+            if (paymentMethod === 'MERCADO_PAGO') {
+                try {
+                    const mpResponse = await fetch('/api/mercadopago/preference', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            items: cart,
+                            payer: checkoutForm
+                        })
+                    });
+                    const mpResult = await mpResponse.json();
+
+                    if (!mpResponse.ok) throw new Error(mpResult.error || "Error de pago");
+
+                    if (mpResult.init_point) {
+                        window.location.href = mpResult.init_point;
+                        return;
+                    } else {
+                        throw new Error("No se recibió link de pago");
+                    }
+                } catch (mpError: any) {
+                    alert(`Error Mercado Pago: ${mpError.message}`);
+                    setIsSubmitting(false);
+                }
+            } else {
+                setStep("success");
+                setCart([]);
+                setIsSubmitting(false);
+            }
+        } catch (err) {
+            alert("Error de conexión.");
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-crema font-sans pb-32 text-piedra">
+            {/* HEADER */}
+            <header className="fixed top-0 inset-x-0 bg-crema/90 backdrop-blur-md z-40 border-b border-chocolate/5">
+                <div className="container mx-auto px-4 h-20 flex items-center justify-between">
+                    <div className="flex items-center gap-8">
+                        <Link href="/" className="font-sans text-2xl font-black tracking-widest text-piedra hover:scale-105 transition-transform">
+                            BLOOM
+                        </Link>
+                        <nav className="hidden md:flex gap-6">
+                            <Link href="/about" className="text-xs font-bold tracking-widest text-gris hover:text-chocolate transition-colors uppercase">Nosotros</Link>
+                            <Link href="/dashboard" className="text-xs font-bold tracking-widest text-gris hover:text-chocolate transition-colors uppercase">Acceso</Link>
+                        </nav>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <Link href="/about" className="md:hidden text-gris hover:text-chocolate transition-colors"><Info size={24} /></Link>
+                        <button
+                            onClick={() => setIsCartOpen(true)}
+                            className="relative p-3 hover:bg-chocolate/10 rounded-full transition-colors group"
+                        >
+                            <ShoppingBag className="text-piedra group-hover:text-chocolate transition-colors" />
+                            {cartCount > 0 && (
+                                <span className="absolute top-0 right-0 bg-chocolate text-crema text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-md animate-bounce">
+                                    {cartCount}
+                                </span>
+                            )}
+                        </button>
+                    </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+            </header>
 
-        <div className="mt-20 flex justify-center">
-          <button className="px-10 py-4 border border-[#334862] text-[#334862] font-raleway text-xs font-bold tracking-[0.2em] uppercase hover:bg-[#334862] hover:text-white transition-colors duration-300">
-            Ver todas las sucursales
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
+            {/* HERO BANNER */}
+            <div className="pt-20 pb-8 px-4">
+                <div className="relative h-[30vh] md:h-[40vh] bg-piedra rounded-[2.5rem] overflow-hidden shadow-2xl shadow-chocolate/20">
+                    <Image
+                        src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=2574&auto=format&fit=crop"
+                        alt="Menu Hero"
+                        fill
+                        className="object-cover opacity-70 mix-blend-overlay"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-piedra via-transparent to-transparent opacity-90" />
+                    <div className="absolute bottom-0 left-0 p-8 md:p-12">
+                        <p className="text-crema/60 font-bold tracking-widest uppercase text-xs mb-2">Pedidos Online</p>
+                        <h1 className="text-4xl md:text-6xl font-black text-crema mb-2 tracking-tighter uppercase leading-none">Nuestro Menú</h1>
+                        <p className="text-crema/80 font-medium max-w-md text-sm md:text-base">Elegí tus favoritos y recibilos en tu mesa o en tu casa.</p>
+                    </div>
+                </div>
+            </div>
 
-function Footer() {
-  return (
-    <footer className="bg-[#334862] text-white py-20">
-      <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
-        <div>
-          <h2 className="font-raleway text-2xl font-black tracking-[0.2em] mb-6">BLOOM</h2>
-          <p className="font-opensans text-sm text-white/60 leading-relaxed max-w-xs mx-auto md:mx-0">
-            Café de especialidad y pastelería artesanal. Creando momentos únicos en cada detalle.
-          </p>
-        </div>
+            {/* CATEGORIES */}
+            <div className="sticky top-20 z-30 bg-crema/95 backdrop-blur-sm py-4 border-b border-chocolate/5 mb-8">
+                <div className="container mx-auto px-4 overflow-x-auto no-scrollbar">
+                    <div className="flex gap-2 md:gap-3 md:justify-center min-w-max px-2">
+                        <button
+                            onClick={() => setSelectedCategory("all")}
+                            className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all transform active:scale-95 border ${selectedCategory === "all"
+                                ? "bg-piedra text-crema border-piedra shadow-lg shadow-piedra/20"
+                                : "bg-white text-gris border-transparent hover:border-chocolate/20 hover:text-chocolate"
+                                }`}
+                        >
+                            Todos
+                        </button>
 
-        <div className="flex flex-col gap-4 items-center md:items-start font-raleway text-xs font-bold tracking-widest">
-          <Link href="#" className="hover:text-[#FBB03B] transition-colors">SOBRE NOSOTROS</Link>
-          <Link href="#" className="hover:text-[#FBB03B] transition-colors">PRODUCTOS</Link>
-          <Link href="#" className="hover:text-[#FBB03B] transition-colors">FRANQUICIAS</Link>
-          <Link href="#" className="hover:text-[#FBB03B] transition-colors">CONTACTO</Link>
-        </div>
+                        {activeCategories.map(cat => (
+                            <button
+                                key={cat.id}
+                                onClick={() => setSelectedCategory(cat.name)}
+                                className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all transform active:scale-95 border ${selectedCategory === cat.name
+                                    ? "bg-chocolate text-crema border-chocolate shadow-lg shadow-chocolate/20"
+                                    : "bg-white text-gris border-transparent hover:border-chocolate/20 hover:text-chocolate"
+                                    }`}
+                            >
+                                {cat.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
 
-        <div className="flex flex-col items-center md:items-end gap-6">
-          <div className="flex gap-4">
-            <Instagram className="w-6 h-6 hover:text-[#FBB03B] transition-colors cursor-pointer" />
-            {/* Add more icons if needed */}
-          </div>
-          <p className="font-opensans text-xs text-white/40">
-            © {new Date().getFullYear()} Bloom Cafe. Todos los derechos reservados.
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
-}
+            {/* PRODUCT GRID */}
+            <main className="container mx-auto px-4 pb-32">
+                {loading ? (
+                    <div className="flex justify-center py-20 text-chocolate">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-chocolate"></div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {filteredProducts.map(product => {
+                            const qty = getProductQuantity(product.id);
 
-export default function Home() {
-  return (
-    <main className="min-h-screen bg-white font-sans selection:bg-[#FBB03B] selection:text-white">
-      <Navbar />
-      <Hero />
-      <Locations />
-      <Footer />
-    </main>
-  );
+                            return (
+                                <div key={product.id} className="group bg-white rounded-[2rem] p-3 shadow-md hover:shadow-2xl hover:shadow-chocolate/10 transition-all duration-300 border border-transparent hover:border-chocolate/10 hover:-translate-y-1">
+                                    <div className="relative aspect-[4/3] rounded-[1.5rem] overflow-hidden bg-gray-100 mb-4">
+                                        {product.image_url ? (
+                                            <Image
+                                                src={product.image_url}
+                                                alt={product.name}
+                                                fill
+                                                className="object-cover group-hover:scale-110 transition-transform duration-700"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-200">
+                                                <Store size={32} />
+                                            </div>
+                                        )}
+                                        <div className="absolute bottom-2 right-2 bg-crema/90 backdrop-blur px-3 py-1.5 rounded-xl shadow-sm">
+                                            <span className="font-black text-lg text-piedra">${product.price}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="px-2 pb-2">
+                                        <h3 className="font-bold text-piedra text-lg leading-tight mb-1">{product.name}</h3>
+                                        <p className="text-xs text-gris line-clamp-2 mb-6 min-h-[2.5em]">{product.description}</p>
+
+                                        {qty === 0 ? (
+                                            <button
+                                                onClick={() => addToCart(product)}
+                                                className="w-full bg-piedra text-crema py-3.5 rounded-xl font-bold text-xs tracking-widest uppercase hover:bg-chocolate transition-colors flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-chocolate/20"
+                                            >
+                                                <span>Agregar</span>
+                                                <Plus size={16} />
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center justify-between bg-chocolate text-crema rounded-xl p-1">
+                                                <button onClick={() => updateQuantity(product.id, -1)} className="w-10 h-10 flex items-center justify-center hover:bg-black/20 rounded-lg transition-colors">
+                                                    <Minus size={16} />
+                                                </button>
+                                                <span className="font-black text-lg">{qty}</span>
+                                                <button onClick={() => updateQuantity(product.id, 1)} className="w-10 h-10 flex items-center justify-center hover:bg-black/20 rounded-lg transition-colors">
+                                                    <Plus size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                )}
+            </main>
+
+            {/* CART DRAWER */}
+            <AnimatePresence>
+                {isCartOpen && (
+                    <div className="fixed inset-0 z-50 flex justify-end">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsCartOpen(false)} className="absolute inset-0 bg-piedra/60 backdrop-blur-sm" />
+
+                        <motion.div
+                            initial={{ x: "100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "100%" }}
+                            className="relative bg-crema w-full max-w-md h-full shadow-2xl flex flex-col border-l border-white/20"
+                        >
+                            <div className="p-6 border-b border-chocolate/5 flex items-center justify-between bg-white/50 shrink-0">
+                                <h2 className="font-black text-xl tracking-tight text-piedra uppercase">Tu Pedido</h2>
+                                <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-chocolate/10 rounded-full text-gris hover:text-chocolate transition-colors">
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                                {step === "cart" && (
+                                    <>
+                                        {cart.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center h-64 text-gris/40">
+                                                <ShoppingBag size={64} className="mb-4 opacity-20" />
+                                                <p className="font-bold uppercase tracking-widest text-xs">Tu carrito está vacío</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                {cart.map(item => (
+                                                    <div key={item.id} className="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm border border-transparent hover:border-chocolate/10 transition-colors">
+                                                        <div className="flex-1">
+                                                            <h4 className="font-bold text-piedra text-sm uppercase">{item.name}</h4>
+                                                            <p className="text-xs font-bold text-chocolate">${item.price}</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 bg-crema rounded-lg p-1 border border-chocolate/5">
+                                                            <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-piedra hover:text-chocolate"><Minus size={12} /></button>
+                                                            <span className="text-xs font-black w-4 text-center text-piedra">{item.quantity}</span>
+                                                            <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-md shadow-sm text-piedra hover:text-chocolate"><Plus size={12} /></button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+
+                                {step === "checkout" && (
+                                    <form id="checkout-form" onSubmit={handleCheckout} className="space-y-6">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <label className={`cursor-pointer border-2 rounded-2xl p-4 flex flex-col items-center gap-2 transition-all ${orderType === 'pickup' ? 'border-chocolate bg-chocolate/5' : 'border-transparent bg-white'}`}>
+                                                <input type="radio" name="type" className="hidden" checked={orderType === 'pickup'} onChange={() => setOrderType('pickup')} />
+                                                <Store size={24} className={orderType === 'pickup' ? 'text-chocolate' : 'text-gris'} />
+                                                <span className="font-bold text-sm text-piedra">Retiro</span>
+                                            </label>
+                                            <label className={`cursor-pointer border-2 rounded-2xl p-4 flex flex-col items-center gap-2 transition-all ${orderType === 'delivery' ? 'border-chocolate bg-chocolate/5' : 'border-transparent bg-white'}`}>
+                                                <input type="radio" name="type" className="hidden" checked={orderType === 'delivery'} onChange={() => setOrderType('delivery')} />
+                                                <Truck size={24} className={orderType === 'delivery' ? 'text-chocolate' : 'text-gris'} />
+                                                <span className="font-bold text-sm text-piedra">Envío</span>
+                                            </label>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <input required type="text" className="w-full bg-white border-0 rounded-xl px-4 py-4 font-bold text-piedra placeholder:text-gris/50 focus:ring-2 ring-chocolate/20 outline-none" placeholder="Tu Nombre" value={checkoutForm.name} onChange={e => setCheckoutForm({ ...checkoutForm, name: e.target.value })} />
+                                            <input required type="tel" className="w-full bg-white border-0 rounded-xl px-4 py-4 font-bold text-piedra placeholder:text-gris/50 focus:ring-2 ring-chocolate/20 outline-none" placeholder="WhatsApp / Teléfono" value={checkoutForm.phone} onChange={e => setCheckoutForm({ ...checkoutForm, phone: e.target.value })} />
+                                            {orderType === 'delivery' && (
+                                                <motion.input initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} required type="text" className="w-full bg-white border-0 rounded-xl px-4 py-4 font-bold text-piedra placeholder:text-gris/50 focus:ring-2 ring-chocolate/20 outline-none" placeholder="Dirección de Entrega" value={checkoutForm.address} onChange={e => setCheckoutForm({ ...checkoutForm, address: e.target.value })} />
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-3 pt-4">
+                                            <h3 className="text-xs font-bold text-gris uppercase tracking-widest mb-2">Pago</h3>
+                                            <label className={`cursor-pointer border rounded-xl p-4 flex items-center gap-3 bg-white transition-all hover:bg-white/80 ${paymentMethod === 'MERCADO_PAGO' ? 'border-sky-500 ring-1 ring-sky-500 bg-sky-50' : 'border-transparent'}`}>
+                                                <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'MERCADO_PAGO'} onChange={() => setPaymentMethod('MERCADO_PAGO')} />
+                                                <div className="flex-1"><span className="font-bold text-piedra block">Mercado Pago</span><span className="text-xs text-gris">Tarjetas, Dinero en cuenta</span></div>
+                                                <span className="text-sky-500 font-black text-sm">MP</span>
+                                            </label>
+                                            <label className={`cursor-pointer border rounded-xl p-4 flex items-center gap-3 bg-white transition-all hover:bg-white/80 ${paymentMethod === 'CASH' ? 'border-chocolate ring-1 ring-chocolate bg-chocolate/5' : 'border-transparent'}`}>
+                                                <input type="radio" name="payment" className="hidden" checked={paymentMethod === 'CASH'} onChange={() => setPaymentMethod('CASH')} />
+                                                <div className="flex-1"><span className="font-bold text-piedra block">{orderType === 'pickup' ? 'Pagar al Retirar' : 'Pagar al Recibir'}</span><span className="text-xs text-gris">Efectivo / Débito</span></div>
+                                                <Store size={20} className="text-chocolate" />
+                                            </label>
+                                        </div>
+                                    </form>
+                                )}
+
+                                {step === "success" && (
+                                    <div className="flex flex-col items-center justify-center text-center h-full py-10">
+                                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6"><Check size={40} strokeWidth={4} /></div>
+                                        <h3 className="text-2xl font-black text-piedra mb-2 uppercase">¡Pedido Recibido!</h3>
+                                        <p className="text-gris text-sm font-medium leading-relaxed max-w-xs mx-auto mb-8">Ya estamos preparando tu pedido. Te avisaremos cualquier novedad.</p>
+                                        <button onClick={() => { setIsCartOpen(false); setStep("cart"); setCheckoutForm({ name: "", phone: "", address: "", notes: "" }); }} className="bg-piedra text-crema px-8 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-chocolate transition-colors">Volver al Menú</button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {step !== "success" && (
+                                <div className="p-6 bg-white/50 border-t border-chocolate/5 shrink-0 backdrop-blur-md">
+                                    <div className="flex justify-between items-end mb-6">
+                                        <span className="text-gris text-xs font-bold uppercase tracking-widest">Total Estimado</span>
+                                        <span className="text-4xl font-black text-piedra tracking-tighter">${cartTotal.toLocaleString()}</span>
+                                    </div>
+
+                                    {step === "cart" ? (
+                                        <button onClick={() => setStep("checkout")} disabled={cart.length === 0} className="w-full bg-piedra text-crema py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-chocolate transition-colors shadow-lg shadow-piedra/20 disabled:opacity-50">
+                                            <span>Continuar Compra</span>
+                                            <ChevronRight size={18} />
+                                        </button>
+                                    ) : (
+                                        <div className="flex gap-3">
+                                            <button onClick={() => setStep("cart")} className="px-6 py-5 rounded-2xl font-bold text-gris hover:bg-white transition-colors">Atrás</button>
+                                            <button form="checkout-form" type="submit" disabled={isSubmitting} className="flex-1 bg-chocolate text-crema py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform shadow-xl shadow-chocolate/30">
+                                                {isSubmitting ? <span>Procesando...</span> : <span>Confirmar Pedido</span>}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
 }
