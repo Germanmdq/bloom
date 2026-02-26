@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, ChevronLeft, Plus, Minus, X, Search, MessageCircle, Bike, CreditCard } from "lucide-react";
@@ -19,6 +20,13 @@ const WHATSAPP_NUMBER = "5491112345678";
 // --- MAIN COMPONENT ---
 export default function PublicMenuPage() {
     const supabase = createClient();
+    const searchParams = useSearchParams();
+    const tableParam = searchParams.get("table");
+    const tableId = tableParam ? parseInt(tableParam) : null;
+    const isBarTable = tableId !== null && tableId >= 41 && tableId <= 43;
+    const tableLabel = tableId !== null
+        ? isBarTable ? `Barra ${tableId - 40}` : `Mesa ${tableId}`
+        : null;
     const [products, setProducts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -124,7 +132,8 @@ export default function PublicMenuPage() {
         }).join('%0A');
 
         const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-        const text = `Hola Bloom! 👋 Quiero pedir:%0A%0A${itemsList}%0A%0A*Total: ${formatCurrency(cartTotal)}*%0A%0AEnvío a domicilio 🛵`;
+        const mesaInfo = tableLabel ? `📍 *${tableLabel}*%0A%0A` : '';
+        const text = `Hola Bloom! 👋 Quiero pedir:%0A%0A${mesaInfo}${itemsList}%0A%0A*Total: ${formatCurrency(cartTotal)}*`;
         window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, '_blank');
     };
 
@@ -156,10 +165,17 @@ export default function PublicMenuPage() {
                         </Link>
                     )}
 
-                    <button onClick={() => setIsCartOpen(true)} className="relative p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
-                        <ShoppingBag size={20} className="text-gray-900" strokeWidth={2.5} />
-                        {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">{cartCount}</span>}
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {tableLabel && (
+                            <span className="bg-black text-white text-sm font-black px-4 py-1.5 rounded-full">
+                                {tableLabel}
+                            </span>
+                        )}
+                        <button onClick={() => setIsCartOpen(true)} className="relative p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
+                            <ShoppingBag size={20} className="text-gray-900" strokeWidth={2.5} />
+                            {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">{cartCount}</span>}
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -305,7 +321,12 @@ export default function PublicMenuPage() {
                             className="fixed top-0 right-0 h-full w-full md:w-[480px] bg-white z-[60] shadow-2xl flex flex-col font-sans"
                         >
                             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
-                                <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Tu Pedido</h2>
+                                <div>
+                                    <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Tu Pedido</h2>
+                                    {tableLabel && (
+                                        <p className="text-sm font-bold text-gray-500 mt-0.5">{tableLabel}</p>
+                                    )}
+                                </div>
                                 <button onClick={() => setIsCartOpen(false)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
                                     <X size={20} />
                                 </button>
