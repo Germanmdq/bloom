@@ -39,6 +39,7 @@ export default function PublicMenuPage() {
     const [cart, setCart] = useState<any[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isPaying, setIsPaying] = useState(false);
+    const [orderSent, setOrderSent] = useState(false);
 
     // Variant Selection State
     const [variantProduct, setVariantProduct] = useState<any>(null);
@@ -137,10 +138,66 @@ export default function PublicMenuPage() {
         window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, '_blank');
     };
 
+    // TABLE SELF-ORDER: send directly to kitchen
+    const handleTableCheckout = async () => {
+        if (cart.length === 0 || !tableId) return;
+        setIsPaying(true);
+        try {
+            const total = cart.reduce((acc, i) => acc + i.price * i.quantity, 0);
+            const items = cart.map(i => ({
+                name: i.name,
+                quantity: i.quantity,
+                price: i.price,
+                variants: i.variants || [],
+            }));
+
+            await supabase.from('kitchen_tickets').insert({
+                table_id: tableId,
+                items,
+                status: 'PENDING',
+            });
+
+            await supabase.from('salon_tables')
+                .update({ status: 'OCCUPIED', total })
+                .eq('id', tableId);
+
+            setOrderSent(true);
+            setIsCartOpen(false);
+            setCart([]);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al enviar el pedido, intentá de nuevo");
+        } finally {
+            setIsPaying(false);
+        }
+    };
+
     const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
     if (loading) return <div className="min-h-screen bg-white flex items-center justify-center"><div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" /></div>;
+
+    if (orderSent) return (
+        <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-6">
+            <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-xl">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span className="text-4xl">✓</span>
+                </div>
+                <h1 className="text-3xl font-black text-gray-900 mb-2">¡Pedido enviado!</h1>
+                <p className="text-gray-500 font-medium mb-1">
+                    Tu pedido fue enviado a cocina.
+                </p>
+                {tableLabel && (
+                    <p className="text-lg font-black text-gray-900 mt-4 bg-gray-100 rounded-2xl py-3 px-6 inline-block">
+                        {tableLabel}
+                    </p>
+                )}
+                <p className="text-sm text-gray-400 mt-6">
+                    En breve el mozo se acerca con tu pedido.
+                </p>
+            </div>
+        </div>
+    );
 
     // --- RENDER ---
     return (
@@ -374,6 +431,15 @@ export default function PublicMenuPage() {
                                 </div>
 
                                 <div className="space-y-3">
+                                    {tableId ? (
+                                        <button
+                                            onClick={handleTableCheckout}
+                                            disabled={!cart.length || isPaying}
+                                            className="w-full bg-black text-white py-5 rounded-xl font-black text-xl flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
+                                        >
+                                            {isPaying ? 'Enviando...' : '✓ Confirmar pedido'}
+                                        </button>
+                                    ) : (
                                     <button
                                         onClick={handleMercadoPagoCheckout}
                                         disabled={!cart.length || isPaying}
@@ -381,14 +447,17 @@ export default function PublicMenuPage() {
                                     >
                                         {isPaying ? 'Procesando...' : <><CreditCard size={20} /> Pagar con Mercado Pago</>}
                                     </button>
+                                    )}
 
-                                    <button
-                                        onClick={handleWhatsAppCheckout}
-                                        disabled={!cart.length}
-                                        className="w-full bg-[#25D366] text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#20bd5a] active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-green-500/20"
-                                    >
-                                        <MessageCircle size={20} fill="white" /> Coordinar por WhatsApp
-                                    </button>
+                                    {!tableId && (
+                                        <button
+                                            onClick={handleWhatsAppCheckout}
+                                            disabled={!cart.length}
+                                            className="w-full bg-[#25D366] text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#20bd5a] active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-green-500/20"
+                                        >
+                                            <MessageCircle size={20} fill="white" /> Coordinar por WhatsApp
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </motion.div>
