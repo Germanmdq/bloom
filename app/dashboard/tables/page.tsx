@@ -55,36 +55,50 @@ export default function TablesPage() {
         };
     }, []);
 
-    // LOGICA ROBUSTA DE FILTRADO POR ID
+    // ORDENAMIENTO CRONOLOGICO:
+    // 1. Ocupadas primero, ordenadas por hora de llegada (updated_at ASC)
+    // 2. Mesas locales libres (1-36) al final, ordenadas por número
+    // 3. Slots de delivery/retiro libres NO se muestran (solo aparecen cuando tienen pedido)
     const filteredTables = useMemo(() => {
-        let filtered = tables;
+        let occupied = tables.filter(t => t.status === 'OCCUPIED');
+        let freeLocal = tables.filter(t => t.status !== 'OCCUPIED' && t.id >= 1 && t.id <= 36);
 
-        // 1. Filtrar por TABS (Ranges)
+        // Filtrar por TAB
         if (activeTab === 'LOCAL') {
-            filtered = filtered.filter(t => t.id >= 1 && t.id <= 49);
+            occupied = occupied.filter(t => t.id >= 1 && t.id <= 36);
         } else if (activeTab === 'DELIVERY') {
-            filtered = filtered.filter(t => t.id >= 50 && t.id <= 99);
+            occupied = occupied.filter(t => t.id >= 40 && t.id <= 99);
+            freeLocal = [];
         } else if (activeTab === 'RETIRO') {
-            filtered = filtered.filter(t => t.id >= 100);
+            occupied = occupied.filter(t => t.id >= 100);
+            freeLocal = [];
         }
 
-        // 2. Filtrar por BUSQUEDA
+        // Filtrar por búsqueda
         if (searchQuery) {
-            filtered = filtered.filter(t =>
-                t.id.toString().includes(searchQuery)
-            );
+            occupied = occupied.filter(t => t.id.toString().includes(searchQuery));
+            freeLocal = freeLocal.filter(t => t.id.toString().includes(searchQuery));
         }
 
-        return filtered;
+        // Ocupadas: más antigua primero (la que llegó antes queda arriba)
+        occupied.sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
+        // Libres: ordenadas por número de mesa
+        freeLocal.sort((a, b) => a.id - b.id);
+
+        return [...occupied, ...freeLocal];
     }, [tables, activeTab, searchQuery]);
 
-    // COUNTS POR RANGE (Más fiable que string match)
+    // COUNTS: solo cuenta lo visible
     const counts = useMemo(() => {
+        const occLocal    = tables.filter(t => t.status === 'OCCUPIED' && t.id >= 1 && t.id <= 36).length;
+        const freeLocal   = tables.filter(t => t.status !== 'OCCUPIED' && t.id >= 1 && t.id <= 36).length;
+        const occDelivery = tables.filter(t => t.status === 'OCCUPIED' && t.id >= 40 && t.id <= 99).length;
+        const occRetiro   = tables.filter(t => t.status === 'OCCUPIED' && t.id >= 100).length;
         return {
-            todas: tables.length,
-            local: tables.filter(t => t.id >= 1 && t.id <= 49).length,
-            delivery: tables.filter(t => t.id >= 50 && t.id <= 99).length,
-            retiro: tables.filter(t => t.id >= 100).length
+            todas:    occLocal + freeLocal + occDelivery + occRetiro,
+            local:    occLocal + freeLocal,
+            delivery: occDelivery,
+            retiro:   occRetiro,
         };
     }, [tables]);
 
@@ -99,8 +113,8 @@ export default function TablesPage() {
             return;
         }
 
-        // Determinar tipo basado en ID Range
-        const isDelivery = table.id >= 50 && table.id < 100;
+        // Determinar tipo basado en ID Range (LOCAL 1-36, DELIVERY 40-99, RETIRO 100+)
+        const isDelivery = table.id >= 40 && table.id <= 99;
         const isRetiro = table.id >= 100;
 
         // If Free & Delivery/Retiro -> Open Modal

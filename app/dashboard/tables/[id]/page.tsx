@@ -153,7 +153,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
     const handleCheckout = async () => {
         if (cartItems.length === 0) return;
         const total = cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0);
-        await supabase.from('salon_tables').update({ status: 'OCCUPIED', total }).eq('id', tableId);
+        await supabase.from('salon_tables').update({ status: 'OCCUPIED', total, updated_at: new Date().toISOString() }).eq('id', tableId);
         if (existingOrderId) {
             await supabase.from('orders').update({ total, items: cartItems }).eq('id', existingOrderId);
         } else {
