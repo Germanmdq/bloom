@@ -4,17 +4,24 @@ import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { TableCard } from "@/components/pos/TableCard";
 import { CustomerInfoModal } from "@/components/pos/CustomerInfoModal";
-import { Search, Monitor, Bike, ShoppingBag, Plus } from "lucide-react";
+import { OrderSheet } from "@/components/dashboard/OrderSheet";
+import {
+    Search, Monitor, Bike, ShoppingBag, Plus,
+    LayoutGrid, Map, List, TrendingUp, Clock, ChevronRight
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+
+type ViewMode = 'grid' | 'map' | 'list';
 
 export default function TablesPage() {
     const [tables, setTables] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'ALL' | 'LOCAL' | 'DELIVERY' | 'RETIRO'>('ALL');
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
+    const [viewMode, setViewMode] = useState<ViewMode>('grid');
+    const [sideTableId, setSideTableId] = useState<number | null>(null);
 
-    // Modal State
     const [selectedTable, setSelectedTable] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -23,47 +30,23 @@ export default function TablesPage() {
 
     useEffect(() => {
         const fetchTables = async () => {
-            const { data, error } = await supabase
-                .from('salon_tables')
-                .select('*')
-                .order('id');
-
+            const { data } = await supabase.from('salon_tables').select('*').order('id');
             if (data) setTables(data);
             setLoading(false);
         };
-
         fetchTables();
 
-        // Realtime Subscription
         const channel = supabase
             .channel('schema-db-changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'salon_tables',
-                },
-                (payload) => {
-                    fetchTables();
-                }
-            )
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'salon_tables' }, () => fetchTables())
             .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        return () => { supabase.removeChannel(channel); };
     }, []);
 
-    // ORDENAMIENTO CRONOLOGICO:
-    // 1. Ocupadas primero, ordenadas por hora de llegada (updated_at ASC)
-    // 2. Mesas locales libres (1-36) al final, ordenadas por número
-    // 3. Slots de delivery/retiro libres NO se muestran (solo aparecen cuando tienen pedido)
     const filteredTables = useMemo(() => {
         let occupied = tables.filter(t => t.status === 'OCCUPIED');
         let freeLocal = tables.filter(t => t.status !== 'OCCUPIED' && t.id >= 1 && t.id <= 36);
 
-        // Filtrar por TAB
         if (activeTab === 'LOCAL') {
             occupied = occupied.filter(t => t.id >= 1 && t.id <= 36);
         } else if (activeTab === 'DELIVERY') {
@@ -74,80 +57,69 @@ export default function TablesPage() {
             freeLocal = [];
         }
 
-        // Filtrar por búsqueda
         if (searchQuery) {
             occupied = occupied.filter(t => t.id.toString().includes(searchQuery));
             freeLocal = freeLocal.filter(t => t.id.toString().includes(searchQuery));
         }
 
-        // Ocupadas: más antigua primero (la que llegó antes queda arriba)
         occupied.sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
-        // Libres: ordenadas por número de mesa
         freeLocal.sort((a, b) => a.id - b.id);
-
         return [...occupied, ...freeLocal];
     }, [tables, activeTab, searchQuery]);
 
-    // COUNTS: solo cuenta lo visible
     const counts = useMemo(() => {
         const occLocal    = tables.filter(t => t.status === 'OCCUPIED' && t.id >= 1 && t.id <= 36).length;
         const freeLocal   = tables.filter(t => t.status !== 'OCCUPIED' && t.id >= 1 && t.id <= 36).length;
         const occDelivery = tables.filter(t => t.status === 'OCCUPIED' && t.id >= 40 && t.id <= 99).length;
         const occRetiro   = tables.filter(t => t.status === 'OCCUPIED' && t.id >= 100).length;
-        return {
-            todas:    occLocal + freeLocal + occDelivery + occRetiro,
-            local:    occLocal + freeLocal,
-            delivery: occDelivery,
-            retiro:   occRetiro,
-        };
+        return { todas: occLocal + freeLocal + occDelivery + occRetiro, local: occLocal + freeLocal, delivery: occDelivery, retiro: occRetiro };
     }, [tables]);
 
+    const stats = useMemo(() => {
+        const occupied = tables.filter(t => t.status === 'OCCUPIED');
+        const localTotal = tables.filter(t => t.id >= 1 && t.id <= 36).length;
+        const localOccupied = occupied.filter(t => t.id >= 1 && t.id <= 36).length;
+        const totalActive = occupied.reduce((sum, t) => sum + (Number(t.total) || 0), 0);
+        const times = occupied.map(t => {
+            const diff = Math.floor((Date.now() - new Date(t.updated_at).getTime()) / 60000);
+            return isNaN(diff) ? 0 : diff;
+        });
+        const avgTime = times.length > 0 ? Math.floor(times.reduce((a, b) => a + b, 0) / times.length) : 0;
+        return { localOccupied, localTotal, totalActive, avgTime };
+    }, [tables]);
 
     const handleTableClick = (tableId: number) => {
         const table = tables.find(t => t.id === tableId);
         if (!table) return;
 
-        // If Occupied, go direct
+        if (viewMode === 'list') {
+            setSideTableId(tableId);
+            return;
+        }
+
         if (table.status === 'OCCUPIED') {
             router.push(`/dashboard/tables/${tableId}`);
             return;
         }
 
-        // Determinar tipo basado en ID Range (LOCAL 1-36, DELIVERY 40-99, RETIRO 100+)
         const isDelivery = table.id >= 40 && table.id <= 99;
         const isRetiro = table.id >= 100;
-
-        // If Free & Delivery/Retiro -> Open Modal
         if (isDelivery || isRetiro) {
             setSelectedTable(table);
             setIsModalOpen(true);
         } else {
-            // Local Free -> Direct Navigate
             router.push(`/dashboard/tables/${tableId}`);
         }
     };
 
     const handleCreateOrder = async (customerData: any) => {
         if (!selectedTable) return;
-
         try {
-            const { error } = await supabase
-                .from('salon_tables')
-                .update({
-                    status: 'OCCUPIED',
-                    updated_at: new Date().toISOString(),
-                    // In real app, associate customer data here
-                })
-                .eq('id', selectedTable.id);
-
-            if (error) throw error;
-
+            await supabase.from('salon_tables').update({ status: 'OCCUPIED', updated_at: new Date().toISOString() }).eq('id', selectedTable.id);
             toast.success("Pedido iniciado");
             setIsModalOpen(false);
             router.push(`/dashboard/tables/${selectedTable.id}`);
-
-        } catch (e) {
-            console.error(e);
+        } catch {
             toast.error("Error al iniciar pedido");
         }
     };
@@ -155,7 +127,7 @@ export default function TablesPage() {
     if (loading) return <div className="p-10 text-center font-bold text-dark-400">Cargando mesas...</div>;
 
     return (
-        <div className="h-full flex flex-col gap-6">
+        <div className="h-full flex flex-col gap-4">
             <CustomerInfoModal
                 isOpen={isModalOpen}
                 orderType={selectedTable?.id >= 100 ? 'RETIRO' : 'DELIVERY'}
@@ -164,96 +136,294 @@ export default function TablesPage() {
                 onSubmit={handleCreateOrder}
             />
 
-            {/* Header & Tabs */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-3xl shadow-soft sticky top-0 z-10 backdrop-blur-md bg-white/80">
-                <div className="flex gap-2 p-1 bg-dark-50 rounded-2xl w-full md:w-auto overflow-x-auto no-scrollbar">
-                    <TabButton
-                        label="TODAS"
-                        count={counts.todas}
-                        active={activeTab === 'ALL'}
-                        onClick={() => setActiveTab('ALL')}
-                    />
-                    <TabButton
-                        icon={<Monitor size={14} />}
-                        label="LOCAL"
-                        count={counts.local}
-                        active={activeTab === 'LOCAL'}
-                        onClick={() => setActiveTab('LOCAL')}
-                        color="text-emerald-600"
-                    />
-                    <TabButton
-                        icon={<Bike size={14} />}
-                        label="DELIVERY"
-                        count={counts.delivery}
-                        active={activeTab === 'DELIVERY'}
-                        onClick={() => setActiveTab('DELIVERY')}
-                        color="text-blue-600"
-                    />
-                    <TabButton
-                        icon={<ShoppingBag size={14} />}
-                        label="RETIRO"
-                        count={counts.retiro}
-                        active={activeTab === 'RETIRO'}
-                        onClick={() => setActiveTab('RETIRO')}
-                        color="text-purple-600"
-                    />
-                </div>
-
-                <div className="relative w-full md:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Buscar n° mesa..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-dark-50 rounded-xl text-sm font-bold text-dark-900 border-none focus:ring-2 focus:ring-bloom-500/20 transition-all outline-none"
-                    />
-                </div>
+            {/* STATS BAR */}
+            <div className="grid grid-cols-3 gap-3 shrink-0">
+                <StatCard
+                    icon={<Monitor size={16} className="text-emerald-600" />}
+                    label="Ocupación"
+                    value={`${stats.localOccupied} / ${stats.localTotal}`}
+                    sub={`${Math.round((stats.localOccupied / Math.max(stats.localTotal, 1)) * 100)}% del salón`}
+                    accent="border-emerald-200 bg-emerald-50"
+                />
+                <StatCard
+                    icon={<TrendingUp size={16} className="text-amber-600" />}
+                    label="Total activo"
+                    value={`$${stats.totalActive.toLocaleString()}`}
+                    sub="En mesas abiertas"
+                    accent="border-amber-200 bg-amber-50"
+                />
+                <StatCard
+                    icon={<Clock size={16} className="text-blue-500" />}
+                    label="Tiempo promedio"
+                    value={stats.avgTime > 0 ? `${stats.avgTime}m` : '—'}
+                    sub="Por mesa ocupada"
+                    accent="border-blue-200 bg-blue-50"
+                />
             </div>
 
-            {/* Grid */}
-            <div className="flex-1 overflow-y-auto pb-20 scrollbar-thin pr-2">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {filteredTables.map(table => (
-                        <TableCard
-                            key={table.id}
-                            table={table}
-                            onClick={handleTableClick}
+            {/* HEADER */}
+            <div className="flex flex-col md:flex-row justify-between items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-100 shrink-0">
+                <div className="flex gap-1 p-1 bg-slate-50 rounded-xl w-full md:w-auto overflow-x-auto no-scrollbar">
+                    <TabButton label="TODAS" count={counts.todas} active={activeTab === 'ALL'} onClick={() => setActiveTab('ALL')} />
+                    <TabButton icon={<Monitor size={13} />} label="LOCAL" count={counts.local} active={activeTab === 'LOCAL'} onClick={() => setActiveTab('LOCAL')} />
+                    <TabButton icon={<Bike size={13} />} label="DELIVERY" count={counts.delivery} active={activeTab === 'DELIVERY'} onClick={() => setActiveTab('DELIVERY')} />
+                    <TabButton icon={<ShoppingBag size={13} />} label="RETIRO" count={counts.retiro} active={activeTab === 'RETIRO'} onClick={() => setActiveTab('RETIRO')} />
+                </div>
+
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    <div className="relative flex-1 md:w-52">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                        <input
+                            type="text"
+                            placeholder="Buscar n° mesa..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-900 border border-slate-200 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all"
                         />
-                    ))}
-                </div>
-                {filteredTables.length === 0 && (
-                    <div className="py-20 text-center text-dark-400 font-bold opacity-60">
-                        No se encontraron mesas
                     </div>
-                )}
+
+                    {/* View Toggle */}
+                    <div className="flex gap-0.5 p-1 bg-slate-100 rounded-xl shrink-0">
+                        <ViewBtn icon={<LayoutGrid size={15} />} active={viewMode === 'grid'} onClick={() => setViewMode('grid')} label="Grid" />
+                        <ViewBtn icon={<Map size={15} />} active={viewMode === 'map'} onClick={() => setViewMode('map')} label="Mapa" />
+                        <ViewBtn icon={<List size={15} />} active={viewMode === 'list'} onClick={() => { setViewMode('list'); setSideTableId(null); }} label="Lista" />
+                    </div>
+                </div>
             </div>
 
-            {/* Quick Action FAB (Optional) */}
-            <button className="fixed bottom-8 right-8 bg-bloom-500 text-white p-4 rounded-full shadow-strong hover:bg-bloom-600 hover:scale-110 transition-all z-30 md:hidden active:scale-95">
+            {/* VIEWS */}
+            {viewMode === 'grid' && <GridView tables={filteredTables} onTableClick={handleTableClick} />}
+            {viewMode === 'map' && <MapView tables={tables} onTableClick={handleTableClick} />}
+            {viewMode === 'list' && (
+                <ListView
+                    tables={filteredTables}
+                    sideTableId={sideTableId}
+                    onTableClick={handleTableClick}
+                    onCloseSide={() => setSideTableId(null)}
+                    onNavigate={(id) => router.push(`/dashboard/tables/${id}`)}
+                />
+            )}
+
+            {/* FAB mobile */}
+            <button className="fixed bottom-8 right-8 bg-amber-500 text-white p-4 rounded-full shadow-xl hover:bg-amber-600 hover:scale-110 transition-all z-30 md:hidden active:scale-95">
                 <Plus size={24} strokeWidth={3} />
             </button>
         </div>
     );
 }
 
+// ─── STAT CARD ────────────────────────────────────────────────────
+function StatCard({ icon, label, value, sub, accent }: { icon: React.ReactNode; label: string; value: string; sub: string; accent: string }) {
+    return (
+        <div className={`flex items-center gap-3 p-4 rounded-2xl border bg-white ${accent}`}>
+            <div className="p-2 rounded-xl bg-white shadow-sm border border-white/80 shrink-0">{icon}</div>
+            <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 truncate">{label}</p>
+                <p className="text-xl font-black text-slate-900 leading-tight">{value}</p>
+                <p className="text-[11px] text-slate-400 font-medium truncate">{sub}</p>
+            </div>
+        </div>
+    );
+}
+
+// ─── GRID VIEW ────────────────────────────────────────────────────
+function GridView({ tables, onTableClick }: { tables: any[]; onTableClick: (id: number) => void }) {
+    return (
+        <div className="flex-1 overflow-y-auto pb-20 scrollbar-thin pr-1">
+            {tables.length === 0 ? (
+                <div className="py-20 text-center text-slate-400 font-bold opacity-60">No se encontraron mesas</div>
+            ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                    {tables.map(table => (
+                        <TableCard key={table.id} table={table} onClick={onTableClick} />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ─── MAP VIEW ─────────────────────────────────────────────────────
+function MapView({ tables, onTableClick }: { tables: any[]; onTableClick: (id: number) => void }) {
+    const getTable = (id: number) => tables.find(t => t.id === id);
+
+    const zones = [
+        { label: "Salón A", color: "border-emerald-200 bg-emerald-50", header: "bg-emerald-100 text-emerald-700", tables: [1,2,3,4,5,6,7,8,9,10,11,12] },
+        { label: "Salón B", color: "border-blue-200 bg-blue-50", header: "bg-blue-100 text-blue-700", tables: [13,14,15,16,17,18,19,20,21,22,23,24] },
+        { label: "Terraza", color: "border-purple-200 bg-purple-50", header: "bg-purple-100 text-purple-700", tables: [25,26,27,28,29,30,31,32,33,34,35,36] },
+    ];
+
+    const externalTables = tables.filter(t => (t.id >= 40 && t.id <= 99) || t.id >= 100);
+
+    return (
+        <div className="flex-1 overflow-y-auto pb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
+                {zones.map(zone => (
+                    <div key={zone.label} className={`rounded-2xl border overflow-hidden ${zone.color}`}>
+                        <div className={`px-4 py-2.5 ${zone.header}`}>
+                            <h3 className="text-xs font-black uppercase tracking-widest">{zone.label}</h3>
+                        </div>
+                        <div className="p-3 grid grid-cols-4 gap-2">
+                            {zone.tables.map(id => {
+                                const table = getTable(id);
+                                return table
+                                    ? <MiniTableCard key={id} table={table} onClick={onTableClick} />
+                                    : <div key={id} className="h-16 rounded-xl bg-white/50 border border-dashed border-slate-200 flex items-center justify-center text-slate-300 font-black text-xs">{id}</div>;
+                            })}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {externalTables.length > 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden">
+                    <div className="px-4 py-2.5 bg-amber-100 text-amber-700">
+                        <h3 className="text-xs font-black uppercase tracking-widest">Delivery & Retiro</h3>
+                    </div>
+                    <div className="p-3 flex flex-wrap gap-2">
+                        {externalTables.map(t => <MiniTableCard key={t.id} table={t} onClick={onTableClick} />)}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function MiniTableCard({ table, onClick }: { table: any; onClick: (id: number) => void }) {
+    const isFree = table.status === 'FREE';
+    const getTime = () => {
+        if (isFree) return '';
+        const diff = Math.floor((Date.now() - new Date(table.updated_at).getTime()) / 60000);
+        if (isNaN(diff)) return '0m';
+        return diff < 60 ? `${diff}m` : `${Math.floor(diff / 60)}h${diff % 60}m`;
+    };
+    return (
+        <button
+            onClick={() => onClick(table.id)}
+            className={`h-16 w-full rounded-xl flex flex-col items-center justify-center gap-0 transition-all active:scale-95 hover:scale-105 ${
+                isFree
+                    ? 'bg-white border-2 border-slate-200 hover:border-slate-400 shadow-sm'
+                    : 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-md hover:shadow-lg'
+            }`}
+        >
+            <span className={`text-xl font-black leading-none ${isFree ? 'text-slate-700' : 'text-white'}`}>{table.id}</span>
+            {isFree
+                ? <span className="text-[9px] font-bold text-emerald-500 mt-0.5">libre</span>
+                : <>
+                    <span className="text-[9px] font-black text-white/80">{getTime()}</span>
+                    <span className="text-[9px] font-black text-white">${(table.total || 0).toLocaleString()}</span>
+                  </>
+            }
+        </button>
+    );
+}
+
+// ─── LIST VIEW ────────────────────────────────────────────────────
+function ListView({ tables, sideTableId, onTableClick, onCloseSide, onNavigate }: {
+    tables: any[];
+    sideTableId: number | null;
+    onTableClick: (id: number) => void;
+    onCloseSide: () => void;
+    onNavigate: (id: number) => void;
+}) {
+    const getType = (id: number) => id >= 100 ? 'Retiro' : id >= 40 ? 'Delivery' : 'Local';
+    const getTime = (t: any) => {
+        if (t.status === 'FREE') return '';
+        const diff = Math.floor((Date.now() - new Date(t.updated_at).getTime()) / 60000);
+        if (isNaN(diff)) return '';
+        return diff < 60 ? `${diff}m` : `${Math.floor(diff / 60)}h ${diff % 60}m`;
+    };
+
+    return (
+        <div className="flex-1 flex gap-4 overflow-hidden min-h-0">
+            {/* Left: table list */}
+            <div className={`${sideTableId ? 'w-72 shrink-0' : 'flex-1 max-w-sm'} flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden`}>
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{tables.length} mesas</p>
+                </div>
+                <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
+                    {tables.map(table => {
+                        const isFree = table.status === 'FREE';
+                        const isSelected = sideTableId === table.id;
+                        return (
+                            <button
+                                key={table.id}
+                                onClick={() => onTableClick(table.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all hover:bg-slate-50 ${isSelected ? 'bg-amber-50 border-r-2 border-amber-500' : ''}`}
+                            >
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${isFree ? 'bg-slate-100 text-slate-500' : 'bg-gradient-to-br from-amber-400 to-orange-500 text-white'}`}>
+                                    {table.id}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-black text-sm text-slate-900 truncate">
+                                        Mesa {table.id}
+                                        <span className="text-slate-400 font-medium text-xs"> · {getType(table.id)}</span>
+                                    </p>
+                                    {isFree
+                                        ? <p className="text-xs text-emerald-500 font-bold">Libre</p>
+                                        : <p className="text-xs text-amber-600 font-bold">${(table.total || 0).toLocaleString()} · {getTime(table)}</p>
+                                    }
+                                </div>
+                                <div className={`w-2 h-2 rounded-full shrink-0 ${isFree ? 'bg-emerald-400' : 'bg-orange-500 animate-pulse'}`} />
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Right: order panel */}
+            {sideTableId ? (
+                <div className="flex-1 bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <OrderSheet
+                        tableId={sideTableId}
+                        onClose={onCloseSide}
+                        onOrderComplete={onCloseSide}
+                    />
+                </div>
+            ) : (
+                <div className="flex-1 bg-white rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3">
+                    <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center">
+                        <ChevronRight size={28} className="text-slate-300" />
+                    </div>
+                    <p className="font-black text-slate-400 text-sm uppercase tracking-wider">Seleccioná una mesa</p>
+                    <p className="text-xs text-slate-300 font-medium">El pedido se abre aquí sin salir</p>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ─── TAB BUTTON ───────────────────────────────────────────────────
 function TabButton({ icon, label, count, active, onClick }: any) {
     return (
         <button
             onClick={onClick}
             className={`
-                flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 user-select-none
+                flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 shrink-0
                 ${active
-                    ? 'bg-bloom-500 text-white shadow-lg shadow-bloom-500/30 transform scale-105'
-                    : 'text-dark-500 hover:bg-dark-100 hover:text-dark-900'
+                    ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25 scale-105'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                 }
             `}
         >
             {icon}
             <span>{label}</span>
-            <span className={`px-1.5 py-0.5 rounded-md text-[10px] bg-white/20 text-white mix-blend-overlay font-bold min-w-[20px] text-center`}>
+            <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold min-w-[18px] text-center ${active ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-600'}`}>
                 {count}
             </span>
+        </button>
+    );
+}
+
+// ─── VIEW TOGGLE BUTTON ───────────────────────────────────────────
+function ViewBtn({ icon, active, onClick, label }: any) {
+    return (
+        <button
+            onClick={onClick}
+            title={label}
+            className={`p-2 rounded-lg transition-all ${active ? 'bg-white shadow-sm text-amber-600 font-black' : 'text-slate-400 hover:text-slate-700'}`}
+        >
+            {icon}
         </button>
     );
 }
