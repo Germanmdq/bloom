@@ -3,14 +3,15 @@
 import { useState, useEffect } from "react";
 import { Save, Store, Sliders, Database, Printer, Shield, Download, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
-    const [isLoading, setIsLoading] = useState(false);
+    const supabase = createClient();
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Mock State - In a real app, this would come from a DB or Context
     const [restaurantName, setRestaurantName] = useState("Bloom Cafe");
     const [address, setAddress] = useState("Av. Libertador 1234, CABA");
-    const [phone, setPhone] = useState("+54 11 4455-6677");
+    const [phone, setPhone] = useState("5491112345678");
     const [taxRate, setTaxRate] = useState("21");
     const [currency, setCurrency] = useState("ARS");
     const [stockTracking, setStockTracking] = useState(true);
@@ -18,30 +19,35 @@ export default function SettingsPage() {
     const [mesas, setMesas] = useState(10);
     const [barra, setBarra] = useState(3);
 
-    // Load settings from local storage
     useEffect(() => {
-        const storedPhone = localStorage.getItem("bloom_whatsapp_number");
-        if (storedPhone) setPhone(storedPhone);
-
-        const storedSalon = localStorage.getItem("bloom_salon_config");
-        if (storedSalon) {
-            try {
-                const { mesas: m, barra: b } = JSON.parse(storedSalon);
-                if (m) setMesas(m);
-                if (b !== undefined) setBarra(b);
-            } catch {}
-        }
+        const loadSettings = async () => {
+            const { data } = await supabase
+                .from("app_settings")
+                .select("mesas, barra, whatsapp")
+                .eq("id", 1)
+                .single();
+            if (data) {
+                setMesas(data.mesas);
+                setBarra(data.barra);
+                setPhone(data.whatsapp);
+            }
+            setIsLoading(false);
+        };
+        loadSettings();
     }, []);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setIsLoading(true);
-        // Simulate API call and save to LocalStorage
-        setTimeout(() => {
-            localStorage.setItem("bloom_whatsapp_number", phone);
-            localStorage.setItem("bloom_salon_config", JSON.stringify({ mesas, barra }));
-            setIsLoading(false);
+        const { error } = await supabase
+            .from("app_settings")
+            .update({ mesas, barra, whatsapp: phone, updated_at: new Date().toISOString() })
+            .eq("id", 1);
+        setIsLoading(false);
+        if (error) {
+            alert("Error al guardar: " + error.message);
+        } else {
             alert("Ajustes guardados correctamente.");
-        }, 1000);
+        }
     };
 
     return (

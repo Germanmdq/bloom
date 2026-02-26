@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Printer, QrCode, Settings2, X } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 type TableEntry = { id: number; label: string; type: string };
 
@@ -112,21 +113,28 @@ function QRCard({ table, onClick }: { table: TableEntry; onClick: () => void }) 
 }
 
 export default function QRCodesPage() {
+    const supabase = createClient();
     const [mesas, setMesas] = useState(10);
     const [barra, setBarra] = useState(3);
     const [baseUrl, setBaseUrl] = useState("");
     const [selected, setSelected] = useState<TableEntry | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         setBaseUrl(window.location.origin);
-        const stored = localStorage.getItem("bloom_salon_config");
-        if (stored) {
-            try {
-                const { mesas: m, barra: b } = JSON.parse(stored);
-                if (m) setMesas(m);
-                if (b !== undefined) setBarra(b);
-            } catch {}
-        }
+        const loadSettings = async () => {
+            const { data } = await supabase
+                .from("app_settings")
+                .select("mesas, barra")
+                .eq("id", 1)
+                .single();
+            if (data) {
+                setMesas(data.mesas);
+                setBarra(data.barra);
+            }
+            setLoading(false);
+        };
+        loadSettings();
     }, []);
 
     const TABLES: TableEntry[] = Array.from({ length: mesas }, (_, i) => ({
@@ -137,7 +145,13 @@ export default function QRCodesPage() {
         id: mesas + i + 1, label: String(i + 1), type: "barra",
     }));
 
-    const noConfig = mesas === 0 && barra === 0;
+    const noConfig = !loading && mesas === 0 && barra === 0;
+
+    if (loading) return (
+        <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
+        </div>
+    );
 
     return (
         <div className="p-6 space-y-8">
