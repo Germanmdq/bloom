@@ -15,7 +15,7 @@ interface Category {
 interface Product {
     id: string;
     name: string;
-    description: string;
+    description?: string;
     price: number | string;
     category_id: string;
     image_url: string;
