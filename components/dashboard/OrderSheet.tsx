@@ -62,8 +62,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [extraTotal, setExtraTotal] = useState(0);
-    // true = mostrar productos directamente (sin pasar por categorías)
-    const [showProducts, setShowProducts] = useState(false);
     const [productSearch, setProductSearch] = useState("");
     const [waiters, setWaiters] = useState<Array<{ id: string; full_name: string }>>([]);
     const [orderType, setOrderType] = useState<'LOCAL' | 'DELIVERY'>('LOCAL');
@@ -87,17 +85,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         } else {
             const { data: tableData } = await supabase
                 .from('salon_tables')
-                .select('total, order_type, status')
+                .select('total, order_type')
                 .eq('id', tableId)
                 .single();
             if (tableData) {
-                const prevTotal = Number(tableData.total) || 0;
-                setExtraTotal(prevTotal);
+                setExtraTotal(Number(tableData.total) || 0);
                 if (tableData.order_type) setOrderType(tableData.order_type);
-                // Mesa ocupada con cargos → arrancar en vista de productos
-                if (tableData.status === 'OCCUPIED' && prevTotal > 0) {
-                    setShowProducts(true);
-                }
             }
         }
     };
@@ -473,57 +466,60 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 </div>
 
                 {/* RIGHT: PRODUCTS */}
-                <div className="flex-1 flex flex-col p-4 overflow-hidden relative">
-                    <div className="flex-1 overflow-y-auto pr-1 no-scrollbar">
-                        {(!activeCategory && !productSearch && !showProducts) ? (
-                            /* VISTA: CATEGORÍAS */
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20">
-                                {categories.map((cat: any) => (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => { setActiveCategory(cat.id); setShowProducts(false); }}
-                                        className="h-28 flex flex-col items-center justify-center p-2 rounded-2xl bg-white border-2 border-transparent hover:border-black/5 hover:shadow-xl transition-all group active:scale-95 gap-1"
-                                    >
-                                        <h3 className="font-black text-[10px] text-center uppercase tracking-tight text-gray-900 group-hover:text-black leading-tight px-1">
-                                            {cat.name}
-                                        </h3>
-                                        <span className="text-[8px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
-                                            {products.filter((p: any) => p.category_id === cat.id).length} Prods.
-                                        </span>
-                                    </button>
-                                ))}
+                <div className="flex-1 flex flex-col overflow-hidden">
+
+                    {/* CATEGORY PILLS */}
+                    <div className="flex items-center gap-2 px-4 pt-3 pb-2 overflow-x-auto no-scrollbar shrink-0 border-b border-black/5">
+                        <button
+                            onClick={() => setActiveCategory(null)}
+                            className={`shrink-0 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all ${
+                                !activeCategory
+                                    ? 'bg-black text-[#FFD60A] shadow-lg'
+                                    : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-100'
+                            }`}
+                        >
+                            Todos · {products.length}
+                        </button>
+                        {categories.map((cat: any) => {
+                            const count = products.filter((p: any) => p.category_id === cat.id).length;
+                            return (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setActiveCategory(cat.id)}
+                                    className={`shrink-0 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all ${
+                                        activeCategory === cat.id
+                                            ? 'bg-black text-[#FFD60A] shadow-lg'
+                                            : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-100'
+                                    }`}
+                                >
+                                    {cat.name} · {count}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* PRODUCTS GRID */}
+                    <div className="flex-1 overflow-y-auto no-scrollbar p-4">
+                        {displayProducts.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-gray-300 font-black uppercase tracking-widest text-xs">
+                                Sin productos
                             </div>
                         ) : (
-                            /* VISTA: PRODUCTOS */
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-20">
-                                <button
-                                    onClick={() => { setActiveCategory(null); setProductSearch(""); setShowProducts(false); }}
-                                    className="aspect-[4/3] flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-100 border-2 border-transparent hover:border-black/10 hover:bg-gray-200 transition-all group active:scale-95"
-                                >
-                                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl group-hover:-translate-x-1 transition-transform shadow-sm">
-                                        ⬅️
-                                    </div>
-                                    <h4 className="font-black text-gray-500 text-[10px] text-center uppercase mt-2 tracking-widest">CATS</h4>
-                                </button>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-6">
                                 {displayProducts.map((item: any) => (
                                     <button
                                         key={item.id}
                                         onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                        className="aspect-[4/3] flex flex-col items-center justify-between p-3 rounded-2xl bg-white border-2 border-transparent hover:border-black shadow-sm hover:shadow-lg transition-all group active:scale-95"
+                                        className="group relative flex flex-col justify-between p-4 rounded-2xl bg-white border border-gray-100 hover:border-black hover:shadow-xl shadow-sm transition-all active:scale-95 min-h-[100px]"
                                     >
-                                        <div className="flex-1 flex items-center justify-center w-full">
-                                            <h4 className="font-bold text-gray-900 text-xs text-center leading-tight line-clamp-2 group-hover:scale-105 transition-transform">{item.name}</h4>
-                                        </div>
-                                        <p className="text-[10px] font-black text-gray-400 group-hover:text-black transition-colors bg-gray-50 px-2 py-0.5 rounded-md mt-1">
+                                        <span className="font-black text-gray-900 text-xs leading-tight text-left line-clamp-3 group-hover:text-black">
+                                            {item.name}
+                                        </span>
+                                        <span className="mt-3 self-start bg-[#FFD60A] text-black text-[11px] font-black px-2 py-0.5 rounded-lg">
                                             ${Number(item.price).toLocaleString()}
-                                        </p>
+                                        </span>
                                     </button>
                                 ))}
-                                {displayProducts.length === 0 && (
-                                    <div className="col-span-full text-center py-20 text-gray-400 font-bold uppercase tracking-widest text-xs">
-                                        No hay productos en esta categoría
-                                    </div>
-                                )}
                             </div>
                         )}
                     </div>
