@@ -47,6 +47,16 @@ export type Table = {
 
 export type PaymentMethod = 'CASH' | 'CARD' | 'MERCADO_PAGO';
 
+export type OrderItem = {
+    id?: string;
+    product_id?: string;
+    name: string;
+    price: number;
+    quantity: number;
+    is_meta?: boolean;
+    details?: Record<string, string>;
+};
+
 export type Order = {
     id: string;
     table_id: number;
@@ -54,4 +64,5 @@ export type Order = {
     payment_method: PaymentMethod;
     created_at: string;
     created_by?: string;
+    items?: OrderItem[];
 };
