@@ -23,9 +23,11 @@ function PublicMenuPage() {
     const searchParams = useSearchParams();
     const tableParam = searchParams.get("table");
     const tableId = tableParam ? parseInt(tableParam) : null;
-    const isBarTable = tableId !== null && tableId >= 41 && tableId <= 43;
+    const zona = searchParams.get("zona"); // "barra" | "mesa" | null
+    const num = searchParams.get("num");   // display number
+    const isBarTable = zona === "barra";
     const tableLabel = tableId !== null
-        ? isBarTable ? `Barra ${tableId - 40}` : `Mesa ${tableId}`
+        ? isBarTable ? `Barra ${num ?? tableId}` : `Mesa ${num ?? tableId}`
         : null;
     const [products, setProducts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);

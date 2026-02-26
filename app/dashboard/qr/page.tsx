@@ -9,7 +9,8 @@ type TableEntry = { id: number; label: string; type: string };
 
 function QRModal({ table, baseUrl, onClose }: { table: TableEntry; baseUrl: string; onClose: () => void }) {
     const isBarra = table.type === "barra";
-    const url = `${baseUrl}/menu?table=${table.id}`;
+    const zona = table.type === "barra" ? "barra" : "mesa";
+    const url = `${baseUrl}/menu?table=${table.id}&zona=${zona}&num=${table.label}`;
 
     function handlePrint() {
         const win = window.open("", "_blank", "width=420,height=540");
@@ -98,7 +99,7 @@ function QRCard({ table, onClick }: { table: TableEntry; onClick: () => void }) 
             <p className="text-5xl font-black text-gray-900 leading-none">{table.label}</p>
             <div className="my-1 pointer-events-none">
                 <QRCodeSVG
-                    value={`${baseUrl}/menu?table=${table.id}`}
+                    value={`${baseUrl}/menu?table=${table.id}&zona=${table.type === "barra" ? "barra" : "mesa"}&num=${table.label}`}
                     size={130}
                     level="M"
                     bgColor="#ffffff"
