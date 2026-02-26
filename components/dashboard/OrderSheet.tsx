@@ -477,86 +477,83 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                     </div>
                 </div>
 
-                {/* RIGHT: PRODUCTS */}
+                {/* RIGHT: CATEGORIES → PRODUCTS */}
                 <div className="flex-1 flex flex-col overflow-hidden">
-
-                    {/* CATEGORY PILLS */}
-                    <div className="flex items-center gap-2 px-4 py-3 overflow-x-auto no-scrollbar shrink-0 bg-white border-b border-black/5">
-                        <button
-                            onClick={() => setActiveCategory(null)}
-                            className={`shrink-0 flex flex-col items-center gap-1 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 min-w-[60px] ${
-                                !activeCategory
-                                    ? 'bg-black text-[#FFD60A] shadow-md'
-                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                            }`}
-                        >
-                            <span className="text-lg leading-none">🍽️</span>
-                            <span>Todos</span>
-                        </button>
-                        {categories.map((cat: any, idx: number) => {
-                            const count = products.filter((p: any) => p.category_id === cat.id).length;
-                            const emojis = ['🥩','🍝','🥗','🍕','🍔','🥤','🍰','🍷','☕','🍜','🥪','🍣'];
-                            const emoji = emojis[idx % emojis.length];
-                            const isActive = activeCategory === cat.id;
-                            return (
-                                <button
-                                    key={cat.id}
-                                    onClick={() => setActiveCategory(cat.id)}
-                                    className={`shrink-0 flex flex-col items-center gap-1 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 min-w-[64px] ${
-                                        isActive
-                                            ? 'bg-black text-[#FFD60A] shadow-md'
-                                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                                    }`}
-                                >
-                                    <span className="text-lg leading-none">{emoji}</span>
-                                    <span className="truncate max-w-[56px]">{cat.name}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* PRODUCTS GRID */}
-                    <div className="flex-1 overflow-y-auto no-scrollbar p-4">
-                        {displayProducts.length === 0 ? (
-                            <div className="h-full flex items-center justify-center text-gray-300 font-black uppercase tracking-widest text-sm">
-                                Sin productos
+                    {!activeCategory && !productSearch ? (
+                        /* ── PANTALLA DE CATEGORÍAS ── */
+                        <div className="flex-1 overflow-y-auto no-scrollbar p-5">
+                            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {categories.map((cat: any, idx: number) => {
+                                    const emojis = ['🥩','🍝','🥗','🍕','🍔','🥤','🍰','🍷','☕','🍜','🥪','🍣','🧁','🫔','🌮'];
+                                    const emoji = emojis[idx % emojis.length];
+                                    const count = products.filter((p: any) => p.category_id === cat.id).length;
+                                    return (
+                                        <button
+                                            key={cat.id}
+                                            onClick={() => setActiveCategory(cat.id)}
+                                            className="flex flex-col items-center justify-center gap-3 p-6 rounded-3xl bg-white border-2 border-transparent hover:border-black hover:shadow-xl shadow-sm transition-all active:scale-95 aspect-square"
+                                        >
+                                            <span className="text-5xl leading-none">{emoji}</span>
+                                            <span className="font-black text-gray-900 text-sm uppercase tracking-wide text-center leading-tight">{cat.name}</span>
+                                            <span className="text-[10px] text-gray-400 font-bold">{count} productos</span>
+                                        </button>
+                                    );
+                                })}
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-6">
-                                {displayProducts.map((item: any) => (
+                        </div>
+                    ) : (
+                        /* ── PANTALLA DE PRODUCTOS ── */
+                        <>
+                            {activeCategory && !productSearch && (
+                                <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-black border-b border-black">
                                     <button
-                                        key={item.id}
-                                        onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                        className="group flex flex-col rounded-2xl bg-white border-2 border-transparent hover:border-black hover:shadow-xl shadow-sm transition-all active:scale-95 text-left overflow-hidden"
+                                        onClick={() => setActiveCategory(null)}
+                                        className="flex items-center gap-1.5 text-[#FFD60A] font-black text-xs uppercase tracking-wider hover:opacity-70 transition-opacity"
                                     >
-                                        {/* Product image */}
-                                        {item.image_url ? (
-                                            <div className="w-full h-28 overflow-hidden bg-gray-100 shrink-0">
-                                                <img
-                                                    src={item.image_url}
-                                                    alt={item.name}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="w-full h-20 bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shrink-0">
-                                                <span className="text-3xl opacity-25">🍽️</span>
-                                            </div>
-                                        )}
-                                        {/* Info */}
-                                        <div className="p-3 flex flex-col flex-1">
-                                            <span className="font-black text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-black flex-1">
-                                                {item.name}
-                                            </span>
-                                            <span className="mt-2 self-start bg-[#FFD60A] text-black text-xs font-black px-3 py-1 rounded-xl">
-                                                ${Number(item.price).toLocaleString()}
-                                            </span>
-                                        </div>
+                                        <ArrowLeft size={14} />
+                                        Categorías
                                     </button>
-                                ))}
+                                    <span className="text-white/20">|</span>
+                                    <span className="text-white font-black text-xs uppercase tracking-widest">
+                                        {categories.find((c: any) => c.id === activeCategory)?.name}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="flex-1 overflow-y-auto no-scrollbar p-4">
+                                {displayProducts.length === 0 ? (
+                                    <div className="h-full flex items-center justify-center text-gray-300 font-black uppercase tracking-widest text-sm">
+                                        Sin productos
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 pb-6">
+                                        {displayProducts.map((item: any) => (
+                                            <button
+                                                key={item.id}
+                                                onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
+                                                className="group flex flex-col rounded-2xl bg-white border-2 border-transparent hover:border-black hover:shadow-xl shadow-sm transition-all active:scale-95 text-left overflow-hidden"
+                                            >
+                                                {item.image_url ? (
+                                                    <div className="w-full h-28 overflow-hidden bg-gray-100 shrink-0">
+                                                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-full h-20 bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shrink-0">
+                                                        <span className="text-3xl opacity-25">🍽️</span>
+                                                    </div>
+                                                )}
+                                                <div className="p-3 flex flex-col flex-1">
+                                                    <span className="font-black text-gray-900 text-sm leading-snug line-clamp-2 flex-1">{item.name}</span>
+                                                    <span className="mt-2 self-start bg-[#FFD60A] text-black text-xs font-black px-3 py-1 rounded-xl">
+                                                        ${Number(item.price).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
+                        </>
+                    )}
                 </div>
             </div>
 
