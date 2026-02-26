@@ -112,8 +112,8 @@ function QRCard({ table, onClick }: { table: TableEntry; onClick: () => void }) 
 }
 
 export default function QRCodesPage() {
-    const [mesas, setMesas] = useState(0);
-    const [barra, setBarra] = useState(0);
+    const [mesas, setMesas] = useState(10);
+    const [barra, setBarra] = useState(3);
     const [baseUrl, setBaseUrl] = useState("");
     const [selected, setSelected] = useState<TableEntry | null>(null);
 
