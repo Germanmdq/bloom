@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Order } from "@/lib/types";
 import * as XLSX from "xlsx";
-import { Loader2, Receipt, Calendar, CreditCard, Banknote, Smartphone, ChevronRight, X, Filter, Download } from "lucide-react";
+import { Loader2, Receipt, Calendar, ChevronRight, X, Filter, Download } from "lucide-react";
+import { getPaymentIcon, getPaymentLabel } from "@/lib/utils/payment";
 import { motion, AnimatePresence } from "framer-motion";
 
 type ViewMode = 'day' | 'week' | 'fortnight' | 'month';
@@ -194,23 +195,6 @@ export function OrderList() {
     }, [orders, viewMode]);
 
 
-    const getPaymentIcon = (method: string) => {
-        switch (method) {
-            case 'CASH': return <Banknote size={16} className="text-green-600" />;
-            case 'CARD': return <CreditCard size={16} className="text-blue-600" />;
-            case 'MERCADO_PAGO': return <Smartphone size={16} className="text-sky-500" />;
-            default: return <Receipt size={16} className="text-gray-400" />;
-        }
-    };
-
-    const getPaymentLabel = (method: string) => {
-        switch (method) {
-            case 'CASH': return 'Efectivo';
-            case 'CARD': return 'Tarjeta';
-            case 'MERCADO_PAGO': return 'Mercado Pago';
-            default: return method;
-        }
-    };
 
     if (loading) {
         return (
