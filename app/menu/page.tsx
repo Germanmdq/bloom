@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -18,7 +18,7 @@ const formatCurrency = (value: number) =>
 const WHATSAPP_NUMBER = "5491112345678";
 
 // --- MAIN COMPONENT ---
-export default function PublicMenuPage() {
+function PublicMenuPage() {
     const supabase = createClient();
     const searchParams = useSearchParams();
     const tableParam = searchParams.get("table");
@@ -465,6 +465,14 @@ export default function PublicMenuPage() {
                 )}
             </AnimatePresence>
         </main>
+    );
+}
+
+export default function MenuPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" /></div>}>
+            <PublicMenuPage />
+        </Suspense>
     );
 }
 
