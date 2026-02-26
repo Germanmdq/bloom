@@ -1,5 +1,4 @@
 import React from 'react';
-import { Users, Bike, ShoppingBag, Clock } from 'lucide-react';
 
 interface TableCardProps {
     table: {
@@ -15,20 +14,11 @@ interface TableCardProps {
 export function TableCard({ table, onClick }: TableCardProps) {
     const isFree = table.status === 'FREE';
 
-    const getTypeConfig = () => {
-        let type = table.order_type;
-        if (table.id >= 50 && table.id < 100) type = 'DELIVERY';
-        if (table.id >= 100) type = 'RETIRO';
-        if (table.id < 50) type = 'LOCAL';
-
-        switch (type) {
-            case 'DELIVERY': return { icon: <Bike size={11} />, label: 'Delivery' };
-            case 'RETIRO':   return { icon: <ShoppingBag size={11} />, label: 'Retiro' };
-            default:         return { icon: <Users size={11} />, label: 'Local' };
-        }
+    const getTypeLabel = () => {
+        if (table.id >= 100) return 'Retiro';
+        if (table.id >= 40) return 'Delivery';
+        return 'Local';
     };
-
-    const typeConfig = getTypeConfig();
 
     const getTimeElapsed = () => {
         if (isFree) return { text: '', minutes: 0 };
@@ -59,19 +49,12 @@ export function TableCard({ table, onClick }: TableCardProps) {
         >
             {/* Header */}
             <div className="flex justify-between items-start">
-                <span className={`
-                    flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider
-                    ${isFree ? 'bg-slate-100 text-slate-500 border border-slate-200' : 'bg-white/20 text-white'}
-                `}>
-                    {typeConfig.icon}
-                    {typeConfig.label}
+                <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${isFree ? 'bg-slate-100 text-slate-500' : 'bg-white/20 text-white'}`}>
+                    {getTypeLabel()}
                 </span>
                 {isFree
                     ? <div className="w-2 h-2 rounded-full bg-emerald-400 mt-1" />
-                    : <div className="flex items-center gap-1 text-[10px] font-black text-white/80">
-                        <Clock size={10} />
-                        {timeText}
-                      </div>
+                    : <span className="text-[10px] font-black text-white/80">{timeText}</span>
                 }
             </div>
 
