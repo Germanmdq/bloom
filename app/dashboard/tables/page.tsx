@@ -24,6 +24,7 @@ export default function TablesPage() {
 
     const [selectedTable, setSelectedTable] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showNewMenu, setShowNewMenu] = useState(false);
 
     const router = useRouter();
     const supabase = createClient();
@@ -115,13 +116,35 @@ export default function TablesPage() {
     const handleCreateOrder = async (customerData: any) => {
         if (!selectedTable) return;
         try {
-            await supabase.from('salon_tables').update({ status: 'OCCUPIED', updated_at: new Date().toISOString() }).eq('id', selectedTable.id);
+            await supabase.from('salon_tables').upsert({
+                id: selectedTable.id,
+                status: 'OCCUPIED',
+                updated_at: new Date().toISOString()
+            });
             toast.success("Pedido iniciado");
             setIsModalOpen(false);
             router.push(`/dashboard/tables/${selectedTable.id}`);
         } catch {
             toast.error("Error al iniciar pedido");
         }
+    };
+
+    const handleNewOrder = async (type: 'DELIVERY' | 'RETIRO') => {
+        setShowNewMenu(false);
+        const minId = type === 'DELIVERY' ? 40 : 100;
+        const maxId = type === 'DELIVERY' ? 99 : 999;
+
+        const usedIds = tables.filter(t => t.id >= minId && t.id <= maxId).map(t => t.id);
+        let nextId = minId;
+        while (usedIds.includes(nextId) && nextId <= maxId) nextId++;
+
+        if (nextId > maxId) {
+            toast.error('No hay más slots disponibles');
+            return;
+        }
+
+        await supabase.from('salon_tables').upsert({ id: nextId, status: 'FREE', total: 0, items: [] });
+        router.push(`/dashboard/tables/${nextId}`);
     };
 
     if (loading) return <div className="p-10 text-center font-bold text-dark-400">Cargando mesas...</div>;
@@ -204,10 +227,33 @@ export default function TablesPage() {
                 />
             )}
 
-            {/* FAB mobile */}
-            <button className="fixed bottom-8 right-8 bg-amber-500 text-white p-4 rounded-full shadow-xl hover:bg-amber-600 hover:scale-110 transition-all z-30 md:hidden active:scale-95">
-                <Plus size={24} strokeWidth={3} />
-            </button>
+            {/* FAB: nuevo pedido delivery/retiro */}
+            <div className="fixed bottom-8 right-8 z-30 flex flex-col items-end gap-2">
+                {showNewMenu && (
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col">
+                        <button
+                            onClick={() => handleNewOrder('DELIVERY')}
+                            className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left"
+                        >
+                            <Bike size={18} className="text-blue-500" />
+                            <span className="font-bold text-gray-800 text-sm">Nuevo Delivery</span>
+                        </button>
+                        <button
+                            onClick={() => handleNewOrder('RETIRO')}
+                            className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-50"
+                        >
+                            <ShoppingBag size={18} className="text-purple-500" />
+                            <span className="font-bold text-gray-800 text-sm">Nuevo Retiro</span>
+                        </button>
+                    </div>
+                )}
+                <button
+                    onClick={() => setShowNewMenu(v => !v)}
+                    className="bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-all"
+                >
+                    <Plus size={22} strokeWidth={3} className={`transition-transform ${showNewMenu ? 'rotate-45' : ''}`} />
+                </button>
+            </div>
         </div>
     );
 }

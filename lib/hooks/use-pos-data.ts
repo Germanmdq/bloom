@@ -60,21 +60,23 @@ export function useCreateOrder() {
 
     return useMutation({
         mutationFn: async (orderData: any) => {
-            // Map Cart Items to Bloom Agent Format
-            const items = orderData.items.map((i: any) => ({
-                product_id: i.id, // Cart has 'id', Agent needs 'product_id'
-                quantity: i.quantity,
-                price: i.price,
-                name: i.name
-            }));
+            // Insert directo a orders (BloomAgent usa columnas que no existen en la tabla)
+            const total = orderData.total ??
+                orderData.items.reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0);
 
-            // Use Bloom Agent to Validate Stock & Process Sale
-            return await BloomAgent.processOrder({
-                table_id: orderData.table_id,
-                items: items,
-                payment_method: orderData.payment_method,
-                waiter_id: orderData.waiter_id
-            });
+            const { data, error } = await supabase
+                .from('orders')
+                .insert({
+                    table_id: orderData.table_id,
+                    total,
+                    payment_method: orderData.payment_method,
+                    waiter_id: orderData.waiter_id || null,
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['orders'] });
