@@ -28,10 +28,16 @@ export function useCategories() {
             const { data, error } = await supabase
                 .from('categories')
                 .select('*')
-                .order('sort_order', { ascending: true }); // ← ORDEN CORRECTO
+                .order('sort_order', { ascending: true });
 
             if (error) throw error;
-            return data; // ← SIN SORTING ADICIONAL
+            // Deduplicar por nombre (por si hay filas duplicadas en la DB)
+            const seen = new Set<string>();
+            return (data ?? []).filter(cat => {
+                if (seen.has(cat.name)) return false;
+                seen.add(cat.name);
+                return true;
+            });
         },
         staleTime: 1000 * 60 * 60,
     });
