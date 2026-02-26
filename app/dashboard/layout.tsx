@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WhatsAppNotificationListener } from "@/components/WhatsAppNotificationListener";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Lock, ShieldCheck } from "lucide-react";
+import { SalesComparisonPanel, ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import "./dashboard.css";
 
 export default function DashboardLayout({
@@ -15,6 +16,29 @@ export default function DashboardLayout({
     const [loginEmail, setLoginEmail] = useState("");
     const [loginPass, setLoginPass] = useState("");
     const [unlockError, setUnlockError] = useState("");
+    const [comparisonPanel, setComparisonPanel] = useState<ComparisonType | null>(null);
+
+    useEffect(() => {
+        if (isLocked) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key !== 'F1' && e.key !== 'F2') return;
+            // Skip when the POS OrderSheet is open
+            if (document.querySelector('[data-ordersheet="active"]')) return;
+            // Skip when an input/select has focus
+            const tag = (e.target as HTMLElement).tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+            e.preventDefault();
+            const key = e.key.toLowerCase() as 'f1' | 'f2';
+            const stored = localStorage.getItem(`bloom_${key}_action`) as ComparisonType | null;
+            const action: ComparisonType = stored ?? (key === 'f1' ? 'yesterday' : 'last_week');
+            setComparisonPanel(action);
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isLocked]);
 
     function handleUnlock(e: React.FormEvent) {
         e.preventDefault();
@@ -83,6 +107,13 @@ export default function DashboardLayout({
                     </div>
                 </main>
             </div>
+
+            {comparisonPanel && (
+                <SalesComparisonPanel
+                    comparisonType={comparisonPanel}
+                    onClose={() => setComparisonPanel(null)}
+                />
+            )}
         </div>
     );
 }

@@ -62,6 +62,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [extraTotal, setExtraTotal] = useState(0);
+    // true = mostrar productos directamente (sin pasar por categorías)
+    const [showProducts, setShowProducts] = useState(false);
     const [productSearch, setProductSearch] = useState("");
     const [waiters, setWaiters] = useState<Array<{ id: string; full_name: string }>>([]);
     const [orderType, setOrderType] = useState<'LOCAL' | 'DELIVERY'>('LOCAL');
@@ -85,12 +87,17 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         } else {
             const { data: tableData } = await supabase
                 .from('salon_tables')
-                .select('total, order_type')
+                .select('total, order_type, status')
                 .eq('id', tableId)
                 .single();
             if (tableData) {
-                setExtraTotal(Number(tableData.total) || 0);
+                const prevTotal = Number(tableData.total) || 0;
+                setExtraTotal(prevTotal);
                 if (tableData.order_type) setOrderType(tableData.order_type);
+                // Mesa ocupada con cargos → arrancar en vista de productos
+                if (tableData.status === 'OCCUPIED' && prevTotal > 0) {
+                    setShowProducts(true);
+                }
             }
         }
     };
@@ -286,7 +293,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
             : products;
 
     return (
-        <div className="h-full flex flex-col bg-[#F8F9FA] overflow-hidden text-[#1A1C1E]">
+        <div data-ordersheet="active" className="h-full flex flex-col bg-[#F8F9FA] overflow-hidden text-[#1A1C1E]">
             {/* HEADER */}
             <div className="bg-[#FFD60A] pt-3 pb-4 px-6 flex flex-col gap-4 border-b border-black/5 shadow-md shrink-0">
                 <div className="flex items-center justify-between w-full border-b border-black/5 pb-3">
@@ -468,12 +475,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 {/* RIGHT: PRODUCTS */}
                 <div className="flex-1 flex flex-col p-4 overflow-hidden relative">
                     <div className="flex-1 overflow-y-auto pr-1 no-scrollbar">
-                        {(!activeCategory && !productSearch) ? (
+                        {(!activeCategory && !productSearch && !showProducts) ? (
+                            /* VISTA: CATEGORÍAS */
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20">
                                 {categories.map((cat: any) => (
                                     <button
                                         key={cat.id}
-                                        onClick={() => setActiveCategory(cat.id)}
+                                        onClick={() => { setActiveCategory(cat.id); setShowProducts(false); }}
                                         className="h-28 flex flex-col items-center justify-center p-2 rounded-2xl bg-white border-2 border-transparent hover:border-black/5 hover:shadow-xl transition-all group active:scale-95 gap-1"
                                     >
                                         <h3 className="font-black text-[10px] text-center uppercase tracking-tight text-gray-900 group-hover:text-black leading-tight px-1">
@@ -486,15 +494,16 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                                 ))}
                             </div>
                         ) : (
+                            /* VISTA: PRODUCTOS */
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-20">
                                 <button
-                                    onClick={() => { setActiveCategory(null); setProductSearch(""); }}
+                                    onClick={() => { setActiveCategory(null); setProductSearch(""); setShowProducts(false); }}
                                     className="aspect-[4/3] flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-100 border-2 border-transparent hover:border-black/10 hover:bg-gray-200 transition-all group active:scale-95"
                                 >
                                     <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl group-hover:-translate-x-1 transition-transform shadow-sm">
                                         ⬅️
                                     </div>
-                                    <h4 className="font-black text-gray-500 text-[10px] text-center uppercase mt-2 tracking-widest">VOLVER</h4>
+                                    <h4 className="font-black text-gray-500 text-[10px] text-center uppercase mt-2 tracking-widest">CATS</h4>
                                 </button>
                                 {displayProducts.map((item: any) => (
                                     <button
