@@ -17,8 +17,8 @@ interface Product {
     name: string;
     description?: string;
     price: number | string;
-    category_id: string;
-    image_url: string;
+    category_id?: string;
+    image_url?: string;
     categories?: { name: string };
 }
 
@@ -113,7 +113,7 @@ export default function ProductsClient({ initialProducts, initialCategories }: P
             name: product.name,
             description: product.description || "",
             price: String(product.price),
-            category_id: product.category_id,
+            category_id: product.category_id || "",
             image_url: product.image_url || ""
         });
         setSelectedCategory(null);
