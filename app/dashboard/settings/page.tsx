@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Store, Receipt, Sliders, Database, Printer, Bell, Shield, Download } from "lucide-react";
+import { Save, Store, Sliders, Database, Printer, Shield, Download, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function SettingsPage() {
@@ -15,15 +15,21 @@ export default function SettingsPage() {
     const [currency, setCurrency] = useState("ARS");
     const [stockTracking, setStockTracking] = useState(true);
     const [printTickets, setPrintTickets] = useState(true);
+    const [mesas, setMesas] = useState(10);
+    const [barra, setBarra] = useState(3);
 
     // Load settings from local storage
     useEffect(() => {
         const storedPhone = localStorage.getItem("bloom_whatsapp_number");
         if (storedPhone) setPhone(storedPhone);
 
-        const storedPrinter = localStorage.getItem("bloom_printer_ip");
-        if (storedPrinter) {
-            // Just for consistency if we wanted to show it
+        const storedSalon = localStorage.getItem("bloom_salon_config");
+        if (storedSalon) {
+            try {
+                const { mesas: m, barra: b } = JSON.parse(storedSalon);
+                if (m) setMesas(m);
+                if (b !== undefined) setBarra(b);
+            } catch {}
         }
     }, []);
 
@@ -32,6 +38,7 @@ export default function SettingsPage() {
         // Simulate API call and save to LocalStorage
         setTimeout(() => {
             localStorage.setItem("bloom_whatsapp_number", phone);
+            localStorage.setItem("bloom_salon_config", JSON.stringify({ mesas, barra }));
             setIsLoading(false);
             alert("Ajustes guardados correctamente.");
         }, 1000);
@@ -146,6 +153,43 @@ export default function SettingsPage() {
                                     <span className="font-bold text-sm">Imprimir Tickets Cocina</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* SALON CONFIG */}
+                <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-700">
+                            <LayoutGrid size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-gray-900">Distribución del Salón</h2>
+                            <p className="text-xs text-gray-400 font-medium mt-0.5">Se usa para generar los QR de cada mesa</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-6 max-w-sm">
+                        <div>
+                            <label className="block text-xs font-black uppercase text-gray-400 mb-2">Mesas del salón</label>
+                            <input
+                                type="number"
+                                min={1}
+                                max={200}
+                                value={mesas}
+                                onChange={e => setMesas(Math.max(1, Math.min(200, Number(e.target.value))))}
+                                className="w-full h-12 px-4 rounded-xl bg-gray-50 text-xl font-black outline-none focus:ring-2 ring-[#FFD60A]"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-black uppercase text-amber-500 mb-2">Lugares de barra</label>
+                            <input
+                                type="number"
+                                min={0}
+                                max={50}
+                                value={barra}
+                                onChange={e => setBarra(Math.max(0, Math.min(50, Number(e.target.value))))}
+                                className="w-full h-12 px-4 rounded-xl bg-amber-50 text-xl font-black outline-none focus:ring-2 ring-amber-400"
+                            />
                         </div>
                     </div>
                 </section>
