@@ -3,10 +3,9 @@ export default function OrderLayout({
 }: {
     children: React.ReactNode;
 }) {
-    // Este layout reemplaza al layout principal del dashboard para esta ruta anidada
-    // permitiendo utilizar el 100% del ancho de pantalla sin el Sidebar lateral.
+    // fixed inset-0 cubre sidebar y padding del dashboard layout (z-50 queda encima de todo)
     return (
-        <div className="h-screen w-full bg-gray-50 overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-[#F8F9FA] overflow-hidden">
             {children}
         </div>
     );
