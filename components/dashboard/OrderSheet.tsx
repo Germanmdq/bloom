@@ -85,12 +85,17 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         } else {
             const { data: tableData } = await supabase
                 .from('salon_tables')
-                .select('total, order_type')
+                .select('total, order_type, items')
                 .eq('id', tableId)
                 .single();
             if (tableData) {
                 setExtraTotal(Number(tableData.total) || 0);
                 if (tableData.order_type) setOrderType(tableData.order_type);
+                // Limpiar carrito y restaurar items persistidos de esta mesa
+                clearCart();
+                if (Array.isArray(tableData.items) && tableData.items.length > 0) {
+                    tableData.items.forEach((item: any) => addToCart(item));
+                }
             }
         }
     };
@@ -148,10 +153,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const persistTableState = async () => {
         if (cart.length === 0 && extraTotal === 0) return;
         const currentTotal = useOrderStore.getState().getTotal() + extraTotal;
+        const currentCart = useOrderStore.getState().cart;
         try {
             await supabase
                 .from('salon_tables')
-                .update({ status: 'OCCUPIED', total: currentTotal })
+                .update({ status: 'OCCUPIED', total: currentTotal, items: currentCart })
                 .eq('id', tableId);
         } catch (err) {
             console.error("Failed to sync table:", err);
@@ -209,7 +215,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 waiter_id: selectedWaiter || null,
                 items: cart
             });
-            await supabase.from('salon_tables').update({ status: 'FREE', total: 0 }).eq('id', tableId);
+            await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
             if (currentWebOrderId) {
                 await fetch(`/api/orders/delete?id=${currentWebOrderId}`, { method: 'DELETE' });
             }
@@ -469,16 +475,16 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 <div className="flex-1 flex flex-col overflow-hidden">
 
                     {/* CATEGORY PILLS */}
-                    <div className="flex items-center gap-2 px-4 pt-3 pb-2 overflow-x-auto no-scrollbar shrink-0 border-b border-black/5">
+                    <div className="flex items-center gap-2.5 px-5 py-3 overflow-x-auto no-scrollbar shrink-0 bg-white border-b border-black/5">
                         <button
                             onClick={() => setActiveCategory(null)}
-                            className={`shrink-0 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all ${
+                            className={`shrink-0 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 ${
                                 !activeCategory
-                                    ? 'bg-black text-[#FFD60A] shadow-lg'
-                                    : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-100'
+                                    ? 'bg-black text-[#FFD60A] shadow-md'
+                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                             }`}
                         >
-                            Todos · {products.length}
+                            Todos&nbsp;&nbsp;<span className="opacity-60">{products.length}</span>
                         </button>
                         {categories.map((cat: any) => {
                             const count = products.filter((p: any) => p.category_id === cat.id).length;
@@ -486,36 +492,36 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                                 <button
                                     key={cat.id}
                                     onClick={() => setActiveCategory(cat.id)}
-                                    className={`shrink-0 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all ${
+                                    className={`shrink-0 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 ${
                                         activeCategory === cat.id
-                                            ? 'bg-black text-[#FFD60A] shadow-lg'
-                                            : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-100'
+                                            ? 'bg-black text-[#FFD60A] shadow-md'
+                                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                                     }`}
                                 >
-                                    {cat.name} · {count}
+                                    {cat.name}&nbsp;&nbsp;<span className="opacity-60">{count}</span>
                                 </button>
                             );
                         })}
                     </div>
 
                     {/* PRODUCTS GRID */}
-                    <div className="flex-1 overflow-y-auto no-scrollbar p-4">
+                    <div className="flex-1 overflow-y-auto no-scrollbar p-5">
                         {displayProducts.length === 0 ? (
-                            <div className="h-full flex items-center justify-center text-gray-300 font-black uppercase tracking-widest text-xs">
+                            <div className="h-full flex items-center justify-center text-gray-300 font-black uppercase tracking-widest text-sm">
                                 Sin productos
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-6">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-6">
                                 {displayProducts.map((item: any) => (
                                     <button
                                         key={item.id}
                                         onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                        className="group relative flex flex-col justify-between p-4 rounded-2xl bg-white border border-gray-100 hover:border-black hover:shadow-xl shadow-sm transition-all active:scale-95 min-h-[100px]"
+                                        className="group flex flex-col justify-between p-5 rounded-3xl bg-white border-2 border-transparent hover:border-black hover:shadow-xl shadow-sm transition-all active:scale-95 min-h-[120px] text-left"
                                     >
-                                        <span className="font-black text-gray-900 text-xs leading-tight text-left line-clamp-3 group-hover:text-black">
+                                        <span className="font-black text-gray-900 text-sm leading-snug line-clamp-3 group-hover:text-black">
                                             {item.name}
                                         </span>
-                                        <span className="mt-3 self-start bg-[#FFD60A] text-black text-[11px] font-black px-2 py-0.5 rounded-lg">
+                                        <span className="mt-4 self-start bg-[#FFD60A] text-black text-xs font-black px-3 py-1 rounded-xl">
                                             ${Number(item.price).toLocaleString()}
                                         </span>
                                     </button>
