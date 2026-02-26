@@ -132,10 +132,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         const currentTotal = useOrderStore.getState().getTotal();
         const currentCart = useOrderStore.getState().cart;
         try {
+            // upsert crea la fila si no existe (para mesas nuevas)
             await supabase
                 .from('salon_tables')
-                .update({ status: 'OCCUPIED', total: currentTotal, items: currentCart })
-                .eq('id', tableId);
+                .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal, items: currentCart });
         } catch (err) {
             console.error("Failed to sync table:", err);
         }
@@ -152,6 +152,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         } else {
             await persistTableState();
         }
+        onClose();
+    };
+
+    const handleFreeTable = async () => {
+        if (!confirm('¿Liberar esta mesa? Se perderán los items sin cobrar.')) return;
+        clearCart();
+        await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
         onClose();
     };
 
@@ -314,6 +321,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                         <option>Factura B</option>
                         <option>Ticket</option>
                     </select>
+                    <button
+                        onClick={handleFreeTable}
+                        className="h-9 px-3 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 text-xs font-semibold transition-colors"
+                    >
+                        Liberar
+                    </button>
                     <button
                         onClick={handleClose}
                         className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
