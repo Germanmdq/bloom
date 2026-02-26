@@ -1,4 +1,5 @@
 import React from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 interface TableCardProps {
     table: {
@@ -31,9 +32,15 @@ export function TableCard({ table, onClick }: TableCardProps) {
     };
 
     const { text: timeText, minutes } = getTimeElapsed();
-    // Progress bar: 0 = just opened, 100 = 90+ min
     const timeProgress = Math.min((minutes / 90) * 100, 100);
     const barColor = minutes > 60 ? 'bg-red-400' : minutes > 30 ? 'bg-amber-300' : 'bg-white/60';
+
+    const handleFree = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm(`¿Liberar mesa ${table.id}? Se perderán los items sin cobrar.`)) return;
+        const supabase = createClient();
+        await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', table.id);
+    };
 
     return (
         <div
@@ -47,6 +54,17 @@ export function TableCard({ table, onClick }: TableCardProps) {
                 }
             `}
         >
+            {/* Botón liberar (solo en ocupadas) */}
+            {!isFree && (
+                <button
+                    onClick={handleFree}
+                    title="Liberar mesa"
+                    className="absolute top-2 right-2 w-6 h-6 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center transition-colors z-10 text-white font-black text-xs leading-none"
+                >
+                    ×
+                </button>
+            )}
+
             {/* Header */}
             <div className="flex justify-between items-start">
                 <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${isFree ? 'bg-slate-100 text-slate-500' : 'bg-white/20 text-white'}`}>
@@ -54,7 +72,7 @@ export function TableCard({ table, onClick }: TableCardProps) {
                 </span>
                 {isFree
                     ? <div className="w-2 h-2 rounded-full bg-emerald-400 mt-1" />
-                    : <span className="text-[10px] font-black text-white/80">{timeText}</span>
+                    : <span className="text-[10px] font-black text-white/80 mr-5">{timeText}</span>
                 }
             </div>
 
@@ -79,7 +97,6 @@ export function TableCard({ table, onClick }: TableCardProps) {
                             ${table.total?.toLocaleString() || '0'}
                         </span>
                     </div>
-                    {/* Time progress bar */}
                     <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
                         <div
                             className={`h-full rounded-full transition-all duration-500 ${barColor}`}
