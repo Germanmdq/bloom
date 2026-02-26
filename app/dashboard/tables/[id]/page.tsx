@@ -65,6 +65,7 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
     const [categories, setCategories] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [cartItems, setCartItems] = useState<any[]>([]);
+    const [existingOrderId, setExistingOrderId] = useState<string | null>(null);
 
     // UI State
     const [view, setView] = useState<'CATEGORIES' | 'PRODUCTS'>('CATEGORIES');
@@ -83,7 +84,24 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
             const { data: prods } = await supabase.from('products').select('*').eq('active', true);
             if (prods) setProducts(prods);
             const { data: table } = await supabase.from('salon_tables').select('*').eq('id', tableId).single();
-            if (table) setOrderType(table.order_type || 'LOCAL');
+            if (table) {
+                setOrderType(table.order_type || 'LOCAL');
+                // Si la mesa está ocupada, cargar el pedido abierto existente
+                if (table.status === 'OCCUPIED') {
+                    const { data: existingOrder } = await supabase
+                        .from('orders')
+                        .select('*')
+                        .eq('table_id', tableId)
+                        .eq('status', 'OPEN')
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
+                    if (existingOrder) {
+                        setExistingOrderId(existingOrder.id);
+                        setCartItems(existingOrder.items || []);
+                    }
+                }
+            }
             setLoading(false);
         };
         init();
@@ -136,7 +154,11 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
         if (cartItems.length === 0) return;
         const total = cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0);
         await supabase.from('salon_tables').update({ status: 'OCCUPIED', total }).eq('id', tableId);
-        await supabase.from('orders').insert({ table_id: tableId, total, items: cartItems, status: 'OPEN' });
+        if (existingOrderId) {
+            await supabase.from('orders').update({ total, items: cartItems }).eq('id', existingOrderId);
+        } else {
+            await supabase.from('orders').insert({ table_id: tableId, total, items: cartItems, status: 'OPEN' });
+        }
         toast.success("Pedido Confirmado");
         router.push('/dashboard/tables');
     };
