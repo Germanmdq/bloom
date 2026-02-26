@@ -15,8 +15,6 @@ import { VariantSelector } from "@/components/pos/VariantSelector"; // Reusing l
 const formatCurrency = (value: number) =>
     new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value);
 
-const WHATSAPP_NUMBER = "5491112345678";
-
 // --- MAIN COMPONENT ---
 function PublicMenuPage() {
     const supabase = createClient();
@@ -31,6 +29,7 @@ function PublicMenuPage() {
         : null;
     const [products, setProducts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
+    const [whatsappNumber, setWhatsappNumber] = useState("5491112345678");
     const [loading, setLoading] = useState(true);
 
     // Navigation State
@@ -55,12 +54,14 @@ function PublicMenuPage() {
     // FETCH DATA
     useEffect(() => {
         const fetchMenu = async () => {
-            const { data: cats } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
+            const [{ data: cats }, { data: prods }, { data: settings }] = await Promise.all([
+                supabase.from('categories').select('*').order('sort_order', { ascending: true }),
+                supabase.from('products').select('*').eq('active', true),
+                supabase.from('app_settings').select('whatsapp').eq('id', 1).single(),
+            ]);
             if (cats) setCategories(cats);
-
-            const { data: prods } = await supabase.from('products').select('*').eq('active', true);
             if (prods) setProducts(prods);
-
+            if (settings?.whatsapp) setWhatsappNumber(settings.whatsapp);
             setLoading(false);
         };
         fetchMenu();
@@ -137,7 +138,7 @@ function PublicMenuPage() {
         const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
         const mesaInfo = tableLabel ? `📍 *${tableLabel}*%0A%0A` : '';
         const text = `Hola Bloom! 👋 Quiero pedir:%0A%0A${mesaInfo}${itemsList}%0A%0A*Total: ${formatCurrency(cartTotal)}*`;
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, '_blank');
+        window.open(`https://wa.me/${whatsappNumber}?text=${text}`, '_blank');
     };
 
     // TABLE SELF-ORDER: send directly to kitchen
