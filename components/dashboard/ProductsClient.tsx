@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, Plus, ChevronRight } from "lucide-react";
+import { DashboardProduct } from "@/lib/types";
 import { ProductFormModal } from "./ProductFormModal";
 import { CategoryDetailModal } from "./CategoryDetailModal";
 
@@ -12,18 +13,8 @@ interface Category {
     name: string;
 }
 
-interface Product {
-    id: string;
-    name: string;
-    description: string;
-    price: number | string;
-    category_id: string;
-    image_url: string;
-    categories?: { name: string };
-}
-
 interface ProductsClientProps {
-    initialProducts: Product[];
+    initialProducts: DashboardProduct[];
     initialCategories: Category[];
 }
 
@@ -35,7 +26,7 @@ function formatName(name: string): string {
 }
 
 export default function ProductsClient({ initialProducts, initialCategories }: ProductsClientProps) {
-    const [products, setProducts] = useState<Product[]>(initialProducts);
+    const [products, setProducts] = useState<DashboardProduct[]>(initialProducts);
     const [categories, setCategories] = useState<Category[]>(initialCategories);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -107,13 +98,13 @@ export default function ProductsClient({ initialProducts, initialCategories }: P
         await fetchData();
     };
 
-    const handleEdit = (product: Product) => {
+    const handleEdit = (product: DashboardProduct) => {
         setCurrentProduct({
             id: product.id,
             name: product.name,
             description: product.description || "",
             price: String(product.price),
-            category_id: product.category_id,
+            category_id: product.category_id || "",
             image_url: product.image_url || ""
         });
         setSelectedCategory(null);
@@ -124,7 +115,7 @@ export default function ProductsClient({ initialProducts, initialCategories }: P
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const productsByCategory = filteredProducts.reduce((acc: Record<string, Product[]>, product) => {
+    const productsByCategory = filteredProducts.reduce((acc: Record<string, DashboardProduct[]>, product) => {
         const catName = product.categories?.name || "Otros";
         if (!acc[catName]) acc[catName] = [];
         acc[catName].push(product);

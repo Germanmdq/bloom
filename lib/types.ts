@@ -45,6 +45,17 @@ export type Table = {
     clientName?: string;  // Nombre del cliente
 };
 
+// Dashboard product shape (matches DB schema)
+export type DashboardProduct = {
+    id: string;
+    name: string;
+    description?: string;
+    price: number | string;
+    category_id?: string;
+    image_url?: string;
+    categories?: { name: string };
+};
+
 export type PaymentMethod = 'CASH' | 'CARD' | 'MERCADO_PAGO';
 
 export type OrderItem = {

@@ -2,21 +2,12 @@
 
 import { motion } from "framer-motion";
 import { Edit3, Trash2, X } from "lucide-react";
-
-interface Product {
-    id: string;
-    name: string;
-    price: number | string;
-    description?: string;
-    category_id?: string;
-    image_url?: string;
-    categories?: { name: string };
-}
+import { DashboardProduct } from "@/lib/types";
 
 interface CategoryDetailModalProps {
     categoryName: string;
-    products: Product[];
-    onEdit: (product: Product) => void;
+    products: DashboardProduct[];
+    onEdit: (product: DashboardProduct) => void;
     onDelete: (id: string) => void;
     onClose: () => void;
 }
