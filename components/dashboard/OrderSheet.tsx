@@ -491,11 +491,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                                         <button
                                             key={cat.id}
                                             onClick={() => setActiveCategory(cat.id)}
-                                            className="flex flex-col items-center justify-center gap-3 p-6 rounded-3xl bg-white border-2 border-transparent hover:border-black hover:shadow-xl shadow-sm transition-all active:scale-95 aspect-square"
+                                            className="group flex flex-col items-center justify-center gap-2 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all active:scale-95 aspect-square"
                                         >
-                                            <span className="text-5xl leading-none">{emoji}</span>
-                                            <span className="font-black text-gray-900 text-sm uppercase tracking-wide text-center leading-tight">{cat.name}</span>
-                                            <span className="text-[10px] text-gray-400 font-bold">{count} productos</span>
+                                            <span className="text-5xl leading-none group-hover:scale-110 transition-transform">{emoji}</span>
+                                            <span className="font-bold text-gray-800 text-sm text-center leading-tight px-2">{cat.name}</span>
                                         </button>
                                     );
                                 })}
@@ -530,22 +529,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                                             <button
                                                 key={item.id}
                                                 onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                                className="group flex flex-col rounded-2xl bg-white border-2 border-transparent hover:border-black hover:shadow-xl shadow-sm transition-all active:scale-95 text-left overflow-hidden"
+                                                className="group flex flex-col rounded-2xl bg-white shadow-sm hover:shadow-md transition-all active:scale-95 text-left overflow-hidden"
                                             >
-                                                {item.image_url ? (
-                                                    <div className="w-full h-28 overflow-hidden bg-gray-100 shrink-0">
+                                                <div className="w-full aspect-square bg-gray-50 overflow-hidden flex items-center justify-center">
+                                                    {item.image_url ? (
                                                         <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                                    </div>
-                                                ) : (
-                                                    <div className="w-full h-20 bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shrink-0">
-                                                        <span className="text-3xl opacity-25">🍽️</span>
-                                                    </div>
-                                                )}
-                                                <div className="p-3 flex flex-col flex-1">
-                                                    <span className="font-black text-gray-900 text-sm leading-snug line-clamp-2 flex-1">{item.name}</span>
-                                                    <span className="mt-2 self-start bg-[#FFD60A] text-black text-xs font-black px-3 py-1 rounded-xl">
-                                                        ${Number(item.price).toLocaleString()}
-                                                    </span>
+                                                    ) : (
+                                                        <span className="text-5xl opacity-20">🍽️</span>
+                                                    )}
+                                                </div>
+                                                <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+                                                    <span className="font-semibold text-gray-800 text-sm leading-tight line-clamp-2 flex-1">{item.name}</span>
+                                                    <span className="font-black text-gray-900 text-sm shrink-0">${Number(item.price).toLocaleString()}</span>
                                                 </div>
                                             </button>
                                         ))}
