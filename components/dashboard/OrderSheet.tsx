@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Search, ArrowLeft, Trash2, CreditCard, Receipt, Send, Check, Loader2, X } from 'lucide-react';
+import { Search, ArrowLeft, Trash2, CreditCard, Check, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket } from "@/lib/hooks/use-pos-data";
@@ -86,14 +86,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         } else {
             const { data: tableData } = await supabase
                 .from('salon_tables')
-                .select('total, order_type, items')
+                .select('order_type, items')
                 .eq('id', tableId)
                 .single();
             if (tableData) {
-                setExtraTotal(Number(tableData.total) || 0);
                 if (tableData.order_type) setOrderType(tableData.order_type);
-                // Limpiar carrito y restaurar items persistidos de esta mesa
                 clearCart();
+                setExtraTotal(0);
                 if (Array.isArray(tableData.items) && tableData.items.length > 0) {
                     tableData.items.forEach((item: any) => addToCart(item));
                 }
@@ -172,7 +171,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     }, [cart, extraTotal, tableId]);
 
     const handleClose = async () => {
-        await persistTableState();
+        if (cart.length === 0 && extraTotal === 0) {
+            // Mesa vacía → liberarla para que no quede pegada como OCCUPIED
+            await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
+        } else {
+            await persistTableState();
+        }
         onClose();
     };
 
@@ -390,21 +394,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4 pl-6 border-l border-black/5">
-                        <ShortcutBtn
-                            subLabel="F2"
-                            label="Ticket"
-                            icon={<Receipt size={20} />}
-                            color="bg-white/60 hover:bg-white"
+                    <div className="flex items-center gap-2 pl-6 border-l border-black/10">
+                        <button
                             onClick={() => setShowReceiptModal(true)}
-                        />
-                        <ShortcutBtn
-                            subLabel="F1"
-                            label="Enviar"
-                            icon={<Send size={20} />}
-                            color="bg-white/60 hover:bg-white"
+                            className="h-10 px-4 rounded-xl bg-white/60 hover:bg-white font-bold text-sm text-black transition-all active:scale-95"
+                        >
+                            Ticket
+                        </button>
+                        <button
                             onClick={sendToKitchen}
-                        />
+                            className="h-10 px-4 rounded-xl bg-black text-[#FFD60A] hover:bg-black/80 font-bold text-sm transition-all active:scale-95"
+                        >
+                            Cocina
+                        </button>
                     </div>
                 </div>
             </div>
@@ -486,7 +488,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                                 {categories.map((cat: any, idx: number) => {
                                     const emojis = ['🥩','🍝','🥗','🍕','🍔','🥤','🍰','🍷','☕','🍜','🥪','🍣','🧁','🫔','🌮'];
                                     const emoji = emojis[idx % emojis.length];
-                                    const count = products.filter((p: any) => p.category_id === cat.id).length;
                                     return (
                                         <button
                                             key={cat.id}
@@ -531,14 +532,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                                                 onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
                                                 className="group flex flex-col rounded-2xl bg-white shadow-sm hover:shadow-md transition-all active:scale-95 text-left overflow-hidden"
                                             >
-                                                <div className="w-full aspect-square bg-gray-50 overflow-hidden flex items-center justify-center">
-                                                    {item.image_url ? (
+                                                {item.image_url && (
+                                                    <div className="w-full aspect-square bg-gray-50 overflow-hidden">
                                                         <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                                    ) : (
-                                                        <span className="text-5xl opacity-20">🍽️</span>
-                                                    )}
-                                                </div>
-                                                <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+                                                    </div>
+                                                )}
+                                                <div className="px-3 py-3 flex items-center justify-between gap-2">
                                                     <span className="font-semibold text-gray-800 text-sm leading-tight line-clamp-2 flex-1">{item.name}</span>
                                                     <span className="font-black text-gray-900 text-sm shrink-0">${Number(item.price).toLocaleString()}</span>
                                                 </div>
