@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, useRef, ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Search, ArrowLeft, Trash2, CreditCard, Receipt, Send, Check, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
@@ -55,6 +55,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const sendKitchenTicket = useSendKitchenTicket();
 
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
+    const finishingRef = useRef(false);
     const [selectedWaiter, setSelectedWaiter] = useState<string>("");
     const [invoiceType, setInvoiceType] = useState('Factura C');
     const [clientName, setClientName] = useState('Consumidor Final');
@@ -151,6 +152,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     }, [tableId, webOrderId]);
 
     const persistTableState = async () => {
+        if (finishingRef.current) return;
         if (cart.length === 0 && extraTotal === 0) return;
         const currentTotal = useOrderStore.getState().getTotal() + extraTotal;
         const currentCart = useOrderStore.getState().cart;
@@ -206,6 +208,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
 
     const finishOrder = async () => {
         if (finalTotal === 0 && discount === 0) return;
+        finishingRef.current = true;
         setIsFinishing(true);
         try {
             await createOrder.mutateAsync({
@@ -223,6 +226,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
             setTimeout(() => {
                 setFeedback(null);
                 clearCart();
+                finishingRef.current = false;
+                setIsFinishing(false);
                 if (isWebTable) {
                     setCurrentWebOrderId(null);
                     refreshData();
@@ -232,10 +237,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 }
             }, 2000);
         } catch (error: any) {
+            finishingRef.current = false;
+            setIsFinishing(false);
             setFeedback({ message: `Error al guardar: ${error.message}`, type: 'error' });
             setTimeout(() => setFeedback(null), 3000);
         }
-        setIsFinishing(false);
     };
 
     const sendToKitchen = async () => {
