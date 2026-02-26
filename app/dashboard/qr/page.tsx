@@ -1,15 +1,55 @@
 "use client";
 
-import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Printer, QrCode } from "lucide-react";
 
-export default function QRCodesPage() {
-    const [tableCount, setTableCount] = useState(30);
+const TABLES = Array.from({ length: 40 }, (_, i) => ({
+    id: i + 1,
+    label: String(i + 1),
+    type: "mesa",
+}));
 
-    const tables = Array.from({ length: tableCount }, (_, i) => i + 1);
+const BAR_TABLES = [
+    { id: 41, label: "1", type: "barra" },
+    { id: 42, label: "2", type: "barra" },
+    { id: 43, label: "3", type: "barra" },
+];
+
+function QRCard({ id, label, type }: { id: number; label: string; type: string }) {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const isBarra = type === "barra";
 
+    return (
+        <div
+            className={`bg-white flex flex-col items-center gap-2 p-5 rounded-2xl print:break-inside-avoid print:rounded-xl print:p-4 ${
+                isBarra
+                    ? "border-2 border-amber-400"
+                    : "border-2 border-gray-200"
+            }`}
+        >
+            <p className={`text-[11px] font-black uppercase tracking-widest ${isBarra ? "text-amber-500" : "text-gray-400"}`}>
+                {isBarra ? "Barra" : "Mesa"}
+            </p>
+            <p className="text-6xl font-black text-gray-900 leading-none">{label}</p>
+
+            <div className="my-1">
+                <QRCodeSVG
+                    value={`${baseUrl}/menu?table=${id}`}
+                    size={160}
+                    level="M"
+                    bgColor="#ffffff"
+                    fgColor="#000000"
+                />
+            </div>
+
+            <p className="text-[10px] text-gray-400 font-medium text-center leading-tight">
+                Escaneá para ver el menú
+            </p>
+        </div>
+    );
+}
+
+export default function QRCodesPage() {
     return (
         <div className="p-6">
             {/* Header */}
@@ -24,29 +64,13 @@ export default function QRCodesPage() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 shadow-sm">
-                        <span className="text-sm font-bold text-gray-700">Mesas:</span>
-                        <select
-                            value={tableCount}
-                            onChange={(e) => setTableCount(Number(e.target.value))}
-                            className="text-sm font-black bg-transparent border-none outline-none cursor-pointer text-gray-900"
-                        >
-                            <option value={10}>1 al 10</option>
-                            <option value={20}>1 al 20</option>
-                            <option value={30}>1 al 30</option>
-                            <option value={49}>1 al 49</option>
-                        </select>
-                    </div>
-
-                    <button
-                        onClick={() => window.print()}
-                        className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-800 active:scale-95 transition-all shadow-sm"
-                    >
-                        <Printer size={18} />
-                        Imprimir todo
-                    </button>
-                </div>
+                <button
+                    onClick={() => window.print()}
+                    className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-800 active:scale-95 transition-all shadow-sm"
+                >
+                    <Printer size={18} />
+                    Imprimir todo
+                </button>
             </div>
 
             {/* Instruction banner */}
@@ -57,30 +81,23 @@ export default function QRCodesPage() {
                 </p>
             </div>
 
-            {/* QR Grid */}
+            {/* Mesas 1-40 */}
+            <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4 print:hidden">
+                Salón — 40 mesas
+            </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 print:grid-cols-4 print:gap-3">
-                {tables.map((tableNum) => (
-                    <div
-                        key={tableNum}
-                        className="bg-white border-2 border-gray-200 rounded-2xl p-5 flex flex-col items-center gap-2 hover:border-gray-400 transition-colors print:break-inside-avoid print:border print:rounded-xl print:p-4"
-                    >
-                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Mesa</p>
-                        <p className="text-6xl font-black text-gray-900 leading-none">{tableNum}</p>
+                {TABLES.map((t) => (
+                    <QRCard key={t.id} {...t} />
+                ))}
+            </div>
 
-                        <div className="my-1">
-                            <QRCodeSVG
-                                value={`${baseUrl}/menu?table=${tableNum}`}
-                                size={160}
-                                level="M"
-                                bgColor="#ffffff"
-                                fgColor="#000000"
-                            />
-                        </div>
-
-                        <p className="text-[10px] text-gray-400 font-medium text-center leading-tight">
-                            Escaneá para ver el menú
-                        </p>
-                    </div>
+            {/* Barra */}
+            <h2 className="text-sm font-black text-amber-500 uppercase tracking-widest mt-10 mb-4 print:mt-6 print:hidden">
+                Barra — 3 lugares
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5 max-w-sm print:max-w-none print:grid-cols-4 print:gap-3">
+                {BAR_TABLES.map((t) => (
+                    <QRCard key={t.id} {...t} />
                 ))}
             </div>
 
@@ -91,7 +108,6 @@ export default function QRCodesPage() {
                     .print\\:break-inside-avoid,
                     .print\\:break-inside-avoid * { visibility: visible; }
                     #__next { visibility: visible; }
-                    .print\\:grid-cols-4 { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; }
                 }
             `}</style>
         </div>
