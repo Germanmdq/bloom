@@ -8,6 +8,9 @@ interface Product {
     name: string;
     price: number | string;
     description?: string;
+    category_id?: string;
+    image_url?: string;
+    categories?: { name: string };
 }
 
 interface CategoryDetailModalProps {
