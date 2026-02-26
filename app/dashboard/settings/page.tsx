@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Store, Sliders, Database, Printer, Shield, Download, LayoutGrid } from "lucide-react";
+import { Save, Store, Sliders, Database, Printer, Shield, Download, LayoutGrid, Keyboard } from "lucide-react";
+import type { ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 
@@ -18,6 +19,8 @@ export default function SettingsPage() {
     const [printTickets, setPrintTickets] = useState(true);
     const [mesas, setMesas] = useState(10);
     const [barra, setBarra] = useState(3);
+    const [f1Action, setF1Action] = useState<ComparisonType>('yesterday');
+    const [f2Action, setF2Action] = useState<ComparisonType>('last_week');
 
     useEffect(() => {
         const loadSettings = async () => {
@@ -31,6 +34,11 @@ export default function SettingsPage() {
                 setBarra(data.barra);
                 setPhone(data.whatsapp);
             }
+            // Load F-key actions from localStorage
+            const savedF1 = localStorage.getItem('bloom_f1_action') as ComparisonType | null;
+            const savedF2 = localStorage.getItem('bloom_f2_action') as ComparisonType | null;
+            if (savedF1) setF1Action(savedF1);
+            if (savedF2) setF2Action(savedF2);
             setIsLoading(false);
         };
         loadSettings();
@@ -42,6 +50,9 @@ export default function SettingsPage() {
             .from("app_settings")
             .update({ mesas, barra, whatsapp: phone, updated_at: new Date().toISOString() })
             .eq("id", 1);
+        // Save F-key actions to localStorage
+        localStorage.setItem('bloom_f1_action', f1Action);
+        localStorage.setItem('bloom_f2_action', f2Action);
         setIsLoading(false);
         if (error) {
             alert("Error al guardar: " + error.message);
@@ -198,6 +209,54 @@ export default function SettingsPage() {
                             />
                         </div>
                     </div>
+                </section>
+
+                {/* KEYBOARD SHORTCUTS */}
+                <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-2xl bg-[#FFD60A]/20 flex items-center justify-center text-black">
+                            <Keyboard size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-gray-900">Atajos de Teclado</h2>
+                            <p className="text-xs text-gray-400 font-medium mt-0.5">
+                                Configurá qué comparativa de ventas muestra cada tecla de función
+                            </p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-xs font-black uppercase text-gray-400 mb-2">
+                                F1 — Comparativa
+                            </label>
+                            <select
+                                value={f1Action}
+                                onChange={(e) => setF1Action(e.target.value as ComparisonType)}
+                                className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none focus:ring-2 ring-[#FFD60A]"
+                            >
+                                <option value="yesterday">Día Anterior</option>
+                                <option value="last_week">Mismo Día — Semana Anterior</option>
+                                <option value="last_month">Mismo Día — Mes Anterior</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-black uppercase text-gray-400 mb-2">
+                                F2 — Comparativa
+                            </label>
+                            <select
+                                value={f2Action}
+                                onChange={(e) => setF2Action(e.target.value as ComparisonType)}
+                                className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none focus:ring-2 ring-[#FFD60A]"
+                            >
+                                <option value="yesterday">Día Anterior</option>
+                                <option value="last_week">Mismo Día — Semana Anterior</option>
+                                <option value="last_month">Mismo Día — Mes Anterior</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p className="text-[11px] text-gray-400 font-medium mt-4">
+                        Presioná F1 o F2 en cualquier pantalla del dashboard (fuera del POS) para ver la comparativa configurada.
+                    </p>
                 </section>
 
                 {/* DEVICE & DATA */}

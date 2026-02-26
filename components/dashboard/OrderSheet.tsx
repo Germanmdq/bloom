@@ -286,7 +286,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
             : products;
 
     return (
-        <div className="h-full flex flex-col bg-[#F8F9FA] overflow-hidden text-[#1A1C1E]">
+        <div data-ordersheet="active" className="h-full flex flex-col bg-[#F8F9FA] overflow-hidden text-[#1A1C1E]">
             {/* HEADER */}
             <div className="bg-[#FFD60A] pt-3 pb-4 px-6 flex flex-col gap-4 border-b border-black/5 shadow-md shrink-0">
                 <div className="flex items-center justify-between w-full border-b border-black/5 pb-3">
