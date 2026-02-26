@@ -101,15 +101,6 @@ export default function QRCodesPage() {
                 ))}
             </div>
 
-            {/* Print styles */}
-            <style jsx global>{`
-                @media print {
-                    body * { visibility: hidden; }
-                    .print\\:break-inside-avoid,
-                    .print\\:break-inside-avoid * { visibility: visible; }
-                    #__next { visibility: visible; }
-                }
-            `}</style>
         </div>
     );
 }
