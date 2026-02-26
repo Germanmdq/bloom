@@ -2,16 +2,65 @@
 
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Printer, QrCode, Settings2, Check } from "lucide-react";
+import { Printer, QrCode, Settings2 } from "lucide-react";
+import Link from "next/link";
+
+function printSingle(id: number, label: string, type: string, baseUrl: string) {
+    const isBarra = type === "barra";
+    const url = `${baseUrl}/menu?table=${id}`;
+    const win = window.open("", "_blank", "width=400,height=500");
+    if (!win) return;
+    win.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>QR ${isBarra ? "Barra" : "Mesa"} ${label}</title>
+            <style>
+                body { margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui, sans-serif; }
+                .card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px; border: 2px solid ${isBarra ? "#fbbf24" : "#e5e7eb"}; border-radius: 16px; }
+                .tag { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: ${isBarra ? "#f59e0b" : "#9ca3af"}; }
+                .num { font-size: 64px; font-weight: 900; line-height: 1; color: #111; }
+                .hint { font-size: 9px; color: #9ca3af; font-weight: 500; }
+                @media print { body { margin: 0; } }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <p class="tag">${isBarra ? "Barra" : "Mesa"}</p>
+                <p class="num">${label}</p>
+                <div id="qr"></div>
+                <p class="hint">Escaneá para pedir</p>
+            </div>
+            <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+            <script>
+                QRCode.toCanvas(document.createElement('canvas'), "${url}", { width: 180, margin: 1 }, function(err, canvas) {
+                    if (!err) document.getElementById('qr').appendChild(canvas);
+                    setTimeout(() => { window.print(); window.close(); }, 300);
+                });
+            </script>
+        </body>
+        </html>
+    `);
+    win.document.close();
+}
 
 function QRCard({ id, label, type, baseUrl }: { id: number; label: string; type: string; baseUrl: string }) {
     const isBarra = type === "barra";
     return (
         <div
-            className={`bg-white flex flex-col items-center gap-2 p-4 rounded-2xl print:break-inside-avoid print:rounded-xl print:shadow-none border-2 ${
+            className={`bg-white flex flex-col items-center gap-2 p-4 rounded-2xl print:break-inside-avoid print:rounded-xl print:shadow-none border-2 group relative ${
                 isBarra ? "border-amber-400" : "border-gray-200"
             }`}
         >
+            {/* Print single button */}
+            <button
+                onClick={() => printSingle(id, label, type, baseUrl)}
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-100 hover:bg-black hover:text-white text-gray-400 rounded-lg p-1.5 print:hidden"
+                title={`Imprimir ${isBarra ? "Barra" : "Mesa"} ${label}`}
+            >
+                <Printer size={13} />
+            </button>
+
             <p className={`text-[10px] font-black uppercase tracking-widest ${isBarra ? "text-amber-500" : "text-gray-400"}`}>
                 {isBarra ? "Barra" : "Mesa"}
             </p>
@@ -30,31 +79,22 @@ function QRCard({ id, label, type, baseUrl }: { id: number; label: string; type:
     );
 }
 
-const STORAGE_KEY = "qr_config";
-
 export default function QRCodesPage() {
-    const [mesas, setMesas] = useState(10);
-    const [barra, setBarra] = useState(3);
-    const [saved, setSaved] = useState(false);
+    const [mesas, setMesas] = useState(0);
+    const [barra, setBarra] = useState(0);
     const [baseUrl, setBaseUrl] = useState("");
 
     useEffect(() => {
         setBaseUrl(window.location.origin);
-        const stored = localStorage.getItem(STORAGE_KEY);
+        const stored = localStorage.getItem("bloom_salon_config");
         if (stored) {
             try {
                 const { mesas: m, barra: b } = JSON.parse(stored);
                 if (m) setMesas(m);
-                if (b) setBarra(b);
+                if (b !== undefined) setBarra(b);
             } catch {}
         }
     }, []);
-
-    function handleSave() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ mesas, barra }));
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-    }
 
     const TABLES = Array.from({ length: mesas }, (_, i) => ({
         id: i + 1,
@@ -68,6 +108,8 @@ export default function QRCodesPage() {
         type: "barra",
     }));
 
+    const noConfig = mesas === 0 && barra === 0;
+
     return (
         <div className="p-6 space-y-8">
             {/* Header */}
@@ -78,65 +120,44 @@ export default function QRCodesPage() {
                     </div>
                     <div>
                         <h1 className="text-2xl font-black text-gray-900">Códigos QR</h1>
-                        <p className="text-gray-400 text-sm font-medium">Configurá y generá los QR de tu local</p>
+                        <p className="text-gray-400 text-sm font-medium">
+                            {noConfig ? "Configurá tu salón en Ajustes" : `${mesas} mesas · ${barra} barra`}
+                        </p>
                     </div>
                 </div>
-                <button
-                    onClick={() => window.print()}
-                    className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-800 active:scale-95 transition-all"
-                >
-                    <Printer size={16} />
-                    Imprimir todo
-                </button>
+                <div className="flex items-center gap-3">
+                    <Link
+                        href="/dashboard/settings"
+                        className="flex items-center gap-2 border border-gray-200 text-gray-600 px-4 py-2.5 rounded-xl font-bold text-sm hover:border-gray-400 transition-all"
+                    >
+                        <Settings2 size={15} />
+                        Ajustar mesas
+                    </Link>
+                    <button
+                        onClick={() => window.print()}
+                        className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-800 active:scale-95 transition-all"
+                    >
+                        <Printer size={16} />
+                        Imprimir todo
+                    </button>
+                </div>
             </div>
 
-            {/* Config panel */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 print:hidden">
-                <div className="flex items-center gap-2 mb-5">
-                    <Settings2 size={16} className="text-gray-400" />
-                    <span className="text-sm font-black uppercase tracking-widest text-gray-400">Configuración</span>
+            {/* Sin configuración */}
+            {noConfig && (
+                <div className="flex flex-col items-center justify-center py-24 text-center print:hidden">
+                    <p className="text-gray-300 text-6xl font-black mb-4">—</p>
+                    <p className="text-gray-500 font-bold mb-2">No hay mesas configuradas</p>
+                    <p className="text-gray-400 text-sm mb-6">Andá a Ajustes → Distribución del Salón y guardá la cantidad de mesas.</p>
+                    <Link
+                        href="/dashboard/settings"
+                        className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition-all"
+                    >
+                        <Settings2 size={16} />
+                        Ir a Ajustes
+                    </Link>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">
-                            Mesas del salón
-                        </label>
-                        <input
-                            type="number"
-                            min={1}
-                            max={200}
-                            value={mesas}
-                            onChange={e => setMesas(Math.max(1, Math.min(200, Number(e.target.value))))}
-                            className="w-full bg-gray-50 border-2 border-transparent focus:border-black rounded-xl px-4 py-3 text-2xl font-black outline-none transition-all"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-black uppercase tracking-widest text-amber-500 mb-2">
-                            Lugares de barra
-                        </label>
-                        <input
-                            type="number"
-                            min={0}
-                            max={50}
-                            value={barra}
-                            onChange={e => setBarra(Math.max(0, Math.min(50, Number(e.target.value))))}
-                            className="w-full bg-amber-50 border-2 border-transparent focus:border-amber-400 rounded-xl px-4 py-3 text-2xl font-black outline-none transition-all"
-                        />
-                    </div>
-                </div>
-
-                <button
-                    onClick={handleSave}
-                    className={`mt-5 flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                        saved
-                            ? "bg-green-500 text-white"
-                            : "bg-black text-white hover:bg-gray-800"
-                    }`}
-                >
-                    {saved ? <><Check size={16} /> Guardado</> : "Guardar configuración"}
-                </button>
-            </div>
+            )}
 
             {/* Mesas */}
             {mesas > 0 && (
