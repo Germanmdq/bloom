@@ -62,8 +62,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [extraTotal, setExtraTotal] = useState(0);
-    // true = mostrar productos directamente (sin pasar por categorías)
-    const [showProducts, setShowProducts] = useState(false);
     const [productSearch, setProductSearch] = useState("");
     const [waiters, setWaiters] = useState<Array<{ id: string; full_name: string }>>([]);
     const [orderType, setOrderType] = useState<'LOCAL' | 'DELIVERY'>('LOCAL');
@@ -87,16 +85,16 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         } else {
             const { data: tableData } = await supabase
                 .from('salon_tables')
-                .select('total, order_type, status')
+                .select('total, order_type, items')
                 .eq('id', tableId)
                 .single();
             if (tableData) {
-                const prevTotal = Number(tableData.total) || 0;
-                setExtraTotal(prevTotal);
+                setExtraTotal(Number(tableData.total) || 0);
                 if (tableData.order_type) setOrderType(tableData.order_type);
-                // Mesa ocupada con cargos → arrancar en vista de productos
-                if (tableData.status === 'OCCUPIED' && prevTotal > 0) {
-                    setShowProducts(true);
+                // Limpiar carrito y restaurar items persistidos de esta mesa
+                clearCart();
+                if (Array.isArray(tableData.items) && tableData.items.length > 0) {
+                    tableData.items.forEach((item: any) => addToCart(item));
                 }
             }
         }
@@ -155,10 +153,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const persistTableState = async () => {
         if (cart.length === 0 && extraTotal === 0) return;
         const currentTotal = useOrderStore.getState().getTotal() + extraTotal;
+        const currentCart = useOrderStore.getState().cart;
         try {
             await supabase
                 .from('salon_tables')
-                .update({ status: 'OCCUPIED', total: currentTotal })
+                .update({ status: 'OCCUPIED', total: currentTotal, items: currentCart })
                 .eq('id', tableId);
         } catch (err) {
             console.error("Failed to sync table:", err);
@@ -216,7 +215,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 waiter_id: selectedWaiter || null,
                 items: cart
             });
-            await supabase.from('salon_tables').update({ status: 'FREE', total: 0 }).eq('id', tableId);
+            await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
             if (currentWebOrderId) {
                 await fetch(`/api/orders/delete?id=${currentWebOrderId}`, { method: 'DELETE' });
             }
@@ -473,57 +472,82 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 </div>
 
                 {/* RIGHT: PRODUCTS */}
-                <div className="flex-1 flex flex-col p-4 overflow-hidden relative">
-                    <div className="flex-1 overflow-y-auto pr-1 no-scrollbar">
-                        {(!activeCategory && !productSearch && !showProducts) ? (
-                            /* VISTA: CATEGORÍAS */
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20">
-                                {categories.map((cat: any) => (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => { setActiveCategory(cat.id); setShowProducts(false); }}
-                                        className="h-28 flex flex-col items-center justify-center p-2 rounded-2xl bg-white border-2 border-transparent hover:border-black/5 hover:shadow-xl transition-all group active:scale-95 gap-1"
-                                    >
-                                        <h3 className="font-black text-[10px] text-center uppercase tracking-tight text-gray-900 group-hover:text-black leading-tight px-1">
-                                            {cat.name}
-                                        </h3>
-                                        <span className="text-[8px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
-                                            {products.filter((p: any) => p.category_id === cat.id).length} Prods.
-                                        </span>
-                                    </button>
-                                ))}
+                <div className="flex-1 flex flex-col overflow-hidden">
+
+                    {/* CATEGORY PILLS */}
+                    <div className="flex items-center gap-2 px-4 py-3 overflow-x-auto no-scrollbar shrink-0 bg-white border-b border-black/5">
+                        <button
+                            onClick={() => setActiveCategory(null)}
+                            className={`shrink-0 flex flex-col items-center gap-1 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 min-w-[60px] ${
+                                !activeCategory
+                                    ? 'bg-black text-[#FFD60A] shadow-md'
+                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                            }`}
+                        >
+                            <span className="text-lg leading-none">🍽️</span>
+                            <span>Todos</span>
+                        </button>
+                        {categories.map((cat: any, idx: number) => {
+                            const count = products.filter((p: any) => p.category_id === cat.id).length;
+                            const emojis = ['🥩','🍝','🥗','🍕','🍔','🥤','🍰','🍷','☕','🍜','🥪','🍣'];
+                            const emoji = emojis[idx % emojis.length];
+                            const isActive = activeCategory === cat.id;
+                            return (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setActiveCategory(cat.id)}
+                                    className={`shrink-0 flex flex-col items-center gap-1 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 min-w-[64px] ${
+                                        isActive
+                                            ? 'bg-black text-[#FFD60A] shadow-md'
+                                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    <span className="text-lg leading-none">{emoji}</span>
+                                    <span className="truncate max-w-[56px]">{cat.name}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* PRODUCTS GRID */}
+                    <div className="flex-1 overflow-y-auto no-scrollbar p-4">
+                        {displayProducts.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-gray-300 font-black uppercase tracking-widest text-sm">
+                                Sin productos
                             </div>
                         ) : (
-                            /* VISTA: PRODUCTOS */
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-20">
-                                <button
-                                    onClick={() => { setActiveCategory(null); setProductSearch(""); setShowProducts(false); }}
-                                    className="aspect-[4/3] flex flex-col items-center justify-center p-3 rounded-2xl bg-gray-100 border-2 border-transparent hover:border-black/10 hover:bg-gray-200 transition-all group active:scale-95"
-                                >
-                                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl group-hover:-translate-x-1 transition-transform shadow-sm">
-                                        ⬅️
-                                    </div>
-                                    <h4 className="font-black text-gray-500 text-[10px] text-center uppercase mt-2 tracking-widest">CATS</h4>
-                                </button>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-6">
                                 {displayProducts.map((item: any) => (
                                     <button
                                         key={item.id}
                                         onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                        className="aspect-[4/3] flex flex-col items-center justify-between p-3 rounded-2xl bg-white border-2 border-transparent hover:border-black shadow-sm hover:shadow-lg transition-all group active:scale-95"
+                                        className="group flex flex-col rounded-2xl bg-white border-2 border-transparent hover:border-black hover:shadow-xl shadow-sm transition-all active:scale-95 text-left overflow-hidden"
                                     >
-                                        <div className="flex-1 flex items-center justify-center w-full">
-                                            <h4 className="font-bold text-gray-900 text-xs text-center leading-tight line-clamp-2 group-hover:scale-105 transition-transform">{item.name}</h4>
+                                        {/* Product image */}
+                                        {item.image_url ? (
+                                            <div className="w-full h-28 overflow-hidden bg-gray-100 shrink-0">
+                                                <img
+                                                    src={item.image_url}
+                                                    alt={item.name}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="w-full h-20 bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shrink-0">
+                                                <span className="text-3xl opacity-25">🍽️</span>
+                                            </div>
+                                        )}
+                                        {/* Info */}
+                                        <div className="p-3 flex flex-col flex-1">
+                                            <span className="font-black text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-black flex-1">
+                                                {item.name}
+                                            </span>
+                                            <span className="mt-2 self-start bg-[#FFD60A] text-black text-xs font-black px-3 py-1 rounded-xl">
+                                                ${Number(item.price).toLocaleString()}
+                                            </span>
                                         </div>
-                                        <p className="text-[10px] font-black text-gray-400 group-hover:text-black transition-colors bg-gray-50 px-2 py-0.5 rounded-md mt-1">
-                                            ${Number(item.price).toLocaleString()}
-                                        </p>
                                     </button>
                                 ))}
-                                {displayProducts.length === 0 && (
-                                    <div className="col-span-full text-center py-20 text-gray-400 font-bold uppercase tracking-widest text-xs">
-                                        No hay productos en esta categoría
-                                    </div>
-                                )}
                             </div>
                         )}
                     </div>
