@@ -128,11 +128,11 @@ export default function Home() {
             </AnimatePresence>
 
             {/* --- NAVBAR --- */}
-            <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-4">
+            <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/60 to-transparent">
                 <span className="text-white font-black text-xl tracking-tighter drop-shadow-lg">BLOOM<span className="text-orange-500">.</span></span>
                 <button
                     onClick={() => setShowLogin(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-sm font-bold rounded-full transition-all hover:-translate-y-0.5"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-white text-sm font-bold rounded-full transition-all hover:-translate-y-0.5 shadow-lg"
                 >
                     <LogIn size={15} />
                     Acceso Empleados
@@ -140,7 +140,7 @@ export default function Home() {
             </nav>
 
             {/* --- HERO SECTION --- */}
-            <section className="relative h-[90vh] w-full flex items-center justify-center overflow-hidden">
+            <section className="relative h-[90vh] w-full flex items-center justify-center overflow-hidden bg-gray-900">
                 <div className="absolute inset-0 z-0">
                     <Image
                         src="https://images.unsplash.com/photo-1544025162-d7669d2d09bd?q=80&w=2674&auto=format&fit=crop"
@@ -148,6 +148,7 @@ export default function Home() {
                         fill
                         className="object-cover brightness-[0.35]"
                         priority
+                        unoptimized
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
                 </div>
