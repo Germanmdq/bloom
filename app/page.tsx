@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Bike, CalendarDays, ChefHat, MapPin, Star, Clock } from "lucide-react";
-import { useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Bike, CalendarDays, ChefHat, MapPin, Star, Clock, X, LogIn } from "lucide-react";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 // --- ANIMATION HELPERS ---
 const FadeIn = ({ children, delay = 0, className = "" }: any) => (
@@ -19,13 +21,126 @@ const FadeIn = ({ children, delay = 0, className = "" }: any) => (
     </motion.div>
 );
 
+// --- LOGIN MODAL ---
+function LoginModal({ onClose }: { onClose: () => void }) {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
+    const supabase = createClient();
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        if (loginError) {
+            setError("Credenciales inválidas. Por favor intenta de nuevo.");
+            setLoading(false);
+        } else {
+            router.push("/dashboard");
+        }
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 24, scale: 0.96 }}
+                transition={{ duration: 0.3, ease: [0.21, 0.47, 0.32, 0.98] }}
+                className="w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="relative bg-black px-8 pt-10 pb-8 text-center">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-orange-600 rounded-full blur-[80px] opacity-20 translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white"
+                    >
+                        <X size={16} />
+                    </button>
+                    <h2 className="text-3xl font-black text-white tracking-tighter mb-1">BLOOM<span className="text-orange-500">.</span></h2>
+                    <p className="text-gray-400 text-sm font-medium">Acceso para Empleados</p>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleLogin} className="px-8 py-8 space-y-5">
+                    <div>
+                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Email</label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            autoFocus
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-black/10 focus:border-black/20 outline-none transition-all placeholder:text-gray-300 font-medium text-gray-900"
+                            placeholder="nombre@ejemplo.com"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Contraseña</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-black/10 focus:border-black/20 outline-none transition-all placeholder:text-gray-300 font-medium text-gray-900"
+                            placeholder="••••••••"
+                        />
+                    </div>
+
+                    {error && (
+                        <p className="text-red-500 text-sm font-semibold text-center bg-red-50 py-2 rounded-xl">{error}</p>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-black text-white font-bold py-4 rounded-xl hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/10 flex items-center justify-center gap-2"
+                    >
+                        <LogIn size={18} />
+                        {loading ? "Iniciando sesión..." : "Ingresar al Sistema"}
+                    </button>
+                </form>
+            </motion.div>
+        </motion.div>
+    );
+}
+
 export default function Home() {
+    const [showLogin, setShowLogin] = useState(false);
+
     return (
         <main className="min-h-screen font-sans bg-white selection:bg-orange-500 selection:text-white">
 
+            <AnimatePresence>
+                {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
+            </AnimatePresence>
+
+            {/* --- NAVBAR --- */}
+            <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-4">
+                <span className="text-white font-black text-xl tracking-tighter drop-shadow-lg">BLOOM<span className="text-orange-500">.</span></span>
+                <button
+                    onClick={() => setShowLogin(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-sm font-bold rounded-full transition-all hover:-translate-y-0.5"
+                >
+                    <LogIn size={15} />
+                    Acceso Empleados
+                </button>
+            </nav>
+
             {/* --- HERO SECTION --- */}
             <section className="relative h-[90vh] w-full flex items-center justify-center overflow-hidden">
-                {/* Background Image with Parallax Effect */}
                 <div className="absolute inset-0 z-0">
                     <Image
                         src="https://images.unsplash.com/photo-1544025162-d7669d2d09bd?q=80&w=2674&auto=format&fit=crop"
@@ -37,7 +152,6 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
                 </div>
 
-                {/* Hero Content */}
                 <div className="relative z-10 container mx-auto px-6 text-center text-white">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -84,7 +198,6 @@ export default function Home() {
                     </FadeIn>
 
                     <div className="grid md:grid-cols-3 gap-6">
-                        {/* Card 1 */}
                         <FadeIn delay={0.1} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col items-start gap-4 hover:scale-[1.02] transition-transform duration-500">
                             <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mb-2">
                                 <ChefHat size={32} />
@@ -95,7 +208,6 @@ export default function Home() {
                             </p>
                         </FadeIn>
 
-                        {/* Card 2 */}
                         <FadeIn delay={0.2} className="bg-black text-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-900/20 flex flex-col items-start gap-4 hover:scale-[1.02] transition-transform duration-500 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                             <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white mb-2 backdrop-blur-sm">
@@ -107,7 +219,6 @@ export default function Home() {
                             </p>
                         </FadeIn>
 
-                        {/* Card 3 */}
                         <FadeIn delay={0.3} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col items-start gap-4 hover:scale-[1.02] transition-transform duration-500">
                             <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 mb-2">
                                 <Clock size={32} />
@@ -172,7 +283,6 @@ export default function Home() {
             <section className="py-24 px-6">
                 <div className="container mx-auto">
                     <FadeIn className="relative bg-black rounded-[3rem] overflow-hidden px-6 py-24 md:px-20 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-10">
-                        {/* Background Texture */}
                         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat"></div>
                         <div className="absolute top-0 right-0 w-96 h-96 bg-orange-600 rounded-full blur-[120px] opacity-20 translate-x-1/2 -translate-y-1/2"></div>
 
@@ -207,7 +317,6 @@ export default function Home() {
                                 Te esperamos para vivir momentos únicos.
                             </p>
                             <div className="flex gap-4">
-                                {/* Social Placeholders */}
                                 <div className="w-10 h-10 bg-gray-100 rounded-full hover:bg-gray-200 cursor-pointer"></div>
                                 <div className="w-10 h-10 bg-gray-100 rounded-full hover:bg-gray-200 cursor-pointer"></div>
                             </div>
@@ -234,13 +343,18 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <div className="border-t border-gray-100 pt-8 text-center text-gray-400 text-sm">
-                        &copy; 2026 Bloom Restaurant. Todos los derechos reservados.
+                    <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-gray-400 text-sm">
+                        <span>&copy; 2026 Bloom Restaurant. Todos los derechos reservados.</span>
+                        <button
+                            onClick={() => setShowLogin(true)}
+                            className="flex items-center gap-1.5 text-gray-300 hover:text-gray-500 transition-colors text-xs font-medium"
+                        >
+                            <LogIn size={13} />
+                            Acceso empleados
+                        </button>
                     </div>
                 </div>
             </footer>
         </main>
     );
 }
-
-// Add global styles for smooth scroll if needed, but Tailwind handles most.
