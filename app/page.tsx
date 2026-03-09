@@ -143,12 +143,11 @@ export default function Home() {
             <section className="relative h-[90vh] w-full flex items-center justify-center overflow-hidden bg-gray-900">
                 <div className="absolute inset-0 z-0">
                     <Image
-                        src="https://images.unsplash.com/photo-1544025162-d7669d2d09bd?q=80&w=2674&auto=format&fit=crop"
+                        src="/images/bloom-interior-wide.png"
                         alt="Bloom Atmosphere"
                         fill
-                        className="object-cover brightness-[0.35]"
+                        className="object-cover brightness-[0.4]"
                         priority
-                        unoptimized
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
                 </div>
@@ -240,8 +239,8 @@ export default function Home() {
                         <FadeIn className="lg:w-1/2 relative">
                             <div className="relative aspect-square w-full max-w-lg mx-auto transform rotate-3 hover:rotate-0 transition-all duration-700">
                                 <Image
-                                    src="https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=2670&auto=format&fit=crop"
-                                    alt="Lomo Plate"
+                                    src="/images/pasta.jpg"
+                                    alt="Plato Destacado"
                                     fill
                                     className="object-cover rounded-[2.5rem] shadow-2xl"
                                 />
