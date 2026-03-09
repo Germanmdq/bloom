@@ -165,8 +165,8 @@ export default function Home() {
                             BLOOM<span className="text-orange-500">.</span>
                         </h1>
                         <p className="text-xl md:text-2xl text-gray-200 font-medium max-w-2xl mx-auto leading-relaxed mb-10">
-                            Cocina de autor honesta. Ingredientes reales. <br className="hidden md:block" />
-                            La experiencia gastronómica que estabas buscando.
+                            Café de especialidad, pastelería artesanal y mucho más. <br className="hidden md:block" />
+                            El lugar donde cada taza florece.
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -190,10 +190,10 @@ export default function Home() {
                 <div className="container mx-auto px-6">
                     <FadeIn className="text-center mb-16">
                         <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-4">
-                            Mucho más que comida.
+                            Mucho más que un café.
                         </h2>
                         <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-                            En Bloom cuidamos cada detalle, desde la selección de proveedores locales hasta el emplatado final.
+                            En Bloom cuidamos cada detalle, desde el origen del grano hasta el último trazo de latte art.
                         </p>
                     </FadeIn>
 
@@ -202,9 +202,9 @@ export default function Home() {
                             <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mb-2">
                                 <ChefHat size={32} />
                             </div>
-                            <h3 className="text-2xl font-bold text-gray-900">Cocina de Autor</h3>
+                            <h3 className="text-2xl font-bold text-gray-900">Café de Especialidad</h3>
                             <p className="text-gray-500 leading-relaxed">
-                                Recetas clásicas reinventadas con técnicas modernas. Nuestra milanesa no es solo una milanesa.
+                                Granos seleccionados, molienda en el momento y preparaciones únicas. Cada taza es una experiencia.
                             </p>
                         </FadeIn>
 
@@ -213,9 +213,9 @@ export default function Home() {
                             <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white mb-2 backdrop-blur-sm">
                                 <Star size={32} />
                             </div>
-                            <h3 className="text-2xl font-bold">Calidad Premium</h3>
+                            <h3 className="text-2xl font-bold">Pastelería Artesanal</h3>
                             <p className="text-gray-400 leading-relaxed">
-                                Trabajamos exclusivamente con carnes de pastura y vegetales orgánicos de estación.
+                                Tortas, alfajores y medialunas hechas cada mañana. Sin conservantes, con todo el sabor.
                             </p>
                         </FadeIn>
 
@@ -225,7 +225,7 @@ export default function Home() {
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900">Siempre Listos</h3>
                             <p className="text-gray-500 leading-relaxed">
-                                Abierto todos los días. Almuerzos ejecutivos, cenas íntimas y delivery rápido.
+                                Abierto todos los días. Desde el desayuno hasta la merienda, con delivery a domicilio.
                             </p>
                         </FadeIn>
                     </div>
@@ -239,18 +239,18 @@ export default function Home() {
                         <FadeIn className="lg:w-1/2 relative">
                             <div className="relative aspect-square w-full max-w-lg mx-auto transform rotate-3 hover:rotate-0 transition-all duration-700">
                                 <Image
-                                    src="/images/pasta.jpg"
-                                    alt="Plato Destacado"
+                                    src="/images/latte_swirl_1768310553394.png"
+                                    alt="Latte Art Bloom"
                                     fill
                                     className="object-cover rounded-[2.5rem] shadow-2xl"
                                 />
                                 <div className="absolute -bottom-6 -right-6 bg-white p-6 rounded-3xl shadow-xl border border-gray-100 max-w-xs animate-bounce-slow">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Star className="text-orange-500 fill-orange-500" size={16} />
-                                        <span className="font-bold text-sm">Plato Estrella</span>
+                                        <span className="font-bold text-sm">Lo más pedido</span>
                                     </div>
-                                    <p className="font-bold text-gray-900 text-lg">Lomo a la Pimienta</p>
-                                    <p className="text-gray-500 text-sm">Con papas rústicas y reducción de Malbec.</p>
+                                    <p className="font-bold text-gray-900 text-lg">Latte de Vainilla</p>
+                                    <p className="text-gray-500 text-sm">Con leche oat y espresso doble. El favorito.</p>
                                 </div>
                             </div>
                         </FadeIn>
@@ -258,10 +258,10 @@ export default function Home() {
                         <FadeIn className="lg:w-1/2 space-y-8">
                             <span className="text-orange-600 font-bold tracking-widest uppercase text-sm">Nuestra Carta</span>
                             <h2 className="text-5xl md:text-6xl font-black text-gray-900 tracking-tighter leading-[1.1]">
-                                Sabores que <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600">cuentan historias.</span>
+                                Sabores que <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600">te despiertan.</span>
                             </h2>
                             <p className="text-xl text-gray-500 leading-relaxed">
-                                Desde nuestras famosas milanesas napolitanas hasta pastas caseras amasadas cada mañana. Nuestro menú es un homenaje a la cocina argentina con un toque contemporáneo.
+                                Desde el espresso clásico hasta opciones con leches vegetales, pasando por wraps, tostados y una pastelería que cambia cada semana. Hay algo para cada momento del día.
                             </p>
 
                             <div className="pt-4">
@@ -288,10 +288,10 @@ export default function Home() {
 
                         <div className="relative z-10 max-w-2xl">
                             <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
-                                ¿Con hambre?
+                                ¿Con ganas de un café?
                             </h2>
                             <p className="text-gray-400 text-xl font-medium mb-0">
-                                Pide ahora desde nuestra web y recibe descuentos exclusivos. Sin esperas.
+                                Pedí ahora desde nuestra web y recibí en tu puerta. Sin esperas.
                             </p>
                         </div>
 
@@ -313,8 +313,8 @@ export default function Home() {
                         <div className="col-span-1 md:col-span-2">
                             <h3 className="text-3xl font-black text-gray-900 mb-6 tracking-tighter">BLOOM.</h3>
                             <p className="text-gray-500 max-w-sm mb-6">
-                                Cocina honesta creada para compartir. <br />
-                                Te esperamos para vivir momentos únicos.
+                                Café de especialidad, pastelería artesanal y mucho más. <br />
+                                Te esperamos para compartir un buen momento.
                             </p>
                             <div className="flex gap-4">
                                 <div className="w-10 h-10 bg-gray-100 rounded-full hover:bg-gray-200 cursor-pointer"></div>
