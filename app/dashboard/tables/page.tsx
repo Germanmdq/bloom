@@ -19,6 +19,7 @@ export default function TablesPage() {
     const [activeTab, setActiveTab] = useState<'ALL' | 'LOCAL' | 'DELIVERY' | 'RETIRO'>('ALL');
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
     const [sideTableId, setSideTableId] = useState<number | null>(null);
 
@@ -31,8 +32,27 @@ export default function TablesPage() {
 
     useEffect(() => {
         const fetchTables = async () => {
-            const { data } = await supabase.from('salon_tables').select('*').order('id');
-            if (data) setTables(data);
+            const { data, error } = await supabase.from('salon_tables').select('*').order('id');
+            if (error) {
+                console.error('Error al cargar mesas:', error);
+                setFetchError(error.message);
+                setLoading(false);
+                return;
+            }
+            if (data && data.length === 0) {
+                // Seed inicial: crear 30 mesas si la tabla está vacía
+                const rows = Array.from({ length: 30 }, (_, i) => ({
+                    id: i + 1,
+                    status: 'FREE',
+                    total: 0,
+                    items: [],
+                }));
+                await supabase.from('salon_tables').insert(rows);
+                const { data: seeded } = await supabase.from('salon_tables').select('*').order('id');
+                if (seeded) setTables(seeded);
+            } else if (data) {
+                setTables(data);
+            }
             setLoading(false);
         };
         fetchTables();
@@ -148,6 +168,12 @@ export default function TablesPage() {
     };
 
     if (loading) return <div className="p-10 text-center font-bold text-dark-400">Cargando mesas...</div>;
+    if (fetchError) return (
+        <div className="p-10 text-center">
+            <p className="font-black text-red-500 text-lg mb-2">Error al cargar mesas</p>
+            <p className="text-slate-500 text-sm font-mono bg-slate-100 px-4 py-2 rounded-xl inline-block">{fetchError}</p>
+        </div>
+    );
 
     return (
         <div className="h-full flex flex-col gap-4">
