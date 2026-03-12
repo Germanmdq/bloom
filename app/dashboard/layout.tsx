@@ -43,7 +43,7 @@ export default function DashboardLayout({
     function handleUnlock(e: React.FormEvent) {
         e.preventDefault();
         setUnlockError("");
-        if (loginEmail.toLowerCase().trim() === 'germangonzalezmdq@gmail.com' && loginPass === 'admin') {
+        if (loginEmail.toLowerCase().trim() === 'germangonzalezmdq@gmail.com' && loginPass.trim() === 'admin') {
             setIsLocked(false);
         } else {
             setUnlockError("Credenciales incorrectas. Acceso Denegado.");
