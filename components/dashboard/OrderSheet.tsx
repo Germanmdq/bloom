@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Search, Trash2, CreditCard, Check, Loader2, X, ChevronLeft } from 'lucide-react';
+import { Search, Trash2, CreditCard, Check, Loader2, X, ChevronLeft, LayoutGrid, ListChecks, Users, Coffee, Package } from 'lucide-react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket } from "@/lib/hooks/use-pos-data";
