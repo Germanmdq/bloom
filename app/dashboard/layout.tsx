@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { WhatsAppNotificationListener } from "@/components/WhatsAppNotificationListener";
 import { Sidebar } from "@/components/dashboard/Sidebar";
-import { Lock, ShieldCheck } from "lucide-react";
+import { Lock, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { SalesComparisonPanel, ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import "./dashboard.css";
 
@@ -13,6 +13,7 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const [isLocked, setIsLocked] = useState(true);
+    const [showPass, setShowPass] = useState(false);
 
     useEffect(() => {
         try {
@@ -49,7 +50,7 @@ export default function DashboardLayout({
     function handleUnlock(e: React.FormEvent) {
         e.preventDefault();
         setUnlockError("");
-        if (loginPass.trim() === 'admin') {
+        if (loginPass.trim().toLowerCase() === 'admin') {
             try { sessionStorage.setItem('bloom_unlocked', 'true'); } catch {}
             setIsLocked(false);
         } else {
@@ -70,17 +71,26 @@ export default function DashboardLayout({
                     <form onSubmit={handleUnlock} className="space-y-4">
                         <div className="text-left">
                             <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-1 block">Contraseña</label>
-                            <input
-                                type="password"
-                                value={loginPass}
-                                onChange={e => setLoginPass(e.target.value)}
-                                className="w-full bg-gray-50 border-2 border-transparent focus:border-black rounded-2xl p-4 font-bold outline-none transition-all"
-                                placeholder="••••••"
-                                autoFocus
-                                autoCapitalize="none"
-                                autoCorrect="off"
-                                autoComplete="current-password"
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPass ? "text" : "password"}
+                                    value={loginPass}
+                                    onChange={e => setLoginPass(e.target.value)}
+                                    className="w-full bg-gray-50 border-2 border-transparent focus:border-black rounded-2xl p-4 pr-12 font-bold outline-none transition-all"
+                                    placeholder="••••••"
+                                    autoFocus
+                                    autoCapitalize="none"
+                                    autoCorrect="off"
+                                    autoComplete="current-password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPass(v => !v)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                                >
+                                    {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
                         </div>
 
                         {unlockError && <p className="text-red-500 font-black text-xs uppercase tracking-widest">{unlockError}</p>}
