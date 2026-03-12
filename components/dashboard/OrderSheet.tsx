@@ -360,44 +360,46 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                         </div>
                     </div>
 
-                    {/* Tabs de categorías — siempre visibles */}
-                    <div className="flex gap-2 px-4 py-2.5 overflow-x-auto no-scrollbar bg-white border-b border-gray-100 shrink-0">
-                        <button
-                            onClick={() => { setActiveCategory(null); setProductSearch(''); }}
-                            className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                                !activeCategory && !productSearch
-                                    ? 'bg-gray-900 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                        >
-                            Todos
-                        </button>
-                        {categories.map((cat: any) => (
+                    {/* Sub-header: volver a categorías cuando hay una activa */}
+                    {(activeCategory || searchTerm) && (
+                        <div className="px-4 py-2 bg-white border-b border-gray-100 shrink-0 flex items-center gap-2">
                             <button
-                                key={cat.id}
-                                onClick={() => { setActiveCategory(cat.id); setProductSearch(''); }}
-                                className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                                    activeCategory === cat.id
-                                        ? 'bg-gray-900 text-white'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
+                                onClick={() => { setActiveCategory(null); setProductSearch(''); }}
+                                className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-900 transition-colors"
                             >
-                                {cat.name}
+                                <ChevronLeft size={14} />
+                                {searchTerm
+                                    ? `Resultados para "${productSearch}"`
+                                    : (categories.find((c: any) => c.id === activeCategory)?.name ?? 'Categoría')}
                             </button>
-                        ))}
-                    </div>
+                        </div>
+                    )}
 
-                    {/* Grid de productos — solo si hay categoría seleccionada o búsqueda activa */}
+                    {/* Área principal: categorías o productos */}
                     <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
                         {!searchTerm && !activeCategory ? (
-                            <div className="h-full flex items-center justify-center text-gray-300 text-sm font-medium">
-                                Seleccioná una categoría o buscá un producto
+                            /* Vista de categorías como cards */
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                {categories.map((cat: any) => {
+                                    const count = products.filter((p: any) => p.category_id === cat.id).length;
+                                    return (
+                                        <button
+                                            key={cat.id}
+                                            onClick={() => setActiveCategory(cat.id)}
+                                            className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md active:scale-95 transition-all text-left border border-gray-100 hover:border-gray-300"
+                                        >
+                                            <p className="font-bold text-gray-900 text-sm leading-snug">{cat.name}</p>
+                                            <p className="text-xs text-gray-400 mt-1">{count} productos</p>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         ) : displayProducts.length === 0 ? (
                             <div className="h-full flex items-center justify-center text-gray-300 text-sm font-medium">
-                                Sin resultados para &quot;{productSearch}&quot;
+                                Sin resultados
                             </div>
                         ) : (
+                            /* Vista de productos */
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                                 {displayProducts.map((item: any) => (
                                     <button
