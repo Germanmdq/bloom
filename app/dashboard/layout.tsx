@@ -102,7 +102,7 @@ export default function DashboardLayout({
                 <WhatsAppNotificationListener />
                 <Sidebar />
                 <main className="flex-1 h-full overflow-y-auto p-8 relative">
-                    <div className="max-w-7xl mx-auto">
+                    <div className="max-w-7xl mx-auto h-full">
                         {children}
                     </div>
                 </main>
