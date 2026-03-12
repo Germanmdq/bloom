@@ -3,15 +3,15 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, Clock, Trash2, Mail, User, Coffee, Loader2 } from "lucide-react";
+import { UserPlus, Trash2, Mail, User, Coffee, Loader2 } from "lucide-react";
 
 export default function StaffPage() {
     const [profiles, setProfiles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
 
-    // Form state
     const [newStaff, setNewStaff] = useState({
         email: "",
         password: "",
@@ -28,16 +28,15 @@ export default function StaffPage() {
     async function fetchProfiles() {
         setLoading(true);
         setError(null);
-        // Simplificamos la consulta para evitar errores de relación si el schema no está listo
-        const { data: profileData, error: profileError } = await supabase
+        const { data, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .order('role', { ascending: true });
 
         if (!profileError) {
-            setProfiles(profileData || []);
+            setProfiles(data || []);
         } else {
-            console.error("Error fetching profiles:", profileError.message || profileError);
+            console.error("Error fetching profiles:", profileError.message);
             setError("No se pudieron cargar los empleados. Revisa las políticas RLS.");
         }
         setLoading(false);
@@ -70,93 +69,30 @@ export default function StaffPage() {
                     setError(result.message || "Error al crear el usuario.");
                 }
             }
-        } catch (err) {
+        } catch {
             setError("Error de conexión con el servidor.");
         }
         setLoading(false);
     }
 
-    const [deleteId, setDeleteId] = useState<string | null>(null);
-
-    // ... existing useState ...
-
-    // ... useEffect ...
-
-    // ... handleUnlock ...
-
     async function confirmDelete() {
         if (!deleteId) return;
-        setDeleteId(null); // Close modal first or keep it loading? 
-        // Better UX: keep it loading or close and show global loading.
-        // Existing loading state covers the list.
+        setDeleteId(null);
         setLoading(true);
         try {
-            const res = await fetch(`/api/staff?id=${deleteId}`, {
-                method: 'DELETE',
-            });
+            const res = await fetch(`/api/staff?id=${deleteId}`, { method: 'DELETE' });
             const result = await res.json();
             if (res.ok) {
                 fetchProfiles();
             } else {
-                alert(`Error: ${result.message}`); // Still alert on error? Maybe fix later.
+                setError(`Error: ${result.message}`);
                 setLoading(false);
             }
-        } catch (err) {
-            alert("Error de conexión");
+        } catch {
+            setError("Error de conexión");
             setLoading(false);
         }
     }
-
-    // New handleDelete triggers modal
-    function handleDelete(id: string) {
-        setDeleteId(id);
-    }
-
-    // ... render ...
-    // Inside return, before closing div:
-
-    {/* DELETE CONFIRMATION MODAL */ }
-    <AnimatePresence>
-        {deleteId && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/40 backdrop-blur-md"
-                    onClick={() => setDeleteId(null)}
-                />
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center"
-                >
-                    <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Trash2 size={28} />
-                    </div>
-                    <h3 className="text-2xl font-black text-gray-900 mb-2">¿Eliminar Empleado?</h3>
-                    <p className="text-gray-500 font-medium text-sm mb-8">Esta acción no se puede deshacer.</p>
-
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => setDeleteId(null)}
-                            className="flex-1 py-4 rounded-xl font-bold bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={confirmDelete}
-                            className="flex-1 py-4 rounded-xl font-black bg-red-500 text-white hover:bg-red-600 transition-all shadow-lg shadow-red-500/30"
-                        >
-                            Eliminar
-                        </button>
-                    </div>
-                </motion.div>
-            </div>
-        )}
-    </AnimatePresence>
-
 
     return (
         <div className="pb-20">
@@ -173,6 +109,13 @@ export default function StaffPage() {
                     <span>Registrar Nuevo</span>
                 </button>
             </div>
+
+            {error && !isAdding && (
+                <div className="bg-red-50 text-red-600 p-5 rounded-3xl mb-8 border border-red-100 text-sm font-bold flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                    {error}
+                </div>
+            )}
 
             {loading && profiles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -217,7 +160,7 @@ export default function StaffPage() {
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         <button
-                                            onClick={() => handleDelete(profile.id)}
+                                            onClick={() => setDeleteId(profile.id)}
                                             className="flex-1 flex items-center justify-center gap-2 rounded-3xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all p-3"
                                         >
                                             <Trash2 size={16} />
@@ -226,14 +169,55 @@ export default function StaffPage() {
                                 </div>
                             </div>
 
-                            {/* Decorative background circle */}
                             <div className="absolute top-[-20%] right-[-10%] w-40 h-40 bg-gray-50 rounded-full blur-3xl opacity-50 group-hover:opacity-100 transition-opacity" />
                         </motion.div>
                     ))}
                 </div>
             )}
 
-            {/* Add Staff Modal */}
+            {/* DELETE CONFIRMATION MODAL */}
+            <AnimatePresence>
+                {deleteId && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-md"
+                            onClick={() => setDeleteId(null)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="relative bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center"
+                        >
+                            <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Trash2 size={28} />
+                            </div>
+                            <h3 className="text-2xl font-black text-gray-900 mb-2">¿Eliminar Empleado?</h3>
+                            <p className="text-gray-500 font-medium text-sm mb-8">Esta acción no se puede deshacer.</p>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setDeleteId(null)}
+                                    className="flex-1 py-4 rounded-xl font-bold bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    className="flex-1 py-4 rounded-xl font-black bg-red-500 text-white hover:bg-red-600 transition-all shadow-lg shadow-red-500/30"
+                                >
+                                    Eliminar
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* ADD STAFF MODAL */}
             <AnimatePresence>
                 {isAdding && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
