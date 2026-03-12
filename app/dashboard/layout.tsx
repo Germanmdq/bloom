@@ -12,7 +12,11 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const [isLocked, setIsLocked] = useState(true);
+    const [isLocked, setIsLocked] = useState(() =>
+        typeof window !== 'undefined'
+            ? sessionStorage.getItem('bloom_unlocked') !== 'true'
+            : true
+    );
     const [loginEmail, setLoginEmail] = useState("");
     const [loginPass, setLoginPass] = useState("");
     const [unlockError, setUnlockError] = useState("");
@@ -44,6 +48,7 @@ export default function DashboardLayout({
         e.preventDefault();
         setUnlockError("");
         if (loginEmail.toLowerCase().trim() === 'germangonzalezmdq@gmail.com' && loginPass.trim() === 'admin') {
+            sessionStorage.setItem('bloom_unlocked', 'true');
             setIsLocked(false);
         } else {
             setUnlockError("Credenciales incorrectas. Acceso Denegado.");

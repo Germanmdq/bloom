@@ -270,18 +270,17 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     }
 
     const normalize = (s: string) =>
-        s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-    const displayProducts = activeCategory || productSearch
-        ? products.filter((p: any) => {
-            if (productSearch) {
-                const term = normalize(productSearch.trim());
-                return normalize(p.name).includes(term) ||
-                    (p.description && normalize(p.description).includes(term));
-            }
-            return p.category_id === activeCategory;
-        })
-        : products;
+    const searchTerm = normalize(productSearch.trim());
+    const displayProducts = searchTerm
+        ? products.filter((p: any) =>
+            normalize(p.name).includes(searchTerm) ||
+            normalize(p.description ?? '').includes(searchTerm)
+        )
+        : activeCategory
+            ? products.filter((p: any) => p.category_id === activeCategory)
+            : products;
 
     return (
         <div className="h-full flex flex-col bg-gray-100 overflow-hidden">

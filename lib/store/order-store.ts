@@ -38,12 +38,13 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
     cart: [],
     addToCart: (item) => set((state) => {
-        // Match by ID if available, otherwise fallback to Name (legacy safety)
-        const existingIdx = state.cart.findIndex(i => i.id ? i.id === item.id : i.name === item.name);
-
+        const existingIdx = state.cart.findIndex(i =>
+            item.id && i.id ? i.id === item.id : i.name === item.name
+        );
         if (existingIdx >= 0) {
-            const newCart = [...state.cart];
-            newCart[existingIdx].quantity += item.quantity;
+            const newCart = state.cart.map((c, i) =>
+                i === existingIdx ? { ...c, quantity: c.quantity + item.quantity } : c
+            );
             return { cart: newCart };
         }
         return { cart: [...state.cart, item] };
