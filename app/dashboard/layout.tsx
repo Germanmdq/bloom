@@ -12,11 +12,11 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const [isLocked, setIsLocked] = useState(() =>
-        typeof window !== 'undefined'
-            ? sessionStorage.getItem('bloom_unlocked') !== 'true'
-            : true
-    );
+    const [isLocked, setIsLocked] = useState(true);
+
+    useEffect(() => {
+        if (sessionStorage.getItem('bloom_unlocked') === 'true') setIsLocked(false);
+    }, []);
     const [loginEmail, setLoginEmail] = useState("");
     const [loginPass, setLoginPass] = useState("");
     const [unlockError, setUnlockError] = useState("");

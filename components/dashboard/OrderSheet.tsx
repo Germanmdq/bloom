@@ -360,7 +360,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                         </div>
                     </div>
 
-                    {/* Tabs de categorías */}
+                    {/* Tabs de categorías — siempre visibles */}
                     <div className="flex gap-2 px-4 py-2.5 overflow-x-auto no-scrollbar bg-white border-b border-gray-100 shrink-0">
                         <button
                             onClick={() => { setActiveCategory(null); setProductSearch(''); }}
@@ -387,11 +387,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                         ))}
                     </div>
 
-                    {/* Grid de productos */}
+                    {/* Grid de productos — solo si hay categoría seleccionada o búsqueda activa */}
                     <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
-                        {displayProducts.length === 0 ? (
+                        {!searchTerm && !activeCategory ? (
                             <div className="h-full flex items-center justify-center text-gray-300 text-sm font-medium">
-                                Sin productos
+                                Seleccioná una categoría o buscá un producto
+                            </div>
+                        ) : displayProducts.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-gray-300 text-sm font-medium">
+                                Sin resultados para &quot;{productSearch}&quot;
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
