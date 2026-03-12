@@ -269,12 +269,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         );
     }
 
+    const normalize = (s: string) =>
+        s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
     const displayProducts = activeCategory || productSearch
         ? products.filter((p: any) => {
             if (productSearch) {
-                const term = productSearch.toLowerCase().trim();
-                return p.name.toLowerCase().includes(term) ||
-                    p.description?.toLowerCase().includes(term);
+                const term = normalize(productSearch.trim());
+                return normalize(p.name).includes(term) ||
+                    (p.description && normalize(p.description).includes(term));
             }
             return p.category_id === activeCategory;
         })
