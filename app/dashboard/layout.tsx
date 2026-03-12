@@ -13,6 +13,10 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const [isLocked, setIsLocked] = useState(true);
+
+    useEffect(() => {
+        if (sessionStorage.getItem('bloom_unlocked') === 'true') setIsLocked(false);
+    }, []);
     const [loginEmail, setLoginEmail] = useState("");
     const [loginPass, setLoginPass] = useState("");
     const [unlockError, setUnlockError] = useState("");
@@ -43,7 +47,8 @@ export default function DashboardLayout({
     function handleUnlock(e: React.FormEvent) {
         e.preventDefault();
         setUnlockError("");
-        if (loginEmail.toLowerCase().trim() === 'mateogonzaleztortilla@gmail.com' && loginPass === 'gmail') {
+        if (loginEmail.toLowerCase().trim() === 'germangonzalezmdq@gmail.com' && loginPass.trim() === 'admin') {
+            sessionStorage.setItem('bloom_unlocked', 'true');
             setIsLocked(false);
         } else {
             setUnlockError("Credenciales incorrectas. Acceso Denegado.");
@@ -102,7 +107,7 @@ export default function DashboardLayout({
                 <WhatsAppNotificationListener />
                 <Sidebar />
                 <main className="flex-1 h-full overflow-y-auto p-8 relative">
-                    <div className="max-w-7xl mx-auto">
+                    <div className="max-w-7xl mx-auto h-full">
                         {children}
                     </div>
                 </main>
