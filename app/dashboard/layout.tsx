@@ -77,6 +77,9 @@ export default function DashboardLayout({
                                 className="w-full bg-gray-50 border-2 border-transparent focus:border-black rounded-2xl p-4 font-bold outline-none transition-all"
                                 placeholder="••••••"
                                 autoFocus
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                autoComplete="current-password"
                             />
                         </div>
 
