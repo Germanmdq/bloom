@@ -69,17 +69,6 @@ export default function DashboardLayout({
 
                     <form onSubmit={handleUnlock} className="space-y-4">
                         <div className="text-left">
-                            <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-1 block">Email</label>
-                            <input
-                                type="email"
-                                value={loginEmail}
-                                onChange={e => setLoginEmail(e.target.value)}
-                                className="w-full bg-gray-50 border-2 border-transparent focus:border-black rounded-2xl p-4 font-bold outline-none transition-all"
-                                placeholder="usuario@bloom.com"
-                                autoFocus
-                            />
-                        </div>
-                        <div className="text-left">
                             <label className="text-[10px] font-black uppercase text-gray-400 ml-2 mb-1 block">Contraseña</label>
                             <input
                                 type="password"
@@ -87,6 +76,7 @@ export default function DashboardLayout({
                                 onChange={e => setLoginPass(e.target.value)}
                                 className="w-full bg-gray-50 border-2 border-transparent focus:border-black rounded-2xl p-4 font-bold outline-none transition-all"
                                 placeholder="••••••"
+                                autoFocus
                             />
                         </div>
 
