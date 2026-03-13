@@ -132,14 +132,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         if (cart.length === 0) return;
         const currentTotal = useOrderStore.getState().getTotal();
         const currentCart = useOrderStore.getState().cart;
-        try {
-            // upsert crea la fila si no existe (para mesas nuevas)
-            await supabase
-                .from('salon_tables')
-                .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal, items: currentCart });
-        } catch (err) {
-            console.error("Failed to sync table:", err);
-        }
+        const { error } = await supabase
+            .from('salon_tables')
+            .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal, items: currentCart });
+        if (error) console.error("Failed to sync table:", error.message);
     };
 
     useEffect(() => {
