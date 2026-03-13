@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Search, Trash2, CreditCard, Check, Loader2, X, ChevronLeft } from 'lucide-react';
+import { Search, Trash2, CreditCard, Check, Loader2, X, ChevronLeft, LayoutGrid, ListChecks, Users, Coffee, Package } from 'lucide-react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket } from "@/lib/hooks/use-pos-data";
@@ -61,11 +62,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 console.error("Error loading web orders:", e);
             }
         } else {
-            const { data: tableData } = await supabase
+            const { data: tableData, error: tableError } = await supabase
                 .from('salon_tables')
-                .select('order_type, items')
+                .select('*')
                 .eq('id', tableId)
                 .single();
+            if (tableError) console.error("Error loading table:", tableError.message);
             if (tableData) {
                 if (tableData.order_type) setOrderType(tableData.order_type);
                 clearCart();
@@ -131,13 +133,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         if (cart.length === 0) return;
         const currentTotal = useOrderStore.getState().getTotal();
         const currentCart = useOrderStore.getState().cart;
-        try {
-            // upsert crea la fila si no existe (para mesas nuevas)
-            await supabase
+        const { error } = await supabase
+            .from('salon_tables')
+            .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal, items: currentCart });
+        if (error) {
+            // Fallback: columna items puede no existir en DB aún
+            const { error: e2 } = await supabase
                 .from('salon_tables')
-                .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal, items: currentCart });
-        } catch (err) {
-            console.error("Failed to sync table:", err);
+                .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal });
+            if (e2) console.error("Failed to sync table:", e2.message);
         }
     };
 
