@@ -7,6 +7,9 @@ CREATE POLICY "Public access tables"
 ON public.salon_tables FOR ALL TO anon, authenticated
 USING (true) WITH CHECK (true);
 
--- Ensure items column exists (in case migration wasn't applied)
+-- Ensure columns exist (in case migrations weren't applied)
 ALTER TABLE public.salon_tables
     ADD COLUMN IF NOT EXISTS items JSONB DEFAULT '[]'::jsonb;
+
+ALTER TABLE public.salon_tables
+    ADD COLUMN IF NOT EXISTS order_type TEXT DEFAULT 'LOCAL';

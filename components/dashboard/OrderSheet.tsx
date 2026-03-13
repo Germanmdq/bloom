@@ -62,11 +62,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 console.error("Error loading web orders:", e);
             }
         } else {
-            const { data: tableData } = await supabase
+            const { data: tableData, error: tableError } = await supabase
                 .from('salon_tables')
-                .select('order_type, items')
+                .select('*')
                 .eq('id', tableId)
                 .single();
+            if (tableError) console.error("Error loading table:", tableError.message);
             if (tableData) {
                 if (tableData.order_type) setOrderType(tableData.order_type);
                 clearCart();
@@ -135,7 +136,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         const { error } = await supabase
             .from('salon_tables')
             .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal, items: currentCart });
-        if (error) console.error("Failed to sync table:", error.message);
+        if (error) {
+            // Fallback: columna items puede no existir en DB aún
+            const { error: e2 } = await supabase
+                .from('salon_tables')
+                .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal });
+            if (e2) console.error("Failed to sync table:", e2.message);
+        }
     };
 
     useEffect(() => {
