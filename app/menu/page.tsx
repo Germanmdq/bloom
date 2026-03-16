@@ -297,7 +297,7 @@ function PublicMenuPage() {
                 )}
             </header>
 
-            <div className="w-full py-4" style={{paddingLeft: '70px', paddingRight: '70px'}}>
+            <div className="w-full py-3 px-4 sm:px-[70px] sm:py-4">
 
                 {/* STATE 1: CATEGORY GRID (HOME) */}
                 {!selectedCategory && (
@@ -411,7 +411,7 @@ function PublicMenuPage() {
                             }
 
                             {/* Resto de categorías — 3 columnas */}
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {categories
                                     .filter(cat => !cat.name.toLowerCase().includes('plato') && !cat.name.toLowerCase().includes('promo'))
                                     .map(cat => (
