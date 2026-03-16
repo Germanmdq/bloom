@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Store, Sliders, Database, Printer, Shield, Download, LayoutGrid, Keyboard } from "lucide-react";
+import { Save, Store, Sliders, Database, Printer, Shield, Download, LayoutGrid, Keyboard, Star, Check } from "lucide-react";
 import type { ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import Image from "next/image";
 
 export default function SettingsPage() {
     const supabase = createClient();
@@ -21,28 +22,67 @@ export default function SettingsPage() {
     const [barra, setBarra] = useState(3);
     const [f1Action, setF1Action] = useState<ComparisonType>('yesterday');
     const [f2Action, setF2Action] = useState<ComparisonType>('last_week');
+    const [platoDiaProducts, setPlatoDiaProducts] = useState<any[]>([]);
+    const [selectedPlatoDia, setSelectedPlatoDia] = useState<string | null>(null);
+    const [savingPlatoDia, setSavingPlatoDia] = useState(false);
 
     useEffect(() => {
         const loadSettings = async () => {
             const { data } = await supabase
                 .from("app_settings")
-                .select("mesas, barra, whatsapp")
+                .select("mesas, barra, whatsapp, plato_del_dia_id")
                 .eq("id", 1)
                 .single();
             if (data) {
                 setMesas(data.mesas);
                 setBarra(data.barra);
                 setPhone(data.whatsapp);
+                if (data.plato_del_dia_id) setSelectedPlatoDia(data.plato_del_dia_id);
             }
-            // Load F-key actions from localStorage
             const savedF1 = localStorage.getItem('bloom_f1_action') as ComparisonType | null;
             const savedF2 = localStorage.getItem('bloom_f2_action') as ComparisonType | null;
             if (savedF1) setF1Action(savedF1);
             if (savedF2) setF2Action(savedF2);
+
+            // Load Platos Diarios products
+            const { data: catData } = await supabase
+                .from('categories')
+                .select('id')
+                .ilike('name', '%plato%diario%')
+                .single();
+            if (catData) {
+                const { data: prods } = await supabase
+                    .from('products')
+                    .select('id, name, image_url, kind')
+                    .eq('category_id', catData.id)
+                    .eq('active', true)
+                    .order('name');
+                if (prods) {
+                    setPlatoDiaProducts(prods);
+                    const featured = prods.find((p: any) => p.kind === 'plato_del_dia');
+                    if (featured) setSelectedPlatoDia(featured.id);
+                }
+            }
             setIsLoading(false);
         };
         loadSettings();
     }, []);
+
+    const handleSavePlatoDia = async (productId: string) => {
+        setSavingPlatoDia(true);
+        setSelectedPlatoDia(productId);
+        // Guardar en app_settings
+        const { error } = await supabase
+            .from('app_settings')
+            .update({ plato_del_dia_id: productId, updated_at: new Date().toISOString() })
+            .eq('id', 1);
+        if (error) {
+            // Si la columna no existe aún, intentar con kind en products
+            await supabase.from('products').update({ kind: 'plato_del_dia' }).eq('id', productId);
+            console.error('app_settings error:', error.message);
+        }
+        setSavingPlatoDia(false);
+    };
 
     const handleSave = async () => {
         setIsLoading(true);
@@ -257,6 +297,59 @@ export default function SettingsPage() {
                     <p className="text-[11px] text-gray-400 font-medium mt-4">
                         Presioná F1 o F2 en cualquier pantalla del dashboard (fuera del POS) para ver la comparativa configurada.
                     </p>
+                </section>
+
+                {/* PLATO DEL DÍA */}
+                <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500">
+                            <Star size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-gray-900">Plato del Día</h2>
+                            <p className="text-xs text-gray-400 font-medium mt-0.5">El plato seleccionado se destacará en el menú público</p>
+                        </div>
+                        {savingPlatoDia && <span className="ml-auto text-xs text-gray-400 animate-pulse">Guardando...</span>}
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {platoDiaProducts.map(product => {
+                            const isSelected = selectedPlatoDia === product.id;
+                            return (
+                                <button
+                                    key={product.id}
+                                    onClick={() => handleSavePlatoDia(product.id)}
+                                    className={`relative rounded-2xl border-2 overflow-hidden transition-all duration-200 flex flex-col text-left ${
+                                        isSelected ? 'border-orange-500 shadow-lg shadow-orange-100' : 'border-gray-100 hover:border-gray-300'
+                                    }`}
+                                >
+                                    <div className="relative h-28 bg-gray-100 w-full">
+                                        {product.image_url ? (
+                                            <Image src={product.image_url} alt={product.name} fill className="object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-3xl">🍽️</div>
+                                        )}
+                                        {isSelected && (
+                                            <div className="absolute inset-0 bg-orange-500/20 flex items-center justify-center">
+                                                <div className="bg-orange-500 rounded-full p-1">
+                                                    <Check size={16} className="text-white" strokeWidth={3} />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="p-3">
+                                        <p className={`text-xs font-black leading-tight ${isSelected ? 'text-orange-600' : 'text-gray-700'}`}>
+                                            {product.name}
+                                        </p>
+                                        {isSelected && (
+                                            <span className="inline-block mt-1 text-[10px] font-black uppercase bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
+                                                ⭐ Plato del día
+                                            </span>
+                                        )}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </section>
 
                 {/* DEVICE & DATA */}

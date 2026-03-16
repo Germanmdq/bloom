@@ -25,12 +25,12 @@ export function HeroSection() {
             </nav>
 
             <div className="hero-container">
-                {/* Columna B: Café con latte art */}
+                {/* Columna B: Vasos Bloom */}
                 <div className="hero-column">
                     <div className="hero-letter">B</div>
                     <Image
-                        src="/images/hero/hero-latte-art.png"
-                        alt="Café con arte"
+                        src="/images/hero/bloom-cups-hero.png"
+                        alt="Vasos Bloom Coffee & More"
                         fill
                         className="hero-image"
                         sizes="(max-width: 768px) 100vw, 20vw"

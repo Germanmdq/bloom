@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, MessageCircle, QrCode } from "lucide-react";
+import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, QrCode, X } from "lucide-react";
+import { useUserRole } from "@/lib/hooks/use-pos-data";
 
 const links = [
     { href: "/dashboard/tables", label: "Mesas", icon: LayoutGrid },
@@ -17,9 +18,12 @@ const links = [
     { href: "/dashboard/settings", label: "Ajustes", icon: Settings },
 ];
 
-import { useUserRole } from "@/lib/hooks/use-pos-data";
+interface SidebarProps {
+    open: boolean;
+    onClose: () => void;
+}
 
-export function Sidebar() {
+export function Sidebar({ open, onClose }: SidebarProps) {
     const pathname = usePathname();
     const { data: role = 'WAITER' } = useUserRole();
 
@@ -31,34 +35,58 @@ export function Sidebar() {
     });
 
     return (
-        <div className="w-80 h-full flex flex-col p-6 bg-white/50 backdrop-blur-3xl border-r border-white/20">
-            <div className="mb-10 px-4">
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Bloom OS</h1>
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">v2.0 Premium</span>
-                    {role === 'ADMIN' && <span className="bg-black text-[#FFD60A] text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Admin</span>}
-                </div>
-            </div>
+        <>
+            {/* Overlay en mobile */}
+            {open && (
+                <div
+                    className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+                    onClick={onClose}
+                />
+            )}
 
-            <nav className="flex-1 space-y-2">
-                {filteredLinks.map((link) => {
-                    const isActive = pathname.startsWith(link.href);
-                    const Icon = link.icon;
-                    return (
-                        <Link key={link.href} href={link.href}>
-                            <div
-                                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
+            {/* Sidebar */}
+            <div className={`
+                fixed md:relative z-40 top-0 left-0 h-full
+                w-72 flex flex-col p-6 bg-white/80 backdrop-blur-3xl border-r border-white/20
+                transition-transform duration-300 ease-in-out
+                ${open ? 'translate-x-0' : '-translate-x-full'}
+                md:translate-x-0 md:w-80
+            `}>
+                <div className="mb-10 px-4 flex items-start justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Bloom OS</h1>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-500">v2.0 Premium</span>
+                            {role === 'ADMIN' && <span className="bg-black text-[#FFD60A] text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Admin</span>}
+                        </div>
+                    </div>
+                    {/* Botón cerrar solo en mobile */}
+                    <button
+                        onClick={onClose}
+                        className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <nav className="flex-1 space-y-2">
+                    {filteredLinks.map((link) => {
+                        const isActive = pathname.startsWith(link.href);
+                        const Icon = link.icon;
+                        return (
+                            <Link key={link.href} href={link.href} onClick={onClose}>
+                                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
                                     ? "bg-white shadow-sm text-gray-900 font-medium"
                                     : "text-gray-500 hover:bg-white/40 hover:text-gray-900"
-                                    }`}
-                            >
-                                <Icon size={20} className={isActive ? "text-accent" : "opacity-70"} />
-                                <span>{link.label}</span>
-                            </div>
-                        </Link>
-                    );
-                })}
-            </nav>
-        </div>
+                                }`}>
+                                    <Icon size={20} className={isActive ? "text-accent" : "opacity-70"} />
+                                    <span>{link.label}</span>
+                                </div>
+                            </Link>
+                        );
+                    })}
+                </nav>
+            </div>
+        </>
     );
 }

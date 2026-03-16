@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { WhatsAppNotificationListener } from "@/components/WhatsAppNotificationListener";
 import { Sidebar } from "@/components/dashboard/Sidebar";
-import { Lock, ShieldCheck, Delete } from "lucide-react";
+import { Lock, Delete, Menu } from "lucide-react";
 import { SalesComparisonPanel, ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import "./dashboard.css";
 
@@ -22,6 +22,7 @@ export default function DashboardLayout({
     }, []);
     const [unlockError, setUnlockError] = useState("");
     const [comparisonPanel, setComparisonPanel] = useState<ComparisonType | null>(null);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     useEffect(() => {
         if (isLocked) return;
@@ -113,9 +114,16 @@ export default function DashboardLayout({
 
             <div className="dashboard-scope flex h-screen w-full">
                 <WhatsAppNotificationListener />
-                <Sidebar />
-                <main className="flex-1 h-full overflow-y-auto p-8 relative">
-                    <div className="max-w-7xl mx-auto h-full">
+                <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+                <main className="flex-1 h-full overflow-y-auto relative">
+                    {/* Botón hamburguesa — solo mobile */}
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="md:hidden fixed top-4 left-4 z-20 w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-md border border-gray-100"
+                    >
+                        <Menu size={20} />
+                    </button>
+                    <div className="max-w-7xl mx-auto h-full p-4 pt-16 md:p-8">
                         {children}
                     </div>
                 </main>

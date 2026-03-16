@@ -18,7 +18,7 @@ interface VariantSelectorProps {
     product: any;
     isOpen: boolean;
     onClose: () => void;
-    onAddToOrder: (product: any, selectedVariants: any[]) => void;
+    onAddToOrder: (product: any, selectedVariants: any[], observations?: string) => void;
 }
 
 
@@ -120,6 +120,42 @@ const MOCK_VARIANTS: Record<string, VariantGroup[]> = {
                 { name: 'Queso Rallado Extra', price: 500 },
             ]
         }
+    ],
+    'Guarnicion': [
+        {
+            id: 'guarnicion',
+            name: 'Elegí tu Guarnición',
+            min: 1,
+            max: 1,
+            options: [
+                { name: 'Papas Fritas', price: 0 },
+                { name: 'Ensalada', price: 0 },
+                { name: 'Puré', price: 0 },
+            ]
+        }
+    ],
+    'Filet': [
+        {
+            id: 'preparacion',
+            name: 'Preparación',
+            min: 1,
+            max: 1,
+            options: [
+                { name: 'Empanado', price: 0 },
+                { name: 'A la romana', price: 0 },
+            ]
+        },
+        {
+            id: 'guarnicion',
+            name: 'Elegí tu Guarnición',
+            min: 1,
+            max: 1,
+            options: [
+                { name: 'Papas Fritas', price: 0 },
+                { name: 'Ensalada', price: 0 },
+                { name: 'Puré', price: 0 },
+            ]
+        }
     ]
 };
 
@@ -135,13 +171,30 @@ function getVariantsForProduct(product: any): VariantGroup[] {
     // Fallback Mock Logic
     const name = product.name.toLowerCase();
 
-    if (name.includes('milanesa') || name.includes('lomo') || name.includes('bife')) return MOCK_VARIANTS['Milanesa'];
-    if (name.includes('hamburguesa') || name.includes('burger')) return MOCK_VARIANTS['Hamburguesa'];
-    if (name.includes('pizza')) return MOCK_VARIANTS['Pizza'];
+    const bebidaGroup = {
+        id: 'bebida', name: 'Bebida (incluída)', min: 0, max: 1,
+        options: [
+            { name: 'Agua mineral', price: 0 },
+            { name: 'Gaseosa saborizada', price: 0 },
+            { name: 'Sin bebida', price: 0 },
+        ]
+    };
 
-    // Logic for new categories
+    // Bebida solo para el plato del día
+    const isPlataDelDia = product.kind === 'plato_del_dia';
+
+    if (name.includes('milanesa') || name.includes('lomo') || name.includes('bife')) return isPlataDelDia ? [...MOCK_VARIANTS['Milanesa'], bebidaGroup] : MOCK_VARIANTS['Milanesa'];
+    if (name.includes('hamburguesa') || name.includes('burger')) return isPlataDelDia ? [...MOCK_VARIANTS['Hamburguesa'], bebidaGroup] : MOCK_VARIANTS['Hamburguesa'];
+    if (name.includes('pizza')) return isPlataDelDia ? [...MOCK_VARIANTS['Pizza'], bebidaGroup] : MOCK_VARIANTS['Pizza'];
     if (name.includes('empanada')) return MOCK_VARIANTS['Empanada'];
-    if (name.includes('sorrentinos') || name.includes('ravioles') || name.includes('noquis') || name.includes('ñoquis') || name.includes('tallarines') || name.includes('spaghetti')) return MOCK_VARIANTS['Pasta'];
+    if (name.includes('sorrentinos') || name.includes('ravioles') || name.includes('noquis') || name.includes('ñoquis') || name.includes('tallarines') || name.includes('spaghetti')) return isPlataDelDia ? [...MOCK_VARIANTS['Pasta'], bebidaGroup] : MOCK_VARIANTS['Pasta'];
+    if (name.includes('filet')) return isPlataDelDia ? [...MOCK_VARIANTS['Filet'], bebidaGroup] : MOCK_VARIANTS['Filet'];
+    if (name.includes('guarnición') || name.includes('guarnicion') || name.includes('pechuga') || name.includes('patamuslo')) return isPlataDelDia ? [...MOCK_VARIANTS['Guarnicion'], bebidaGroup] : MOCK_VARIANTS['Guarnicion'];
+
+    // Solo para el plato del día sin variantes conocidas
+    if (isPlataDelDia) {
+        return [bebidaGroup];
+    }
 
     return [];
 }
@@ -149,15 +202,11 @@ function getVariantsForProduct(product: any): VariantGroup[] {
 
 export function VariantSelector({ product, isOpen, onClose, onAddToOrder }: VariantSelectorProps) {
     const [selections, setSelections] = useState<Record<string, VariantOption[]>>({});
+    const [observations, setObservations] = useState('');
 
     if (!isOpen || !product) return null;
 
     const variantGroups = getVariantsForProduct(product);
-
-    // If no variants found, auto-add and close (should be handled by parent, but safety check)
-    if (variantGroups.length === 0) {
-        // onAddToOrder(product, []); return null; // Avoid loop, handle in parent
-    }
 
     const toggleOption = (groupId: string, option: VariantOption, group: VariantGroup) => {
         setSelections(prev => {
@@ -187,10 +236,10 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder }: Vari
     const canSubmit = variantGroups.every(g => isGroupSatisfied(g));
 
     const handleConfirm = () => {
-        // Flatten selections
         const allSelected = Object.values(selections).flat();
-        onAddToOrder(product, allSelected);
-        setSelections({}); // Reset
+        onAddToOrder(product, allSelected, observations.trim());
+        setSelections({});
+        setObservations('');
     };
 
     const totalExtra = Object.values(selections).flat().reduce((acc, opt) => acc + (opt.price || 0), 0);
@@ -209,7 +258,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder }: Vari
                     </button>
                 </div>
 
-                {/* Groups */}
+                {/* Groups + Observaciones */}
                 <div className="p-6 overflow-y-auto space-y-8 flex-1">
                     {variantGroups.map(group => (
                         <div key={group.id}>
@@ -251,6 +300,21 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder }: Vari
                             </div>
                         </div>
                     ))}
+
+                    {/* Observaciones — siempre visible */}
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800 uppercase tracking-wide mb-3 flex items-center gap-2">
+                            📝 Observaciones
+                            <span className="text-xs font-medium text-gray-400 normal-case">(opcional)</span>
+                        </h3>
+                        <textarea
+                            value={observations}
+                            onChange={e => setObservations(e.target.value)}
+                            placeholder="Ej: sin cebolla, término jugoso, sin sal…"
+                            rows={3}
+                            className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-orange-300 resize-none transition-colors text-sm font-medium"
+                        />
+                    </div>
                 </div>
 
                 {/* Footer */}

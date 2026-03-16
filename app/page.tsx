@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Bike, CalendarDays, ChefHat, MapPin, Star, Clock, X, LogIn } from "lucide-react";
+import { ArrowRight, Bike, CalendarDays, MapPin, Star, X, LogIn } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -121,15 +121,21 @@ export default function Home() {
     const [showLogin, setShowLogin] = useState(false);
 
     return (
-        <main className="min-h-screen font-sans bg-white selection:bg-orange-500 selection:text-white">
+        <main className="min-h-screen font-sans bg-[#FAF7F2] selection:bg-orange-500 selection:text-white">
 
             <AnimatePresence>
                 {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
             </AnimatePresence>
 
             {/* --- NAVBAR --- */}
-            <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/60 to-transparent">
+            <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/70 to-transparent">
                 <span className="text-white font-black text-xl tracking-tighter drop-shadow-lg">BLOOM<span className="text-orange-500">.</span></span>
+                <div className="hidden sm:flex items-center gap-6 text-sm font-semibold text-white/80">
+                    <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
+                    <Link href="/menu" className="hover:text-white transition-colors">Menú</Link>
+                    <Link href="/menu?cat=Platos Diarios" className="hover:text-white transition-colors">Platos del Día</Link>
+                    <Link href="/menu?cat=Promociones" className="hover:text-white transition-colors">Promociones</Link>
+                </div>
                 <button
                     onClick={() => setShowLogin(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-white text-sm font-bold rounded-full transition-all hover:-translate-y-0.5 shadow-lg"
@@ -143,8 +149,8 @@ export default function Home() {
             <section className="relative h-[90vh] w-full flex items-center justify-center overflow-hidden bg-gray-900">
                 <div className="absolute inset-0 z-0">
                     <Image
-                        src="/images/bloom-interior-wide.png"
-                        alt="Bloom Atmosphere"
+                        src="/images/hero/bloom-cups-hero.png"
+                        alt="Bloom Coffee & More"
                         fill
                         className="object-cover brightness-[0.4]"
                         priority
@@ -185,55 +191,123 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* --- HIGHLIGHTS / BENTO GRID --- */}
-            <section className="py-24 bg-gray-50">
-                <div className="container mx-auto px-6">
-                    <FadeIn className="text-center mb-16">
-                        <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-4">
-                            Mucho más que un café.
-                        </h2>
-                        <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-                            En Bloom cuidamos cada detalle, desde el origen del grano hasta el último trazo de latte art.
-                        </p>
+            {/* --- MENU BENTO --- */}
+            <section className="py-20 bg-[#FAF7F2]">
+                <div className="container mx-auto px-4 md:px-6">
+                    <FadeIn className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                        <div>
+                            <span className="text-orange-600 font-bold tracking-widest uppercase text-sm">Nuestra Carta</span>
+                            <h2 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tighter leading-none mt-1">
+                                Mucho más<br />que un café.
+                            </h2>
+                        </div>
+                        <Link href="/menu">
+                            <button className="group flex items-center gap-2 px-6 py-3 bg-black text-white font-bold rounded-full hover:bg-orange-600 transition-all shrink-0">
+                                Ver menú completo <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        </Link>
                     </FadeIn>
 
-                    <div className="grid md:grid-cols-3 gap-6">
-                        <FadeIn delay={0.1} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col items-start gap-4 hover:scale-[1.02] transition-transform duration-500">
-                            <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mb-2">
-                                <ChefHat size={32} />
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900">Café de Especialidad</h3>
-                            <p className="text-gray-500 leading-relaxed">
-                                Granos seleccionados, molienda en el momento y preparaciones únicas. Cada taza es una experiencia.
-                            </p>
+                    {/* BENTO GRID */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 grid-rows-[auto] gap-3">
+
+                        {/* Card grande — Platos diarios */}
+                        <FadeIn delay={0.05} className="col-span-2 row-span-2 relative rounded-3xl overflow-hidden group cursor-pointer h-72 md:h-auto">
+                            <Link href="/menu?cat=Platos Diarios">
+                                <Image src="/images/categories/platos-diarios.png" alt="Platos Diarios" fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-6">
+                                    <span className="text-white/70 text-sm font-medium uppercase tracking-widest">Almuerzo & Cena</span>
+                                    <h3 className="text-white text-3xl font-black tracking-tight mt-1">Platos del Día</h3>
+                                    <p className="text-white/60 text-sm mt-1">Milanesas · Pastas · Platos caseros</p>
+                                </div>
+                            </Link>
                         </FadeIn>
 
-                        <FadeIn delay={0.2} className="bg-black text-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-900/20 flex flex-col items-start gap-4 hover:scale-[1.02] transition-transform duration-500 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white mb-2 backdrop-blur-sm">
-                                <Star size={32} />
-                            </div>
-                            <h3 className="text-2xl font-bold">Pastelería Artesanal</h3>
-                            <p className="text-gray-400 leading-relaxed">
-                                Tortas, alfajores y medialunas hechas cada mañana. Sin conservantes, con todo el sabor.
-                            </p>
+                        {/* Pastelería */}
+                        <FadeIn delay={0.1} className="relative rounded-3xl overflow-hidden group cursor-pointer h-44">
+                            <Link href="/menu?cat=Pastelería">
+                                <Image src="/images/categories/pasteleria.png" alt="Pastelería" fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-4">
+                                    <h3 className="text-white text-lg font-black">Pastelería</h3>
+                                </div>
+                            </Link>
                         </FadeIn>
 
-                        <FadeIn delay={0.3} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col items-start gap-4 hover:scale-[1.02] transition-transform duration-500">
-                            <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 mb-2">
-                                <Clock size={32} />
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900">Siempre Listos</h3>
-                            <p className="text-gray-500 leading-relaxed">
-                                Abierto todos los días. Desde el desayuno hasta la merienda, con delivery a domicilio.
-                            </p>
+                        {/* Desayunos */}
+                        <FadeIn delay={0.15} className="relative rounded-3xl overflow-hidden group cursor-pointer h-44">
+                            <Link href="/menu?cat=Desayunos">
+                                <Image src="/images/categories/desayunos.png" alt="Desayunos" fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-4">
+                                    <h3 className="text-white text-lg font-black">Desayunos</h3>
+                                </div>
+                            </Link>
                         </FadeIn>
+
+                        {/* Wraps */}
+                        <FadeIn delay={0.2} className="relative rounded-3xl overflow-hidden group cursor-pointer h-44">
+                            <Link href="/menu?cat=Wraps">
+                                <Image src="/images/categories/wraps.png" alt="Wraps" fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-4">
+                                    <h3 className="text-white text-lg font-black">Wraps</h3>
+                                </div>
+                            </Link>
+                        </FadeIn>
+
+                        {/* Empanadas */}
+                        <FadeIn delay={0.25} className="relative rounded-3xl overflow-hidden group cursor-pointer h-44">
+                            <Link href="/menu?cat=Empanadas">
+                                <Image src="/images/categories/empanadas.png" alt="Empanadas" fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-4">
+                                    <h3 className="text-white text-lg font-black">Empanadas</h3>
+                                </div>
+                            </Link>
+                        </FadeIn>
+
+                        {/* Jugos — ancho doble */}
+                        <FadeIn delay={0.3} className="col-span-2 relative rounded-3xl overflow-hidden group cursor-pointer h-44">
+                            <Link href="/menu?cat=Jugos">
+                                <Image src="/images/categories/jugos.png" alt="Jugos y Licuados" fill className="object-cover object-center group-hover:scale-105 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-6">
+                                    <span className="text-white/70 text-xs font-medium uppercase tracking-widest">Fríos & Naturales</span>
+                                    <h3 className="text-white text-2xl font-black mt-0.5">Jugos & Licuados</h3>
+                                </div>
+                            </Link>
+                        </FadeIn>
+
+                        {/* Pastas */}
+                        <FadeIn delay={0.35} className="relative rounded-3xl overflow-hidden group cursor-pointer h-44">
+                            <Link href="/menu?cat=Pastas">
+                                <Image src="/images/categories/pastas.png" alt="Pastas" fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-4">
+                                    <h3 className="text-white text-lg font-black">Pastas</h3>
+                                </div>
+                            </Link>
+                        </FadeIn>
+
+                        {/* Postres */}
+                        <FadeIn delay={0.4} className="relative rounded-3xl overflow-hidden group cursor-pointer h-44">
+                            <Link href="/menu?cat=Postres">
+                                <Image src="/images/categories/postres.png" alt="Postres" fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                <div className="absolute bottom-0 left-0 p-4">
+                                    <h3 className="text-white text-lg font-black">Postres</h3>
+                                </div>
+                            </Link>
+                        </FadeIn>
+
                     </div>
                 </div>
             </section>
 
             {/* --- FEATURED DISHES SPLIT SECTION --- */}
-            <section className="py-24 bg-white overflow-hidden">
+            <section className="py-24 bg-[#FAF7F2] overflow-hidden">
                 <div className="container mx-auto px-6">
                     <div className="flex flex-col lg:flex-row items-center gap-16">
                         <FadeIn className="lg:w-1/2 relative">
@@ -249,8 +323,8 @@ export default function Home() {
                                         <Star className="text-orange-500 fill-orange-500" size={16} />
                                         <span className="font-bold text-sm">Lo más pedido</span>
                                     </div>
-                                    <p className="font-bold text-gray-900 text-lg">Latte de Vainilla</p>
-                                    <p className="text-gray-500 text-sm">Con leche oat y espresso doble. El favorito.</p>
+                                    <p className="font-bold text-gray-900 text-lg">Submarino</p>
+                                    <p className="text-gray-500 text-sm">Chocolate artesanal con leche caliente. El favorito.</p>
                                 </div>
                             </div>
                         </FadeIn>
@@ -307,7 +381,7 @@ export default function Home() {
             </section>
 
             {/* --- LOCATION & FOOTER --- */}
-            <footer className="bg-white border-t border-gray-100 pt-20 pb-10">
+            <footer className="bg-[#FAF7F2] border-t border-amber-100/60 pt-20 pb-10">
                 <div className="container mx-auto px-6">
                     <div className="grid md:grid-cols-4 gap-12 mb-16">
                         <div className="col-span-1 md:col-span-2">
