@@ -35,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${raleway.variable} ${openSans.variable} ${playfair.variable} ${inter.variable} antialiased text-[#334862] bg-white`} suppressHydrationWarning>
+      <body className={`${raleway.variable} ${openSans.variable} ${playfair.variable} ${inter.variable} antialiased text-[#334862] bg-[#FAF7F2]`} suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

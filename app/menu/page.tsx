@@ -214,17 +214,57 @@ function PublicMenuPage() {
 
         setIsPaying(true);
         try {
-            const response = await fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items: cart, customer: !tableId ? checkoutInfo : null }),
+            const total = cart.reduce((acc, i) => acc + i.price * i.quantity, 0);
+            const items = cart.map(i => ({
+                name: i.name,
+                quantity: i.quantity,
+                price: i.price,
+                variants: i.variants || [],
+                observations: i.observations || '',
+            }));
+
+            // Armar info de entrega legible
+            let deliveryInfo = '';
+            if (checkoutInfo.type === 'tribunales') {
+                const edif = TRIBUNALES_EDIFICIOS.find(e => e.id === checkoutInfo.tEdificio);
+                deliveryInfo = [
+                    `Edificio: ${edif?.label ?? checkoutInfo.tEdificio}`,
+                    checkoutInfo.tPiso ? `Piso: ${checkoutInfo.tPiso}` : '',
+                    checkoutInfo.tOficina ? `Oficina: ${checkoutInfo.tOficina}` : '',
+                    `Receptor: ${checkoutInfo.tReceptor}`,
+                    checkoutInfo.tMesaEntradas ? 'Dejar en Mesa de Entradas' : 'Llamar al llegar',
+                ].filter(Boolean).join(' | ');
+            } else if (checkoutInfo.type === 'delivery') {
+                deliveryInfo = `Delivery a: ${checkoutInfo.address}`;
+            } else {
+                deliveryInfo = 'Retiro en local';
+            }
+
+            // Guardar pedido en orders
+            const { error: orderError } = await supabase.from('orders').insert({
+                customer_name: checkoutInfo.name,
+                customer_phone: checkoutInfo.phone,
+                delivery_type: checkoutInfo.type,
+                delivery_info: deliveryInfo,
+                items,
+                total,
+                status: 'PENDING',
+                order_type: 'WEB',
             });
-            const data = await response.json();
-            if (data.url) window.location.href = data.url;
-            else { toast.error("Error iniciando pago"); setIsPaying(false); }
+
+            if (orderError) {
+                console.error('Error guardando pedido:', orderError);
+                // Igual mostramos confirmación al cliente
+            }
+
+            setOrderSent(true);
+            setIsCartOpen(false);
+            setCart([]);
+            setShowCheckoutForm(false);
         } catch (error) {
             console.error(error);
-            toast.error("Error de conexión");
+            toast.error("Error al confirmar el pedido, intentá de nuevo");
+        } finally {
             setIsPaying(false);
         }
     };
@@ -283,23 +323,61 @@ function PublicMenuPage() {
     if (loading) return <div className="min-h-screen bg-white flex items-center justify-center"><div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" /></div>;
 
     if (orderSent) return (
-        <div className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-6">
-            <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-xl">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span className="text-4xl">✓</span>
+        <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-6">
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl border border-amber-100/60 space-y-4">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <span className="text-4xl">✅</span>
                 </div>
-                <h1 className="text-3xl font-black text-gray-900 mb-2">¡Pedido enviado!</h1>
-                <p className="text-gray-500 font-medium mb-1">
-                    Tu pedido fue enviado a cocina.
-                </p>
-                {tableLabel && (
-                    <p className="text-lg font-black text-gray-900 mt-4 bg-gray-100 rounded-2xl py-3 px-6 inline-block">
-                        {tableLabel}
-                    </p>
+                <div>
+                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">¡Pedido confirmado!</h1>
+                    {checkoutInfo.name && (
+                        <p className="text-gray-500 mt-1">Gracias, <strong>{checkoutInfo.name}</strong></p>
+                    )}
+                </div>
+
+                {tableLabel ? (
+                    <div className="bg-gray-50 rounded-2xl py-3 px-5">
+                        <p className="text-sm text-gray-400">Mesa</p>
+                        <p className="text-xl font-black text-gray-900">{tableLabel}</p>
+                        <p className="text-sm text-gray-400 mt-1">En breve el mozo se acerca.</p>
+                    </div>
+                ) : checkoutInfo.type === 'tribunales' ? (
+                    <div className="bg-amber-50 border border-amber-100 rounded-2xl py-4 px-5 text-left space-y-1">
+                        <p className="text-xs font-black text-amber-600 uppercase tracking-wide mb-2">⚖️ Entrega en Tribunales</p>
+                        {(() => {
+                            const edif = TRIBUNALES_EDIFICIOS.find(e => e.id === checkoutInfo.tEdificio);
+                            return (
+                                <>
+                                    <p className="text-sm font-bold text-gray-800">{edif?.label}</p>
+                                    {checkoutInfo.tPiso && <p className="text-sm text-gray-600">{checkoutInfo.tPiso}</p>}
+                                    {checkoutInfo.tOficina && <p className="text-sm text-gray-600">{checkoutInfo.tOficina}</p>}
+                                    <p className="text-sm text-gray-600">Receptor: <strong>{checkoutInfo.tReceptor}</strong></p>
+                                    <p className="text-xs text-gray-400">{checkoutInfo.tMesaEntradas ? '📋 Dejar en Mesa de Entradas' : '📞 Llamar al llegar'}</p>
+                                </>
+                            );
+                        })()}
+                    </div>
+                ) : checkoutInfo.type === 'delivery' ? (
+                    <div className="bg-blue-50 border border-blue-100 rounded-2xl py-3 px-5 text-left">
+                        <p className="text-xs font-black text-blue-500 uppercase tracking-wide mb-1">🛵 Delivery</p>
+                        <p className="text-sm font-bold text-gray-800">{checkoutInfo.address}</p>
+                    </div>
+                ) : (
+                    <div className="bg-gray-50 rounded-2xl py-3 px-5">
+                        <p className="text-sm font-bold text-gray-700">🏃 Retiro en local</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Te avisamos cuando esté listo</p>
+                    </div>
                 )}
-                <p className="text-sm text-gray-400 mt-6">
-                    En breve el mozo se acerca con tu pedido.
+
+                <p className="text-xs text-gray-400 pt-2">
+                    Nos ponemos en contacto a la brevedad.
                 </p>
+                <button
+                    onClick={() => { setOrderSent(false); setCheckoutInfo({ name: '', phone: '', address: '', type: 'delivery', tEdificio: '', tPiso: '', tOficina: '', tReceptor: '', tMesaEntradas: false }); }}
+                    className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-2xl transition-colors text-sm"
+                >
+                    Hacer otro pedido
+                </button>
             </div>
         </div>
     );
