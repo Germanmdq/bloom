@@ -186,7 +186,7 @@ export default function TablesPage() {
             />
 
             {/* STATS BAR */}
-            <div className="grid grid-cols-3 gap-3 shrink-0">
+            <div className="flex gap-3 shrink-0 overflow-x-auto no-scrollbar pb-1">
                 <StatCard
                     icon={<Monitor size={16} className="text-emerald-600" />}
                     label="Ocupación"
@@ -254,7 +254,7 @@ export default function TablesPage() {
             )}
 
             {/* FAB: nuevo pedido delivery/retiro */}
-            <div className="fixed bottom-8 right-8 z-30 flex flex-col items-end gap-2">
+            <div className="fixed bottom-20 right-5 md:bottom-8 md:right-8 z-30 flex flex-col items-end gap-2">
                 {showNewMenu && (
                     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col">
                         <button
@@ -287,7 +287,7 @@ export default function TablesPage() {
 // ─── STAT CARD ────────────────────────────────────────────────────
 function StatCard({ icon, label, value, sub, accent }: { icon: React.ReactNode; label: string; value: string; sub: string; accent: string }) {
     return (
-        <div className={`flex items-center gap-3 p-4 rounded-2xl border bg-white ${accent}`}>
+        <div className={`flex items-center gap-3 p-4 rounded-2xl border bg-white shrink-0 min-w-[140px] flex-1 ${accent}`}>
             <div className="p-2 rounded-xl bg-white shadow-sm border border-white/80 shrink-0">{icon}</div>
             <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 truncate">{label}</p>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { WhatsAppNotificationListener } from "@/components/WhatsAppNotificationListener";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { MobileBottomNav } from "@/components/dashboard/MobileBottomNav";
 import { Lock, Delete, Menu } from "lucide-react";
 import { SalesComparisonPanel, ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import "./dashboard.css";
@@ -116,17 +117,12 @@ export default function DashboardLayout({
                 <WhatsAppNotificationListener />
                 <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
                 <main className="flex-1 h-full overflow-y-auto relative">
-                    {/* Botón hamburguesa — solo mobile */}
-                    <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="md:hidden fixed top-4 left-4 z-20 w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-md border border-gray-100"
-                    >
-                        <Menu size={20} />
-                    </button>
-                    <div className="max-w-7xl mx-auto h-full p-4 pt-16 md:p-8">
+                    <div className="max-w-7xl mx-auto h-full p-4 pb-20 md:p-8 md:pb-8">
                         {children}
                     </div>
                 </main>
+                {/* Barra inferior mobile */}
+                <MobileBottomNav onMoreClick={() => setSidebarOpen(true)} />
             </div>
 
             {comparisonPanel && (

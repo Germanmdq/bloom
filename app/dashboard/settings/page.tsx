@@ -102,22 +102,22 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="p-8 max-w-5xl mx-auto space-y-8">
-            <header className="flex items-center justify-between">
+        <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
+            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">Ajustes & Configuración</h1>
-                    <p className="text-gray-500 font-medium">Personaliza el comportamiento de tu sistema POS.</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight mb-1">Ajustes</h1>
+                    <p className="text-gray-500 font-medium text-sm">Configurá tu sistema POS.</p>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={isLoading}
-                    className="bg-black text-[#FFD60A] px-8 py-4 rounded-2xl font-black flex items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-50"
+                    className="bg-black text-[#FFD60A] px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-50 self-start sm:self-auto"
                 >
-                    {isLoading ? "Guardando..." : <><Save size={20} /> Guardar Cambios</>}
+                    {isLoading ? "Guardando..." : <><Save size={18} /> Guardar</>}
                 </button>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* RESTAURANT PROFILE */}
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
