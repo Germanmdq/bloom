@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, ChevronLeft, Plus, Minus, X, Search, MessageCircle, Bike, CreditCard, User } from "lucide-react";
 import { CustomerAuthModal } from "@/components/Menu/CustomerAuthModal";
+import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
 import { VariantSelector } from "@/components/pos/VariantSelector"; // Reusing logic
 // Font (assuming Inter is global, but styling explicitly)
@@ -950,6 +951,7 @@ function PublicMenuPage() {
                     </>
                 )}
             </AnimatePresence>
+            <SiteFooter />
         </main>
     );
 }
