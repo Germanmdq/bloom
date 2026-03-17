@@ -279,73 +279,36 @@ function PublicMenuPage() {
         if (cart.length === 0 || !tableId) return;
         setIsPaying(true);
         try {
-            const newItems = cart.map(i => ({
+            const items = cart.map(i => ({
                 name: i.name,
                 quantity: i.quantity,
                 price: i.price,
                 variants: i.variants || [],
                 observations: i.observations || '',
             }));
-            const newTotal = cart.reduce((acc, i) => acc + i.price * i.quantity, 0);
+            const total = cart.reduce((acc, i) => acc + i.price * i.quantity, 0);
 
-            // Fetch existing table data to accumulate items and total
-            const { data: tableData } = await supabase
-                .from('salon_tables')
-                .select('items, total')
-                .eq('id', tableId)
-                .single();
-
-            const existingItems = Array.isArray(tableData?.items) ? tableData.items : [];
-            const existingTotal = Number(tableData?.total) || 0;
-
-            // Merge items and accumulate total
-            const mergedItems = [...existingItems, ...newItems];
-            const mergedTotal = existingTotal + newTotal;
-
-            // Send to kitchen
-            const { error: kitchenError } = await supabase.from('kitchen_tickets').insert({
-                table_id: tableId,
-                items: newItems,
-                status: 'PENDING',
+            // Use server-side API route — more reliable than direct Supabase client
+            const res = await fetch('/api/table-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tableId, items, total }),
             });
-            if (kitchenError) {
-                toast.error(`Error al enviar a cocina: ${kitchenError.message}`);
+
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                toast.error(data.error || 'Error al enviar el pedido');
                 setIsPaying(false);
                 return;
-            }
-
-            // Upsert table: try with items first, fall back without if column missing
-            const { error: tableError } = await supabase.from('salon_tables')
-                .upsert({
-                    id: tableId,
-                    status: 'OCCUPIED',
-                    total: mergedTotal,
-                    items: mergedItems,
-                    updated_at: new Date().toISOString(),
-                }, { onConflict: 'id' });
-
-            if (tableError) {
-                // Fallback without items column
-                const { error: fallbackError } = await supabase.from('salon_tables')
-                    .upsert({
-                        id: tableId,
-                        status: 'OCCUPIED',
-                        total: mergedTotal,
-                        updated_at: new Date().toISOString(),
-                    }, { onConflict: 'id' });
-                if (fallbackError) {
-                    toast.error(`Error actualizando mesa: ${fallbackError.message}`);
-                    setIsPaying(false);
-                    return;
-                }
             }
 
             setOrderSent(true);
             setIsCartOpen(false);
             setCart([]);
         } catch (error) {
-            console.error(error);
-            toast.error("Error al enviar el pedido, intentá de nuevo");
+            console.error('[handleTableCheckout]', error);
+            toast.error('Error de red. Verificá tu conexión e intentá de nuevo.');
         } finally {
             setIsPaying(false);
         }
