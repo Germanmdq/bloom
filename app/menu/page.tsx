@@ -50,8 +50,32 @@ function PublicMenuPage() {
 
     // Checkout form state
     const [showCheckoutForm, setShowCheckoutForm] = useState(false);
-    const [checkoutInfo, setCheckoutInfo] = useState({ name: '', phone: '', address: '', type: 'delivery' as 'delivery' | 'retiro' });
+    const [checkoutInfo, setCheckoutInfo] = useState({
+        name: '', phone: '', address: '',
+        type: 'delivery' as 'delivery' | 'retiro' | 'tribunales',
+        tEdificio: '',
+        tPiso: '',
+        tOficina: '',
+        tReceptor: '',
+        tMesaEntradas: false,
+    });
     const [checkoutErrors, setCheckoutErrors] = useState<Record<string, string>>({});
+
+    const TRIBUNALES_EDIFICIOS = [
+        { id: 'central',  label: 'Edificio Central',       sub: 'Alte. Brown 2046' },
+        { id: 'civiles',  label: 'Anexo Civiles',          sub: 'Alte. Brown 2241 / 2257' },
+        { id: 'abogados', label: 'Colegio de Abogados',    sub: 'Alte. Brown 1958' },
+        { id: 'federal',  label: 'Justicia Federal',       sub: 'Alte. Brown 1762' },
+    ];
+    const TRIBUNALES_PISOS_CENTRAL = [
+        'Subsuelo — Administración / Arquitectura',
+        'Planta Baja — Informes / Seguridad / Mesa de Entradas',
+        'Piso 1 — Juzgados de Garantías (1, 2 o 3)',
+        'Piso 2 — Juzgados de Garantías (4, 5 o 6)',
+        'Piso 3 — Juzgados Correccionales (2, 3, 4 o 5)',
+        'Piso 4 — Juzgado de Ejecución Penal N° 2',
+        'Piso 7 — Juzgado de Ejecución Penal N° 1 / Correccional N° 1',
+    ];
 
     // Variant Selection State
     const [variantProduct, setVariantProduct] = useState<any>(null);
@@ -173,6 +197,10 @@ function PublicMenuPage() {
         if (!checkoutInfo.name.trim()) errors.name = 'Ingresá tu nombre';
         if (!checkoutInfo.phone.trim()) errors.phone = 'Ingresá tu teléfono';
         if (checkoutInfo.type === 'delivery' && !checkoutInfo.address.trim()) errors.address = 'Ingresá la dirección de entrega';
+        if (checkoutInfo.type === 'tribunales') {
+            if (!checkoutInfo.tEdificio) errors.tEdificio = 'Seleccioná el edificio';
+            if (!checkoutInfo.tReceptor.trim()) errors.tReceptor = 'Ingresá el nombre de quien recibe';
+        }
         setCheckoutErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -638,20 +666,24 @@ function PublicMenuPage() {
                                     <div className="space-y-3 bg-white rounded-2xl p-4 border border-gray-100">
                                         <p className="font-black text-gray-900 text-sm">¿Cómo recibís el pedido?</p>
 
-                                        {/* Tipo */}
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {(['delivery', 'retiro'] as const).map(t => (
+                                        {/* Tipo — 3 opciones */}
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {([
+                                                { id: 'delivery',    label: '🛵 Delivery' },
+                                                { id: 'tribunales',  label: '⚖️ Tribunales' },
+                                                { id: 'retiro',      label: '🏃 Retiro' },
+                                            ] as const).map(t => (
                                                 <button
-                                                    key={t}
-                                                    onClick={() => setCheckoutInfo(p => ({ ...p, type: t }))}
-                                                    className={`py-2.5 rounded-xl font-bold text-sm transition-all ${checkoutInfo.type === t ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}
+                                                    key={t.id}
+                                                    onClick={() => setCheckoutInfo(p => ({ ...p, type: t.id, tEdificio: '', tPiso: '', tOficina: '', tReceptor: '', tMesaEntradas: false }))}
+                                                    className={`py-2.5 rounded-xl font-bold text-xs transition-all ${checkoutInfo.type === t.id ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}
                                                 >
-                                                    {t === 'delivery' ? '🛵 Delivery' : '🏃 Retiro en local'}
+                                                    {t.label}
                                                 </button>
                                             ))}
                                         </div>
 
-                                        {/* Nombre */}
+                                        {/* Nombre + Teléfono siempre visibles */}
                                         <div>
                                             <input
                                                 type="text"
@@ -662,8 +694,6 @@ function PublicMenuPage() {
                                             />
                                             {checkoutErrors.name && <p className="text-red-500 text-xs mt-1">{checkoutErrors.name}</p>}
                                         </div>
-
-                                        {/* Teléfono */}
                                         <div>
                                             <input
                                                 type="tel"
@@ -686,6 +716,80 @@ function PublicMenuPage() {
                                                     className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${checkoutErrors.address ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
                                                 />
                                                 {checkoutErrors.address && <p className="text-red-500 text-xs mt-1">{checkoutErrors.address}</p>}
+                                            </div>
+                                        )}
+
+                                        {/* ⚖️ TRIBUNALES form */}
+                                        {checkoutInfo.type === 'tribunales' && (
+                                            <div className="space-y-3 pt-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-black text-gray-500 uppercase tracking-wide">1. Edificio</span>
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {TRIBUNALES_EDIFICIOS.map(e => (
+                                                        <button
+                                                            key={e.id}
+                                                            onClick={() => setCheckoutInfo(p => ({ ...p, tEdificio: e.id, tPiso: '' }))}
+                                                            className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 text-left transition-all ${checkoutInfo.tEdificio === e.id ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-gray-50 hover:border-orange-200'}`}
+                                                        >
+                                                            <div>
+                                                                <p className={`font-bold text-sm ${checkoutInfo.tEdificio === e.id ? 'text-orange-700' : 'text-gray-800'}`}>{e.label}</p>
+                                                                <p className="text-xs text-gray-400">{e.sub}</p>
+                                                            </div>
+                                                            {checkoutInfo.tEdificio === e.id && <span className="text-orange-500 text-lg">✓</span>}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                {checkoutErrors.tEdificio && <p className="text-red-500 text-xs">{checkoutErrors.tEdificio}</p>}
+
+                                                {/* Piso (solo Edificio Central) */}
+                                                {checkoutInfo.tEdificio === 'central' && (
+                                                    <div>
+                                                        <p className="text-xs font-black text-gray-500 uppercase tracking-wide mb-2">2. Piso / Área</p>
+                                                        <div className="space-y-1.5">
+                                                            {TRIBUNALES_PISOS_CENTRAL.map(piso => (
+                                                                <button
+                                                                    key={piso}
+                                                                    onClick={() => setCheckoutInfo(p => ({ ...p, tPiso: piso }))}
+                                                                    className={`w-full text-left px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${checkoutInfo.tPiso === piso ? 'border-orange-500 bg-orange-50 font-bold text-orange-700' : 'border-gray-100 bg-gray-50 text-gray-700 hover:border-orange-200'}`}
+                                                                >
+                                                                    {piso}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Datos del destinatario */}
+                                                <div>
+                                                    <p className="text-xs font-black text-gray-500 uppercase tracking-wide mb-2">{checkoutInfo.tEdificio === 'central' ? '3.' : '2.'} Datos para el repartidor</p>
+                                                    <div className="space-y-2">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Juzgado / Oficina (ej: Garantías 4)"
+                                                            value={checkoutInfo.tOficina}
+                                                            onChange={e => setCheckoutInfo(p => ({ ...p, tOficina: e.target.value }))}
+                                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-medium outline-none focus:border-orange-400 transition-all"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Nombre de quien recibe *"
+                                                            value={checkoutInfo.tReceptor}
+                                                            onChange={e => setCheckoutInfo(p => ({ ...p, tReceptor: e.target.value }))}
+                                                            className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${checkoutErrors.tReceptor ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                                        />
+                                                        {checkoutErrors.tReceptor && <p className="text-red-500 text-xs">{checkoutErrors.tReceptor}</p>}
+                                                        <button
+                                                            onClick={() => setCheckoutInfo(p => ({ ...p, tMesaEntradas: !p.tMesaEntradas }))}
+                                                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-sm font-bold ${checkoutInfo.tMesaEntradas ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-600'}`}
+                                                        >
+                                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${checkoutInfo.tMesaEntradas ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
+                                                                {checkoutInfo.tMesaEntradas && <span className="text-white text-xs font-black">✓</span>}
+                                                            </div>
+                                                            Dejar en Mesa de Entradas
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
