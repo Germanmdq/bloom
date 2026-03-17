@@ -123,14 +123,9 @@ const MOCK_VARIANTS: Record<string, VariantGroup[]> = {
         {
             id: 'gusto_empanada', name: 'Elige el Gusto', min: 1, max: 12,
             options: [
-                { name: 'Carne Suave', price: 0 },
-                { name: 'Carne Picante', price: 0 },
+                { name: 'Carne', price: 0 },
                 { name: 'Jamón y Queso', price: 0 },
-                { name: 'Pollo', price: 0 },
-                { name: 'Verdura', price: 0 },
-                { name: 'Roquefort', price: 0 },
-                { name: 'Humita', price: 0 },
-                { name: 'Caprese', price: 0 },
+                { name: 'Choclo', price: 0 },
             ]
         }
     ],
