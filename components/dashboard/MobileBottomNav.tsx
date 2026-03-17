@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, ListChecks, Coffee, Settings, MoreHorizontal } from "lucide-react";
+import { LayoutGrid, ListChecks, Coffee, Settings, CalendarDays, MoreHorizontal } from "lucide-react";
 
 const mainLinks = [
-    { href: "/dashboard/tables",   label: "Mesas",    icon: LayoutGrid },
-    { href: "/dashboard/orders",   label: "Historial", icon: ListChecks },
-    { href: "/dashboard/products", label: "Menú",     icon: Coffee },
-    { href: "/dashboard/settings", label: "Ajustes",  icon: Settings },
+    { href: "/dashboard/tables",       label: "Mesas",    icon: LayoutGrid },
+    { href: "/dashboard/reservations", label: "Reservas", icon: CalendarDays },
+    { href: "/dashboard/orders",       label: "Historial", icon: ListChecks },
+    { href: "/dashboard/settings",     label: "Ajustes",  icon: Settings },
 ];
 
 interface MobileBottomNavProps {

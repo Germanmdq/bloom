@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Order } from "@/lib/types";
 import * as XLSX from "xlsx";
-import { Loader2, Receipt, Calendar, ChevronRight, X, Filter, Download } from "lucide-react";
+import { Loader2, Calendar, X, Filter, Download, Bike, Store, Building2, UtensilsCrossed } from "lucide-react";
 import { getPaymentIcon, getPaymentLabel } from "@/lib/utils/payment";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,7 +16,16 @@ interface GroupedData {
     orders: Order[];
     total: number;
     count: number;
-    date: Date; // For sorting
+    date: Date;
+}
+
+function orderTypeLabel(order: any) {
+    const t = order.delivery_type || order.order_type;
+    if (t === "tribunales") return { label: "Tribunales", icon: <Building2 size={13} /> };
+    if (t === "delivery")   return { label: "Delivery",   icon: <Bike size={13} /> };
+    if (t === "retiro")     return { label: "Retiro",     icon: <Store size={13} /> };
+    if (order.table_id)     return { label: `Mesa ${order.table_id}`, icon: <UtensilsCrossed size={13} /> };
+    return { label: "Web", icon: <Store size={13} /> };
 }
 
 export function OrderList() {
@@ -25,26 +33,18 @@ export function OrderList() {
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>('day');
     const [selectedGroup, setSelectedGroup] = useState<GroupedData | null>(null);
-    const supabase = createClient();
+    const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
-    useEffect(() => {
-        fetchOrders();
-    }, []);
+    useEffect(() => { fetchOrders(); }, []);
 
     async function fetchOrders() {
         setLoading(true);
         try {
-            const response = await fetch('/api/orders/list');
-            const result = await response.json();
-
-            if (response.ok && result.data) {
-                setOrders(result.data as Order[]);
-            } else {
-                console.error("Failed to fetch orders via API:", result.error);
-                // Fallback to client-side just in case? Or error toast.
-            }
-        } catch (error) {
-            console.error("Fetch error:", error);
+            const res = await fetch('/api/orders/list');
+            const result = await res.json();
+            if (res.ok && result.data) setOrders(result.data as Order[]);
+        } catch (e) {
+            console.error(e);
         } finally {
             setLoading(false);
         }
@@ -52,149 +52,74 @@ export function OrderList() {
 
     const exportToExcel = () => {
         if (orders.length === 0) return;
-
-        const detailRows: any[] = [];
+        const rows: any[] = [];
         let grandTotal = 0;
-
         orders.forEach((order: any) => {
             const date = new Date(order.created_at);
-            const dateStr = date.toLocaleDateString("es-AR");
-            const timeStr = date.toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' });
-            const items = order.items || [];
-
-            // Add to Grand Total
             grandTotal += Number(order.total);
-
+            const items = order.items || [];
             if (Array.isArray(items) && items.length > 0) {
                 items.forEach((item: any) => {
-                    detailRows.push({
-                        "Fecha": dateStr,
-                        "Hora": timeStr,
-                        "Mesa": order.table_id,
-                        "Orden #": order.id.slice(0, 8),
+                    rows.push({
+                        "Fecha": date.toLocaleDateString("es-AR"),
+                        "Hora": date.toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' }),
+                        "Cliente": order.customer_name || `Mesa ${order.table_id}`,
+                        "Tipo": orderTypeLabel(order).label,
                         "Método Pago": getPaymentLabel(order.payment_method),
                         "Producto": item.name,
                         "Cantidad": item.quantity || 1,
-                        "Precio Unit.": item.price || 0,
-                        "Subtotal Item": (item.price || 0) * (item.quantity || 1)
+                        "Precio": item.price || 0,
+                        "Subtotal": (item.price || 0) * (item.quantity || 1),
                     });
                 });
             } else {
-                detailRows.push({
-                    "Fecha": dateStr,
-                    "Hora": timeStr,
-                    "Mesa": order.table_id,
-                    "Orden #": order.id.slice(0, 8),
+                rows.push({
+                    "Fecha": date.toLocaleDateString("es-AR"),
+                    "Hora": date.toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' }),
+                    "Cliente": order.customer_name || `Mesa ${order.table_id}`,
+                    "Tipo": orderTypeLabel(order).label,
                     "Método Pago": getPaymentLabel(order.payment_method),
-                    "Producto": "Venta General",
-                    "Cantidad": 1,
-                    "Precio Unit.": order.total,
-                    "Subtotal Item": order.total
+                    "Producto": "Venta General", "Cantidad": 1,
+                    "Precio": order.total, "Subtotal": order.total,
                 });
             }
         });
-
-        // Summary Rows (e.g. Total by Payment Method)
-        const summaryByMethod = orders.reduce((acc: any, curr: any) => {
-            const method = getPaymentLabel(curr.payment_method);
-            acc[method] = (acc[method] || 0) + Number(curr.total);
-            return acc;
-        }, {});
-
-        const summaryRows = [
-            { "Concepto": "TOTAL FACTURADO", "Monto": grandTotal }, // Empty row for spacing
-            { "Concepto": "", "Monto": "" },
-            ...Object.keys(summaryByMethod).map(method => ({
-                "Concepto": `Total ${method}`,
-                "Monto": summaryByMethod[method]
-            })),
-            { "Concepto": "", "Monto": "" },
-            { "Concepto": "Cantidad de Órdenes", "Monto": orders.length }
-        ];
-
-        const workbook = XLSX.utils.book_new();
-
-        // Sheet 1: Resumen
-        const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
-        XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumen General");
-
-        // Sheet 2: Detalle (with footer total)
-        detailRows.push({}); // Space
-        detailRows.push({ "Producto": "TOTAL GENERAL", "Subtotal Item": grandTotal });
-
-        const detailSheet = XLSX.utils.json_to_sheet(detailRows);
-
-        // Auto-width columns roughly
-        const wscols = [
-            { wch: 12 }, { wch: 8 }, { wch: 6 }, { wch: 10 }, { wch: 15 },
-            { wch: 30 }, { wch: 8 }, { wch: 12 }, { wch: 12 }
-        ];
-        detailSheet['!cols'] = wscols;
-
-        XLSX.utils.book_append_sheet(workbook, detailSheet, "Detalle de Items");
-
-        // Filename: Reporte_Bloom_dia_mes.xlsx
-        const today = new Date();
-        const niceDate = today.toLocaleDateString('es-AR').replace(/\//g, '-');
-        XLSX.writeFile(workbook, `Reporte_Bloom_${niceDate}.xlsx`);
+        const wb = XLSX.utils.book_new();
+        rows.push({}, { "Producto": "TOTAL", "Subtotal": grandTotal });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Pedidos");
+        XLSX.writeFile(wb, `Bloom_${new Date().toLocaleDateString('es-AR').replace(/\//g, '-')}.xlsx`);
     };
 
-    // GROUPING LOGIC
     const groupedOrders = useMemo(() => {
         const groups: Record<string, GroupedData> = {};
-
         orders.forEach(order => {
             const date = new Date(order.created_at);
-            let key = "";
-            let label = "";
-            let subLabel = "";
-
+            let key = "", label = "", subLabel = "";
             if (viewMode === 'day') {
-                key = date.toLocaleDateString("es-AR"); // DD/MM/YYYY
+                key = date.toLocaleDateString("es-AR");
                 label = date.toLocaleDateString("es-AR", { weekday: 'long', day: 'numeric', month: 'long' });
-                subLabel = date.toLocaleDateString("es-AR", { year: 'numeric' });
+                subLabel = String(date.getFullYear());
             } else if (viewMode === 'week') {
-                // Simple Week Number
-                const firstDay = new Date(date.getFullYear(), 0, 1);
-                const pastDays = (date.getTime() - firstDay.getTime()) / 86400000;
-                const weekNum = Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
-                key = `${date.getFullYear()}-W${weekNum}`;
-                label = `Semana ${weekNum}`;
-                subLabel = `${date.getFullYear()}`;
+                const first = new Date(date.getFullYear(), 0, 1);
+                const wn = Math.ceil(((date.getTime() - first.getTime()) / 86400000 + first.getDay() + 1) / 7);
+                key = `${date.getFullYear()}-W${wn}`; label = `Semana ${wn}`; subLabel = String(date.getFullYear());
             } else if (viewMode === 'fortnight') {
-                const day = date.getDate();
-                const fortnight = day <= 15 ? "1ra" : "2da";
-                key = `${date.getFullYear()}-${date.getMonth()}-${fortnight}`;
-                label = `${fortnight} Quincena de ${date.toLocaleDateString("es-AR", { month: 'long' })}`;
-                subLabel = `${date.getFullYear()}`;
-            } else if (viewMode === 'month') {
+                const fn = date.getDate() <= 15 ? "1ra" : "2da";
+                key = `${date.getFullYear()}-${date.getMonth()}-${fn}`;
+                label = `${fn} Quincena de ${date.toLocaleDateString("es-AR", { month: 'long' })}`;
+                subLabel = String(date.getFullYear());
+            } else {
                 key = `${date.getFullYear()}-${date.getMonth()}`;
                 label = date.toLocaleDateString("es-AR", { month: 'long' });
-                subLabel = `${date.getFullYear()}`;
+                subLabel = String(date.getFullYear());
             }
-
-            if (!groups[key]) {
-                groups[key] = {
-                    id: key,
-                    label,
-                    subLabel,
-                    orders: [],
-                    total: 0,
-                    count: 0,
-                    date: date // Store first found date for sorting
-                };
-            }
-
+            if (!groups[key]) groups[key] = { id: key, label, subLabel, orders: [], total: 0, count: 0, date };
             groups[key].orders.push(order);
             groups[key].total += Number(order.total);
             groups[key].count += 1;
         });
-
-        // Convert to array and sort by date descending
         return Object.values(groups).sort((a, b) => b.date.getTime() - a.date.getTime());
     }, [orders, viewMode]);
-
-
 
     if (loading) {
         return (
@@ -206,75 +131,52 @@ export function OrderList() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             {/* CONTROLS */}
-            <div className="flex flex-wrap gap-4 items-center mb-8">
-                <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100 flex flex-wrap gap-2 w-fit">
-                    {(['day', 'week', 'fortnight', 'month'] as ViewMode[]).map((mode) => (
-                        <button
-                            key={mode}
-                            onClick={() => setViewMode(mode)}
-                            className={`px-4 py-2 rounded-xl text-sm font-black uppercase tracking-wide transition-all ${viewMode === mode
-                                ? "bg-[#FFD60A] text-black shadow-md"
-                                : "bg-transparent text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-                                }`}
+            <div className="flex flex-wrap gap-3 items-center">
+                <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100 flex gap-1 flex-wrap">
+                    {(['day', 'week', 'fortnight', 'month'] as ViewMode[]).map(mode => (
+                        <button key={mode} onClick={() => setViewMode(mode)}
+                            className={`px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wide transition-all ${viewMode === mode ? "bg-[#FFD60A] text-black shadow-sm" : "text-gray-400 hover:text-gray-700"}`}
                         >
-                            {mode === 'day' && 'Día'}
-                            {mode === 'week' && 'Semana'}
-                            {mode === 'fortnight' && 'Quincena'}
-                            {mode === 'month' && 'Mes'}
+                            {mode === 'day' ? 'Día' : mode === 'week' ? 'Semana' : mode === 'fortnight' ? 'Quincena' : 'Mes'}
                         </button>
                     ))}
                 </div>
-
-                <button
-                    onClick={exportToExcel}
-                    className="ml-auto flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-2xl font-bold shadow-lg transition-transform active:scale-95"
+                <button onClick={exportToExcel}
+                    className="ml-auto flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-2xl text-sm font-bold shadow transition-all active:scale-95"
                 >
-                    <Download size={18} />
-                    <span>Exportar Excel</span>
+                    <Download size={16} /> Excel
                 </button>
             </div>
 
-            {/* GRID OF GROUPS */}
+            {/* GRID */}
             {groupedOrders.length === 0 ? (
                 <div className="text-center py-20 opacity-50">
                     <Filter size={48} className="mx-auto mb-4" />
-                    <p className="font-bold">No hay ordenes para mostrar</p>
+                    <p className="font-bold">No hay órdenes para mostrar</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {groupedOrders.map((group, idx) => (
-                        <motion.button
-                            key={group.id}
-                            layoutId={`card-${group.id}`}
+                        <motion.button key={group.id} layoutId={`card-${group.id}`}
                             onClick={() => setSelectedGroup(group)}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.05 }}
-                            className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all text-left group relative overflow-hidden"
+                            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.04 }}
+                            className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all text-left"
                         >
-                            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <Calendar size={100} className="transform rotate-12" />
-                            </div>
-
-                            <div className="relative z-10">
-                                <p className="text-[10px] font-black text-[#FFD60A] uppercase tracking-widest mb-2 bg-black w-fit px-2 py-1 rounded-md">
-                                    {group.subLabel}
-                                </p>
-                                <h3 className="text-xl font-black text-gray-900 capitalize leading-tight mb-6">
-                                    {group.label}
-                                </h3>
-
-                                <div className="space-y-1">
-                                    <div className="flex justify-between items-baseline">
-                                        <span className="text-xs font-bold text-gray-400 uppercase">Ventas</span>
-                                        <span className="text-2xl font-black text-gray-900">${group.total.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-xs font-bold text-gray-400 uppercase">Ordenes</span>
-                                        <span className="text-sm font-bold text-gray-600">{group.count}</span>
-                                    </div>
+                            <p className="text-[10px] font-black text-[#FFD60A] uppercase tracking-widest mb-1.5 bg-black w-fit px-2 py-0.5 rounded-md">
+                                {group.subLabel}
+                            </p>
+                            <h3 className="text-lg font-black text-gray-900 capitalize leading-tight mb-4">{group.label}</h3>
+                            <div className="space-y-1">
+                                <div className="flex justify-between items-baseline">
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase">Ventas</span>
+                                    <span className="text-2xl font-black text-gray-900">${group.total.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase">Órdenes</span>
+                                    <span className="text-sm font-bold text-gray-600">{group.count}</span>
                                 </div>
                             </div>
                         </motion.button>
@@ -282,80 +184,142 @@ export function OrderList() {
                 </div>
             )}
 
-            {/* DETAIL MODAL */}
+            {/* DETAIL MODAL — group */}
             <AnimatePresence>
-                {selectedGroup && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
+                {selectedGroup && !selectedOrder && (
+                    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             onClick={() => setSelectedGroup(null)}
                             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         />
-                        <motion.div
-                            layoutId={`card-${selectedGroup.id}`}
-                            className="bg-[#F8F9FA] w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] overflow-hidden shadow-2xl relative flex flex-col"
+                        <motion.div layoutId={`card-${selectedGroup.id}`}
+                            className="bg-white w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[88vh] rounded-t-[2rem] sm:rounded-[2rem] overflow-hidden shadow-2xl relative flex flex-col"
                         >
-                            {/* Modal Header */}
-                            <div className="bg-[#FFD60A] p-8 flex justify-between items-start shrink-0">
+                            {/* Header */}
+                            <div className="bg-[#FFD60A] px-5 py-5 sm:px-8 sm:py-7 flex justify-between items-start shrink-0">
                                 <div>
-                                    <p className="text-xs font-black text-black/50 uppercase tracking-widest mb-1">{selectedGroup.subLabel}</p>
-                                    <h2 className="text-3xl font-black text-black capitalize">{selectedGroup.label}</h2>
-                                    <div className="flex items-center gap-4 mt-4">
-                                        <div className="bg-black text-white px-4 py-2 rounded-xl flex flex-col pointer-events-none">
-                                            <span className="text-[9px] font-black uppercase opacity-60">Total Facturado</span>
-                                            <span className="text-xl font-black">${selectedGroup.total.toLocaleString()}</span>
+                                    <p className="text-[10px] font-black text-black/50 uppercase tracking-widest mb-0.5">{selectedGroup.subLabel}</p>
+                                    <h2 className="text-xl sm:text-3xl font-black text-black capitalize leading-tight">{selectedGroup.label}</h2>
+                                    <div className="flex items-center gap-3 mt-3">
+                                        <div className="bg-black text-white px-3 py-1.5 rounded-xl">
+                                            <p className="text-[9px] font-black uppercase opacity-60">Total</p>
+                                            <p className="text-lg font-black">${selectedGroup.total.toLocaleString()}</p>
                                         </div>
-                                        <div className="bg-white/50 text-black px-4 py-2 rounded-xl flex flex-col pointer-events-none">
-                                            <span className="text-[9px] font-black uppercase opacity-60">Ordenes</span>
-                                            <span className="text-xl font-black">{selectedGroup.count}</span>
+                                        <div className="bg-white/60 px-3 py-1.5 rounded-xl">
+                                            <p className="text-[9px] font-black uppercase opacity-60">Órdenes</p>
+                                            <p className="text-lg font-black">{selectedGroup.count}</p>
                                         </div>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => setSelectedGroup(null)}
-                                    className="w-10 h-10 rounded-full bg-black/10 hover:bg-black hover:text-white transition-colors flex items-center justify-center"
+                                <button onClick={() => setSelectedGroup(null)}
+                                    className="w-9 h-9 rounded-full bg-black/10 hover:bg-black hover:text-white transition-colors flex items-center justify-center shrink-0"
                                 >
-                                    <X size={20} />
+                                    <X size={18} />
                                 </button>
                             </div>
 
-                            {/* Modal Content - List */}
-                            <div className="flex-1 overflow-y-auto p-8">
-                                <table className="w-full text-left border-collapse">
-                                    <thead className="text-[10px] font-black text-gray-400 uppercase tracking-widest sticky top-0 bg-[#F8F9FA] z-10">
-                                        <tr>
-                                            <th className="pb-4 pl-4 rounded-tl-xl">Hora</th>
-                                            <th className="pb-4">Mesa</th>
-                                            <th className="pb-4">Método</th>
-                                            <th className="pb-4 text-right pr-4 rounded-tr-xl">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="text-sm font-bold text-gray-700">
-                                        {selectedGroup.orders.map((order) => (
-                                            <tr key={order.id} className="border-b border-gray-200/50 hover:bg-white transition-colors group">
-                                                <td className="py-4 pl-4 rounded-l-xl group-hover:bg-white text-gray-500">
-                                                    {new Date(order.created_at).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' })}
-                                                </td>
-                                                <td className="py-4 group-hover:bg-white">
-                                                    <span className="bg-black text-white px-2 py-1 rounded flex items-center justify-center text-xs font-black w-fit whitespace-nowrap">
-                                                        {order.table_id}
-                                                    </span>
-                                                </td>
-                                                <td className="py-4 group-hover:bg-white">
-                                                    <div className="flex items-center gap-2">
-                                                        {getPaymentIcon(order.payment_method)}
-                                                        <span>{getPaymentLabel(order.payment_method)}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="py-4 text-right pr-4 rounded-r-xl group-hover:bg-white font-black text-gray-900">
-                                                    ${Number(order.total).toLocaleString()}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            {/* Lista de pedidos */}
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2">
+                                {selectedGroup.orders.map(order => {
+                                    const o = order as any;
+                                    const { label: typeLabel, icon: typeIcon } = orderTypeLabel(o);
+                                    const time = new Date(o.created_at).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' });
+                                    return (
+                                        <button key={o.id} onClick={() => setSelectedOrder(o)}
+                                            className="w-full bg-gray-50 hover:bg-white border border-gray-100 hover:border-gray-200 hover:shadow-sm rounded-2xl px-4 py-3 text-left transition-all flex items-center gap-3"
+                                        >
+                                            <div className="text-gray-400 shrink-0">{typeIcon}</div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-black text-gray-900 text-sm truncate">
+                                                    {o.customer_name || `Mesa ${o.table_id}`}
+                                                </p>
+                                                <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-0.5">
+                                                    <span>{time}</span>
+                                                    <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                                                    <span>{typeLabel}</span>
+                                                    {o.customer_phone && (
+                                                        <>
+                                                            <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                                                            <span>{o.customer_phone}</span>
+                                                        </>
+                                                    )}
+                                                </p>
+                                            </div>
+                                            <p className="font-black text-gray-900 text-base shrink-0">${Number(o.total).toLocaleString()}</p>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* DETAIL MODAL — single order */}
+            <AnimatePresence>
+                {selectedOrder && (
+                    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center sm:p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setSelectedOrder(null)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+                            className="bg-white w-full sm:max-w-md max-h-[85vh] rounded-t-[2rem] sm:rounded-[2rem] overflow-hidden shadow-2xl relative flex flex-col"
+                        >
+                            <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-start justify-between shrink-0">
+                                <div>
+                                    <p className="font-black text-gray-900 text-lg">{selectedOrder.customer_name || `Mesa ${selectedOrder.table_id}`}</p>
+                                    {selectedOrder.customer_phone && (
+                                        <a href={`tel:${selectedOrder.customer_phone}`} className="text-sm text-orange-500 font-bold">{selectedOrder.customer_phone}</a>
+                                    )}
+                                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                        <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg flex items-center gap-1">
+                                            {orderTypeLabel(selectedOrder).icon} {orderTypeLabel(selectedOrder).label}
+                                        </span>
+                                        {selectedOrder.delivery_info && (
+                                            <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-lg max-w-xs truncate">{selectedOrder.delivery_info}</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <button onClick={() => setSelectedOrder(null)}
+                                    className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center shrink-0"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-5 space-y-2">
+                                {(selectedOrder.items || []).length === 0 ? (
+                                    <p className="text-gray-400 text-sm">Sin detalle de items</p>
+                                ) : (
+                                    (selectedOrder.items as any[]).map((item: any, i: number) => (
+                                        <div key={i} className="flex items-start justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
+                                            <div className="flex-1">
+                                                <p className="font-bold text-gray-900 text-sm">{item.quantity > 1 && <span className="text-orange-500 font-black">{item.quantity}x </span>}{item.name}</p>
+                                                {item.variants?.length > 0 && (
+                                                    <p className="text-xs text-gray-400 mt-0.5">{item.variants.join(", ")}</p>
+                                                )}
+                                                {item.observations && (
+                                                    <p className="text-xs text-gray-400 italic">"{item.observations}"</p>
+                                                )}
+                                            </div>
+                                            <p className="text-sm font-black text-gray-700 shrink-0">${((item.price || 0) * (item.quantity || 1)).toLocaleString()}</p>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <div className="shrink-0 px-5 py-4 border-t border-gray-100 flex justify-between items-center bg-gray-50">
+                                <div>
+                                    <p className="text-xs text-gray-400">{new Date(selectedOrder.created_at).toLocaleString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                                    {selectedOrder.payment_method && (
+                                        <div className="flex items-center gap-1 mt-0.5">
+                                            {getPaymentIcon(selectedOrder.payment_method)}
+                                            <span className="text-xs font-bold text-gray-500">{getPaymentLabel(selectedOrder.payment_method)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-2xl font-black text-gray-900">${Number(selectedOrder.total).toLocaleString()}</p>
                             </div>
                         </motion.div>
                     </div>

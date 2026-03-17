@@ -15,7 +15,7 @@ export function ContactSection() {
                     <div className="info-item">
                         <h3>📍 Ubicación</h3>
                         <p>
-                            Calle Falsa 123<br />
+                            Almirante Brown 2005<br />
                             Mar del Plata, Buenos Aires<br />
                             Argentina
                         </p>

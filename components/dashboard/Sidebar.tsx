@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, QrCode, X } from "lucide-react";
+import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, QrCode, CalendarDays, X } from "lucide-react";
 import { useUserRole } from "@/lib/hooks/use-pos-data";
 
 const links = [
     { href: "/dashboard/tables", label: "Mesas", icon: LayoutGrid },
+    { href: "/dashboard/reservations", label: "Reservas", icon: CalendarDays },
     { href: "/dashboard/qr", label: "QR Mesas", icon: QrCode },
     { href: "/dashboard/orders", label: "Historial", icon: ListChecks },
     { href: "/dashboard/products", label: "Menú", icon: Coffee },

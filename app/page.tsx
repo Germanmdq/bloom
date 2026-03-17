@@ -425,8 +425,8 @@ export default function Home() {
                         <div>
                             <h4 className="font-bold text-gray-900 mb-4">Ubicación</h4>
                             <ul className="space-y-2 text-gray-500">
-                                <li className="flex gap-2"><MapPin size={18} /> Av. Libertador 1400</li>
-                                <li>Buenos Aires, Argentina</li>
+                                <li className="flex gap-2"><MapPin size={18} /> Almirante Brown 2005</li>
+                                <li>Mar del Plata, Argentina</li>
                                 <li className="mt-4 text-orange-600 font-bold cursor-pointer hover:underline">Ver en Mapa</li>
                             </ul>
                         </div>
