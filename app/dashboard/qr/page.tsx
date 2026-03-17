@@ -118,10 +118,15 @@ export default function QRCodesPage() {
     const isLocalhost = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1");
 
     useEffect(() => {
-        // Use env var if set, otherwise use current origin
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-        setBaseUrl(siteUrl);
-        setUrlInput(siteUrl);
+        // Priority: env var > app_settings > window.origin
+        const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
+        if (envUrl) {
+            setBaseUrl(envUrl);
+            setUrlInput(envUrl);
+        } else {
+            setBaseUrl(window.location.origin);
+            setUrlInput(window.location.origin);
+        }
 
         const loadSettings = async () => {
             const { data } = await supabase
@@ -132,8 +137,8 @@ export default function QRCodesPage() {
             if (data) {
                 setMesas(data.mesas);
                 setBarra(data.barra);
-                // Use saved site_url if available
-                if (data.site_url) {
+                // Saved site_url only overrides if no env var
+                if (data.site_url && !process.env.NEXT_PUBLIC_SITE_URL) {
                     setBaseUrl(data.site_url);
                     setUrlInput(data.site_url);
                 }
