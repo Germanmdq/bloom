@@ -400,41 +400,41 @@ function PublicMenuPage() {
                                 </button>
                             )}
 
-                            {/* Platos Diarios */}
-                            {platosDiariosCat && (
-                                <button
-                                    onClick={() => setSelectedCategory(PLATOS_DIARIOS_CAT)}
-                                    className="group relative w-full h-44 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
-                                >
-                                    <div className="absolute inset-0">
-                                        <Image src={getCategoryImage('plato diario')} alt="Platos Diarios" fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
-                                        <div className="absolute inset-0 bg-black/45 group-hover:bg-black/60 transition-colors duration-300" />
-                                    </div>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-5">
-                                        <h3 className="text-white font-black text-2xl leading-tight drop-shadow-lg">Platos Diarios</h3>
-                                    </div>
-                                </button>
-                            )}
-
-                            {/* Promociones — ancho completo */}
-                            {categories
-                                .filter(cat => cat.name.toLowerCase().includes('promo'))
-                                .map(cat => (
+                            {/* Platos Diarios + Promociones — misma fila, 50/50 en desktop */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {platosDiariosCat && (
                                     <button
-                                        key={cat.id}
-                                        onClick={() => setSelectedCategory(cat)}
+                                        onClick={() => setSelectedCategory(PLATOS_DIARIOS_CAT)}
                                         className="group relative w-full h-44 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
                                     >
                                         <div className="absolute inset-0">
-                                            <Image src={getCategoryImage(cat.name)} alt={cat.name} fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
+                                            <Image src={getCategoryImage('plato diario')} alt="Platos Diarios" fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
                                             <div className="absolute inset-0 bg-black/45 group-hover:bg-black/60 transition-colors duration-300" />
                                         </div>
                                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-5">
-                                            <h3 className="text-white font-black text-2xl leading-tight drop-shadow-lg">{cat.name}</h3>
+                                            <h3 className="text-white font-black text-2xl leading-tight drop-shadow-lg">Platos Diarios</h3>
                                         </div>
                                     </button>
-                                ))
-                            }
+                                )}
+                                {categories
+                                    .filter(cat => cat.name.toLowerCase().includes('promo'))
+                                    .map(cat => (
+                                        <button
+                                            key={cat.id}
+                                            onClick={() => setSelectedCategory(cat)}
+                                            className="group relative w-full h-44 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
+                                        >
+                                            <div className="absolute inset-0">
+                                                <Image src={getCategoryImage(cat.name)} alt={cat.name} fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
+                                                <div className="absolute inset-0 bg-black/45 group-hover:bg-black/60 transition-colors duration-300" />
+                                            </div>
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-5">
+                                                <h3 className="text-white font-black text-2xl leading-tight drop-shadow-lg">{cat.name}</h3>
+                                            </div>
+                                        </button>
+                                    ))
+                                }
+                            </div>
 
                             {/* Resto de categorías — 3 columnas */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
