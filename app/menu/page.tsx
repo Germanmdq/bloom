@@ -636,8 +636,8 @@ function PublicMenuPage() {
                                         <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{product.name}</h3>
                                         <p className="text-gray-400 text-xs leading-relaxed line-clamp-1 mb-2">{product.description}</p>
                                         <div className="flex flex-col gap-2 mt-auto">
-                                            <span className="font-black text-gray-900 text-sm">{formatCurrency(product.price)}</span>
-                                            <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl text-center group-hover:bg-orange-600 transition-colors">
+                                            <span className="font-black text-gray-900 text-base">{formatCurrency(product.price)}</span>
+                                            <span className="bg-orange-500 text-white text-sm font-black px-4 py-3 rounded-xl text-center group-hover:bg-orange-600 transition-colors">
                                                 Agregar
                                             </span>
                                         </div>
