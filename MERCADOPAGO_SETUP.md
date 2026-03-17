@@ -1,6 +1,6 @@
 # Configuración de Mercado Pago para Producción
 
-Para que los pagos online funcionen, necesitas configurar 2 variables de entorno en tu servidor (Vercel, Railway, etc.) o en tu archivo `.env.local`.
+Para que los pagos online funcionen, necesitas configurar 2 variables de entorno en tu servidor (Vercel, etc.) o en tu archivo `.env.local`.
 
 ## 1. MP_ACCESS_TOKEN
 Es la "llave" que conecta tu aplicación con tu cuenta de Mercado Pago.
