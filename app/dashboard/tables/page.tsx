@@ -60,8 +60,16 @@ export default function TablesPage() {
         const channel = supabase
             .channel('schema-db-changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'salon_tables' }, () => fetchTables())
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'kitchen_tickets' }, () => fetchTables())
             .subscribe();
-        return () => { supabase.removeChannel(channel); };
+
+        // Polling fallback every 10 seconds in case realtime is slow
+        const poll = setInterval(fetchTables, 10000);
+
+        return () => {
+            supabase.removeChannel(channel);
+            clearInterval(poll);
+        };
     }, []);
 
     const filteredTables = useMemo(() => {

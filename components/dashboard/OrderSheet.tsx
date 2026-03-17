@@ -137,6 +137,22 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
             }
         };
         init();
+
+        // Realtime: re-fetch when kitchen_tickets change for this table
+        if (!isWebTable) {
+            const channel = supabase
+                .channel(`kitchen-tickets-table-${tableId}`)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'kitchen_tickets',
+                    filter: `table_id=eq.${tableId}`,
+                }, () => {
+                    refreshData();
+                })
+                .subscribe();
+            return () => { supabase.removeChannel(channel); };
+        }
     }, [tableId, webOrderId]);
 
     const persistTableState = async () => {
@@ -163,7 +179,16 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
 
     const handleClose = async () => {
         if (cart.length === 0) {
-            await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
+            // Only reset to FREE if there are no pending kitchen tickets from QR orders
+            const { data: pendingTickets } = await supabase
+                .from('kitchen_tickets')
+                .select('id')
+                .eq('table_id', tableId)
+                .eq('status', 'PENDING')
+                .limit(1);
+            if (!pendingTickets || pendingTickets.length === 0) {
+                await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
+            }
         } else {
             await persistTableState();
         }
