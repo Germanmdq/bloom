@@ -11,7 +11,7 @@ export function Footer() {
                         <p className="text-base italic opacity-80">Una cafetería familiar</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-base leading-relaxed mb-4">Mar del Plata, Buenos Aires</p>
+                        <p className="text-base leading-relaxed mb-4">Mar del Plata, Argentina</p>
                     </div>
                 </div>
                 <div className="text-center text-sm opacity-70 mt-8 pt-8 border-t border-[#F5E6D3]/10">

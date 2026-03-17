@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Bike, CalendarDays, MapPin, Star, X, LogIn } from "lucide-react";
+import { ArrowRight, Bike, MapPin, Star, X, LogIn } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -178,12 +178,7 @@ export default function Home() {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                             <Link href="/menu" className="w-full sm:w-auto">
                                 <button className="w-full sm:w-auto px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 shadow-[0_0_40px_-10px_rgba(234,88,12,0.6)] hover:shadow-[0_0_60px_-10px_rgba(234,88,12,0.8)] hover:-translate-y-1">
-                                    <Bike size={20} /> PEDIR DELIVERY
-                                </button>
-                            </Link>
-                            <Link href="/reservations" className="w-full sm:w-auto">
-                                <button className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white font-bold rounded-full transition-all flex items-center justify-center gap-2 hover:-translate-y-1">
-                                    <CalendarDays size={20} /> RESERVAR MESA
+                                    <Bike size={20} /> VER MENÚ
                                 </button>
                             </Link>
                         </div>

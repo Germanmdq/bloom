@@ -16,8 +16,7 @@ export function ContactSection() {
                         <h3>📍 Ubicación</h3>
                         <p>
                             Almirante Brown 2005<br />
-                            Mar del Plata, Buenos Aires<br />
-                            Argentina
+                            Mar del Plata, Argentina
                         </p>
                     </div>
 
