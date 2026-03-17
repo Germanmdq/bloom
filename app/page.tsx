@@ -302,6 +302,32 @@ export default function Home() {
                             </Link>
                         </FadeIn>
 
+                        {/* Plato del Día — ancho doble */}
+                        <FadeIn delay={0.45} className="col-span-2 relative rounded-3xl overflow-hidden group cursor-pointer h-52">
+                            <Link href="/menu?cat=Plato del Día">
+                                <Image src="/images/categories/platos-diarios.png" alt="Plato del Día" fill className="object-cover object-center group-hover:scale-105 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
+                                <div className="absolute inset-0 flex flex-col justify-center p-7">
+                                    <span className="text-orange-300 text-xs font-black uppercase tracking-widest mb-1">⭐ Destacado</span>
+                                    <h3 className="text-white text-3xl font-black tracking-tight leading-tight">Plato del Día</h3>
+                                    <p className="text-white/60 text-sm mt-1">El favorito de hoy · Bebida incluida</p>
+                                </div>
+                            </Link>
+                        </FadeIn>
+
+                        {/* Promociones — ancho doble */}
+                        <FadeIn delay={0.5} className="col-span-2 relative rounded-3xl overflow-hidden group cursor-pointer h-52">
+                            <Link href="/menu?cat=Promociones">
+                                <Image src="/images/categories/promociones.png" alt="Promociones" fill className="object-cover object-center group-hover:scale-105 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent" />
+                                <div className="absolute inset-0 flex flex-col justify-center p-7">
+                                    <span className="text-yellow-300 text-xs font-black uppercase tracking-widest mb-1">🔥 Ofertas</span>
+                                    <h3 className="text-white text-3xl font-black tracking-tight leading-tight">Promociones</h3>
+                                    <p className="text-white/60 text-sm mt-1">Combos y descuentos del día</p>
+                                </div>
+                            </Link>
+                        </FadeIn>
+
                     </div>
                 </div>
             </section>
