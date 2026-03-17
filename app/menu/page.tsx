@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ChevronLeft, Plus, Minus, X, Search, MessageCircle, Bike, CreditCard } from "lucide-react";
+import { ShoppingBag, ChevronLeft, Plus, Minus, X, Search, MessageCircle, Bike, CreditCard, User } from "lucide-react";
+import { CustomerAuthModal } from "@/components/Menu/CustomerAuthModal";
 import { toast } from "sonner";
 import { VariantSelector } from "@/components/pos/VariantSelector"; // Reusing logic
 // Font (assuming Inter is global, but styling explicitly)
@@ -49,6 +50,7 @@ function PublicMenuPage() {
 
     // Variant Selection State
     const [variantProduct, setVariantProduct] = useState<any>(null);
+    const [isAuthOpen, setIsAuthOpen] = useState(false);
 
     // Helpers for Variant Logic (Duplicated from POS/page for simplicity here)
     const HAS_VARIANTS = (p: any) => {
@@ -258,6 +260,7 @@ function PublicMenuPage() {
     return (
         <main className="min-h-screen bg-[#FAF7F2] text-gray-900 font-sans pb-32 selection:bg-black selection:text-white">
             <VariantSelector product={variantProduct} isOpen={!!variantProduct} onClose={() => setVariantProduct(null)} onAddToOrder={(product, variants, observations) => addToCart(product, variants, observations)} />
+            <CustomerAuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
 
             {/* HEADER */}
             <header className="sticky top-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-xl border-b border-amber-100/60 transition-all">
@@ -277,6 +280,9 @@ function PublicMenuPage() {
                                 {tableLabel}
                             </span>
                         )}
+                        <button onClick={() => setIsAuthOpen(true)} className="p-2 bg-white rounded-full hover:bg-orange-50 border border-amber-100 transition-colors shadow-sm">
+                            <User size={20} className="text-gray-900" strokeWidth={2} />
+                        </button>
                         <button onClick={() => setIsCartOpen(true)} className="relative p-2 bg-white rounded-full hover:bg-orange-50 border border-amber-100 transition-colors shadow-sm">
                             <ShoppingBag size={20} className="text-gray-900" strokeWidth={2.5} />
                             {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">{cartCount}</span>}
@@ -617,13 +623,24 @@ function PublicMenuPage() {
                                             {isPaying ? 'Enviando...' : '✓ Cerrar Pedido'}
                                         </button>
                                     ) : (
-                                    <button
-                                        onClick={handleMercadoPagoCheckout}
-                                        disabled={!cart.length || isPaying}
-                                        className="w-full bg-[#009EE3] text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#008CC9] active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-blue-500/20"
-                                    >
-                                        {isPaying ? 'Procesando...' : <><CreditCard size={20} /> Cerrar Pedido — Mercado Pago</>}
-                                    </button>
+                                    <div>
+                                        <button
+                                            onClick={handleMercadoPagoCheckout}
+                                            disabled={!cart.length || isPaying}
+                                            className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
+                                        >
+                                            {isPaying ? 'Procesando...' : <><CreditCard size={20} /> Pagar con billetera digital</>}
+                                        </button>
+                                        {/* Billeteras aceptadas */}
+                                        <div className="flex items-center justify-center gap-2 mt-2.5 flex-wrap">
+                                            <span className="text-[10px] text-gray-400 font-medium mr-1">Aceptamos:</span>
+                                            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#009EE3]/10 text-[#009EE3]">Mercado Pago</span>
+                                            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#7B3FE4]/10 text-[#7B3FE4]">MODO</span>
+                                            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#5C2D91]/10 text-[#5C2D91]">Ualá</span>
+                                            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#FF6200]/10 text-[#FF6200]">Naranja X</span>
+                                            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-gray-100 text-gray-500">+ otras</span>
+                                        </div>
+                                    </div>
                                     )}
 
                                     {!tableId && (
@@ -632,7 +649,7 @@ function PublicMenuPage() {
                                             disabled={!cart.length}
                                             className="w-full bg-[#25D366] text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#20bd5a] active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-green-500/20"
                                         >
-                                            <MessageCircle size={20} fill="white" /> Cerrar Pedido por WhatsApp
+                                            <MessageCircle size={20} fill="white" /> Enviar pedido por WhatsApp
                                         </button>
                                     )}
                                 </div>
