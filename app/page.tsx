@@ -138,10 +138,10 @@ export default function Home() {
                 </div>
                 <button
                     onClick={() => setShowLogin(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-white text-sm font-bold rounded-full transition-all hover:-translate-y-0.5 shadow-lg"
+                    className="opacity-0 hover:opacity-30 transition-opacity w-8 h-8 flex items-center justify-center"
+                    title=""
                 >
-                    <LogIn size={15} />
-                    Acceso Empleados
+                    <LogIn size={14} className="text-white" />
                 </button>
             </nav>
 
@@ -442,10 +442,9 @@ export default function Home() {
                         <span>&copy; 2026 Bloom Restaurant. Todos los derechos reservados.</span>
                         <button
                             onClick={() => setShowLogin(true)}
-                            className="flex items-center gap-1.5 text-gray-300 hover:text-gray-500 transition-colors text-xs font-medium"
+                            className="opacity-0 hover:opacity-40 transition-opacity w-7 h-7 flex items-center justify-center"
                         >
-                            <LogIn size={13} />
-                            Acceso empleados
+                            <LogIn size={13} className="text-gray-400" />
                         </button>
                     </div>
                 </div>
