@@ -34,20 +34,45 @@ interface VariantSelectorProps {
     onAddAndCheckout?: (product: any, selectedVariants: any[], observations?: string, checkoutInfo?: CheckoutInfo) => void;
 }
 
-const TRIBUNALES_EDIFICIOS = [
-    { id: 'central',  label: 'Edificio Central',       sub: 'Alte. Brown 2046' },
-    { id: 'civiles',  label: 'Anexo Civiles',          sub: 'Alte. Brown 2241 / 2257' },
-    { id: 'abogados', label: 'Colegio de Abogados',    sub: 'Alte. Brown 1958' },
-    { id: 'federal',  label: 'Justicia Federal',       sub: 'Alte. Brown 1762' },
-];
-const TRIBUNALES_PISOS = [
-    'Subsuelo — Administración / Arquitectura',
-    'Planta Baja — Informes / Seguridad / Mesa de Entradas',
-    'Piso 1 — Juzgados de Garantías (1, 2 o 3)',
-    'Piso 2 — Juzgados de Garantías (4, 5 o 6)',
-    'Piso 3 — Juzgados Correccionales (2, 3, 4 o 5)',
-    'Piso 4 — Juzgado de Ejecución Penal N° 2',
-    'Piso 7 — Juzgado de Ejecución Penal N° 1 / Correccional N° 1',
+const TRIBUNALES_EDIFICIOS: { id: string; label: string; sub: string; pisos: string[] }[] = [
+    {
+        id: 'central', label: 'Edificio Central', sub: 'Alte. Brown 2046',
+        pisos: [
+            'Subsuelo — Administración / Arquitectura',
+            'Planta Baja — Informes / Seguridad / Mesa de Entradas',
+            'Piso 1 — Juzgados de Garantías (1, 2 o 3)',
+            'Piso 2 — Juzgados de Garantías (4, 5 o 6)',
+            'Piso 3 — Juzgados Correccionales (2, 3, 4 o 5)',
+            'Piso 4 — Juzgado de Ejecución Penal N° 2',
+            'Piso 7 — Juzgado de Ejecución Penal N° 1 / Correccional N° 1',
+        ],
+    },
+    {
+        id: 'civiles', label: 'Anexo Civiles', sub: 'Alte. Brown 2241 / 2257',
+        pisos: [
+            'Planta Baja',
+            'Piso 1',
+            'Piso 2',
+            'Piso 3',
+        ],
+    },
+    {
+        id: 'abogados', label: 'Colegio de Abogados', sub: 'Alte. Brown 1958',
+        pisos: [
+            'Planta Baja — Recepción',
+            'Piso 1',
+            'Piso 2',
+        ],
+    },
+    {
+        id: 'federal', label: 'Justicia Federal', sub: 'Alte. Brown 1762',
+        pisos: [
+            'Planta Baja — Mesa de Entradas',
+            'Piso 1',
+            'Piso 2',
+            'Piso 3',
+        ],
+    },
 ];
 
 // MOCK DATA FOR DEMO - In real app, this comes from product.options
@@ -364,6 +389,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                             {/* Tribunales */}
                             {ci.type === 'tribunales' && (
                                 <div className="space-y-3">
+                                    {/* 1. Edificio */}
                                     <p className="text-xs font-black text-gray-400 uppercase tracking-wide">1. Edificio</p>
                                     <div className="space-y-1.5">
                                         {TRIBUNALES_EDIFICIOS.map(e => (
@@ -382,24 +408,28 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                     </div>
                                     {errors.tEdificio && <p className="text-red-500 text-xs">{errors.tEdificio}</p>}
 
-                                    {ci.tEdificio === 'central' && (
-                                        <div>
-                                            <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">2. Piso / Área</p>
-                                            <div className="space-y-1">
-                                                {TRIBUNALES_PISOS.map(piso => (
-                                                    <button
-                                                        key={piso}
-                                                        onClick={() => setCi({ tPiso: piso })}
-                                                        className={`w-full text-left px-3 py-2 rounded-xl border-2 text-sm transition-all ${ci.tPiso === piso ? 'border-orange-500 bg-orange-50 font-bold text-orange-700' : 'border-gray-100 bg-gray-50 text-gray-700 hover:border-orange-200'}`}
-                                                    >
-                                                        {piso}
-                                                    </button>
-                                                ))}
+                                    {/* 2. Piso — aparece para TODOS los edificios una vez seleccionado */}
+                                    {ci.tEdificio && (() => {
+                                        const edif = TRIBUNALES_EDIFICIOS.find(e => e.id === ci.tEdificio);
+                                        return edif ? (
+                                            <div>
+                                                <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">2. Piso / Área</p>
+                                                <div className="space-y-1">
+                                                    {edif.pisos.map(piso => (
+                                                        <button
+                                                            key={piso}
+                                                            onClick={() => setCi({ tPiso: piso })}
+                                                            className={`w-full text-left px-3 py-2 rounded-xl border-2 text-sm transition-all ${ci.tPiso === piso ? 'border-orange-500 bg-orange-50 font-bold text-orange-700' : 'border-gray-100 bg-gray-50 text-gray-700 hover:border-orange-200'}`}
+                                                        >
+                                                            {piso}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        ) : null;
+                                    })()}
 
-                                    <p className="text-xs font-black text-gray-400 uppercase tracking-wide">{ci.tEdificio === 'central' ? '3.' : '2.'} Datos del repartidor</p>
+                                    <p className="text-xs font-black text-gray-400 uppercase tracking-wide">3. Datos del repartidor</p>
                                     <input
                                         type="text"
                                         placeholder="Juzgado / Oficina (ej: Garantías 4)"
