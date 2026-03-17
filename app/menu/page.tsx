@@ -292,7 +292,7 @@ function PublicMenuPage() {
                     <nav className="hidden sm:flex items-center gap-6 text-sm font-semibold text-gray-500">
                         <button onClick={() => setSelectedCategory(null)} className="hover:text-gray-900 transition-colors">Menú</button>
                         <Link href="/" className="hover:text-gray-900 transition-colors">Inicio</Link>
-                        <Link href="/#contact" className="hover:text-gray-900 transition-colors">Contacto</Link>
+                        <Link href="/cuenta" className="hover:text-gray-900 transition-colors">Mi Cuenta</Link>
                     </nav>
                     <div className="flex items-center gap-3">
                         {tableLabel && (
