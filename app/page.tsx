@@ -165,7 +165,7 @@ export default function Home() {
                         transition={{ duration: 1 }}
                     >
                         <span className="inline-block py-1 px-3 border border-white/20 rounded-full bg-white/10 backdrop-blur-md text-sm font-medium tracking-wider mb-6">
-                            EST. 2010 • BUENOS AIRES
+                            MAR DEL PLATA • ARGENTINA
                         </span>
                         <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter mb-6 leading-none">
                             BLOOM<span className="text-orange-500">.</span>
