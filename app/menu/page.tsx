@@ -429,7 +429,7 @@ function PublicMenuPage() {
                 )}
             </header>
 
-            <div className="w-full py-3 px-4 sm:px-[70px] sm:py-4">
+            <div className="w-full py-3 px-5 sm:px-[100px] sm:py-6">
 
                 {/* STATE 1: CATEGORY GRID (HOME) */}
                 {!selectedCategory && (
