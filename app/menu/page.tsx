@@ -386,7 +386,20 @@ function PublicMenuPage() {
     // --- RENDER ---
     return (
         <main className="min-h-screen bg-[#FAF7F2] text-gray-900 font-sans pb-32 selection:bg-black selection:text-white">
-            <VariantSelector product={variantProduct} isOpen={!!variantProduct} onClose={() => setVariantProduct(null)} onAddToOrder={(product, variants, observations) => addToCart(product, variants, observations)} />
+            <VariantSelector
+                product={variantProduct}
+                isOpen={!!variantProduct}
+                onClose={() => setVariantProduct(null)}
+                onAddToOrder={(product, variants, observations) => {
+                    addToCart(product, variants, observations);
+                }}
+                onAddAndCheckout={(product, variants, observations) => {
+                    addToCart(product, variants, observations);
+                    setVariantProduct(null);
+                    setIsCartOpen(true);
+                    setCartStep('form');
+                }}
+            />
             <CustomerAuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
 
             {/* HEADER */}

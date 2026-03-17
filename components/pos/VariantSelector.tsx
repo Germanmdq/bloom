@@ -19,6 +19,7 @@ interface VariantSelectorProps {
     isOpen: boolean;
     onClose: () => void;
     onAddToOrder: (product: any, selectedVariants: any[], observations?: string) => void;
+    onAddAndCheckout?: (product: any, selectedVariants: any[], observations?: string) => void;
 }
 
 
@@ -200,7 +201,7 @@ function getVariantsForProduct(product: any): VariantGroup[] {
 }
 
 
-export function VariantSelector({ product, isOpen, onClose, onAddToOrder }: VariantSelectorProps) {
+export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddAndCheckout }: VariantSelectorProps) {
     const [selections, setSelections] = useState<Record<string, VariantOption[]>>({});
     const [observations, setObservations] = useState('');
 
@@ -235,9 +236,13 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder }: Vari
 
     const canSubmit = variantGroups.every(g => isGroupSatisfied(g));
 
-    const handleConfirm = () => {
+    const handleConfirm = (checkout = false) => {
         const allSelected = Object.values(selections).flat();
-        onAddToOrder(product, allSelected, observations.trim());
+        if (checkout && onAddAndCheckout) {
+            onAddAndCheckout(product, allSelected, observations.trim());
+        } else {
+            onAddToOrder(product, allSelected, observations.trim());
+        }
         setSelections({});
         setObservations('');
     };
@@ -318,25 +323,38 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder }: Vari
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-gray-100 bg-white flex items-center justify-between gap-6">
-                    <div className="text-right">
-                        <div className="text-xs text-gray-400 uppercase font-bold">Total Extra</div>
-                        <div className="text-2xl font-black text-orange-600">+${totalExtra.toLocaleString()}</div>
-                    </div>
+                <div className="p-5 border-t border-gray-100 bg-white space-y-3">
+                    {totalExtra > 0 && (
+                        <div className="flex justify-between items-center px-1">
+                            <span className="text-xs text-gray-400 uppercase font-bold">Extra</span>
+                            <span className="text-lg font-black text-orange-600">+${totalExtra.toLocaleString()}</span>
+                        </div>
+                    )}
 
-                    <button
-                        onClick={handleConfirm}
-                        disabled={!canSubmit}
-                        className={`
-                            flex-1 py-4 rounded-xl font-black text-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2
-                            ${canSubmit
-                                ? 'bg-orange-500 text-white hover:bg-orange-600 hover:shadow-orange-500/30'
-                                : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                            }
-                        `}
-                    >
-                        {canSubmit ? 'CONFIRMAR Y AGREGAR' : 'COMPLETÁ LAS OPCIONES'}
-                    </button>
+                    {!canSubmit ? (
+                        <div className="w-full py-4 rounded-xl font-black text-base text-center bg-gray-100 text-gray-400">
+                            Completá las opciones para continuar
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {/* Pedir o Pagar */}
+                            {onAddAndCheckout && (
+                                <button
+                                    onClick={() => handleConfirm(true)}
+                                    className="w-full py-4 rounded-xl font-black text-lg bg-orange-500 hover:bg-orange-600 text-white shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                >
+                                    💳 Pedir o Pagar
+                                </button>
+                            )}
+                            {/* Seguir eligiendo */}
+                            <button
+                                onClick={() => handleConfirm(false)}
+                                className="w-full py-3.5 rounded-xl font-bold text-base bg-gray-100 hover:bg-gray-200 text-gray-700 active:scale-[0.98] transition-all"
+                            >
+                                + Seguir eligiendo
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
