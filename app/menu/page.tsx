@@ -699,52 +699,54 @@ function PublicMenuPage() {
                                 )}
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                                {cart.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
-                                        <ShoppingBag size={64} className="mb-4" />
-                                        <p className="font-medium text-lg">Tu carrito está vacío</p>
-                                    </div>
-                                ) : (
-                                    cart.map(item => (
-                                        <div key={item.cartItemId} className="flex gap-4 group">
-                                            <div className="w-20 h-20 bg-gray-100 rounded-2xl overflow-hidden shrink-0 relative">
-                                                {item.image_url && <Image src={item.image_url} alt={item.name} fill className="object-cover" />}
+                            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+                                {/* Vista carrito ítems */}
+                                {!showCheckoutForm && (
+                                    <>
+                                        {cart.length === 0 ? (
+                                            <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60 py-16">
+                                                <ShoppingBag size={64} className="mb-4" />
+                                                <p className="font-medium text-lg">Tu carrito está vacío</p>
                                             </div>
-                                            <div className="flex-1">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <h4 className="font-bold text-gray-900 text-lg leading-none">{item.name}</h4>
-                                                    <span className="font-semibold text-gray-900">{formatCurrency(item.price * item.quantity)}</span>
-                                                </div>
-                                                {item.variants && item.variants.length > 0 && (
-                                                    <p className="text-gray-500 text-xs leading-relaxed">
-                                                        {item.variants.map((v: any) => v.name).join(', ')}
-                                                    </p>
-                                                )}
-                                                {item.observations && (
-                                                    <p className="text-orange-500 text-xs italic mt-0.5 leading-relaxed">
-                                                        📝 {item.observations}
-                                                    </p>
-                                                )}
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                                                        <button onClick={() => updateQuantity(item.cartItemId, -1)} className="p-1 hover:bg-white rounded-md transition-colors shadow-sm"><Minus size={14} /></button>
-                                                        <span className="font-bold w-6 text-center text-sm">{item.quantity}</span>
-                                                        <button onClick={() => updateQuantity(item.cartItemId, 1)} className="p-1 hover:bg-white rounded-md transition-colors shadow-sm"><Plus size={14} /></button>
+                                        ) : (
+                                            cart.map(item => (
+                                                <div key={item.cartItemId} className="flex gap-4 group">
+                                                    <div className="w-20 h-20 bg-gray-100 rounded-2xl overflow-hidden shrink-0 relative">
+                                                        {item.image_url && <Image src={item.image_url} alt={item.name} fill className="object-cover" />}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <h4 className="font-bold text-gray-900 text-lg leading-none">{item.name}</h4>
+                                                            <span className="font-semibold text-gray-900">{formatCurrency(item.price * item.quantity)}</span>
+                                                        </div>
+                                                        {item.variants && item.variants.length > 0 && (
+                                                            <p className="text-gray-500 text-xs leading-relaxed">
+                                                                {item.variants.map((v: any) => v.name).join(', ')}
+                                                            </p>
+                                                        )}
+                                                        {item.observations && (
+                                                            <p className="text-orange-500 text-xs italic mt-0.5 leading-relaxed">
+                                                                📝 {item.observations}
+                                                            </p>
+                                                        )}
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                                                                <button onClick={() => updateQuantity(item.cartItemId, -1)} className="p-1 hover:bg-white rounded-md transition-colors shadow-sm"><Minus size={14} /></button>
+                                                                <span className="font-bold w-6 text-center text-sm">{item.quantity}</span>
+                                                                <button onClick={() => updateQuantity(item.cartItemId, 1)} className="p-1 hover:bg-white rounded-md transition-colors shadow-sm"><Plus size={14} /></button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    ))
+                                            ))
+                                        )}
+                                    </>
                                 )}
-                            </div>
 
-                            <div className="p-5 bg-gray-50 border-t border-gray-200 space-y-4">
-
-                                {/* FORM de datos de entrega (solo sin mesa) */}
+                                {/* Vista formulario entrega */}
                                 {!tableId && showCheckoutForm && (
-                                    <div className="space-y-3 bg-white rounded-2xl p-4 border border-gray-100">
-                                        <p className="font-black text-gray-900 text-sm">¿Cómo recibís el pedido?</p>
+                                    <div className="space-y-3">
+                                        <p className="font-black text-gray-900 text-base">¿Cómo recibís el pedido?</p>
 
                                         {/* Tipo — 3 opciones */}
                                         <div className="grid grid-cols-3 gap-2">
@@ -874,8 +876,10 @@ function PublicMenuPage() {
                                         )}
                                     </div>
                                 )}
+                            </div>
 
-                                {/* Total */}
+                            {/* Footer fijo — total + botones */}
+                            <div className="shrink-0 p-5 bg-white border-t border-gray-100 space-y-3">
                                 <div className="flex justify-between items-center">
                                     <span className="text-gray-500 font-medium">Total</span>
                                     <span className="text-3xl font-black text-gray-900 tracking-tighter">{formatCurrency(cartTotal)}</span>
