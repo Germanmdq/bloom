@@ -604,19 +604,21 @@ function PublicMenuPage() {
                             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
                             className="fixed top-0 right-0 h-full w-full md:w-[480px] bg-white z-[60] shadow-2xl flex flex-col font-sans"
                         >
-                            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
                                 <div>
                                     <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Tu Pedido</h2>
                                     {tableLabel && (
                                         <p className="text-sm font-bold text-gray-500 mt-0.5">{tableLabel}</p>
                                     )}
                                 </div>
-                                <button
-                                    onClick={() => setIsCartOpen(false)}
-                                    className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-black rounded-full transition-colors"
-                                >
-                                    + Seguir eligiendo
-                                </button>
+                                {showCheckoutForm && (
+                                    <button
+                                        onClick={() => setShowCheckoutForm(false)}
+                                        className="flex items-center gap-1 text-sm font-bold text-gray-400 hover:text-gray-700 transition-colors"
+                                    >
+                                        <ChevronLeft size={16} /> Volver
+                                    </button>
+                                )}
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -814,6 +816,7 @@ function PublicMenuPage() {
                                     )}
 
                                     {tableId ? (
+                                        /* Mesa: botón directo */
                                         <button
                                             onClick={handleTableCheckout}
                                             disabled={!cart.length || isPaying}
@@ -821,28 +824,31 @@ function PublicMenuPage() {
                                         >
                                             {isPaying ? 'Enviando...' : '✓ Cerrar Pedido'}
                                         </button>
+                                    ) : showCheckoutForm ? (
+                                        /* Ya en el form: botón confirmar */
+                                        <button
+                                            onClick={handleMercadoPagoCheckout}
+                                            disabled={!cart.length || isPaying}
+                                            className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
+                                        >
+                                            {isPaying ? 'Procesando...' : <><CreditCard size={20} /> Confirmar y Pagar</>}
+                                        </button>
                                     ) : (
-                                        <div>
+                                        /* Estado inicial: dos botones */
+                                        <div className="space-y-2">
                                             <button
-                                                onClick={handleMercadoPagoCheckout}
-                                                disabled={!cart.length || isPaying}
-                                                className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
+                                                onClick={() => setShowCheckoutForm(true)}
+                                                disabled={!cart.length}
+                                                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
                                             >
-                                                {isPaying ? 'Procesando...' : showCheckoutForm
-                                                    ? <><CreditCard size={20} /> Confirmar y Pagar</>
-                                                    : <><CreditCard size={20} /> Pagar con billetera digital</>
-                                                }
+                                                <CreditCard size={20} /> Pedir o Pagar
                                             </button>
-                                            {!showCheckoutForm && (
-                                                <div className="flex items-center justify-center gap-2 mt-2.5 flex-wrap">
-                                                    <span className="text-[10px] text-gray-400 font-medium mr-1">Aceptamos:</span>
-                                                    <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#009EE3]/10 text-[#009EE3]">Mercado Pago</span>
-                                                    <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#7B3FE4]/10 text-[#7B3FE4]">MODO</span>
-                                                    <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#5C2D91]/10 text-[#5C2D91]">Ualá</span>
-                                                    <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#FF6200]/10 text-[#FF6200]">Naranja X</span>
-                                                    <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-gray-100 text-gray-500">+ otras</span>
-                                                </div>
-                                            )}
+                                            <button
+                                                onClick={() => setIsCartOpen(false)}
+                                                className="w-full py-3.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-base"
+                                            >
+                                                + Seguir pidiendo
+                                            </button>
                                         </div>
                                     )}
                                 </div>
