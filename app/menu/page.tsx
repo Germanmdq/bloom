@@ -48,8 +48,9 @@ function PublicMenuPage() {
     const [isPaying, setIsPaying] = useState(false);
     const [orderSent, setOrderSent] = useState(false);
 
-    // Checkout form state
-    const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+    // Checkout form state — 'items' | 'form'
+    const [cartStep, setCartStep] = useState<'items' | 'form'>('items');
+    const showCheckoutForm = cartStep === 'form';
     const [checkoutInfo, setCheckoutInfo] = useState({
         name: '', phone: '', address: '',
         type: 'delivery' as 'delivery' | 'retiro' | 'tribunales',
@@ -207,7 +208,7 @@ function PublicMenuPage() {
 
     const handleMercadoPagoCheckout = async () => {
         if (!tableId && !showCheckoutForm) {
-            setShowCheckoutForm(true);
+            setCartStep('form');
             return;
         }
         if (!tableId && !validateCheckoutForm()) return;
@@ -260,7 +261,7 @@ function PublicMenuPage() {
             setOrderSent(true);
             setIsCartOpen(false);
             setCart([]);
-            setShowCheckoutForm(false);
+            setCartStep('items');
         } catch (error) {
             console.error(error);
             toast.error("Error al confirmar el pedido, intentá de nuevo");
@@ -676,7 +677,7 @@ function PublicMenuPage() {
                 {/* Cart Modal / Drawer */}
                 {isCartOpen && (
                     <>
-                        <motion.div key="cart-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsCartOpen(false)} className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50" />
+                        <motion.div key="cart-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setIsCartOpen(false); setCartStep('items'); }} className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50" />
                         <motion.div
                             key="cart-drawer"
                             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -691,7 +692,7 @@ function PublicMenuPage() {
                                 </div>
                                 {showCheckoutForm && (
                                     <button
-                                        onClick={() => setShowCheckoutForm(false)}
+                                        onClick={() => setCartStep('items')}
                                         className="flex items-center gap-1 text-sm font-bold text-gray-400 hover:text-gray-700 transition-colors"
                                     >
                                         <ChevronLeft size={16} /> Volver
@@ -919,14 +920,14 @@ function PublicMenuPage() {
                                         /* Estado inicial: dos botones */
                                         <div className="space-y-2">
                                             <button
-                                                onClick={() => setShowCheckoutForm(true)}
+                                                onClick={() => setCartStep('form')}
                                                 disabled={!cart.length}
                                                 className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
                                             >
                                                 <CreditCard size={20} /> Pedir o Pagar
                                             </button>
                                             <button
-                                                onClick={() => setIsCartOpen(false)}
+                                                onClick={() => { setIsCartOpen(false); setCartStep('items'); }}
                                                 className="w-full py-3.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-base"
                                             >
                                                 + Seguir pidiendo
