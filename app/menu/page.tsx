@@ -303,21 +303,23 @@ function PublicMenuPage() {
             const mergedTotal = existingTotal + newTotal;
 
             // Send to kitchen
-            await supabase.from('kitchen_tickets').insert({
+            const { error: kitchenError } = await supabase.from('kitchen_tickets').insert({
                 table_id: tableId,
                 items: newItems,
                 status: 'PENDING',
             });
+            if (kitchenError) console.error('kitchen_tickets error:', kitchenError.message);
 
-            // Update table: items visible to waiters + accumulated total
-            await supabase.from('salon_tables')
-                .update({
+            // Upsert table: creates row if missing, updates if exists
+            const { error: tableError } = await supabase.from('salon_tables')
+                .upsert({
+                    id: tableId,
                     status: 'OCCUPIED',
                     total: mergedTotal,
                     items: mergedItems,
                     updated_at: new Date().toISOString(),
-                })
-                .eq('id', tableId);
+                }, { onConflict: 'id' });
+            if (tableError) console.error('salon_tables error:', tableError.message);
 
             setOrderSent(true);
             setIsCartOpen(false);
