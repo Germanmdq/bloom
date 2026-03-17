@@ -310,7 +310,7 @@ function PublicMenuPage() {
             });
             if (kitchenError) console.error('kitchen_tickets error:', kitchenError.message);
 
-            // Upsert table: creates row if missing, updates if exists
+            // Upsert table: try with items first, fall back without if column missing
             const { error: tableError } = await supabase.from('salon_tables')
                 .upsert({
                     id: tableId,
@@ -319,7 +319,19 @@ function PublicMenuPage() {
                     items: mergedItems,
                     updated_at: new Date().toISOString(),
                 }, { onConflict: 'id' });
-            if (tableError) console.error('salon_tables error:', tableError.message);
+
+            if (tableError) {
+                console.warn('salon_tables upsert with items failed, retrying without items:', tableError.message);
+                // Fallback: update without items (column might not exist yet)
+                const { error: fallbackError } = await supabase.from('salon_tables')
+                    .upsert({
+                        id: tableId,
+                        status: 'OCCUPIED',
+                        total: mergedTotal,
+                        updated_at: new Date().toISOString(),
+                    }, { onConflict: 'id' });
+                if (fallbackError) console.error('salon_tables fallback error:', fallbackError.message);
+            }
 
             setOrderSent(true);
             setIsCartOpen(false);
