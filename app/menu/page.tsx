@@ -308,7 +308,11 @@ function PublicMenuPage() {
                 items: newItems,
                 status: 'PENDING',
             });
-            if (kitchenError) console.error('kitchen_tickets error:', kitchenError.message);
+            if (kitchenError) {
+                toast.error(`Error al enviar a cocina: ${kitchenError.message}`);
+                setIsPaying(false);
+                return;
+            }
 
             // Upsert table: try with items first, fall back without if column missing
             const { error: tableError } = await supabase.from('salon_tables')
@@ -321,8 +325,7 @@ function PublicMenuPage() {
                 }, { onConflict: 'id' });
 
             if (tableError) {
-                console.warn('salon_tables upsert with items failed, retrying without items:', tableError.message);
-                // Fallback: update without items (column might not exist yet)
+                // Fallback without items column
                 const { error: fallbackError } = await supabase.from('salon_tables')
                     .upsert({
                         id: tableId,
@@ -330,7 +333,11 @@ function PublicMenuPage() {
                         total: mergedTotal,
                         updated_at: new Date().toISOString(),
                     }, { onConflict: 'id' });
-                if (fallbackError) console.error('salon_tables fallback error:', fallbackError.message);
+                if (fallbackError) {
+                    toast.error(`Error actualizando mesa: ${fallbackError.message}`);
+                    setIsPaying(false);
+                    return;
+                }
             }
 
             setOrderSent(true);
