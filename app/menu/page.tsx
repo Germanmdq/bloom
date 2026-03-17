@@ -465,41 +465,55 @@ function PublicMenuPage() {
 
                 {/* STATE 2: PRODUCT LIST (CATEGORY SELECTED) */}
                 {selectedCategory && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
-                        <div className="space-y-1 pb-4 border-b border-gray-100">
-                            <span className="text-3xl mb-2 block">{selectedCategory.icon}</span>
-                            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{selectedCategory.name}</h1>
+                    <div className="space-y-5 animate-in fade-in slide-in-from-right-8 duration-300">
+
+                        {/* Header con botón volver integrado */}
+                        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                            <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">{selectedCategory.name}</h1>
+                            <button
+                                onClick={() => { setSelectedCategory(null); setSearchQuery(""); }}
+                                className="flex items-center gap-1.5 text-sm font-bold text-orange-500 hover:text-orange-600 transition-colors px-3 py-1.5 rounded-full border border-orange-200 hover:bg-orange-50"
+                            >
+                                <ChevronLeft size={15} strokeWidth={2.5} /> Menú
+                            </button>
                         </div>
 
-                        {/* Search in Category */}
-                        <div className="relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder={`Buscar en ${selectedCategory.name}...`}
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full bg-white/80 border-0 ring-1 ring-amber-100 rounded-2xl py-4 pl-12 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-amber-300 outline-none transition-shadow shadow-sm"
-                            />
-                        </div>
+                        {/* Search in Category — oculto para Plato del Día (solo 1 producto) */}
+                        {!selectedCategory.isPlato && (
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder={`Buscar en ${selectedCategory.name}...`}
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                    className="w-full bg-white/80 border-0 ring-1 ring-amber-100 rounded-2xl py-4 pl-12 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-amber-300 outline-none transition-shadow shadow-sm"
+                                />
+                            </div>
+                        )}
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {/* Grid productos — centrado si es Plato del Día */}
+                        <div className={
+                            selectedCategory.isPlato
+                                ? "flex justify-center"
+                                : "grid grid-cols-2 sm:grid-cols-4 gap-3"
+                        }>
                             {filteredProducts.map(product => (
                                 <div
                                     key={product.id}
                                     onClick={() => handleProductClick(product)}
-                                    className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md border border-gray-100 transition-all cursor-pointer active:scale-[0.97] flex flex-col"
+                                    className={`group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md border border-gray-100 transition-all cursor-pointer active:scale-[0.97] flex flex-col ${selectedCategory.isPlato ? 'w-64 sm:w-80' : ''}`}
                                 >
-                                    {/* Image */}
                                     <div className="relative w-full aspect-[4/3] bg-gray-100">
                                         {product.image_url ? (
                                             <Image src={product.image_url} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-4xl">🍽️</div>
                                         )}
+                                        {selectedCategory.isPlato && (
+                                            <span className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-black px-2 py-1 rounded-full">⭐ Plato del Día</span>
+                                        )}
                                     </div>
-
-                                    {/* Info */}
                                     <div className="p-3 flex flex-col flex-1">
                                         <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{product.name}</h3>
                                         <p className="text-gray-400 text-xs leading-relaxed line-clamp-1 mb-2">{product.description}</p>
@@ -517,16 +531,6 @@ function PublicMenuPage() {
                         {filteredProducts.length === 0 && (
                             <div className="text-center py-10 text-gray-400">No hay productos aquí.</div>
                         )}
-
-                        {/* Botón volver */}
-                        <div className="pt-6 pb-2">
-                            <button
-                                onClick={() => { setSelectedCategory(null); setSearchQuery(""); }}
-                                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl transition-colors text-base"
-                            >
-                                ← Volver al Menú
-                            </button>
-                        </div>
                     </div>
                 )}
 
