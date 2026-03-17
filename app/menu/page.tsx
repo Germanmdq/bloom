@@ -48,6 +48,11 @@ function PublicMenuPage() {
     const [isPaying, setIsPaying] = useState(false);
     const [orderSent, setOrderSent] = useState(false);
 
+    // Checkout form state
+    const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+    const [checkoutInfo, setCheckoutInfo] = useState({ name: '', phone: '', address: '', type: 'delivery' as 'delivery' | 'retiro' });
+    const [checkoutErrors, setCheckoutErrors] = useState<Record<string, string>>({});
+
     // Variant Selection State
     const [variantProduct, setVariantProduct] = useState<any>(null);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -163,13 +168,28 @@ function PublicMenuPage() {
     };
 
     // CHECKOUT HANDLERS
+    const validateCheckoutForm = () => {
+        const errors: Record<string, string> = {};
+        if (!checkoutInfo.name.trim()) errors.name = 'Ingresá tu nombre';
+        if (!checkoutInfo.phone.trim()) errors.phone = 'Ingresá tu teléfono';
+        if (checkoutInfo.type === 'delivery' && !checkoutInfo.address.trim()) errors.address = 'Ingresá la dirección de entrega';
+        setCheckoutErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
     const handleMercadoPagoCheckout = async () => {
+        if (!tableId && !showCheckoutForm) {
+            setShowCheckoutForm(true);
+            return;
+        }
+        if (!tableId && !validateCheckoutForm()) return;
+
         setIsPaying(true);
         try {
             const response = await fetch('/api/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items: cart }),
+                body: JSON.stringify({ items: cart, customer: !tableId ? checkoutInfo : null }),
             });
             const data = await response.json();
             if (data.url) window.location.href = data.url;
@@ -607,32 +627,89 @@ function PublicMenuPage() {
                                 )}
                             </div>
 
-                            <div className="p-6 bg-gray-50 border-t border-gray-200">
-                                <div className="flex justify-between items-center mb-6">
+                            <div className="p-5 bg-gray-50 border-t border-gray-200 space-y-4">
+
+                                {/* FORM de datos de entrega (solo sin mesa) */}
+                                {!tableId && showCheckoutForm && (
+                                    <div className="space-y-3 bg-white rounded-2xl p-4 border border-gray-100">
+                                        <p className="font-black text-gray-900 text-sm">¿Cómo recibís el pedido?</p>
+
+                                        {/* Tipo */}
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {(['delivery', 'retiro'] as const).map(t => (
+                                                <button
+                                                    key={t}
+                                                    onClick={() => setCheckoutInfo(p => ({ ...p, type: t }))}
+                                                    className={`py-2.5 rounded-xl font-bold text-sm transition-all ${checkoutInfo.type === t ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}
+                                                >
+                                                    {t === 'delivery' ? '🛵 Delivery' : '🏃 Retiro en local'}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Nombre */}
+                                        <div>
+                                            <input
+                                                type="text"
+                                                placeholder="Nombre completo *"
+                                                value={checkoutInfo.name}
+                                                onChange={e => setCheckoutInfo(p => ({ ...p, name: e.target.value }))}
+                                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${checkoutErrors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                            />
+                                            {checkoutErrors.name && <p className="text-red-500 text-xs mt-1">{checkoutErrors.name}</p>}
+                                        </div>
+
+                                        {/* Teléfono */}
+                                        <div>
+                                            <input
+                                                type="tel"
+                                                placeholder="Teléfono / WhatsApp *"
+                                                value={checkoutInfo.phone}
+                                                onChange={e => setCheckoutInfo(p => ({ ...p, phone: e.target.value }))}
+                                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${checkoutErrors.phone ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                            />
+                                            {checkoutErrors.phone && <p className="text-red-500 text-xs mt-1">{checkoutErrors.phone}</p>}
+                                        </div>
+
+                                        {/* Dirección (solo delivery) */}
+                                        {checkoutInfo.type === 'delivery' && (
+                                            <div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Dirección de entrega *"
+                                                    value={checkoutInfo.address}
+                                                    onChange={e => setCheckoutInfo(p => ({ ...p, address: e.target.value }))}
+                                                    className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${checkoutErrors.address ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                                />
+                                                {checkoutErrors.address && <p className="text-red-500 text-xs mt-1">{checkoutErrors.address}</p>}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Total */}
+                                <div className="flex justify-between items-center">
                                     <span className="text-gray-500 font-medium">Total</span>
-                                    <span className="text-4xl font-black text-gray-900 tracking-tighter">{formatCurrency(cartTotal)}</span>
+                                    <span className="text-3xl font-black text-gray-900 tracking-tighter">{formatCurrency(cartTotal)}</span>
                                 </div>
 
                                 <div className="space-y-3">
-                                    {/* Prompt login si no hay sesión */}
-                                    <button
-                                        onClick={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 bg-orange-50 border border-orange-100 rounded-xl hover:bg-orange-100 transition-colors"
-                                    >
-                                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-                                            <User size={16} className="text-orange-500" />
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="text-xs font-black text-orange-600">Iniciá sesión y acumulá puntos</p>
-                                            <p className="text-[11px] text-orange-400">Descuentos desde el 5% OFF</p>
-                                        </div>
-                                    </button>
+                                    {/* Prompt login */}
+                                    {!tableId && (
+                                        <button
+                                            onClick={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 bg-orange-50 border border-orange-100 rounded-xl hover:bg-orange-100 transition-colors"
+                                        >
+                                            <User size={16} className="text-orange-500 shrink-0" />
+                                            <p className="text-xs font-black text-orange-600 text-left">Iniciá sesión y acumulá puntos — hasta 15% OFF</p>
+                                        </button>
+                                    )}
 
                                     {tableId ? (
                                         <button
                                             onClick={handleTableCheckout}
                                             disabled={!cart.length || isPaying}
-                                            className="w-full bg-black text-white py-5 rounded-xl font-black text-xl flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
+                                            className="w-full bg-black text-white py-4 rounded-xl font-black text-xl flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
                                         >
                                             {isPaying ? 'Enviando...' : '✓ Cerrar Pedido'}
                                         </button>
@@ -643,16 +720,21 @@ function PublicMenuPage() {
                                                 disabled={!cart.length || isPaying}
                                                 className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
                                             >
-                                                {isPaying ? 'Procesando...' : <><CreditCard size={20} /> Pagar con billetera digital</>}
+                                                {isPaying ? 'Procesando...' : showCheckoutForm
+                                                    ? <><CreditCard size={20} /> Confirmar y Pagar</>
+                                                    : <><CreditCard size={20} /> Pagar con billetera digital</>
+                                                }
                                             </button>
-                                            <div className="flex items-center justify-center gap-2 mt-2.5 flex-wrap">
-                                                <span className="text-[10px] text-gray-400 font-medium mr-1">Aceptamos:</span>
-                                                <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#009EE3]/10 text-[#009EE3]">Mercado Pago</span>
-                                                <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#7B3FE4]/10 text-[#7B3FE4]">MODO</span>
-                                                <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#5C2D91]/10 text-[#5C2D91]">Ualá</span>
-                                                <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#FF6200]/10 text-[#FF6200]">Naranja X</span>
-                                                <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-gray-100 text-gray-500">+ otras</span>
-                                            </div>
+                                            {!showCheckoutForm && (
+                                                <div className="flex items-center justify-center gap-2 mt-2.5 flex-wrap">
+                                                    <span className="text-[10px] text-gray-400 font-medium mr-1">Aceptamos:</span>
+                                                    <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#009EE3]/10 text-[#009EE3]">Mercado Pago</span>
+                                                    <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#7B3FE4]/10 text-[#7B3FE4]">MODO</span>
+                                                    <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#5C2D91]/10 text-[#5C2D91]">Ualá</span>
+                                                    <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#FF6200]/10 text-[#FF6200]">Naranja X</span>
+                                                    <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-gray-100 text-gray-500">+ otras</span>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
