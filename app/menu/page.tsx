@@ -206,62 +206,50 @@ function PublicMenuPage() {
         return Object.keys(errors).length === 0;
     };
 
-    const handleMercadoPagoCheckout = async () => {
-        if (!tableId && !showCheckoutForm) {
-            setCartStep('form');
-            return;
-        }
-        if (!tableId && !validateCheckoutForm()) return;
+    // Función central para guardar un pedido web
+    const saveWebOrder = async (itemsToOrder: any[], ci: typeof checkoutInfo) => {
+        const total = itemsToOrder.reduce((acc, i) => acc + i.price * (i.quantity ?? 1), 0);
+        const items = itemsToOrder.map(i => ({
+            name: i.name, quantity: i.quantity ?? 1, price: i.price,
+            variants: i.variants || [], observations: i.observations || '',
+        }));
 
+        let deliveryInfo = '';
+        if (ci.type === 'tribunales') {
+            const edif = TRIBUNALES_EDIFICIOS.find(e => e.id === ci.tEdificio);
+            deliveryInfo = [
+                `Edificio: ${edif?.label ?? ci.tEdificio}`,
+                ci.tPiso ? `Piso: ${ci.tPiso}` : '',
+                ci.tOficina ? `Oficina: ${ci.tOficina}` : '',
+                `Receptor: ${ci.tReceptor}`,
+                ci.tMesaEntradas ? 'Dejar en Mesa de Entradas' : 'Llamar al llegar',
+            ].filter(Boolean).join(' | ');
+        } else if (ci.type === 'delivery') {
+            deliveryInfo = `Delivery a: ${ci.address}`;
+        } else {
+            deliveryInfo = 'Retiro en local';
+        }
+
+        const { error } = await supabase.from('orders').insert({
+            customer_name: ci.name, customer_phone: ci.phone,
+            delivery_type: ci.type, delivery_info: deliveryInfo,
+            items, total, status: 'PENDING', order_type: 'WEB',
+        });
+        if (error) console.error('Error guardando pedido:', error);
+        // Guardamos el checkoutInfo para mostrarlo en la confirmación
+        setCheckoutInfo(ci);
+        setOrderSent(true);
+        setIsCartOpen(false);
+        setCart([]);
+        setCartStep('items');
+    };
+
+    const handleMercadoPagoCheckout = async () => {
+        if (!tableId && !showCheckoutForm) { setCartStep('form'); return; }
+        if (!tableId && !validateCheckoutForm()) return;
         setIsPaying(true);
         try {
-            const total = cart.reduce((acc, i) => acc + i.price * i.quantity, 0);
-            const items = cart.map(i => ({
-                name: i.name,
-                quantity: i.quantity,
-                price: i.price,
-                variants: i.variants || [],
-                observations: i.observations || '',
-            }));
-
-            // Armar info de entrega legible
-            let deliveryInfo = '';
-            if (checkoutInfo.type === 'tribunales') {
-                const edif = TRIBUNALES_EDIFICIOS.find(e => e.id === checkoutInfo.tEdificio);
-                deliveryInfo = [
-                    `Edificio: ${edif?.label ?? checkoutInfo.tEdificio}`,
-                    checkoutInfo.tPiso ? `Piso: ${checkoutInfo.tPiso}` : '',
-                    checkoutInfo.tOficina ? `Oficina: ${checkoutInfo.tOficina}` : '',
-                    `Receptor: ${checkoutInfo.tReceptor}`,
-                    checkoutInfo.tMesaEntradas ? 'Dejar en Mesa de Entradas' : 'Llamar al llegar',
-                ].filter(Boolean).join(' | ');
-            } else if (checkoutInfo.type === 'delivery') {
-                deliveryInfo = `Delivery a: ${checkoutInfo.address}`;
-            } else {
-                deliveryInfo = 'Retiro en local';
-            }
-
-            // Guardar pedido en orders
-            const { error: orderError } = await supabase.from('orders').insert({
-                customer_name: checkoutInfo.name,
-                customer_phone: checkoutInfo.phone,
-                delivery_type: checkoutInfo.type,
-                delivery_info: deliveryInfo,
-                items,
-                total,
-                status: 'PENDING',
-                order_type: 'WEB',
-            });
-
-            if (orderError) {
-                console.error('Error guardando pedido:', orderError);
-                // Igual mostramos confirmación al cliente
-            }
-
-            setOrderSent(true);
-            setIsCartOpen(false);
-            setCart([]);
-            setCartStep('items');
+            await saveWebOrder(cart, checkoutInfo);
         } catch (error) {
             console.error(error);
             toast.error("Error al confirmar el pedido, intentá de nuevo");
@@ -393,11 +381,20 @@ function PublicMenuPage() {
                 onAddToOrder={(product, variants, observations) => {
                     addToCart(product, variants, observations);
                 }}
-                onAddAndCheckout={(product, variants, observations) => {
-                    addToCart(product, variants, observations);
+                onAddAndCheckout={(product, variants, observations, ci) => {
+                    if (!ci) return;
+                    // Construir ítem nuevo
+                    const newItem = {
+                        ...product,
+                        cartItemId: `${product.id}-${Date.now()}`,
+                        quantity: 1,
+                        variants,
+                        observations,
+                    };
+                    // Guardar pedido con el carrito actual + nuevo ítem
+                    const fullCart = [...cart, newItem];
                     setVariantProduct(null);
-                    setIsCartOpen(true);
-                    setCartStep('form');
+                    saveWebOrder(fullCart, ci as typeof checkoutInfo);
                 }}
             />
             <CustomerAuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
