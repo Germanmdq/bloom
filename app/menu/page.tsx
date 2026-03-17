@@ -614,6 +614,20 @@ function PublicMenuPage() {
                                 </div>
 
                                 <div className="space-y-3">
+                                    {/* Prompt login si no hay sesión */}
+                                    <button
+                                        onClick={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 bg-orange-50 border border-orange-100 rounded-xl hover:bg-orange-100 transition-colors"
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                                            <User size={16} className="text-orange-500" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-xs font-black text-orange-600">Iniciá sesión y acumulá puntos</p>
+                                            <p className="text-[11px] text-orange-400">Descuentos desde el 5% OFF</p>
+                                        </div>
+                                    </button>
+
                                     {tableId ? (
                                         <button
                                             onClick={handleTableCheckout}
@@ -623,34 +637,23 @@ function PublicMenuPage() {
                                             {isPaying ? 'Enviando...' : '✓ Cerrar Pedido'}
                                         </button>
                                     ) : (
-                                    <div>
-                                        <button
-                                            onClick={handleMercadoPagoCheckout}
-                                            disabled={!cart.length || isPaying}
-                                            className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
-                                        >
-                                            {isPaying ? 'Procesando...' : <><CreditCard size={20} /> Pagar con billetera digital</>}
-                                        </button>
-                                        {/* Billeteras aceptadas */}
-                                        <div className="flex items-center justify-center gap-2 mt-2.5 flex-wrap">
-                                            <span className="text-[10px] text-gray-400 font-medium mr-1">Aceptamos:</span>
-                                            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#009EE3]/10 text-[#009EE3]">Mercado Pago</span>
-                                            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#7B3FE4]/10 text-[#7B3FE4]">MODO</span>
-                                            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#5C2D91]/10 text-[#5C2D91]">Ualá</span>
-                                            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#FF6200]/10 text-[#FF6200]">Naranja X</span>
-                                            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-gray-100 text-gray-500">+ otras</span>
+                                        <div>
+                                            <button
+                                                onClick={handleMercadoPagoCheckout}
+                                                disabled={!cart.length || isPaying}
+                                                className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
+                                            >
+                                                {isPaying ? 'Procesando...' : <><CreditCard size={20} /> Pagar con billetera digital</>}
+                                            </button>
+                                            <div className="flex items-center justify-center gap-2 mt-2.5 flex-wrap">
+                                                <span className="text-[10px] text-gray-400 font-medium mr-1">Aceptamos:</span>
+                                                <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#009EE3]/10 text-[#009EE3]">Mercado Pago</span>
+                                                <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#7B3FE4]/10 text-[#7B3FE4]">MODO</span>
+                                                <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#5C2D91]/10 text-[#5C2D91]">Ualá</span>
+                                                <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-[#FF6200]/10 text-[#FF6200]">Naranja X</span>
+                                                <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-gray-100 text-gray-500">+ otras</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    )}
-
-                                    {!tableId && (
-                                        <button
-                                            onClick={handleWhatsAppCheckout}
-                                            disabled={!cart.length}
-                                            className="w-full bg-[#25D366] text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#20bd5a] active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg shadow-green-500/20"
-                                        >
-                                            <MessageCircle size={20} fill="white" /> Enviar pedido por WhatsApp
-                                        </button>
                                     )}
                                 </div>
                             </div>
