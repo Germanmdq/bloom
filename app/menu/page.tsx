@@ -274,27 +274,49 @@ function PublicMenuPage() {
         window.open(`https://wa.me/${whatsappNumber}?text=${text}`, '_blank');
     };
 
-    // TABLE SELF-ORDER: send directly to kitchen
+    // TABLE SELF-ORDER: send directly to kitchen and update table items
     const handleTableCheckout = async () => {
         if (cart.length === 0 || !tableId) return;
         setIsPaying(true);
         try {
-            const total = cart.reduce((acc, i) => acc + i.price * i.quantity, 0);
-            const items = cart.map(i => ({
+            const newItems = cart.map(i => ({
                 name: i.name,
                 quantity: i.quantity,
                 price: i.price,
                 variants: i.variants || [],
+                observations: i.observations || '',
             }));
+            const newTotal = cart.reduce((acc, i) => acc + i.price * i.quantity, 0);
 
+            // Fetch existing table data to accumulate items and total
+            const { data: tableData } = await supabase
+                .from('salon_tables')
+                .select('items, total')
+                .eq('id', tableId)
+                .single();
+
+            const existingItems = Array.isArray(tableData?.items) ? tableData.items : [];
+            const existingTotal = Number(tableData?.total) || 0;
+
+            // Merge items and accumulate total
+            const mergedItems = [...existingItems, ...newItems];
+            const mergedTotal = existingTotal + newTotal;
+
+            // Send to kitchen
             await supabase.from('kitchen_tickets').insert({
                 table_id: tableId,
-                items,
+                items: newItems,
                 status: 'PENDING',
             });
 
+            // Update table: items visible to waiters + accumulated total
             await supabase.from('salon_tables')
-                .update({ status: 'OCCUPIED', total })
+                .update({
+                    status: 'OCCUPIED',
+                    total: mergedTotal,
+                    items: mergedItems,
+                    updated_at: new Date().toISOString(),
+                })
                 .eq('id', tableId);
 
             setOrderSent(true);
