@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, User, Star, Gift, ChevronRight } from "lucide-react";
+import { X, User, Star, Gift, Phone, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface CustomerAuthModalProps {
@@ -9,73 +9,101 @@ interface CustomerAuthModalProps {
     onClose: () => void;
 }
 
+const STORAGE_KEY = 'bloom_customer';
+
 export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
     const supabase = createClient();
-    const [user, setUser] = useState<any>(null);
     const [customer, setCustomer] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [signingIn, setSigningIn] = useState(false);
+    const [step, setStep] = useState<'phone' | 'name' | 'profile'>('phone');
+    const [phone, setPhone] = useState('');
+    const [name, setName] = useState('');
+    const [error, setError] = useState('');
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        const getUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setUser(session?.user ?? null);
-            if (session?.user) loadCustomer(session.user);
-            else setLoading(false);
-        };
-        getUser();
+        if (!isOpen) return;
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                setCustomer(parsed);
+                setStep('profile');
+            } catch { }
+        }
+        setLoading(false);
+    }, [isOpen]);
 
-        const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-            if (session?.user) loadCustomer(session.user);
-            else { setCustomer(null); setLoading(false); }
-        });
-        return () => listener.subscription.unsubscribe();
-    }, []);
+    const handlePhoneSubmit = async () => {
+        const cleaned = phone.replace(/\D/g, '');
+        if (cleaned.length < 8) { setError('Ingresá un número válido'); return; }
+        setError('');
+        setSaving(true);
 
-    const loadCustomer = async (u: any) => {
-        setLoading(true);
-        const email = u.email;
-        const name = u.user_metadata?.full_name || u.user_metadata?.name || email?.split('@')[0] || 'Cliente';
-        // Upsert customer
+        // Buscar si ya existe
         const { data } = await supabase
             .from('customers')
-            .upsert({ email, name, phone: email }, { onConflict: 'phone' })
+            .select('*')
+            .eq('phone', cleaned)
+            .single();
+
+        if (data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            setCustomer(data);
+            setStep('profile');
+        } else {
+            // Nuevo usuario — pedir nombre
+            setPhone(cleaned);
+            setStep('name');
+        }
+        setSaving(false);
+    };
+
+    const handleRegister = async () => {
+        if (!name.trim()) { setError('Ingresá tu nombre'); return; }
+        setError('');
+        setSaving(true);
+
+        const { data, error: err } = await supabase
+            .from('customers')
+            .insert({ name: name.trim(), phone })
             .select()
             .single();
+
+        if (err || !data) {
+            setError('Error al registrar. Intentá de nuevo.');
+            setSaving(false);
+            return;
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         setCustomer(data);
-        setLoading(false);
+        setStep('profile');
+        setSaving(false);
     };
 
-    const signInWithGoogle = async () => {
-        setSigningIn(true);
-        await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: window.location.href }
-        });
-    };
-
-    const signOut = async () => {
-        await supabase.auth.signOut();
+    const handleSignOut = () => {
+        localStorage.removeItem(STORAGE_KEY);
         setCustomer(null);
+        setPhone('');
+        setName('');
+        setStep('phone');
     };
 
     if (!isOpen) return null;
 
     const discountThresholds = [
-        { spend: 50000,  discount: 5,  label: "Bronce" },
-        { spend: 150000, discount: 10, label: "Plata" },
-        { spend: 300000, discount: 15, label: "Oro" },
+        { spend: 50000,  discount: 5,  label: "Bronce",  color: "text-orange-500",  bg: "bg-orange-50 border-orange-200" },
+        { spend: 150000, discount: 10, label: "Plata",   color: "text-gray-500",    bg: "bg-gray-50 border-gray-200" },
+        { spend: 300000, discount: 15, label: "Oro",     color: "text-amber-500",   bg: "bg-amber-50 border-amber-200" },
     ];
 
-    const currentTier = discountThresholds.reduce((acc, tier) =>
-        (customer?.total_spent ?? 0) >= tier.spend ? tier : acc,
-        { spend: 0, discount: 0, label: "Nuevo" }
+    const totalSpent = customer?.total_spent ?? 0;
+    const currentTier = discountThresholds.reduce<any>((acc, tier) =>
+        totalSpent >= tier.spend ? tier : acc, { spend: 0, discount: 0, label: "Nuevo", color: "text-gray-400", bg: "bg-gray-50 border-gray-100" }
     );
-    const nextTier = discountThresholds.find(t => (customer?.total_spent ?? 0) < t.spend);
-    const progress = nextTier
-        ? Math.min(((customer?.total_spent ?? 0) / nextTier.spend) * 100, 100)
-        : 100;
+    const nextTier = discountThresholds.find(t => totalSpent < t.spend);
+    const progress = nextTier ? Math.min((totalSpent / nextTier.spend) * 100, 100) : 100;
 
     return (
         <div className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
@@ -93,67 +121,95 @@ export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
                     <div className="p-10 flex items-center justify-center">
                         <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
                     </div>
-                ) : !user ? (
-                    /* LOGIN */
-                    <div className="p-6 space-y-4">
-                        <div className="text-center mb-6">
-                            <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                                <Gift size={28} className="text-orange-500" />
+
+                ) : step === 'phone' ? (
+                    /* PASO 1 — TELÉFONO */
+                    <div className="p-6 space-y-5">
+                        <div className="text-center">
+                            <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                <Gift size={26} className="text-orange-500" />
                             </div>
-                            <p className="text-gray-900 font-bold text-lg">Acumulá puntos y beneficios</p>
-                            <p className="text-gray-400 text-sm mt-1">Ingresá para acceder a descuentos exclusivos</p>
+                            <p className="font-black text-gray-900 text-lg">Acumulá puntos y descuentos</p>
+                            <p className="text-gray-400 text-sm mt-1">Ingresá tu número para identificarte</p>
                         </div>
 
-                        {/* Google */}
+                        <div className="relative">
+                            <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="tel"
+                                placeholder="Ej: 1123456789"
+                                value={phone}
+                                onChange={e => { setPhone(e.target.value); setError(''); }}
+                                onKeyDown={e => e.key === 'Enter' && handlePhoneSubmit()}
+                                className={`w-full pl-11 pr-4 py-4 rounded-2xl border-2 text-base font-bold outline-none transition-all ${error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                autoFocus
+                            />
+                        </div>
+                        {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+
                         <button
-                            onClick={signInWithGoogle}
-                            disabled={signingIn}
-                            className="w-full flex items-center justify-center gap-3 py-3.5 px-4 border-2 border-gray-200 rounded-2xl font-bold text-gray-700 hover:bg-gray-50 active:scale-[0.98] transition-all"
+                            onClick={handlePhoneSubmit}
+                            disabled={saving}
+                            className="w-full bg-black text-white py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50"
                         >
-                            <svg width="20" height="20" viewBox="0 0 24 24">
-                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                            </svg>
-                            Continuar con Google
+                            {saving ? 'Buscando...' : <><ArrowRight size={18} /> Continuar</>}
+                        </button>
+                    </div>
+
+                ) : step === 'name' ? (
+                    /* PASO 2 — NOMBRE (nuevo usuario) */
+                    <div className="p-6 space-y-5">
+                        <div className="text-center">
+                            <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                <User size={26} className="text-orange-500" />
+                            </div>
+                            <p className="font-black text-gray-900 text-lg">¡Primera vez por acá!</p>
+                            <p className="text-gray-400 text-sm mt-1">¿Cómo te llamás?</p>
+                        </div>
+
+                        <input
+                            type="text"
+                            placeholder="Tu nombre"
+                            value={name}
+                            onChange={e => { setName(e.target.value); setError(''); }}
+                            onKeyDown={e => e.key === 'Enter' && handleRegister()}
+                            className={`w-full px-4 py-4 rounded-2xl border-2 text-base font-bold outline-none transition-all ${error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                            autoFocus
+                        />
+                        {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+
+                        <button
+                            onClick={handleRegister}
+                            disabled={saving}
+                            className="w-full bg-orange-500 text-white py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 hover:bg-orange-600 active:scale-[0.98] transition-all disabled:opacity-50"
+                        >
+                            {saving ? 'Registrando...' : '¡Listo, empezar a acumular!'}
                         </button>
 
-                        <p className="text-center text-xs text-gray-400 mt-2">
-                            Al ingresar aceptás nuestros términos y condiciones
-                        </p>
+                        <button onClick={() => setStep('phone')} className="w-full text-sm text-gray-400 hover:text-gray-600 transition-colors">
+                            ← Cambiar número
+                        </button>
                     </div>
+
                 ) : (
                     /* PERFIL */
-                    <div className="p-6 space-y-5">
+                    <div className="p-6 space-y-4">
                         {/* Avatar + nombre */}
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center shrink-0">
-                                {user.user_metadata?.avatar_url
-                                    ? <img src={user.user_metadata.avatar_url} className="w-12 h-12 rounded-2xl object-cover" />
-                                    : <User size={22} className="text-orange-500" />
-                                }
+                                <User size={22} className="text-orange-500" />
                             </div>
                             <div>
-                                <p className="font-black text-gray-900">{user.user_metadata?.full_name || user.email}</p>
-                                <p className="text-xs text-gray-400">{user.email}</p>
+                                <p className="font-black text-gray-900">{customer?.name}</p>
+                                <p className="text-xs text-gray-400 flex items-center gap-1"><Phone size={11} /> {customer?.phone}</p>
                             </div>
                         </div>
 
                         {/* Nivel */}
-                        <div className={`rounded-2xl p-4 ${
-                            currentTier.label === 'Oro' ? 'bg-amber-50 border border-amber-200' :
-                            currentTier.label === 'Plata' ? 'bg-gray-50 border border-gray-200' :
-                            currentTier.label === 'Bronce' ? 'bg-orange-50 border border-orange-200' :
-                            'bg-gray-50 border border-gray-100'
-                        }`}>
+                        <div className={`rounded-2xl p-4 border ${currentTier.bg}`}>
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
-                                    <Star size={16} className={
-                                        currentTier.label === 'Oro' ? 'text-amber-500' :
-                                        currentTier.label === 'Plata' ? 'text-gray-500' :
-                                        currentTier.label === 'Bronce' ? 'text-orange-500' : 'text-gray-400'
-                                    } fill="currentColor" />
+                                    <Star size={15} className={currentTier.color} fill="currentColor" />
                                     <span className="font-black text-gray-900 text-sm">Nivel {currentTier.label}</span>
                                 </div>
                                 {currentTier.discount > 0 && (
@@ -162,42 +218,36 @@ export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
                                     </span>
                                 )}
                             </div>
-
-                            {nextTier && (
+                            {nextTier ? (
                                 <>
                                     <div className="w-full bg-gray-200 rounded-full h-2 mb-1.5">
-                                        <div className="bg-orange-500 h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                                        <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${progress}%` }} />
                                     </div>
                                     <p className="text-xs text-gray-500">
-                                        ${((nextTier.spend - (customer?.total_spent ?? 0)) / 1000).toFixed(0)}k para nivel {nextTier.label} ({nextTier.discount}% OFF)
+                                        ${((nextTier.spend - totalSpent) / 1000).toFixed(0)}k para nivel {nextTier.label} ({nextTier.discount}% OFF)
                                     </p>
                                 </>
+                            ) : (
+                                <p className="text-xs text-amber-600 font-bold">¡Nivel máximo! 🏆</p>
                             )}
-                            {!nextTier && <p className="text-xs text-amber-600 font-bold">¡Nivel máximo alcanzado! 🏆</p>}
                         </div>
 
                         {/* Stats */}
-                        <div className="grid grid-cols-3 gap-3">
-                            <div className="bg-gray-50 rounded-xl p-3 text-center">
-                                <p className="text-xl font-black text-gray-900">{customer?.visits ?? 0}</p>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase">Visitas</p>
-                            </div>
-                            <div className="bg-gray-50 rounded-xl p-3 text-center">
-                                <p className="text-xl font-black text-gray-900">{customer?.points ?? 0}</p>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase">Puntos</p>
-                            </div>
-                            <div className="bg-gray-50 rounded-xl p-3 text-center">
-                                <p className="text-xl font-black text-gray-900">{currentTier.discount}%</p>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase">Descuento</p>
-                            </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            {[
+                                { val: customer?.visits ?? 0, label: 'Visitas' },
+                                { val: customer?.points ?? 0, label: 'Puntos' },
+                                { val: `${currentTier.discount}%`, label: 'Descuento' },
+                            ].map(({ val, label }) => (
+                                <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
+                                    <p className="text-xl font-black text-gray-900">{val}</p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{label}</p>
+                                </div>
+                            ))}
                         </div>
 
-                        {/* Cerrar sesión */}
-                        <button
-                            onClick={signOut}
-                            className="w-full py-3 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                            Cerrar sesión
+                        <button onClick={handleSignOut} className="w-full py-2.5 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors">
+                            Salir
                         </button>
                     </div>
                 )}
