@@ -492,7 +492,7 @@ function PublicMenuPage() {
                             {platoDiaProduct && (
                                 <button
                                     onClick={() => setSelectedCategory(PLATO_DIA_CAT)}
-                                    className="group relative w-full h-48 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
+                                    className="group relative w-full h-64 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
                                 >
                                     <div className="absolute inset-0">
                                         <Image src={platoDiaProduct.image_url || getCategoryImage('plato')} alt="Plato del Día" fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
@@ -500,8 +500,8 @@ function PublicMenuPage() {
                                     </div>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-5">
                                         <span className="text-xs font-black uppercase tracking-widest text-orange-300 mb-1">⭐ Destacado de hoy</span>
-                                        <h3 className="text-white font-black text-3xl leading-tight drop-shadow-lg">Plato del Día</h3>
-                                        <p className="text-white/70 text-sm font-medium mt-1 drop-shadow">{platoDiaProduct.name}</p>
+                                        <h3 className="text-white font-black text-4xl leading-tight drop-shadow-lg">Plato del Día</h3>
+                                        <p className="text-white/70 text-base font-medium mt-1 drop-shadow">{platoDiaProduct.name}</p>
                                     </div>
                                 </button>
                             )}
@@ -518,7 +518,7 @@ function PublicMenuPage() {
                                             <div className="absolute inset-0 bg-black/45 group-hover:bg-black/60 transition-colors duration-300" />
                                         </div>
                                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-5">
-                                            <h3 className="text-white font-black text-2xl leading-tight drop-shadow-lg">Platos Diarios</h3>
+                                            <h3 className="text-white font-black text-3xl leading-tight drop-shadow-lg">Platos Diarios</h3>
                                         </div>
                                     </button>
                                 )}
@@ -535,7 +535,7 @@ function PublicMenuPage() {
                                                 <div className="absolute inset-0 bg-black/45 group-hover:bg-black/60 transition-colors duration-300" />
                                             </div>
                                             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-5">
-                                                <h3 className="text-white font-black text-2xl leading-tight drop-shadow-lg">{cat.name}</h3>
+                                                <h3 className="text-white font-black text-3xl leading-tight drop-shadow-lg">{cat.name}</h3>
                                             </div>
                                         </button>
                                     ))
@@ -557,8 +557,8 @@ function PublicMenuPage() {
                                                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/55 transition-colors duration-300" />
                                             </div>
                                             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3">
-                                                <span className="text-2xl block leading-none mb-2 drop-shadow-lg">{cat.icon}</span>
-                                                <h3 className="text-white font-black text-sm leading-tight drop-shadow-lg">{cat.name}</h3>
+                                                <span className="text-3xl block leading-none mb-2 drop-shadow-lg">{cat.icon}</span>
+                                                <h3 className="text-white font-black text-base leading-tight drop-shadow-lg">{cat.name}</h3>
                                             </div>
                                         </button>
                                     ))
