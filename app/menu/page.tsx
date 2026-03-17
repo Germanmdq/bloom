@@ -405,21 +405,22 @@ function PublicMenuPage() {
                 onAddToOrder={(product, variants, observations) => {
                     addToCart(product, variants, observations);
                 }}
-                onAddAndCheckout={(product, variants, observations, ci) => {
-                    if (!ci) return;
-                    // Construir ítem nuevo
-                    const newItem = {
-                        ...product,
-                        cartItemId: `${product.id}-${Date.now()}`,
-                        quantity: 1,
-                        variants,
-                        observations,
-                    };
-                    // Guardar pedido con el carrito actual + nuevo ítem
-                    const fullCart = [...cart, newItem];
-                    setVariantProduct(null);
-                    saveWebOrder(fullCart, ci as typeof checkoutInfo);
-                }}
+                // Mesa: sin form de entrega — solo agregar al carrito
+                {...(!tableId && {
+                    onAddAndCheckout: (product: any, variants: any[], observations?: string, ci?: any) => {
+                        if (!ci) return;
+                        const newItem = {
+                            ...product,
+                            cartItemId: `${product.id}-${Date.now()}`,
+                            quantity: 1,
+                            variants,
+                            observations,
+                        };
+                        const fullCart = [...cart, newItem];
+                        setVariantProduct(null);
+                        saveWebOrder(fullCart, ci as typeof checkoutInfo);
+                    }
+                })}
             />
             <CustomerAuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
 

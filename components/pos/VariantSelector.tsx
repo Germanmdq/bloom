@@ -272,7 +272,9 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                 <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex justify-between items-start">
                     <div>
                         <h2 className="text-xl font-black text-gray-900 leading-tight">{product.name}</h2>
-                        <p className="text-gray-400 text-sm mt-0.5">Personalizá y elegí cómo recibir</p>
+                        <p className="text-gray-400 text-sm mt-0.5">
+                            {onAddAndCheckout ? "Personalizá y elegí cómo recibir" : "Personalizá tu pedido"}
+                        </p>
                     </div>
                     <button onClick={() => { reset(); onClose(); }} className="p-2 bg-gray-100 rounded-full text-gray-400 hover:text-gray-900 shrink-0 ml-3">
                         <X size={20} />
@@ -479,12 +481,16 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                     ✓ Confirmar Pedido
                                 </button>
                             )}
-                            {/* Agregar al carrito y seguir */}
+                            {/* Agregar al carrito */}
                             <button
                                 onClick={handleAddOnly}
-                                className="w-full py-3 rounded-xl font-bold text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 active:scale-[0.98] transition-all"
+                                className={`w-full rounded-xl font-bold active:scale-[0.98] transition-all ${
+                                    onAddAndCheckout
+                                        ? "py-3 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700"
+                                        : "py-4 text-base bg-black hover:bg-gray-900 text-white shadow-lg"
+                                }`}
                             >
-                                + Agregar y seguir eligiendo
+                                {onAddAndCheckout ? "+ Agregar y seguir eligiendo" : "Agregar al pedido"}
                             </button>
                         </>
                     )}
