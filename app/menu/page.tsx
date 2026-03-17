@@ -511,7 +511,7 @@ function PublicMenuPage() {
                                 {platosDiariosCat && (
                                     <button
                                         onClick={() => setSelectedCategory(PLATOS_DIARIOS_CAT)}
-                                        className="group relative w-full h-56 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
+                                        className="group relative w-full h-64 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
                                     >
                                         <div className="absolute inset-0">
                                             <Image src={getCategoryImage('plato diario')} alt="Platos Diarios" fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
@@ -528,7 +528,7 @@ function PublicMenuPage() {
                                         <button
                                             key={cat.id}
                                             onClick={() => setSelectedCategory(cat)}
-                                            className="group relative w-full h-56 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
+                                            className="group relative w-full h-64 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
                                         >
                                             <div className="absolute inset-0">
                                                 <Image src={getCategoryImage(cat.name)} alt={cat.name} fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
@@ -550,7 +550,7 @@ function PublicMenuPage() {
                                         <button
                                             key={cat.id}
                                             onClick={() => setSelectedCategory(cat)}
-                                            className="group relative h-56 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-300 w-full"
+                                            className="group relative h-64 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-300 w-full"
                                         >
                                             <div className="absolute inset-0">
                                                 <Image src={getCategoryImage(cat.name)} alt={cat.name} fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
