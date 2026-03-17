@@ -34,7 +34,7 @@ export function SiteFooter() {
                         <ul className="space-y-2 text-sm text-gray-500">
                             <li className="flex items-start gap-1.5">
                                 <MapPin size={14} className="shrink-0 mt-0.5 text-orange-400" />
-                                Alte. Brown 2046, Mar del Plata
+                                Almirante Brown 2005, Mar del Plata
                             </li>
                             <li className="text-orange-500 font-bold cursor-pointer hover:underline text-xs mt-2">Ver en Maps →</li>
                         </ul>
@@ -54,7 +54,7 @@ export function SiteFooter() {
 
                 <div className="border-t border-gray-100 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
                     <span>© {new Date().getFullYear()} Bloom. Todos los derechos reservados.</span>
-                    <Link href="/login" className="hover:text-gray-600 transition-colors">Acceso empleados</Link>
+                    <Link href="/login" className="opacity-0 hover:opacity-100 transition-opacity duration-300 hover:text-gray-500 select-none">·</Link>
                 </div>
             </div>
         </footer>

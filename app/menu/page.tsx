@@ -64,7 +64,7 @@ function PublicMenuPage() {
     const [checkoutErrors, setCheckoutErrors] = useState<Record<string, string>>({});
 
     const TRIBUNALES_EDIFICIOS = [
-        { id: 'central',  label: 'Edificio Central',       sub: 'Alte. Brown 2046' },
+        { id: 'central',  label: 'Edificio Central',       sub: 'Alte. Brown 2005' },
         { id: 'civiles',  label: 'Anexo Civiles',          sub: 'Alte. Brown 2241 / 2257' },
         { id: 'abogados', label: 'Colegio de Abogados',    sub: 'Alte. Brown 1958' },
         { id: 'federal',  label: 'Justicia Federal',       sub: 'Alte. Brown 1762' },
@@ -232,11 +232,12 @@ function PublicMenuPage() {
         }
 
         const { error } = await supabase.from('orders').insert({
+            table_id: null,
             customer_name: ci.name, customer_phone: ci.phone,
             delivery_type: ci.type, delivery_info: deliveryInfo,
             items, total, status: 'PENDING', order_type: 'WEB',
         });
-        if (error) console.error('Error guardando pedido:', error);
+        if (error) console.error('Error guardando pedido:', error.message, error.details);
         // Guardamos el checkoutInfo para mostrarlo en la confirmación
         setCheckoutInfo(ci);
         setOrderSent(true);

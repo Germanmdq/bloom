@@ -36,7 +36,7 @@ interface VariantSelectorProps {
 
 const TRIBUNALES_EDIFICIOS: { id: string; label: string; sub: string; pisos: string[] }[] = [
     {
-        id: 'central', label: 'Edificio Central', sub: 'Alte. Brown 2046',
+        id: 'central', label: 'Edificio Central', sub: 'Alte. Brown 2005',
         pisos: [
             'Subsuelo — Administración / Arquitectura',
             'Planta Baja — Informes / Seguridad / Mesa de Entradas',
