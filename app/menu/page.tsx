@@ -519,7 +519,7 @@ function PublicMenuPage() {
                             )}
 
                             {/* Platos Diarios + Promociones — misma fila, 50/50 en desktop */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3"> {/* Platos Diarios + Promo */}
                                 {platosDiariosCat && (
                                     <button
                                         onClick={() => setSelectedCategory(PLATOS_DIARIOS_CAT)}
@@ -555,7 +555,7 @@ function PublicMenuPage() {
                             </div>
 
                             {/* Resto de categorías — 3 columnas */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3"> {/* Resto categorías */}
                                 {categories
                                     .filter(cat => !cat.name.toLowerCase().includes('plato') && !cat.name.toLowerCase().includes('promo'))
                                     .map(cat => (
@@ -614,7 +614,7 @@ function PublicMenuPage() {
                         <div className={
                             selectedCategory.isPlato
                                 ? "flex justify-center"
-                                : "grid grid-cols-2 sm:grid-cols-4 gap-3"
+                                : "grid grid-cols-1 sm:grid-cols-4 gap-3"
                         }>
                             {filteredProducts.map(product => (
                                 <div
