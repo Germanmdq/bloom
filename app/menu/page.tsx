@@ -913,8 +913,7 @@ function PublicMenuPage() {
                                                     {formatCurrency(product.price)}
                                                 </span>
                                                 <span
-                                                    className="text-center font-black text-xs uppercase tracking-wide py-3 rounded-full border-2 transition-colors group-hover:text-white group-hover:bg-bloom-600"
-                                                    style={{ borderColor: fk.primary, color: fk.primary }}
+                                                    className="text-center font-black text-xs uppercase tracking-wide py-3 rounded-full border-2 border-bloom-600 bg-bloom-600 text-white shadow-sm transition-all group-hover:bg-bloom-700 group-hover:border-bloom-700 active:scale-[0.98]"
                                                 >
                                                     Agregar al pedido
                                                 </span>

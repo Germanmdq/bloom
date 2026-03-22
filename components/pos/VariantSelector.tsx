@@ -378,7 +378,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                     ✓ Confirmar Pedido
                                 </button>
                             )}
-                            {/* Agregar al carrito — siempre naranja Bloom + texto blanco */}
+                            {/* Agregar al carrito — bloom-600 (oliva marca) + texto blanco */}
                             <button
                                 type="button"
                                 onClick={handleAddOnly}
