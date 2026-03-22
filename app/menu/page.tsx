@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ChevronLeft, Plus, Minus, Search, CreditCard, User, MapPin, Phone, Truck, SlidersHorizontal } from "lucide-react";
+import { ShoppingBag, ChevronLeft, ChevronDown, Plus, Minus, Search, CreditCard, User, MapPin, Phone, Truck, SlidersHorizontal } from "lucide-react";
 import { CustomerAuthModal } from "@/components/Menu/CustomerAuthModal";
 import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
@@ -99,6 +99,8 @@ function PublicMenuPage() {
     const [variantProduct, setVariantProduct] = useState<any>(null);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
+    /** Móvil: categorías + precio en un solo desplegable */
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
     // Helpers for Variant Logic (Duplicated from POS/page for simplicity here)
     const HAS_VARIANTS = (p: any) => {
@@ -613,7 +615,7 @@ function PublicMenuPage() {
 
                     <div className="flex flex-col xl:grid xl:grid-cols-[minmax(0,280px)_1fr] xl:gap-12 items-start">
                         {/* Sidebar — siempre visible (mobile: arriba) */}
-                        <aside className="w-full space-y-4 xl:sticky xl:top-28 order-1">
+                        <aside className="hidden xl:block w-full space-y-4 xl:sticky xl:top-28 order-1">
                             <div className="rounded-2xl bg-white border-2 border-amber-100 shadow-sm p-4">
                                 <h3 className="font-black text-neutral-900 text-lg mb-3 pb-3 border-b border-amber-50 flex items-center gap-2">
                                     <SlidersHorizontal size={18} style={{ color: fk.primary }} />
@@ -710,23 +712,150 @@ function PublicMenuPage() {
                         </aside>
 
                         <div className="min-w-0 space-y-5 w-full order-2">
-                            <div className="flex xl:hidden gap-2 overflow-x-auto pb-2">
-                                {categoryNavItems.map((item) => (
-                                    <button
-                                        key={`m-${item.id}`}
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedCategory(item.cat);
-                                            setSearchQuery("");
-                                        }}
-                                        className={`shrink-0 px-4 py-2 rounded-full text-xs font-black whitespace-nowrap border-2 transition-colors ${
-                                            isSameCategory(selectedCategory, item.cat) ? "text-white border-transparent" : "bg-white text-neutral-700 border-amber-100"
-                                        }`}
-                                        style={isSameCategory(selectedCategory, item.cat) ? { backgroundColor: fk.primary } : undefined}
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
+                            {/* Móvil: categorías + precio en un desplegable */}
+                            <div className="xl:hidden">
+                                <button
+                                    type="button"
+                                    onClick={() => setMobileFiltersOpen((o) => !o)}
+                                    className="flex w-full items-center gap-3 rounded-2xl border-2 border-amber-100 bg-white px-4 py-3.5 text-left shadow-sm active:bg-amber-50/50"
+                                    aria-expanded={mobileFiltersOpen}
+                                    aria-controls="menu-mobile-filters"
+                                    id="menu-mobile-filters-trigger"
+                                >
+                                    <SlidersHorizontal className="shrink-0" size={22} style={{ color: fk.primary }} strokeWidth={2.25} />
+                                    <div className="min-w-0 flex-1">
+                                        <span className="block text-[10px] font-black uppercase tracking-wider text-neutral-500">Categoría y precio</span>
+                                        <span className="block font-black text-neutral-900 truncate">{selectedCategory?.name ?? "Menú"}</span>
+                                        <span className="block text-xs text-neutral-500 truncate">
+                                            {priceMin || priceMax
+                                                ? `Precio: ${priceMin || "—"} – ${priceMax || "—"} ARS`
+                                                : `Rango carta ${formatCurrency(priceBounds.min)} – ${formatCurrency(priceBounds.max)}`}
+                                        </span>
+                                    </div>
+                                    <ChevronDown
+                                        className={`shrink-0 text-neutral-400 transition-transform duration-200 ${mobileFiltersOpen ? "rotate-180" : ""}`}
+                                        size={24}
+                                        strokeWidth={2.25}
+                                        aria-hidden
+                                    />
+                                </button>
+                                <AnimatePresence initial={false}>
+                                    {mobileFiltersOpen && (
+                                        <motion.div
+                                            id="menu-mobile-filters"
+                                            role="region"
+                                            aria-labelledby="menu-mobile-filters-trigger"
+                                            initial={{ opacity: 0, y: -8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -8 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="mt-2 rounded-2xl border-2 border-amber-100 bg-white p-4 shadow-sm space-y-5"
+                                        >
+                                            <div>
+                                                <p className="text-xs font-black uppercase tracking-wide text-neutral-500 mb-2">Categoría</p>
+                                                <nav className="space-y-1 max-h-[min(45vh,280px)] overflow-y-auto pr-1">
+                                                    {categoryNavItems.map((item) => (
+                                                        <button
+                                                            key={`mob-cat-${item.id}`}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedCategory(item.cat);
+                                                                setSearchQuery("");
+                                                                setMobileFiltersOpen(false);
+                                                            }}
+                                                            className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                                                                isSameCategory(selectedCategory, item.cat)
+                                                                    ? "text-white shadow-md"
+                                                                    : "text-neutral-700 hover:bg-amber-50"
+                                                            }`}
+                                                            style={
+                                                                isSameCategory(selectedCategory, item.cat) ? { backgroundColor: fk.primary } : undefined
+                                                            }
+                                                        >
+                                                            {item.label}
+                                                        </button>
+                                                    ))}
+                                                </nav>
+                                            </div>
+                                            <div className="border-t border-amber-100 pt-4">
+                                                <h3 className="font-black text-neutral-900 text-base mb-1">Filtrar por precio</h3>
+                                                <p className="text-xs text-neutral-500 mb-3">
+                                                    Rango en carta: {formatCurrency(priceBounds.min)} — {formatCurrency(priceBounds.max)}
+                                                </p>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-[10px] font-black uppercase tracking-wider text-neutral-500 mb-1">Desde</label>
+                                                        <input
+                                                            type="number"
+                                                            inputMode="numeric"
+                                                            min={0}
+                                                            placeholder={String(Math.max(0, Math.floor(priceBounds.min)))}
+                                                            value={priceMin}
+                                                            onChange={(e) => setPriceMin(e.target.value)}
+                                                            className="w-full rounded-xl border-2 border-amber-100 bg-[#fffdf8] px-3 py-2 text-sm font-bold text-neutral-900 focus:border-amber-300 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-black uppercase tracking-wider text-neutral-500 mb-1">Hasta</label>
+                                                        <input
+                                                            type="number"
+                                                            inputMode="numeric"
+                                                            min={0}
+                                                            placeholder={String(Math.ceil(priceBounds.max))}
+                                                            value={priceMax}
+                                                            onChange={(e) => setPriceMax(e.target.value)}
+                                                            className="w-full rounded-xl border-2 border-amber-100 bg-[#fffdf8] px-3 py-2 text-sm font-bold text-neutral-900 focus:border-amber-300 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2 mt-3">
+                                                    {(() => {
+                                                        const { min, max } = priceBounds;
+                                                        const span = Math.max(max - min, 1);
+                                                        const b = Math.round(min + span / 3);
+                                                        const c = Math.round(min + (2 * span) / 3);
+                                                        const presets: { label: string; min: string; max: string }[] = [
+                                                            { label: `Hasta ${formatCurrency(b)}`, min: "", max: String(Math.ceil(b)) },
+                                                            { label: `${formatCurrency(b)} – ${formatCurrency(c)}`, min: String(Math.floor(b)), max: String(Math.ceil(c)) },
+                                                            { label: `Desde ${formatCurrency(c)}`, min: String(Math.floor(c)), max: "" },
+                                                        ];
+                                                        return presets.map((p) => (
+                                                            <button
+                                                                key={`mob-${p.label}`}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setPriceMin(p.min);
+                                                                    setPriceMax(p.max);
+                                                                }}
+                                                                className="text-xs font-bold px-3 py-1.5 rounded-full border-2 border-amber-100 bg-amber-50/80 hover:bg-amber-100 text-neutral-800 transition-colors"
+                                                            >
+                                                                {p.label}
+                                                            </button>
+                                                        ));
+                                                    })()}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setPriceMin("");
+                                                        setPriceMax("");
+                                                    }}
+                                                    className="mt-3 w-full py-2.5 rounded-xl text-sm font-black border-2 border-neutral-200 text-neutral-600 hover:bg-neutral-50 transition-colors"
+                                                >
+                                                    Quitar filtro de precio
+                                                </button>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setMobileFiltersOpen(false)}
+                                                className="w-full py-3 rounded-xl text-sm font-black text-white shadow-md"
+                                                style={{ backgroundColor: fk.primary }}
+                                            >
+                                                Ver productos
+                                            </button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
                             {!selectedCategory?.isPlato && (
