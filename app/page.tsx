@@ -267,7 +267,7 @@ export default function Home() {
           <Link href="/" className="flex items-center gap-2 shrink-0 min-w-0">
             <LogoWordmark />
           </Link>
-          <nav className="hidden lg:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
+          <nav className="hidden xl:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
             <Link href="/" className="text-[#c41e3a]">
               Inicio
             </Link>

@@ -497,7 +497,7 @@ function PublicMenuPage() {
                     <Link href="/" className="font-black text-lg sm:text-xl md:text-2xl tracking-tighter text-neutral-900 shrink-0 min-w-0">
                         BLOOM<span style={{ color: fk.yellow }}>.</span>
                     </Link>
-                    <nav className="hidden lg:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
+                    <nav className="hidden xl:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
                         <Link href="/" className="hover:opacity-80 transition-opacity" style={{ color: fk.red }}>
                             Inicio
                         </Link>
@@ -515,7 +515,7 @@ function PublicMenuPage() {
                         <FoodKingMobileNavButton onOpen={() => setMobileNavOpen(true)} />
                         <Link
                             href="#menu-shop"
-                            className="lg:hidden inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-black text-white shadow-md active:scale-[0.98] whitespace-nowrap"
+                            className="xl:hidden inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-black text-white shadow-md active:scale-[0.98] whitespace-nowrap"
                             style={{ backgroundColor: fk.red }}
                         >
                             <ShoppingBag size={15} className="shrink-0" strokeWidth={2.5} />
@@ -566,10 +566,10 @@ function PublicMenuPage() {
                 </div>
             </header>
 
-            <div id="menu-shop" className="w-full max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 scroll-mt-28">
+            <div id="menu-shop" className="w-full max-w-7xl mx-auto py-6 px-4 sm:px-6 xl:px-8 scroll-mt-28">
                 {/* Vista shop FoodKing: sidebar (categorías + precio) + grilla */}
                 <div className="space-y-6 animate-in fade-in duration-300">
-                    <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 pb-4 border-b border-amber-100">
+                    <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 pb-4 border-b border-amber-100">
                         <div>
                             <p className="font-bold uppercase tracking-[0.15em] text-xs mb-1" style={{ color: fk.red }}>
                                 Shop
@@ -610,15 +610,15 @@ function PublicMenuPage() {
                         </div>
                     </div>
 
-                    <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,280px)_1fr] lg:gap-10 xl:gap-12 items-start">
+                    <div className="flex flex-col xl:grid xl:grid-cols-[minmax(0,280px)_1fr] xl:gap-12 items-start">
                         {/* Sidebar — siempre visible (mobile: arriba) */}
-                        <aside className="w-full space-y-4 lg:sticky lg:top-28 order-1">
+                        <aside className="w-full space-y-4 xl:sticky xl:top-28 order-1">
                             <div className="rounded-2xl bg-white border-2 border-amber-100 shadow-sm p-4">
                                 <h3 className="font-black text-neutral-900 text-lg mb-3 pb-3 border-b border-amber-50 flex items-center gap-2">
                                     <SlidersHorizontal size={18} style={{ color: fk.red }} />
                                     Categorías
                                 </h3>
-                                <nav className="space-y-1 max-h-[min(40vh,320px)] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
+                                <nav className="space-y-1 max-h-[min(40vh,320px)] xl:max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
                                     {categoryNavItems.map((item) => (
                                         <button
                                             key={item.id}
@@ -709,7 +709,7 @@ function PublicMenuPage() {
                         </aside>
 
                         <div className="min-w-0 space-y-5 w-full order-2">
-                            <div className="flex lg:hidden gap-2 overflow-x-auto pb-2">
+                            <div className="flex xl:hidden gap-2 overflow-x-auto pb-2">
                                 {categoryNavItems.map((item) => (
                                     <button
                                         key={`m-${item.id}`}

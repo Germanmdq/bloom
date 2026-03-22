@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Inter, Raleway, Open_Sans } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
@@ -28,6 +28,13 @@ export const metadata: Metadata = {
   description: "Donde cada taza florece.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#fffdf8",
+  colorScheme: "light",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${raleway.variable} ${openSans.variable} ${playfair.variable} ${inter.variable} antialiased text-[#334862] bg-[#fffdf8]`} suppressHydrationWarning>
+      <body className={`${raleway.variable} ${openSans.variable} ${playfair.variable} ${inter.variable} antialiased text-neutral-900 bg-[#fffdf8]`} suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

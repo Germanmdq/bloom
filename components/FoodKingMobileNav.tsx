@@ -18,7 +18,7 @@ export function FoodKingMobileNavButton({ onOpen }: { onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="lg:hidden flex items-center justify-center w-11 h-11 rounded-xl border-2 border-amber-200 bg-white shadow-sm active:scale-[0.98]"
+      className="xl:hidden flex items-center justify-center w-11 h-11 rounded-xl border-2 border-amber-200 bg-white shadow-sm active:scale-[0.98]"
       style={{ color: fk.red }}
       aria-label="Abrir menú de navegación"
     >
@@ -37,7 +37,7 @@ export function FoodKingMobileNavPanel({ open, onClose }: { open: boolean; onClo
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm xl:hidden"
             onClick={onClose}
             aria-hidden
           />
@@ -46,7 +46,7 @@ export function FoodKingMobileNavPanel({ open, onClose }: { open: boolean; onClo
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
-            className="fixed inset-y-0 right-0 z-[90] w-[min(100vw,20rem)] shadow-2xl flex flex-col lg:hidden border-l-2 border-amber-100"
+            className="fixed inset-y-0 right-0 z-[90] w-[min(100vw,20rem)] shadow-2xl flex flex-col xl:hidden border-l-2 border-amber-100"
             style={{ backgroundColor: fk.cream }}
           >
             <div className="flex items-center justify-between px-4 py-4 border-b border-amber-100 bg-white">
