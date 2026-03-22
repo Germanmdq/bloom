@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { getSupabaseUrl } from "@/lib/supabase/env";
 
 export async function POST(req: Request) {
     try {
@@ -9,7 +10,7 @@ export async function POST(req: Request) {
 
         // Create a Supabase client with the service role key to bypass RLS and create users
         const supabaseAdmin = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            getSupabaseUrl(),
             process.env.SUPABASE_SERVICE_ROLE_KEY!,
             {
                 auth: {
@@ -54,7 +55,7 @@ export async function DELETE(req: Request) {
         }
 
         const supabaseAdmin = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            getSupabaseUrl(),
             process.env.SUPABASE_SERVICE_ROLE_KEY!,
             {
                 auth: {

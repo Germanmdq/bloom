@@ -1,5 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 export async function POST(request: Request) {
     try {
@@ -9,10 +10,7 @@ export async function POST(request: Request) {
         // NOTE: This will only work if your RLS policies allow INSERT for anon users.
         // If this fails, you MUST go to Supabase Dashboard > Table Editor > orders > generic policies
         // And add a policy: "Enable insert for everyone" (Target roles: anon)
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        const supabase = createClient(getSupabaseUrl(), getSupabaseAnonKey());
 
         const { data, error } = await supabase
             .from('orders')

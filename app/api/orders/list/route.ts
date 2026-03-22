@@ -1,14 +1,13 @@
-
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 export async function GET() {
     try {
-        // Determine the environment variables to use
         // If SERVICE_ROLE is available, use it to bypass RLS completely.
         // If not, fall back to ANON key (which seems to work for read-all based on script test).
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        const supabaseUrl = getSupabaseUrl();
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || getSupabaseAnonKey();
 
         const supabase = createClient(supabaseUrl, supabaseKey);
 

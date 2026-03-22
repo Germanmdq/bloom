@@ -1,20 +1,18 @@
-
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
-        const id = searchParams.get('id');
+        const id = searchParams.get("id");
 
         if (!id) {
             return NextResponse.json({ error: "Missing ID" }, { status: 400 });
         }
 
-        // Determine the environment variables to use
-        // Using service role to ensure we can delete despite RLS
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        const supabaseUrl = getSupabaseUrl();
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || getSupabaseAnonKey();
 
         const supabase = createClient(supabaseUrl, supabaseKey);
 

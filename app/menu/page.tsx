@@ -1,17 +1,27 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ChevronLeft, Plus, Minus, X, Search, MessageCircle, Bike, CreditCard, User } from "lucide-react";
+import { ShoppingBag, ChevronLeft, Plus, Minus, Search, CreditCard, User, MapPin, Phone, Truck, SlidersHorizontal } from "lucide-react";
 import { CustomerAuthModal } from "@/components/Menu/CustomerAuthModal";
 import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
 import { VariantSelector } from "@/components/pos/VariantSelector"; // Reusing logic
-// Font (assuming Inter is global, but styling explicitly)
+
+/** Estilo FoodKing (demo) — rojo / amarillo / crema */
+const fk = {
+    red: "#c41e3a",
+    yellow: "#ffc107",
+    cream: "#fffdf8",
+    dark: "#1a1a1a",
+} as const;
+
+/** Ver todos los productos — vista shop por defecto */
+const ALL_CATEGORIES = { id: "all", name: "Todos los productos", virtual: true, isAll: true };
 
 // --- HELPERS ---
 const formatCurrency = (value: number) =>
@@ -39,9 +49,13 @@ function PublicMenuPage() {
     const PLATO_DIA_CAT = { id: 'virtual-plato-dia', name: 'Plato del Día', virtual: true, isPlato: true };
     const PLATOS_DIARIOS_CAT = { id: 'virtual-platos-diarios', name: 'Platos Diarios', virtual: true, isPlatos: true };
 
-    // Navigation State
-    const [selectedCategory, setSelectedCategory] = useState<any | null>(null);
+    // Navigation — por defecto "Todos" (vista shop con sidebar)
+    const [selectedCategory, setSelectedCategory] = useState<any>(ALL_CATEGORIES);
     const [searchQuery, setSearchQuery] = useState("");
+    /** Filtro precio ARS (vacío = sin límite) — como FoodKing shop */
+    const [priceMin, setPriceMin] = useState("");
+    const [priceMax, setPriceMax] = useState("");
+    const [sortBy, setSortBy] = useState<"default" | "price-asc" | "price-desc">("default");
 
     // Cart & Checkout State
     const [cart, setCart] = useState<any[]>([]);
@@ -89,7 +103,7 @@ function PublicMenuPage() {
         return name.includes('milanesa') || name.includes('hamburguesa') || name.includes('pizza') || name.includes('lomo') || name.includes('empanada') || name.includes('pasta') || name.includes('sorrentinos') || name.includes('ravioles') || name.includes('noquis') || name.includes('ñoquis') || name.includes('pechuga') || name.includes('patamuslo') || name.includes('filet') || name.includes('bife') || name.includes('guarnición') || name.includes('guarnicion');
     };
 
-    // FETCH DATA
+    // FETCH DATA — deps fijas [] (evita warning “dependency array changed size” con HMR/hidratación)
     useEffect(() => {
         const fetchMenu = async () => {
             const [{ data: cats }, { data: prods }, { data: settings }] = await Promise.all([
@@ -106,28 +120,12 @@ function PublicMenuPage() {
                     return true;
                 });
                 setCategories(unique);
-                // Auto-seleccionar categoría si viene por URL
-                if (catParam) {
-                    if (catParam.toLowerCase().includes('plato del d')) {
-                        setSelectedCategory({ id: 'virtual-plato-dia', name: 'Plato del Día', virtual: true, isPlato: true });
-                    } else if (catParam.toLowerCase().includes('plato') && catParam.toLowerCase().includes('diario')) {
-                        setSelectedCategory({ id: 'virtual-platos-diarios', name: 'Platos Diarios', virtual: true, isPlatos: true });
-                    } else {
-                        const match = unique.find((c: any) =>
-                            c.name.toLowerCase().includes(catParam.toLowerCase()) ||
-                            catParam.toLowerCase().includes(c.name.toLowerCase().split(' ')[0])
-                        );
-                        if (match) setSelectedCategory(match);
-                    }
-                }
             }
             if (prods) setProducts(prods);
             if (settings?.whatsapp) setWhatsappNumber(settings.whatsapp);
-            // Marcar el plato del día desde app_settings
             if (settings?.plato_del_dia_id && prods) {
                 const featured = prods.find((p: any) => p.id === settings.plato_del_dia_id);
                 if (featured) {
-                    // Mutate en memoria para no alterar el array original
                     prods.forEach((p: any) => { p.kind = p.id === settings.plato_del_dia_id ? 'plato_del_dia' : (p.kind === 'plato_del_dia' ? 'menu' : p.kind); });
                 }
             }
@@ -136,30 +134,62 @@ function PublicMenuPage() {
         fetchMenu();
     }, []);
 
+    // Sincronizar categoría con ?cat= — mismo tamaño de deps en cada render
+    useEffect(() => {
+        if (categories.length === 0) return;
+        if (!catParam) {
+            setSelectedCategory(ALL_CATEGORIES);
+            return;
+        }
+        const q = catParam.toLowerCase();
+        if (q.includes("plato del d")) {
+            setSelectedCategory({ id: "virtual-plato-dia", name: "Plato del Día", virtual: true, isPlato: true });
+            return;
+        }
+        if (q.includes("plato") && q.includes("diario")) {
+            setSelectedCategory({ id: "virtual-platos-diarios", name: "Platos Diarios", virtual: true, isPlatos: true });
+            return;
+        }
+        const match = categories.find(
+            (c: any) =>
+                c.name.toLowerCase().includes(q) ||
+                q.includes(c.name.toLowerCase().split(" ")[0])
+        );
+        if (match) setSelectedCategory(match);
+    }, [catParam, categories]);
+
     // Platos Diarios category id (real)
     const platosDiariosCat = categories.find(c => c.name.toLowerCase().includes('plato') && c.name.toLowerCase().includes('diario'));
     const platoDiaProduct = products.find(p => p.kind === 'plato_del_dia');
 
-    // FILTER LOGIC
-    const filteredProducts = products.filter(p => {
-        if (!selectedCategory) return true;
-        if (selectedCategory.virtual && selectedCategory.isPlato) {
-            // Virtual: solo el plato del día
-            return p.kind === 'plato_del_dia';
-        }
-        if (selectedCategory.virtual && selectedCategory.isPlatos) {
-            // Virtual: todos los platos diarios excepto el destacado
-            return platosDiariosCat ? p.category_id === platosDiariosCat.id : false;
-        }
-        const matchesCategory = p.category_id === selectedCategory.id;
-        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
-    }).filter(p => {
-        if (!selectedCategory || (!selectedCategory.virtual)) {
-            return p.name.toLowerCase().includes(searchQuery.toLowerCase());
-        }
-        return true;
-    });
+    const priceBounds = useMemo(() => {
+        if (!products.length) return { min: 0, max: 50000 };
+        const prices = products.map((p) => Number(p.price) || 0);
+        return { min: Math.min(...prices), max: Math.max(...prices) };
+    }, [products]);
+
+    const filteredProducts = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        let list = products.filter((p) => {
+            const price = Number(p.price) || 0;
+            if (priceMin !== "" && !Number.isNaN(Number(priceMin)) && price < Number(priceMin)) return false;
+            if (priceMax !== "" && !Number.isNaN(Number(priceMax)) && price > Number(priceMax)) return false;
+            if (q && !p.name.toLowerCase().includes(q)) return false;
+
+            if (selectedCategory?.isAll) return true;
+            if (selectedCategory?.virtual && selectedCategory?.isPlato) return p.kind === "plato_del_dia";
+            if (selectedCategory?.virtual && selectedCategory?.isPlatos) {
+                return platosDiariosCat ? p.category_id === platosDiariosCat.id : false;
+            }
+            if (selectedCategory?.id && !selectedCategory?.virtual) return p.category_id === selectedCategory.id;
+            return true;
+        });
+
+        if (sortBy === "price-asc") list = [...list].sort((a, b) => Number(a.price) - Number(b.price));
+        else if (sortBy === "price-desc") list = [...list].sort((a, b) => Number(b.price) - Number(a.price));
+
+        return list;
+    }, [products, selectedCategory, searchQuery, priceMin, priceMax, platosDiariosCat, sortBy]);
 
     // CART OPERATIONS
     const addToCart = (product: any, variants: any[] = [], observations?: string) => {
@@ -317,11 +347,35 @@ function PublicMenuPage() {
     const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-    if (loading) return <div className="min-h-screen bg-white flex items-center justify-center"><div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" /></div>;
+    const categoryNavItems: { id: string; cat: any; label: string }[] = [
+        { id: "all", cat: ALL_CATEGORIES, label: "Todos" },
+        ...(platoDiaProduct ? [{ id: "v-pd", cat: PLATO_DIA_CAT, label: "Plato del Día" }] : []),
+        ...(platosDiariosCat ? [{ id: "v-pds", cat: PLATOS_DIARIOS_CAT, label: "Platos Diarios" }] : []),
+        ...categories.map((c) => ({ id: String(c.id), cat: c, label: c.name })),
+    ];
+
+    const isSameCategory = (a: any, b: any) => {
+        if (!a || !b) return false;
+        if (a.isAll && b.isAll) return true;
+        if (a.isAll || b.isAll) return false;
+        if (a.virtual && b.virtual) return a.id === b.id;
+        return a.id === b.id;
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: fk.cream }}>
+                <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: `${fk.yellow}`, borderTopColor: fk.red }} />
+                <p className="font-black text-sm uppercase tracking-[0.2em]" style={{ color: fk.red }}>
+                    Cargando menú…
+                </p>
+            </div>
+        );
+    }
 
     if (orderSent) return (
-        <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-6">
-            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl border border-amber-100/60 space-y-4">
+        <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: fk.cream }}>
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl border-2 border-amber-100 space-y-4">
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                     <span className="text-4xl">✅</span>
                 </div>
@@ -371,7 +425,8 @@ function PublicMenuPage() {
                 </p>
                 <button
                     onClick={() => { setOrderSent(false); setCheckoutInfo({ name: '', phone: '', address: '', type: 'delivery', tEdificio: '', tPiso: '', tOficina: '', tReceptor: '', tMesaEntradas: false }); }}
-                    className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-2xl transition-colors text-sm"
+                    className="w-full py-3.5 text-white font-black rounded-2xl transition-colors text-sm shadow-lg hover:opacity-95"
+                    style={{ backgroundColor: fk.red }}
                 >
                     Hacer otro pedido
                 </button>
@@ -381,7 +436,7 @@ function PublicMenuPage() {
 
     // --- RENDER ---
     return (
-        <main className="min-h-screen bg-[#FAF7F2] text-gray-900 font-sans pb-32 selection:bg-black selection:text-white">
+        <main className="min-h-screen text-neutral-900 font-sans pb-32 selection:bg-amber-200/60 selection:text-neutral-900" style={{ backgroundColor: fk.cream }}>
             <VariantSelector
                 product={variantProduct}
                 isOpen={!!variantProduct}
@@ -408,258 +463,342 @@ function PublicMenuPage() {
             />
             <CustomerAuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
 
+            {/* Top bar — FoodKing style */}
+            <div className="text-neutral-900 text-xs sm:text-sm font-semibold border-b border-amber-200/50" style={{ backgroundColor: fk.yellow }}>
+                <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2 py-2">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        <span className="inline-flex items-center gap-1.5">
+                            <Truck size={14} className="shrink-0" />
+                            Delivery en la ciudad · Pedí online
+                        </span>
+                    </div>
+                    <div className="hidden sm:flex items-center gap-4">
+                        <span className="inline-flex items-center gap-1.5 opacity-90">
+                            <MapPin size={14} /> Mar del Plata
+                        </span>
+                        <a href="tel:+5492231234567" className="inline-flex items-center gap-1.5 font-bold hover:underline">
+                            <Phone size={14} /> +54 9 223
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             {/* HEADER */}
-            <header className="sticky top-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-xl border-b border-amber-100/60 transition-all">
-                {/* Nav principal */}
-                <div className="px-6 py-3 flex items-center justify-between border-b border-amber-100/40">
-                    <Link href="/" className="font-black text-xl tracking-tighter text-gray-900">
-                        BLOOM<span className="text-orange-500">.</span>
+            <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-amber-100/80 transition-all">
+                <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+                    <Link href="/" className="font-black text-xl md:text-2xl tracking-tighter text-neutral-900 shrink-0">
+                        BLOOM<span style={{ color: fk.yellow }}>.</span>
                     </Link>
-                    <nav className="hidden sm:flex items-center gap-6 text-sm font-semibold text-gray-500">
-                        <button onClick={() => setSelectedCategory(null)} className="hover:text-gray-900 transition-colors">Menú</button>
-                        <Link href="/" className="hover:text-gray-900 transition-colors">Inicio</Link>
-                        <Link href="/cuenta" className="hover:text-gray-900 transition-colors">Mi Cuenta</Link>
+                    <nav className="hidden md:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
+                        <Link href="/" className="hover:opacity-80 transition-opacity" style={{ color: fk.red }}>
+                            Inicio
+                        </Link>
+                        <button type="button" onClick={() => { setSelectedCategory(ALL_CATEGORIES); setSearchQuery(""); }} className="hover:opacity-80 transition-opacity">
+                            Menú
+                        </button>
+                        <Link href="/about" className="hover:text-neutral-900 transition-colors">
+                            Nosotros
+                        </Link>
+                        <Link href="/reservations" className="hover:text-neutral-900 transition-colors">
+                            Reservas
+                        </Link>
                     </nav>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                         {tableLabel && (
-                            <span className="bg-black text-white text-sm font-black px-4 py-1.5 rounded-full">
+                            <span className="text-white text-xs sm:text-sm font-black px-3 py-1.5 rounded-full whitespace-nowrap" style={{ backgroundColor: fk.dark }}>
                                 {tableLabel}
                             </span>
                         )}
-                        <button onClick={() => setIsAuthOpen(true)} className="p-2 bg-white rounded-full hover:bg-orange-50 border border-amber-100 transition-colors shadow-sm">
-                            <User size={20} className="text-gray-900" strokeWidth={2} />
+                        <button type="button" onClick={() => setIsAuthOpen(true)} className="p-2.5 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 transition-colors">
+                            <User size={20} className="text-neutral-800" strokeWidth={2} />
                         </button>
-                        <button onClick={() => setIsCartOpen(true)} className="relative p-2 bg-white rounded-full hover:bg-orange-50 border border-amber-100 transition-colors shadow-sm">
-                            <ShoppingBag size={20} className="text-gray-900" strokeWidth={2.5} />
-                            {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">{cartCount}</span>}
+                        <button
+                            type="button"
+                            onClick={() => setIsCartOpen(true)}
+                            className="relative inline-flex items-center justify-center p-2.5 rounded-full text-white font-bold shadow-md hover:opacity-95 transition-opacity"
+                            style={{ backgroundColor: fk.red }}
+                        >
+                            <ShoppingBag size={20} strokeWidth={2.5} />
+                            {cartCount > 0 && (
+                                <span className="absolute -top-1 -right-1 text-[10px] font-black min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full border-2 border-white" style={{ backgroundColor: fk.yellow, color: fk.dark }}>
+                                    {cartCount}
+                                </span>
+                            )}
                         </button>
                     </div>
                 </div>
 
-                {/* Breadcrumb cuando hay categoría seleccionada */}
-                {selectedCategory && (
-                    <div className="px-6 py-2 flex items-center gap-2 text-sm">
-                        <button onClick={() => { setSelectedCategory(null); setSearchQuery(""); }} className="flex items-center gap-1 text-orange-500 font-semibold hover:text-orange-600 transition-colors">
-                            <ChevronLeft size={16} strokeWidth={2.5} />
-                            Menú
-                        </button>
-                        <span className="text-gray-300">/</span>
-                        <span className="text-gray-600 font-medium">{selectedCategory.name}</span>
-                    </div>
-                )}
+                <div className="max-w-7xl mx-auto px-4 py-2.5 border-t border-amber-50 flex flex-wrap items-center gap-2 text-sm bg-[#fffdf8]/90">
+                    <Link href="/" className="text-neutral-500 hover:text-neutral-800 font-semibold">
+                        Inicio
+                    </Link>
+                    <span className="text-neutral-300">/</span>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setSelectedCategory(ALL_CATEGORIES);
+                            setSearchQuery("");
+                        }}
+                        className="font-semibold hover:underline"
+                        style={{ color: fk.red }}
+                    >
+                        Menú
+                    </button>
+                    <span className="text-neutral-300">/</span>
+                    <span className="font-black text-neutral-800">{selectedCategory?.name ?? "Menú"}</span>
+                </div>
             </header>
 
-            <div className="w-full py-3 px-5 sm:px-[100px] sm:py-6">
-
-                {/* STATE 1: CATEGORY GRID (HOME) */}
-                {!selectedCategory && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="space-y-2">
-                            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Nuestro Menú</h1>
-                            <p className="text-gray-500 font-medium text-lg leading-relaxed">Selecciona una categoría para comenzar.</p>
+            <div className="w-full max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                {/* Vista shop FoodKing: sidebar (categorías + precio) + grilla */}
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 pb-4 border-b border-amber-100">
+                        <div>
+                            <p className="font-bold uppercase tracking-[0.15em] text-xs mb-1" style={{ color: fk.red }}>
+                                Shop
+                            </p>
+                            <h1 className="text-2xl sm:text-4xl font-black text-neutral-900 tracking-tight">Menú Bloom</h1>
+                            <p className="text-neutral-600 text-sm mt-2">
+                                Mostrando <strong>{filteredProducts.length}</strong> producto{filteredProducts.length !== 1 ? "s" : ""}
+                                {selectedCategory?.isAll ? "" : ` en ${selectedCategory?.name}`}
+                            </p>
                         </div>
-
-                        {/* Buscador global */}
-                        <div className="relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Buscar en todo el menú..."
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full bg-white/80 border-0 ring-1 ring-amber-100 rounded-2xl py-4 pl-12 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-amber-300 outline-none transition-shadow shadow-sm"
-                            />
-                        </div>
-
-                        {/* Resultados de búsqueda global */}
-                        {searchQuery.trim() !== "" ? (
-                            <div className="space-y-4">
-                                {products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
-                                    <div className="text-center py-10 text-gray-400">No se encontraron productos.</div>
-                                ) : (
-                                    products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).map(product => (
-                                        <div
-                                            key={product.id}
-                                            onClick={() => handleProductClick(product)}
-                                            className="group bg-white rounded-3xl p-4 flex gap-5 shadow-sm hover:shadow-md border border-gray-100 transition-all cursor-pointer active:scale-[0.98]"
-                                        >
-                                            <div className="w-36 h-28 bg-gray-100 rounded-2xl overflow-hidden shrink-0 relative">
-                                                {product.image_url ? (
-                                                    <Image src={product.image_url} alt={product.name} fill className="object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-2xl">🍽️</div>
-                                                )}
-                                            </div>
-                                            <div className="flex-1 flex flex-col justify-center">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <h3 className="font-bold text-gray-900 text-lg leading-tight">{product.name}</h3>
-                                                    <span className="font-semibold text-gray-900 bg-gray-50 px-2 py-1 rounded-lg text-sm">{formatCurrency(product.price)}</span>
-                                                </div>
-                                                <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">{product.description}</p>
-                                                <div className="mt-3 flex">
-                                                    <span className="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-1 rounded-full flex items-center gap-1 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                                        <Plus size={14} strokeWidth={3} /> Agregar
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        ) : (
-                        <div className="space-y-3">
-                            {/* Plato del Día — destacado */}
-                            {platoDiaProduct && (
-                                <button
-                                    onClick={() => setSelectedCategory(PLATO_DIA_CAT)}
-                                    className="group relative w-full h-64 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
-                                >
-                                    <div className="absolute inset-0">
-                                        <Image src={platoDiaProduct.image_url || getCategoryImage('plato')} alt="Plato del Día" fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
-                                        <div className="absolute inset-0 bg-black/50 group-hover:bg-black/65 transition-colors duration-300" />
-                                    </div>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-5">
-                                        <span className="text-xs font-black uppercase tracking-widest text-orange-300 mb-1">⭐ Destacado de hoy</span>
-                                        <h3 className="text-white font-black text-4xl leading-tight drop-shadow-lg">Plato del Día</h3>
-                                        <p className="text-white/70 text-base font-medium mt-1 drop-shadow">{platoDiaProduct.name}</p>
-                                    </div>
-                                </button>
-                            )}
-
-                            {/* Platos Diarios + Promociones — misma fila, 50/50 en desktop */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3"> {/* Platos Diarios + Promo */}
-                                {platosDiariosCat && (
-                                    <button
-                                        onClick={() => setSelectedCategory(PLATOS_DIARIOS_CAT)}
-                                        className="group relative w-full h-64 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
-                                    >
-                                        <div className="absolute inset-0">
-                                            <Image src={getCategoryImage('plato diario')} alt="Platos Diarios" fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
-                                            <div className="absolute inset-0 bg-black/45 group-hover:bg-black/60 transition-colors duration-300" />
-                                        </div>
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-5">
-                                            <h3 className="text-white font-black text-3xl leading-tight drop-shadow-lg">Platos Diarios</h3>
-                                        </div>
-                                    </button>
-                                )}
-                                {categories
-                                    .filter(cat => cat.name.toLowerCase().includes('promo'))
-                                    .map(cat => (
-                                        <button
-                                            key={cat.id}
-                                            onClick={() => setSelectedCategory(cat)}
-                                            className="group relative w-full h-64 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
-                                        >
-                                            <div className="absolute inset-0">
-                                                <Image src={getCategoryImage(cat.name)} alt={cat.name} fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
-                                                <div className="absolute inset-0 bg-black/45 group-hover:bg-black/60 transition-colors duration-300" />
-                                            </div>
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-5">
-                                                <h3 className="text-white font-black text-3xl leading-tight drop-shadow-lg">{cat.name}</h3>
-                                            </div>
-                                        </button>
-                                    ))
-                                }
-                            </div>
-
-                            {/* Resto de categorías — 3 columnas */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3"> {/* Resto categorías */}
-                                {categories
-                                    .filter(cat => !cat.name.toLowerCase().includes('plato') && !cat.name.toLowerCase().includes('promo'))
-                                    .map(cat => (
-                                        <button
-                                            key={cat.id}
-                                            onClick={() => setSelectedCategory(cat)}
-                                            className="group relative h-64 rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-300 w-full"
-                                        >
-                                            <div className="absolute inset-0">
-                                                <Image src={getCategoryImage(cat.name)} alt={cat.name} fill className="object-cover group-hover:scale-110 group-hover:blur-[2px] transition-all duration-500" />
-                                                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/55 transition-colors duration-300" />
-                                            </div>
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3">
-                                                <span className="text-3xl block leading-none mb-2 drop-shadow-lg">{cat.icon}</span>
-                                                <h3 className="text-white font-black text-base leading-tight drop-shadow-lg">{cat.name}</h3>
-                                            </div>
-                                        </button>
-                                    ))
-                                }
-                            </div>
-                        </div>
-                        )}
-                    </div>
-                )}
-
-                {/* STATE 2: PRODUCT LIST (CATEGORY SELECTED) */}
-                {selectedCategory && (
-                    <div className="space-y-5 animate-in fade-in slide-in-from-right-8 duration-300">
-
-                        {/* Header con botón volver integrado */}
-                        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                            <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">{selectedCategory.name}</h1>
-                            <button
-                                onClick={() => { setSelectedCategory(null); setSearchQuery(""); }}
-                                className="flex items-center gap-1.5 text-sm font-bold text-orange-500 hover:text-orange-600 transition-colors px-3 py-1.5 rounded-full border border-orange-200 hover:bg-orange-50"
+                        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                            <label className="sr-only" htmlFor="menu-sort">
+                                Ordenar por precio
+                            </label>
+                            <select
+                                id="menu-sort"
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                                className="w-full sm:w-auto rounded-full border-2 border-amber-100 bg-white px-4 py-2.5 text-sm font-bold text-neutral-800 focus:border-amber-300 focus:outline-none cursor-pointer"
                             >
-                                <ChevronLeft size={15} strokeWidth={2.5} /> Menú
+                                <option value="default">Ordenar por: predeterminado</option>
+                                <option value="price-asc">Ordenar por precio: menor a mayor</option>
+                                <option value="price-desc">Ordenar por precio: mayor a menor</option>
+                            </select>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedCategory(ALL_CATEGORIES);
+                                    setSearchQuery("");
+                                    setPriceMin("");
+                                    setPriceMax("");
+                                }}
+                                className="inline-flex items-center justify-center gap-2 text-sm font-black uppercase tracking-wide px-5 py-2.5 rounded-full border-2 hover:bg-amber-50 transition-colors whitespace-nowrap"
+                                style={{ color: fk.red, borderColor: `${fk.red}40` }}
+                            >
+                                <ChevronLeft size={16} strokeWidth={2.5} /> Limpiar filtros
                             </button>
                         </div>
+                    </div>
 
-                        {/* Search in Category — oculto para Plato del Día (solo 1 producto) */}
-                        {!selectedCategory.isPlato && (
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                <input
-                                    type="text"
-                                    placeholder={`Buscar en ${selectedCategory.name}...`}
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                    className="w-full bg-white/80 border-0 ring-1 ring-amber-100 rounded-2xl py-4 pl-12 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-amber-300 outline-none transition-shadow shadow-sm"
-                                />
+                    <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,280px)_1fr] lg:gap-10 xl:gap-12 items-start">
+                        {/* Sidebar — siempre visible (mobile: arriba) */}
+                        <aside className="w-full space-y-4 lg:sticky lg:top-28 order-1">
+                            <div className="rounded-2xl bg-white border-2 border-amber-100 shadow-sm p-4">
+                                <h3 className="font-black text-neutral-900 text-lg mb-3 pb-3 border-b border-amber-50 flex items-center gap-2">
+                                    <SlidersHorizontal size={18} style={{ color: fk.red }} />
+                                    Categorías
+                                </h3>
+                                <nav className="space-y-1 max-h-[min(40vh,320px)] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
+                                    {categoryNavItems.map((item) => (
+                                        <button
+                                            key={item.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedCategory(item.cat);
+                                                setSearchQuery("");
+                                            }}
+                                            className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                                                isSameCategory(selectedCategory, item.cat) ? "text-white shadow-md" : "text-neutral-700 hover:bg-amber-50"
+                                            }`}
+                                            style={isSameCategory(selectedCategory, item.cat) ? { backgroundColor: fk.red } : undefined}
+                                        >
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                </nav>
                             </div>
-                        )}
 
-                        {/* Grid productos — centrado si es Plato del Día */}
-                        <div className={
-                            selectedCategory.isPlato
-                                ? "flex justify-center"
-                                : "grid grid-cols-1 sm:grid-cols-4 gap-3"
-                        }>
-                            {filteredProducts.map(product => (
-                                <div
-                                    key={product.id}
-                                    onClick={() => handleProductClick(product)}
-                                    className={`group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md border border-gray-100 transition-all cursor-pointer active:scale-[0.97] flex flex-col ${selectedCategory.isPlato ? 'w-64 sm:w-80' : ''}`}
-                                >
-                                    <div className="relative w-full aspect-[4/3] bg-gray-100">
-                                        {product.image_url ? (
-                                            <Image src={product.image_url} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-4xl">🍽️</div>
-                                        )}
-                                        {selectedCategory.isPlato && (
-                                            <span className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-black px-2 py-1 rounded-full">⭐ Plato del Día</span>
-                                        )}
+                            <div className="rounded-2xl bg-white border-2 border-amber-100 shadow-sm p-4">
+                                <h3 className="font-black text-neutral-900 text-lg mb-1 pb-3 border-b border-amber-50">Filtrar por precio</h3>
+                                <p className="text-xs text-neutral-500 mb-4">
+                                    Rango en carta: {formatCurrency(priceBounds.min)} — {formatCurrency(priceBounds.max)}
+                                </p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase tracking-wider text-neutral-500 mb-1">Desde</label>
+                                        <input
+                                            type="number"
+                                            inputMode="numeric"
+                                            min={0}
+                                            placeholder={String(Math.max(0, Math.floor(priceBounds.min)))}
+                                            value={priceMin}
+                                            onChange={(e) => setPriceMin(e.target.value)}
+                                            className="w-full rounded-xl border-2 border-amber-100 bg-[#fffdf8] px-3 py-2 text-sm font-bold text-neutral-900 focus:border-amber-300 focus:outline-none"
+                                        />
                                     </div>
-                                    <div className="p-3 flex flex-col flex-1">
-                                        <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{product.name}</h3>
-                                        <p className="text-gray-400 text-xs leading-relaxed line-clamp-1 mb-2">{product.description}</p>
-                                        <div className="flex flex-col gap-2 mt-auto">
-                                            <span className="font-black text-gray-900 text-base">{formatCurrency(product.price)}</span>
-                                            <span className="bg-orange-500 text-white text-sm font-black px-4 py-3 rounded-xl text-center group-hover:bg-orange-600 transition-colors">
-                                                Agregar
-                                            </span>
-                                        </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase tracking-wider text-neutral-500 mb-1">Hasta</label>
+                                        <input
+                                            type="number"
+                                            inputMode="numeric"
+                                            min={0}
+                                            placeholder={String(Math.ceil(priceBounds.max))}
+                                            value={priceMax}
+                                            onChange={(e) => setPriceMax(e.target.value)}
+                                            className="w-full rounded-xl border-2 border-amber-100 bg-[#fffdf8] px-3 py-2 text-sm font-bold text-neutral-900 focus:border-amber-300 focus:outline-none"
+                                        />
                                     </div>
                                 </div>
-                            ))}
+                                <div className="flex flex-wrap gap-2 mt-4">
+                                    {(() => {
+                                        const { min, max } = priceBounds;
+                                        const span = Math.max(max - min, 1);
+                                        const b = Math.round(min + span / 3);
+                                        const c = Math.round(min + (2 * span) / 3);
+                                        const presets: { label: string; min: string; max: string }[] = [
+                                            { label: `Hasta ${formatCurrency(b)}`, min: "", max: String(Math.ceil(b)) },
+                                            { label: `${formatCurrency(b)} – ${formatCurrency(c)}`, min: String(Math.floor(b)), max: String(Math.ceil(c)) },
+                                            { label: `Desde ${formatCurrency(c)}`, min: String(Math.floor(c)), max: "" },
+                                        ];
+                                        return presets.map((p) => (
+                                            <button
+                                                key={p.label}
+                                                type="button"
+                                                onClick={() => {
+                                                    setPriceMin(p.min);
+                                                    setPriceMax(p.max);
+                                                }}
+                                                className="text-xs font-bold px-3 py-1.5 rounded-full border-2 border-amber-100 bg-amber-50/80 hover:bg-amber-100 text-neutral-800 transition-colors"
+                                            >
+                                                {p.label}
+                                            </button>
+                                        ));
+                                    })()}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPriceMin("");
+                                        setPriceMax("");
+                                    }}
+                                    className="mt-4 w-full py-2.5 rounded-xl text-sm font-black border-2 border-neutral-200 text-neutral-600 hover:bg-neutral-50 transition-colors"
+                                >
+                                    Quitar filtro de precio
+                                </button>
+                            </div>
+                        </aside>
+
+                        <div className="min-w-0 space-y-5 w-full order-2">
+                            <div className="flex lg:hidden gap-2 overflow-x-auto pb-2">
+                                {categoryNavItems.map((item) => (
+                                    <button
+                                        key={`m-${item.id}`}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedCategory(item.cat);
+                                            setSearchQuery("");
+                                        }}
+                                        className={`shrink-0 px-4 py-2 rounded-full text-xs font-black whitespace-nowrap border-2 transition-colors ${
+                                            isSameCategory(selectedCategory, item.cat) ? "text-white border-transparent" : "bg-white text-neutral-700 border-amber-100"
+                                        }`}
+                                        style={isSameCategory(selectedCategory, item.cat) ? { backgroundColor: fk.red } : undefined}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {!selectedCategory?.isPlato && (
+                                <div className="relative">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                                    <input
+                                        type="text"
+                                        placeholder={
+                                            selectedCategory?.isAll
+                                                ? "Buscar en todo el menú..."
+                                                : `Buscar en ${selectedCategory?.name ?? "menú"}...`
+                                        }
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full bg-white border-2 border-amber-100 rounded-full py-3.5 pl-12 pr-4 text-neutral-900 placeholder:text-neutral-400 focus:border-amber-300 focus:ring-2 focus:ring-amber-200/80 outline-none transition-all shadow-sm"
+                                    />
+                                </div>
+                            )}
+
+                            <div
+                                className={
+                                    selectedCategory?.isPlato ? "flex justify-center" : "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6"
+                                }
+                            >
+                                {filteredProducts.map((product) => (
+                                    <div
+                                        key={product.id}
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => handleProductClick(product)}
+                                        onKeyDown={(e) => e.key === "Enter" && handleProductClick(product)}
+                                        className={`group bg-white rounded-3xl overflow-hidden border-2 border-amber-100/80 shadow-md hover:shadow-xl transition-all cursor-pointer flex flex-col ${
+                                            selectedCategory?.isPlato ? "w-full max-w-sm" : ""
+                                        }`}
+                                    >
+                                        <div className="relative w-full aspect-[4/3] bg-amber-50/40">
+                                            {product.image_url ? (
+                                                <Image src={product.image_url} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-4xl bg-neutral-100">🍽️</div>
+                                            )}
+                                            {selectedCategory?.isPlato && (
+                                                <span
+                                                    className="absolute top-3 left-3 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow"
+                                                    style={{ backgroundColor: fk.red }}
+                                                >
+                                                    ⭐ Plato del Día
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="p-4 flex flex-col flex-1">
+                                            <h3 className="font-black text-neutral-900 text-base leading-snug mb-1 line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
+                                            <p className="text-neutral-500 text-xs leading-relaxed line-clamp-2 mb-3 flex-1">{product.description}</p>
+                                            <div className="flex flex-col gap-3 mt-auto pt-2 border-t border-amber-50">
+                                                <span className="font-black text-xl" style={{ color: fk.red }}>
+                                                    {formatCurrency(product.price)}
+                                                </span>
+                                                <span
+                                                    className="text-center font-black text-xs uppercase tracking-wide py-3 rounded-full border-2 transition-colors group-hover:text-white group-hover:bg-[#c41e3a]"
+                                                    style={{ borderColor: fk.red, color: fk.red }}
+                                                >
+                                                    Agregar al pedido
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {filteredProducts.length === 0 && (
+                                <div className="text-center py-16 rounded-3xl border-2 border-dashed border-amber-200 bg-white/60">
+                                    <p className="text-neutral-500 font-medium">No hay productos con estos filtros.</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedCategory(ALL_CATEGORIES);
+                                            setSearchQuery("");
+                                            setPriceMin("");
+                                            setPriceMax("");
+                                        }}
+                                        className="mt-4 text-sm font-black underline"
+                                        style={{ color: fk.red }}
+                                    >
+                                        Restablecer filtros
+                                    </button>
+                                </div>
+                            )}
                         </div>
-
-                        {filteredProducts.length === 0 && (
-                            <div className="text-center py-10 text-gray-400">No hay productos aquí.</div>
-                        )}
                     </div>
-                )}
-
+                </div>
             </div>
 
             {/* CART & CHECKOUT UI */}
@@ -669,7 +808,8 @@ function PublicMenuPage() {
                     <motion.div key="mobile-cart-bar" initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} className="fixed bottom-6 left-4 right-4 z-50 md:hidden">
                         <button
                             onClick={() => setIsCartOpen(true)}
-                            className="w-full bg-black text-white rounded-2xl p-4 shadow-2xl flex items-center justify-between font-bold"
+                            className="w-full text-white rounded-2xl p-4 shadow-2xl flex items-center justify-between font-black border-2 border-white/20"
+                            style={{ backgroundColor: fk.dark }}
                         >
                             <div className="flex items-center gap-3">
                                 <span className="bg-white/20 px-2.5 py-1 rounded-lg text-sm">{cartCount}</span>
@@ -685,10 +825,16 @@ function PublicMenuPage() {
                     <motion.div key="desktop-cart-btn" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="hidden md:block fixed bottom-8 right-8 z-50">
                         <button
                             onClick={() => setIsCartOpen(true)}
-                            className="bg-black text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform"
+                            className="text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform relative border-2 border-white/30"
+                            style={{ backgroundColor: fk.red }}
                         >
                             <ShoppingBag size={24} />
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full border-2 border-white">{cartCount}</span>
+                            <span
+                                className="absolute -top-1 -right-1 text-xs font-black w-6 h-6 flex items-center justify-center rounded-full border-2 border-white"
+                                style={{ backgroundColor: fk.yellow, color: fk.dark }}
+                            >
+                                {cartCount}
+                            </span>
                         </button>
                     </motion.div>
                 )}
@@ -700,11 +846,14 @@ function PublicMenuPage() {
                         <motion.div
                             key="cart-drawer"
                             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="fixed top-0 right-0 h-full w-full md:w-[480px] bg-white z-[60] shadow-2xl flex flex-col font-sans"
+                            className="fixed top-0 right-0 h-full w-full md:w-[480px] bg-[#fffdf8] z-[60] shadow-2xl flex flex-col font-sans border-l border-amber-100"
                         >
-                            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                            <div className="p-5 border-b border-amber-100 flex items-center justify-between bg-white sticky top-0 z-10 shadow-sm">
                                 <div>
-                                    <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Tu Pedido</h2>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-0.5" style={{ color: fk.red }}>
+                                        Carrito
+                                    </p>
+                                    <h2 className="text-2xl font-black text-neutral-900 tracking-tight">Tu pedido</h2>
                                     {tableLabel && (
                                         <p className="text-sm font-bold text-gray-500 mt-0.5">{tableLabel}</p>
                                     )}
@@ -778,7 +927,8 @@ function PublicMenuPage() {
                                                 <button
                                                     key={t.id}
                                                     onClick={() => setCheckoutInfo(p => ({ ...p, type: t.id, tEdificio: '', tPiso: '', tOficina: '', tReceptor: '', tMesaEntradas: false }))}
-                                                    className={`py-2.5 rounded-xl font-bold text-xs transition-all ${checkoutInfo.type === t.id ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}
+                                                    className={`py-2.5 rounded-xl font-bold text-xs transition-all ${checkoutInfo.type === t.id ? "text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
+                                                    style={checkoutInfo.type === t.id ? { backgroundColor: fk.red } : undefined}
                                                 >
                                                     {t.label}
                                                 </button>
@@ -910,10 +1060,12 @@ function PublicMenuPage() {
                                     {!tableId && (
                                         <button
                                             onClick={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
-                                            className="w-full flex items-center gap-3 px-4 py-2.5 bg-orange-50 border border-orange-100 rounded-xl hover:bg-orange-100 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 border-amber-200 bg-amber-50/80 hover:bg-amber-100/90 transition-colors"
                                         >
-                                            <User size={16} className="text-orange-500 shrink-0" />
-                                            <p className="text-xs font-black text-orange-600 text-left">Iniciá sesión y acumulá puntos — hasta 15% OFF</p>
+                                            <User size={16} className="shrink-0" style={{ color: fk.red }} />
+                                            <p className="text-xs font-black text-left" style={{ color: fk.dark }}>
+                                                Iniciá sesión y acumulá puntos — hasta 15% OFF
+                                            </p>
                                         </button>
                                     )}
 
@@ -922,7 +1074,8 @@ function PublicMenuPage() {
                                         <button
                                             onClick={handleTableCheckout}
                                             disabled={!cart.length || isPaying}
-                                            className="w-full bg-black text-white py-4 rounded-xl font-black text-xl flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
+                                            className="w-full text-white py-4 rounded-xl font-black text-xl flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
+                                            style={{ backgroundColor: fk.red }}
                                         >
                                             {isPaying ? 'Enviando...' : '✓ Cerrar Pedido'}
                                         </button>
@@ -931,7 +1084,8 @@ function PublicMenuPage() {
                                         <button
                                             onClick={handleMercadoPagoCheckout}
                                             disabled={!cart.length || isPaying}
-                                            className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-900 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
+                                            className="w-full text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
+                                            style={{ backgroundColor: fk.red }}
                                         >
                                             {isPaying ? 'Procesando...' : <><CreditCard size={20} /> Confirmar y Pagar</>}
                                         </button>
@@ -941,7 +1095,8 @@ function PublicMenuPage() {
                                             <button
                                                 onClick={() => setCartStep('form')}
                                                 disabled={!cart.length}
-                                                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
+                                                className="w-full text-white py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg hover:opacity-95"
+                                                style={{ backgroundColor: fk.red }}
                                             >
                                                 <CreditCard size={20} /> Pedir o Pagar
                                             </button>
@@ -966,7 +1121,16 @@ function PublicMenuPage() {
 
 export default function MenuPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" /></div>}>
+        <Suspense
+            fallback={
+                <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: fk.cream }}>
+                    <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: fk.yellow, borderTopColor: fk.red }} />
+                    <p className="font-black text-sm uppercase tracking-[0.2em]" style={{ color: fk.red }}>
+                        Menú
+                    </p>
+                </div>
+            }
+        >
             <PublicMenuPage />
         </Suspense>
     );
