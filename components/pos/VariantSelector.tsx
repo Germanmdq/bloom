@@ -18,13 +18,11 @@ interface CheckoutInfo {
     name: string;
     phone: string;
     address: string;
-    type: 'delivery' | 'retiro' | 'tribunales';
-    tEdificio: string;
-    tPiso: string;
-    tOficina: string;
-    tReceptor: string;
-    tMesaEntradas: boolean;
+    type: "delivery" | "retiro";
 }
+
+const PEDIDOS_YA_BLOOM_URL =
+    "https://www.pedidosya.com.ar/restaurantes/mar-del-plata/bloom-mar-del-plata-5c1357e3-e095-476e-9eee-eeda4620b75e-menu";
 
 interface VariantSelectorProps {
     product: any;
@@ -33,47 +31,6 @@ interface VariantSelectorProps {
     onAddToOrder: (product: any, selectedVariants: any[], observations?: string) => void;
     onAddAndCheckout?: (product: any, selectedVariants: any[], observations?: string, checkoutInfo?: CheckoutInfo) => void;
 }
-
-const TRIBUNALES_EDIFICIOS: { id: string; label: string; sub: string; pisos: string[] }[] = [
-    {
-        id: 'central', label: 'Edificio Central', sub: 'Alte. Brown 2005',
-        pisos: [
-            'Subsuelo — Administración / Arquitectura',
-            'Planta Baja — Informes / Seguridad / Mesa de Entradas',
-            'Piso 1 — Juzgados de Garantías (1, 2 o 3)',
-            'Piso 2 — Juzgados de Garantías (4, 5 o 6)',
-            'Piso 3 — Juzgados Correccionales (2, 3, 4 o 5)',
-            'Piso 4 — Juzgado de Ejecución Penal N° 2',
-            'Piso 7 — Juzgado de Ejecución Penal N° 1 / Correccional N° 1',
-        ],
-    },
-    {
-        id: 'civiles', label: 'Anexo Civiles', sub: 'Alte. Brown 2241 / 2257',
-        pisos: [
-            'Planta Baja',
-            'Piso 1',
-            'Piso 2',
-            'Piso 3',
-        ],
-    },
-    {
-        id: 'abogados', label: 'Colegio de Abogados', sub: 'Alte. Brown 1958',
-        pisos: [
-            'Planta Baja — Recepción',
-            'Piso 1',
-            'Piso 2',
-        ],
-    },
-    {
-        id: 'federal', label: 'Justicia Federal', sub: 'Alte. Brown 1762',
-        pisos: [
-            'Planta Baja — Mesa de Entradas',
-            'Piso 1',
-            'Piso 2',
-            'Piso 3',
-        ],
-    },
-];
 
 // MOCK DATA FOR DEMO - In real app, this comes from product.options
 const MOCK_VARIANTS: Record<string, VariantGroup[]> = {
@@ -203,8 +160,10 @@ function getVariantsForProduct(product: any): VariantGroup[] {
 }
 
 const EMPTY_CHECKOUT: CheckoutInfo = {
-    name: '', phone: '', address: '', type: 'delivery',
-    tEdificio: '', tPiso: '', tOficina: '', tReceptor: '', tMesaEntradas: false,
+    name: "",
+    phone: "",
+    address: "",
+    type: "delivery",
 };
 
 export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddAndCheckout }: VariantSelectorProps) {
@@ -251,9 +210,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
         const e: Record<string, string> = {};
         if (!checkoutInfo.name.trim()) e.name = 'Ingresá tu nombre';
         if (!checkoutInfo.phone.trim()) e.phone = 'Ingresá tu teléfono';
-        if (checkoutInfo.type === 'delivery' && !checkoutInfo.address.trim()) e.address = 'Ingresá la dirección';
-        if (checkoutInfo.type === 'tribunales' && !checkoutInfo.tEdificio) e.tEdificio = 'Seleccioná el edificio';
-        if (checkoutInfo.type === 'tribunales' && !checkoutInfo.tReceptor.trim()) e.tReceptor = 'Ingresá quien recibe';
+        if (checkoutInfo.type === "delivery" && !checkoutInfo.address.trim()) e.address = "Ingresá la dirección";
         setErrors(e);
         if (Object.keys(e).length > 0) return;
         const allSelected = Object.values(selections).flat();
@@ -333,21 +290,30 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                             <h3 className="font-black text-gray-800 text-sm uppercase tracking-wide">¿Cómo recibís el pedido?</h3>
 
                             {/* Tipo entrega */}
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-2 gap-2">
                                 {([
-                                    { id: 'delivery',   label: '🛵 Delivery' },
-                                    { id: 'tribunales', label: '⚖️ Tribunales' },
-                                    { id: 'retiro',     label: '🏃 Retiro' },
-                                ] as const).map(t => (
+                                    { id: "delivery" as const, label: "🛵 Delivery" },
+                                    { id: "retiro" as const, label: "🏃 Retiro en local" },
+                                ]).map((t) => (
                                     <button
                                         key={t.id}
-                                        onClick={() => setCi({ type: t.id, tEdificio: '', tPiso: '' })}
-                                        className={`py-2.5 rounded-xl font-bold text-xs transition-all ${ci.type === t.id ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}
+                                        type="button"
+                                        onClick={() => setCi({ type: t.id })}
+                                        className={`py-2.5 rounded-xl font-bold text-xs transition-all ${ci.type === t.id ? "bg-orange-600 text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
                                     >
                                         {t.label}
                                     </button>
                                 ))}
                             </div>
+
+                            <a
+                                href={PEDIDOS_YA_BLOOM_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 py-3 text-center text-xs font-black text-white shadow-md transition-opacity hover:opacity-95"
+                            >
+                                A más de 250 m — pedí en PedidosYa
+                            </a>
 
                             {/* Nombre */}
                             <input
@@ -383,76 +349,6 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                 </div>
                             )}
 
-                            {/* Tribunales */}
-                            {ci.type === 'tribunales' && (
-                                <div className="space-y-3">
-                                    {/* 1. Edificio */}
-                                    <p className="text-xs font-black text-gray-400 uppercase tracking-wide">1. Edificio</p>
-                                    <div className="space-y-1.5">
-                                        {TRIBUNALES_EDIFICIOS.map(e => (
-                                            <button
-                                                key={e.id}
-                                                onClick={() => setCi({ tEdificio: e.id, tPiso: '' })}
-                                                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border-2 text-left transition-all ${ci.tEdificio === e.id ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-gray-50 hover:border-orange-200'}`}
-                                            >
-                                                <div>
-                                                    <p className={`font-bold text-sm ${ci.tEdificio === e.id ? 'text-orange-700' : 'text-gray-800'}`}>{e.label}</p>
-                                                    <p className="text-xs text-gray-400">{e.sub}</p>
-                                                </div>
-                                                {ci.tEdificio === e.id && <Check size={16} className="text-orange-500 shrink-0" />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    {errors.tEdificio && <p className="text-red-500 text-xs">{errors.tEdificio}</p>}
-
-                                    {/* 2. Piso — aparece para TODOS los edificios una vez seleccionado */}
-                                    {ci.tEdificio && (() => {
-                                        const edif = TRIBUNALES_EDIFICIOS.find(e => e.id === ci.tEdificio);
-                                        return edif ? (
-                                            <div>
-                                                <p className="text-xs font-black text-gray-400 uppercase tracking-wide mb-2">2. Piso / Área</p>
-                                                <div className="space-y-1">
-                                                    {edif.pisos.map(piso => (
-                                                        <button
-                                                            key={piso}
-                                                            onClick={() => setCi({ tPiso: piso })}
-                                                            className={`w-full text-left px-3 py-2 rounded-xl border-2 text-sm transition-all ${ci.tPiso === piso ? 'border-orange-500 bg-orange-50 font-bold text-orange-700' : 'border-gray-100 bg-gray-50 text-gray-700 hover:border-orange-200'}`}
-                                                        >
-                                                            {piso}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ) : null;
-                                    })()}
-
-                                    <p className="text-xs font-black text-gray-400 uppercase tracking-wide">3. Datos del repartidor</p>
-                                    <input
-                                        type="text"
-                                        placeholder="Juzgado / Oficina (ej: Garantías 4)"
-                                        value={ci.tOficina}
-                                        onChange={e => setCi({ tOficina: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-medium outline-none focus:border-orange-400 transition-all"
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="Nombre de quien recibe *"
-                                        value={ci.tReceptor}
-                                        onChange={e => setCi({ tReceptor: e.target.value })}
-                                        className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${errors.tReceptor ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
-                                    />
-                                    {errors.tReceptor && <p className="text-red-500 text-xs">{errors.tReceptor}</p>}
-                                    <button
-                                        onClick={() => setCi({ tMesaEntradas: !ci.tMesaEntradas })}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-sm font-bold transition-all ${ci.tMesaEntradas ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-600'}`}
-                                    >
-                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${ci.tMesaEntradas ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                                            {ci.tMesaEntradas && <Check size={12} className="text-white" strokeWidth={3} />}
-                                        </div>
-                                        Dejar en Mesa de Entradas
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>
@@ -475,19 +371,21 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                             {/* Confirmar pedido (con datos) */}
                             {onAddAndCheckout && (
                                 <button
+                                    type="button"
                                     onClick={validateAndCheckout}
-                                    className="w-full py-4 rounded-xl font-black text-base bg-orange-500 hover:bg-orange-600 text-white shadow-lg active:scale-[0.98] transition-all"
+                                    className="w-full rounded-xl bg-orange-600 py-4 text-base font-black text-white shadow-lg transition-all hover:bg-orange-700 active:scale-[0.98]"
                                 >
                                     ✓ Confirmar Pedido
                                 </button>
                             )}
                             {/* Agregar al carrito */}
                             <button
+                                type="button"
                                 onClick={handleAddOnly}
                                 className={`w-full rounded-xl font-bold active:scale-[0.98] transition-all ${
                                     onAddAndCheckout
-                                        ? "py-3 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700"
-                                        : "py-4 text-base bg-black hover:bg-gray-900 text-white shadow-lg"
+                                        ? "py-3 text-sm bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        : "py-4 text-base bg-orange-600 text-white shadow-lg hover:bg-orange-700"
                                 }`}
                             >
                                 {onAddAndCheckout ? "+ Agregar y seguir eligiendo" : "Agregar al pedido"}
