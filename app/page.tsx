@@ -87,11 +87,14 @@ const destacados = [
   { name: "Plato del día", desc: "El favorito de la casa con bebida incluida.", img: U.promoPlato },
 ];
 
-const comboOffers = [
+const comboOffersFallback = [
   { t: "Combo desayuno: café + medialunas o tostados", img: U.catDesayunos },
   { t: "Promo almuerzo: plato del día + bebida", img: U.catPlatos },
   { t: "Merienda Bloom: café + pastelería seleccionada", img: U.catPasteleria },
 ];
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(value);
 
 const FadeIn = ({
   children,
@@ -217,6 +220,16 @@ export default function Home() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [slide, setSlide] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  const [platoDiaProduct, setPlatoDiaProduct] = useState<{
+    id: string;
+    name: string;
+    description: string | null;
+    price: number;
+    image_url: string | null;
+  } | null>(null);
+  const [promoProducts, setPromoProducts] = useState<
+    { id: string; name: string; description: string | null; price: number; image_url: string | null }[]
+  >([]);
 
   useEffect(() => {
     const t = setInterval(() => setSlide((s) => (s + 1) % heroSlides.length), 5500);
@@ -227,6 +240,53 @@ export default function Home() {
     const onScroll = () => setScrolled(window.scrollY > 24);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const load = async () => {
+      const { data: settings } = await supabase.from("app_settings").select("plato_del_dia_id").eq("id", 1).maybeSingle();
+      if (settings?.plato_del_dia_id) {
+        const { data: p } = await supabase
+          .from("products")
+          .select("id, name, description, price, image_url")
+          .eq("id", settings.plato_del_dia_id)
+          .eq("active", true)
+          .maybeSingle();
+        if (p) {
+          setPlatoDiaProduct({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            price: Number(p.price) || 0,
+            image_url: p.image_url,
+          });
+        }
+      }
+      const { data: promoCats } = await supabase.from("categories").select("id, name").ilike("name", "%promociones%");
+      const promoCatId = promoCats?.[0]?.id;
+      if (promoCatId) {
+        const { data: promos } = await supabase
+          .from("products")
+          .select("id, name, description, price, image_url")
+          .eq("category_id", promoCatId)
+          .eq("active", true)
+          .order("name")
+          .limit(9);
+        if (promos?.length) {
+          setPromoProducts(
+            promos.map((x) => ({
+              id: x.id,
+              name: x.name,
+              description: x.description,
+              price: Number(x.price) || 0,
+              image_url: x.image_url,
+            }))
+          );
+        }
+      }
+    };
+    load();
   }, []);
 
   return (
@@ -395,24 +455,43 @@ export default function Home() {
           <div className="flex-1 text-center lg:text-left">
             <p className="text-[#ffc107] font-bold uppercase tracking-widest text-sm mb-2">Destacado</p>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
-              PLATO DEL <span className="text-[#ffc107]">DÍA</span>
+              {platoDiaProduct ? (
+                <>
+                  <span className="block sm:inline">{platoDiaProduct.name}</span>
+                </>
+              ) : (
+                <>
+                  PLATO DEL <span className="text-[#ffc107]">DÍA</span>
+                </>
+              )}
             </h2>
-            <p className="text-neutral-400 text-lg font-medium mb-6 max-w-lg">
-              Platos caseros que rotan según la semana: milanesas, pastas y opciones livianas. Pedilo con bebida incluida cuando corresponda.
+            <p className="text-neutral-400 text-lg font-medium mb-4 max-w-lg">
+              {platoDiaProduct?.description?.trim()
+                ? platoDiaProduct.description
+                : "Elegí el plato del día desde Ajustes del panel para mostrarlo acá. Mientras tanto, explorá la carta con opciones caseras."}
             </p>
+            {platoDiaProduct && (
+              <p className="text-[#ffc107] font-black text-2xl mb-6">{formatCurrency(platoDiaProduct.price)}</p>
+            )}
             <div className="inline-flex items-center gap-2 rounded-full bg-[#ffc107] text-neutral-900 px-4 py-2 font-black text-sm mb-8">
-              Consultá promos en el menú
+              {platoDiaProduct ? "Marcado en Ajustes · Bloom" : "Consultá promos en el menú"}
             </div>
             <Link
               href="/menu?cat=Plato%20del%20Día"
               className="inline-flex items-center gap-2 rounded-full bg-white text-neutral-900 px-8 py-3.5 font-black text-sm uppercase hover:bg-[#ffc107] transition-colors"
             >
-              Ver plato del día
+              Ver en el menú
             </Link>
           </div>
           <div className="flex-1 flex justify-center w-full">
-            <div className="relative w-full max-w-md aspect-square rounded-3xl overflow-hidden shadow-2xl">
-              <Image src={U.promoPlato} alt="Plato del día Bloom" fill className="object-cover" sizes="(max-width: 1024px) 90vw, 400px" />
+            <div className="relative w-full max-w-md aspect-square rounded-3xl overflow-hidden shadow-2xl bg-neutral-800">
+              <Image
+                src={platoDiaProduct?.image_url || U.promoPlato}
+                alt={platoDiaProduct?.name ?? "Plato del día Bloom"}
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 90vw, 400px"
+              />
             </div>
           </div>
         </div>
@@ -426,25 +505,43 @@ export default function Home() {
             <p className="text-neutral-600 mt-3 max-w-xl mx-auto">Precios y disponibilidad en el menú online.</p>
           </FadeIn>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {destacados.map((p, i) => (
-              <FadeIn key={p.name} delay={(i % 4) * 0.05}>
-                <div className="group rounded-3xl border border-neutral-100 bg-[#fffdf8] overflow-hidden hover:shadow-xl transition-shadow">
-                  <div className="relative aspect-square">
-                    <Image src={p.img} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 640px) 100vw, 25vw" />
+            {destacados.map((p, i) => {
+              const card =
+                platoDiaProduct && p.name === "Plato del día"
+                  ? {
+                      name: platoDiaProduct.name,
+                      desc:
+                        (platoDiaProduct.description || "").trim().slice(0, 120) ||
+                        "Plato destacado — pedilo desde el menú online.",
+                      img: platoDiaProduct.image_url || U.promoPlato,
+                    }
+                  : p;
+              return (
+                <FadeIn key={card.name + String(i)} delay={(i % 4) * 0.05}>
+                  <div className="group rounded-3xl border border-neutral-100 bg-[#fffdf8] overflow-hidden hover:shadow-xl transition-shadow">
+                    <div className="relative aspect-square">
+                      <Image
+                        src={card.img}
+                        alt={card.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        sizes="(max-width: 640px) 100vw, 25vw"
+                      />
+                    </div>
+                    <div className="p-5">
+                      <h3 className="font-black text-neutral-900 text-lg leading-snug mb-2">{card.name}</h3>
+                      <p className="text-neutral-600 text-sm mb-4 min-h-[2.5rem]">{card.desc}</p>
+                      <Link
+                        href={platoDiaProduct && p.name === "Plato del día" ? "/menu?cat=Plato%20del%20Día" : "/menu"}
+                        className="block w-full text-center rounded-full border-2 border-[#ea580c] text-[#ea580c] font-bold py-2.5 hover:bg-[#ea580c] hover:text-white transition-colors text-sm uppercase"
+                      >
+                        Ver en menú
+                      </Link>
+                    </div>
                   </div>
-                  <div className="p-5">
-                    <h3 className="font-black text-neutral-900 text-lg leading-snug mb-2">{p.name}</h3>
-                    <p className="text-neutral-600 text-sm mb-4 min-h-[2.5rem]">{p.desc}</p>
-                    <Link
-                      href="/menu"
-                      className="block w-full text-center rounded-full border-2 border-[#ea580c] text-[#ea580c] font-bold py-2.5 hover:bg-[#ea580c] hover:text-white transition-colors text-sm uppercase"
-                    >
-                      Ver en menú
-                    </Link>
-                  </div>
-                </div>
-              </FadeIn>
-            ))}
+                </FadeIn>
+              );
+            })}
           </div>
           <div className="text-center mt-12">
             <Link href="/menu" className="inline-flex items-center gap-2 font-black text-[#ea580c] hover:underline uppercase text-sm tracking-wide">
@@ -463,16 +560,42 @@ export default function Home() {
             <p className="text-neutral-600 mt-2">Aplican según día y stock — detalle en carta.</p>
           </FadeIn>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {comboOffers.map((o) => (
-              <FadeIn key={o.t}>
-                <div className="rounded-3xl bg-white p-2 shadow-md border border-amber-100 overflow-hidden flex flex-col">
-                  <div className="relative aspect-[16/10] w-full">
-                    <Image src={o.img} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
-                  </div>
-                  <p className="font-bold text-neutral-800 leading-snug p-5 text-center">{o.t}</p>
-                </div>
-              </FadeIn>
-            ))}
+            {promoProducts.length > 0
+              ? promoProducts.map((o) => (
+                  <FadeIn key={o.id}>
+                    <Link
+                      href="/menu?cat=Promociones"
+                      className="block rounded-3xl bg-white p-2 shadow-md border border-amber-100 overflow-hidden flex flex-col hover:shadow-lg transition-shadow h-full"
+                    >
+                      <div className="relative aspect-[16/10] w-full bg-amber-50">
+                        <Image
+                          src={o.image_url || U.catPlatos}
+                          alt={o.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      </div>
+                      <div className="p-5 text-center flex flex-col flex-1">
+                        <p className="font-black text-neutral-900 text-lg leading-tight mb-1">{o.name}</p>
+                        {o.description?.trim() ? (
+                          <p className="text-neutral-600 text-sm mb-3 line-clamp-2">{o.description}</p>
+                        ) : null}
+                        <p className="text-[#ea580c] font-black text-lg mt-auto">{formatCurrency(o.price)}</p>
+                      </div>
+                    </Link>
+                  </FadeIn>
+                ))
+              : comboOffersFallback.map((o) => (
+                  <FadeIn key={o.t}>
+                    <div className="rounded-3xl bg-white p-2 shadow-md border border-amber-100 overflow-hidden flex flex-col">
+                      <div className="relative aspect-[16/10] w-full">
+                        <Image src={o.img} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                      </div>
+                      <p className="font-bold text-neutral-800 leading-snug p-5 text-center">{o.t}</p>
+                    </div>
+                  </FadeIn>
+                ))}
           </div>
           <div className="text-center mt-10">
             <Link href="/menu?cat=Promociones" className="text-[#ea580c] font-black hover:underline">
