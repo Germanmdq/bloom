@@ -10,6 +10,19 @@ import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket } from
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ReceiptModal } from "@/components/pos/ReceiptModal";
 import { WebOrderList } from "@/components/pos/WebOrderList";
+import type { CartItem } from "@/lib/store/order-store";
+
+/** Ítems guardados en salon_tables o JSON de kitchen_tickets → mismo formato que el carrito POS. */
+function normalizeTableItem(raw: any): CartItem {
+    const name = String(raw?.name ?? "").trim() || "Ítem";
+    const price = Number(raw?.price) || 0;
+    const quantity = Math.max(1, Number(raw?.quantity) || 1);
+    const id =
+        raw?.id != null && String(raw.id).length > 0
+            ? String(raw.id)
+            : `qr-${name}-${price}`;
+    return { id, name, price, quantity };
+}
 
 type OrderSheetProps = {
     tableId: number;
@@ -47,7 +60,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const [webOrders, setWebOrders] = useState<any[]>([]);
     const [currentWebOrderId, setCurrentWebOrderId] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-    const [kitchenTickets, setKitchenTickets] = useState<any[]>([]);
 
     const isWebTable = tableId === 998 || tableId === 999;
 
@@ -63,29 +75,32 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 console.error("Error loading web orders:", e);
             }
         } else {
-            // Load table state
-            const { data: tableData, error: tableError } = await supabase
-                .from('salon_tables')
-                .select('*')
-                .eq('id', tableId)
-                .single();
+            // Estado de mesa + tickets QR (mismo pedido: la API /api/table-order intenta volcar el QR en salon_tables.items;
+            // si eso falla por RLS/red, hidratamos el carrito desde kitchen_tickets para que cobrar funcione igual).
+            const [{ data: tableData, error: tableError }, { data: tickets }] = await Promise.all([
+                supabase.from("salon_tables").select("*").eq("id", tableId).single(),
+                supabase
+                    .from("kitchen_tickets")
+                    .select("*")
+                    .eq("table_id", tableId)
+                    .order("created_at", { ascending: true })
+                    .limit(30),
+            ]);
             if (tableError) console.error("Error loading table:", tableError.message);
-            if (tableData) {
-                if (tableData.order_type) setOrderType(tableData.order_type);
-                clearCart();
-                if (Array.isArray(tableData.items) && tableData.items.length > 0) {
-                    tableData.items.forEach((item: any) => addToCart(item));
+            if (tableData?.order_type) setOrderType(tableData.order_type);
+
+            clearCart();
+            const persisted = Array.isArray(tableData?.items) ? tableData.items : [];
+            if (persisted.length > 0) {
+                persisted.forEach((item: any) => addToCart(normalizeTableItem(item)));
+            } else if (tickets?.length) {
+                for (const ticket of tickets) {
+                    for (const raw of ticket.items || []) {
+                        const item = normalizeTableItem(raw);
+                        if (item.name) addToCart(item);
+                    }
                 }
             }
-
-            // Also load kitchen tickets for this table (QR orders)
-            const { data: tickets } = await supabase
-                .from('kitchen_tickets')
-                .select('*')
-                .eq('table_id', tableId)
-                .order('created_at', { ascending: false })
-                .limit(10);
-            setKitchenTickets(tickets ?? []);
         }
     };
 
@@ -501,40 +516,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                             </div>
                         )}
                     </div>
-
-                    {/* Pedidos enviados desde QR (kitchen tickets) */}
-                    {!isWebTable && kitchenTickets.length > 0 && (
-                        <div className="border-t-2 border-dashed border-orange-200 bg-orange-50/50">
-                            <div className="px-4 py-2 flex items-center gap-2">
-                                <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">📱 Pedidos QR</span>
-                            </div>
-                            <div className="divide-y divide-orange-100/60 max-h-48 overflow-y-auto">
-                                {kitchenTickets.map((ticket) => (
-                                    <div key={ticket.id} className="px-4 py-2">
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="text-[10px] text-orange-400 font-bold">
-                                                {new Date(ticket.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
-                                                ticket.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                                                ticket.status === 'PREPARING' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-green-100 text-green-700'
-                                            }`}>{ticket.status}</span>
-                                        </div>
-                                        {(ticket.items || []).map((item: any, i: number) => (
-                                            <div key={i} className="flex justify-between text-xs text-gray-700">
-                                                <span className="font-medium">{item.quantity}x {item.name}</span>
-                                                <button
-                                                    onClick={() => addToCart({ id: 'kt-' + ticket.id + '-' + i, name: item.name, price: item.price || 0, quantity: item.quantity })}
-                                                    className="text-orange-500 font-black text-[10px] hover:underline"
-                                                >+ al carrito</button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
 
                     {/* Footer del carrito */}
                     <div className="border-t border-gray-100 p-4 flex flex-col gap-3 shrink-0">
