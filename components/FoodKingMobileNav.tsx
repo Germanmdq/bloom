@@ -4,8 +4,6 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 
-const fk = { red: "#c41e3a", yellow: "#ffc107", cream: "#fffdf8" } as const;
-
 const LINKS = [
   { href: "/", label: "Inicio" },
   { href: "/menu", label: "Menú" },
@@ -18,8 +16,7 @@ export function FoodKingMobileNavButton({ onOpen }: { onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="xl:hidden flex items-center justify-center w-11 h-11 rounded-xl border-2 border-amber-200 bg-white shadow-sm active:scale-[0.98]"
-      style={{ color: fk.red }}
+      className="xl:hidden flex items-center justify-center w-11 h-11 rounded-xl border-2 border-orange-200 bg-white shadow-sm active:scale-[0.98] text-orange-600"
       aria-label="Abrir menú de navegación"
     >
       <Menu size={22} strokeWidth={2.5} />
@@ -46,17 +43,16 @@ export function FoodKingMobileNavPanel({ open, onClose }: { open: boolean; onClo
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
-            className="fixed inset-y-0 right-0 z-[90] w-[min(100vw,20rem)] shadow-2xl flex flex-col xl:hidden border-l-2 border-amber-100"
-            style={{ backgroundColor: fk.cream }}
+            className="fixed inset-y-0 right-0 z-[90] w-[min(100vw,20rem)] shadow-2xl flex flex-col xl:hidden border-l-2 border-orange-100 bg-[#fffdf8]"
           >
-            <div className="flex items-center justify-between px-4 py-4 border-b border-amber-100 bg-white">
+            <div className="flex items-center justify-between px-4 py-4 border-b border-orange-100 bg-white">
               <span className="font-black text-lg tracking-tighter text-neutral-900">
-                BLOOM<span style={{ color: fk.yellow }}>.</span>
+                BLOOM<span className="text-orange-500">.</span>
               </span>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-amber-50 text-neutral-600"
+                className="p-2 rounded-full hover:bg-orange-50 text-neutral-600"
                 aria-label="Cerrar menú"
               >
                 <X size={22} />
@@ -68,18 +64,17 @@ export function FoodKingMobileNavPanel({ open, onClose }: { open: boolean; onClo
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
-                  className="block px-4 py-3.5 rounded-xl font-black text-neutral-800 hover:bg-white border border-transparent hover:border-amber-100 transition-colors"
+                  className="block px-4 py-3.5 rounded-xl font-black text-neutral-800 hover:bg-white border border-transparent hover:border-orange-100 transition-colors"
                 >
                   {item.label}
                 </Link>
               ))}
             </nav>
-            <div className="p-4 border-t border-amber-100 bg-white">
+            <div className="p-4 border-t border-orange-100 bg-white">
               <Link
                 href="/menu"
                 onClick={onClose}
-                className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-black text-white shadow-md"
-                style={{ backgroundColor: fk.red }}
+                className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-black text-white shadow-md bg-orange-600 hover:bg-orange-700 active:scale-[0.98] transition-colors"
               >
                 Pedir ahora
               </Link>

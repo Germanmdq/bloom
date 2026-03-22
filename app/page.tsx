@@ -150,7 +150,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-amber-100"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative bg-[#c41e3a] px-8 pt-10 pb-8 text-center">
+        <div className="relative bg-[#ea580c] px-8 pt-10 pb-8 text-center">
           <div className="absolute top-0 right-0 w-48 h-48 bg-[#ffc107] rounded-full blur-[80px] opacity-25 translate-x-1/2 -translate-y-1/2 pointer-events-none" />
           <button
             type="button"
@@ -174,7 +174,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoFocus
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#c41e3a]/20 focus:border-[#c41e3a]/40 outline-none transition-all font-medium text-neutral-900"
+              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#ea580c]/20 focus:border-[#ea580c]/40 outline-none transition-all font-medium text-neutral-900"
               placeholder="nombre@ejemplo.com"
             />
           </div>
@@ -185,7 +185,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#c41e3a]/20 focus:border-[#c41e3a]/40 outline-none transition-all font-medium text-neutral-900"
+              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#ea580c]/20 focus:border-[#ea580c]/40 outline-none transition-all font-medium text-neutral-900"
               placeholder="••••••••"
             />
           </div>
@@ -193,7 +193,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#c41e3a] text-white font-bold py-4 rounded-xl hover:bg-[#a01830] active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full bg-[#ea580c] text-white font-bold py-4 rounded-xl hover:bg-[#c2410c] active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <LogIn size={18} />
             {loading ? "Iniciando sesión..." : "Ingresar"}
@@ -268,16 +268,16 @@ export default function Home() {
             <LogoWordmark />
           </Link>
           <nav className="hidden xl:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
-            <Link href="/" className="text-[#c41e3a]">
+            <Link href="/" className="text-[#ea580c]">
               Inicio
             </Link>
-            <Link href="/menu" className="hover:text-[#c41e3a] transition-colors">
+            <Link href="/menu" className="hover:text-[#ea580c] transition-colors">
               Menú
             </Link>
-            <Link href="/about" className="hover:text-[#c41e3a] transition-colors">
+            <Link href="/about" className="hover:text-[#ea580c] transition-colors">
               Nosotros
             </Link>
-            <Link href="/reservations" className="hover:text-[#c41e3a] transition-colors">
+            <Link href="/reservations" className="hover:text-[#ea580c] transition-colors">
               Reservas
             </Link>
           </nav>
@@ -285,7 +285,7 @@ export default function Home() {
             <FoodKingMobileNavButton onOpen={() => setMobileNavOpen(true)} />
             <Link
               href="/menu"
-              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-[#c41e3a] px-3 py-2 sm:px-5 sm:py-2.5 text-[11px] sm:text-sm font-bold text-white shadow hover:bg-[#a01830] transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-[#ea580c] px-3 py-2 sm:px-5 sm:py-2.5 text-[11px] sm:text-sm font-bold text-white shadow hover:bg-[#c2410c] transition-colors whitespace-nowrap"
             >
               <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
               Pedir ahora
@@ -357,7 +357,7 @@ export default function Home() {
       <section className="py-16 md:py-24 bg-[#fffdf8]">
         <div className="container mx-auto px-4">
           <FadeIn className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-[#c41e3a] font-bold uppercase tracking-widest text-sm mb-2">Nuestra carta</p>
+            <p className="text-[#ea580c] font-bold uppercase tracking-widest text-sm mb-2">Nuestra carta</p>
             <h2 className="text-3xl md:text-5xl font-black text-neutral-900 tracking-tight">Elegí por categoría</h2>
             <p className="text-neutral-600 mt-3 text-lg">Lo mejor de Bloom, ordenado para que encuentres al toque.</p>
           </FadeIn>
@@ -421,7 +421,7 @@ export default function Home() {
       <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-4">
           <FadeIn className="text-center mb-12">
-            <p className="text-[#c41e3a] font-bold uppercase tracking-widest text-sm mb-2">Bloom</p>
+            <p className="text-[#ea580c] font-bold uppercase tracking-widest text-sm mb-2">Bloom</p>
             <h2 className="text-3xl md:text-5xl font-black text-neutral-900">Favoritos de la casa</h2>
             <p className="text-neutral-600 mt-3 max-w-xl mx-auto">Precios y disponibilidad en el menú online.</p>
           </FadeIn>
@@ -437,7 +437,7 @@ export default function Home() {
                     <p className="text-neutral-600 text-sm mb-4 min-h-[2.5rem]">{p.desc}</p>
                     <Link
                       href="/menu"
-                      className="block w-full text-center rounded-full border-2 border-[#c41e3a] text-[#c41e3a] font-bold py-2.5 hover:bg-[#c41e3a] hover:text-white transition-colors text-sm uppercase"
+                      className="block w-full text-center rounded-full border-2 border-[#ea580c] text-[#ea580c] font-bold py-2.5 hover:bg-[#ea580c] hover:text-white transition-colors text-sm uppercase"
                     >
                       Ver en menú
                     </Link>
@@ -447,7 +447,7 @@ export default function Home() {
             ))}
           </div>
           <div className="text-center mt-12">
-            <Link href="/menu" className="inline-flex items-center gap-2 font-black text-[#c41e3a] hover:underline uppercase text-sm tracking-wide">
+            <Link href="/menu" className="inline-flex items-center gap-2 font-black text-[#ea580c] hover:underline uppercase text-sm tracking-wide">
               Ver menú completo
               <ArrowRight size={16} />
             </Link>
@@ -458,7 +458,7 @@ export default function Home() {
       <section className="py-16 bg-[#fff5e6] border-y border-amber-100">
         <div className="container mx-auto px-4">
           <FadeIn className="text-center mb-10">
-            <p className="text-[#c41e3a] font-bold uppercase tracking-widest text-sm mb-2">Promociones</p>
+            <p className="text-[#ea580c] font-bold uppercase tracking-widest text-sm mb-2">Promociones</p>
             <h2 className="text-2xl md:text-4xl font-black text-neutral-900">Combos y ofertas</h2>
             <p className="text-neutral-600 mt-2">Aplican según día y stock — detalle en carta.</p>
           </FadeIn>
@@ -475,7 +475,7 @@ export default function Home() {
             ))}
           </div>
           <div className="text-center mt-10">
-            <Link href="/menu?cat=Promociones" className="text-[#c41e3a] font-black hover:underline">
+            <Link href="/menu?cat=Promociones" className="text-[#ea580c] font-black hover:underline">
               Ver promociones
             </Link>
           </div>
@@ -493,7 +493,7 @@ export default function Home() {
             ].map((f, i) => (
               <FadeIn key={f.title} delay={i * 0.06}>
                 <div className="text-center px-2">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ffc107]/20 text-[#c41e3a]">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ffc107]/20 text-[#ea580c]">
                     <f.icon size={32} strokeWidth={2} />
                   </div>
                   <h3 className="font-black text-base uppercase tracking-wide text-neutral-900 mb-2">{f.title}</h3>
@@ -544,7 +544,7 @@ export default function Home() {
       <section className="py-16 md:py-20 bg-[#fffdf8]">
         <div className="container mx-auto px-4 max-w-4xl text-center">
           <FadeIn>
-            <p className="text-[#c41e3a] font-bold uppercase tracking-widest text-sm mb-2">Clientes</p>
+            <p className="text-[#ea580c] font-bold uppercase tracking-widest text-sm mb-2">Clientes</p>
             <h2 className="text-2xl md:text-4xl font-black text-neutral-900 mb-10">La experiencia de quienes nos eligen</h2>
             <div className="rounded-3xl bg-white border border-amber-100 shadow-lg p-8 md:p-12">
               <div className="flex justify-center mb-4">
@@ -562,7 +562,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 bg-gradient-to-br from-[#c41e3a] to-[#8b1428] text-white">
+      <section className="py-16 bg-gradient-to-br from-[#ea580c] to-[#7c2d12] text-white">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <FadeIn>
@@ -595,14 +595,14 @@ export default function Home() {
             </div>
           </div>
           <FadeIn className="lg:w-1/2 text-center lg:text-left">
-            <p className="text-[#c41e3a] font-bold uppercase tracking-widest text-sm mb-2">Pedidos online</p>
+            <p className="text-[#ea580c] font-bold uppercase tracking-widest text-sm mb-2">Pedidos online</p>
             <h2 className="text-3xl md:text-5xl font-black text-neutral-900 mb-6">Delivery en la ciudad</h2>
             <p className="text-neutral-600 text-lg mb-8 max-w-lg">
               Hacé tu pedido desde la web y coordinamos el envío. Horarios y zonas según disponibilidad del día.
             </p>
             <Link
               href="/menu"
-              className="inline-flex items-center gap-2 rounded-full bg-[#c41e3a] px-8 py-4 font-black text-white text-sm uppercase hover:bg-[#a01830] transition-colors"
+              className="inline-flex items-center gap-2 rounded-full bg-[#ea580c] px-8 py-4 font-black text-white text-sm uppercase hover:bg-[#c2410c] transition-colors"
             >
               <Bike size={20} />
               Pedir ahora

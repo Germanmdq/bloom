@@ -13,9 +13,10 @@ import { toast } from "sonner";
 import { VariantSelector } from "@/components/pos/VariantSelector"; // Reusing logic
 import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 
-/** Estilo FoodKing (demo) — rojo / amarillo / crema */
+/** Marca Bloom — naranja / acento cálido / crema */
 const fk = {
-    red: "#c41e3a",
+    primary: "#ea580c",
+    primaryHover: "#c2410c",
     yellow: "#ffc107",
     cream: "#fffdf8",
     dark: "#1a1a1a",
@@ -367,8 +368,8 @@ function PublicMenuPage() {
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: fk.cream }}>
-                <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: `${fk.yellow}`, borderTopColor: fk.red }} />
-                <p className="font-black text-sm uppercase tracking-[0.2em]" style={{ color: fk.red }}>
+                <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: `${fk.yellow}`, borderTopColor: fk.primary }} />
+                <p className="font-black text-sm uppercase tracking-[0.2em]" style={{ color: fk.primary }}>
                     Cargando menú…
                 </p>
             </div>
@@ -428,7 +429,7 @@ function PublicMenuPage() {
                 <button
                     onClick={() => { setOrderSent(false); setCheckoutInfo({ name: '', phone: '', address: '', type: 'delivery', tEdificio: '', tPiso: '', tOficina: '', tReceptor: '', tMesaEntradas: false }); }}
                     className="w-full py-3.5 text-white font-black rounded-2xl transition-colors text-sm shadow-lg hover:opacity-95"
-                    style={{ backgroundColor: fk.red }}
+                    style={{ backgroundColor: fk.primary }}
                 >
                     Hacer otro pedido
                 </button>
@@ -498,7 +499,7 @@ function PublicMenuPage() {
                         BLOOM<span style={{ color: fk.yellow }}>.</span>
                     </Link>
                     <nav className="hidden xl:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
-                        <Link href="/" className="hover:opacity-80 transition-opacity" style={{ color: fk.red }}>
+                        <Link href="/" className="hover:opacity-80 transition-opacity" style={{ color: fk.primary }}>
                             Inicio
                         </Link>
                         <button type="button" onClick={() => { setSelectedCategory(ALL_CATEGORIES); setSearchQuery(""); }} className="hover:opacity-80 transition-opacity">
@@ -516,7 +517,7 @@ function PublicMenuPage() {
                         <Link
                             href="#menu-shop"
                             className="xl:hidden inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-black text-white shadow-md active:scale-[0.98] whitespace-nowrap"
-                            style={{ backgroundColor: fk.red }}
+                            style={{ backgroundColor: fk.primary }}
                         >
                             <ShoppingBag size={15} className="shrink-0" strokeWidth={2.5} />
                             Pedir ahora
@@ -533,7 +534,7 @@ function PublicMenuPage() {
                             type="button"
                             onClick={() => setIsCartOpen(true)}
                             className="relative inline-flex items-center justify-center p-2.5 rounded-full text-white font-bold shadow-md hover:opacity-95 transition-opacity"
-                            style={{ backgroundColor: fk.red }}
+                            style={{ backgroundColor: fk.primary }}
                         >
                             <ShoppingBag size={20} strokeWidth={2.5} />
                             {cartCount > 0 && (
@@ -557,7 +558,7 @@ function PublicMenuPage() {
                             setSearchQuery("");
                         }}
                         className="font-semibold hover:underline"
-                        style={{ color: fk.red }}
+                        style={{ color: fk.primary }}
                     >
                         Menú
                     </button>
@@ -571,7 +572,7 @@ function PublicMenuPage() {
                 <div className="space-y-6 animate-in fade-in duration-300">
                     <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 pb-4 border-b border-amber-100">
                         <div>
-                            <p className="font-bold uppercase tracking-[0.15em] text-xs mb-1" style={{ color: fk.red }}>
+                            <p className="font-bold uppercase tracking-[0.15em] text-xs mb-1" style={{ color: fk.primary }}>
                                 Shop
                             </p>
                             <h1 className="text-2xl sm:text-4xl font-black text-neutral-900 tracking-tight">Menú Bloom</h1>
@@ -603,7 +604,7 @@ function PublicMenuPage() {
                                     setPriceMax("");
                                 }}
                                 className="inline-flex items-center justify-center gap-2 text-sm font-black uppercase tracking-wide px-5 py-2.5 rounded-full border-2 hover:bg-amber-50 transition-colors whitespace-nowrap"
-                                style={{ color: fk.red, borderColor: `${fk.red}40` }}
+                                style={{ color: fk.primary, borderColor: `${fk.primary}40` }}
                             >
                                 <ChevronLeft size={16} strokeWidth={2.5} /> Limpiar filtros
                             </button>
@@ -615,7 +616,7 @@ function PublicMenuPage() {
                         <aside className="w-full space-y-4 xl:sticky xl:top-28 order-1">
                             <div className="rounded-2xl bg-white border-2 border-amber-100 shadow-sm p-4">
                                 <h3 className="font-black text-neutral-900 text-lg mb-3 pb-3 border-b border-amber-50 flex items-center gap-2">
-                                    <SlidersHorizontal size={18} style={{ color: fk.red }} />
+                                    <SlidersHorizontal size={18} style={{ color: fk.primary }} />
                                     Categorías
                                 </h3>
                                 <nav className="space-y-1 max-h-[min(40vh,320px)] xl:max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
@@ -630,7 +631,7 @@ function PublicMenuPage() {
                                             className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${
                                                 isSameCategory(selectedCategory, item.cat) ? "text-white shadow-md" : "text-neutral-700 hover:bg-amber-50"
                                             }`}
-                                            style={isSameCategory(selectedCategory, item.cat) ? { backgroundColor: fk.red } : undefined}
+                                            style={isSameCategory(selectedCategory, item.cat) ? { backgroundColor: fk.primary } : undefined}
                                         >
                                             {item.label}
                                         </button>
@@ -721,7 +722,7 @@ function PublicMenuPage() {
                                         className={`shrink-0 px-4 py-2 rounded-full text-xs font-black whitespace-nowrap border-2 transition-colors ${
                                             isSameCategory(selectedCategory, item.cat) ? "text-white border-transparent" : "bg-white text-neutral-700 border-amber-100"
                                         }`}
-                                        style={isSameCategory(selectedCategory, item.cat) ? { backgroundColor: fk.red } : undefined}
+                                        style={isSameCategory(selectedCategory, item.cat) ? { backgroundColor: fk.primary } : undefined}
                                     >
                                         {item.label}
                                     </button>
@@ -770,7 +771,7 @@ function PublicMenuPage() {
                                             {selectedCategory?.isPlato && (
                                                 <span
                                                     className="absolute top-3 left-3 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow"
-                                                    style={{ backgroundColor: fk.red }}
+                                                    style={{ backgroundColor: fk.primary }}
                                                 >
                                                     ⭐ Plato del Día
                                                 </span>
@@ -780,12 +781,12 @@ function PublicMenuPage() {
                                             <h3 className="font-black text-neutral-900 text-base leading-snug mb-1 line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
                                             <p className="text-neutral-500 text-xs leading-relaxed line-clamp-2 mb-3 flex-1">{product.description}</p>
                                             <div className="flex flex-col gap-3 mt-auto pt-2 border-t border-amber-50">
-                                                <span className="font-black text-xl" style={{ color: fk.red }}>
+                                                <span className="font-black text-xl" style={{ color: fk.primary }}>
                                                     {formatCurrency(product.price)}
                                                 </span>
                                                 <span
-                                                    className="text-center font-black text-xs uppercase tracking-wide py-3 rounded-full border-2 transition-colors group-hover:text-white group-hover:bg-[#c41e3a]"
-                                                    style={{ borderColor: fk.red, color: fk.red }}
+                                                    className="text-center font-black text-xs uppercase tracking-wide py-3 rounded-full border-2 transition-colors group-hover:text-white group-hover:bg-orange-600"
+                                                    style={{ borderColor: fk.primary, color: fk.primary }}
                                                 >
                                                     Agregar al pedido
                                                 </span>
@@ -807,7 +808,7 @@ function PublicMenuPage() {
                                             setPriceMax("");
                                         }}
                                         className="mt-4 text-sm font-black underline"
-                                        style={{ color: fk.red }}
+                                        style={{ color: fk.primary }}
                                     >
                                         Restablecer filtros
                                     </button>
@@ -843,7 +844,7 @@ function PublicMenuPage() {
                         <button
                             onClick={() => setIsCartOpen(true)}
                             className="text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform relative border-2 border-white/30"
-                            style={{ backgroundColor: fk.red }}
+                            style={{ backgroundColor: fk.primary }}
                         >
                             <ShoppingBag size={24} />
                             <span
@@ -867,7 +868,7 @@ function PublicMenuPage() {
                         >
                             <div className="p-5 border-b border-amber-100 flex items-center justify-between bg-white sticky top-0 z-10 shadow-sm">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-0.5" style={{ color: fk.red }}>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-0.5" style={{ color: fk.primary }}>
                                         Carrito
                                     </p>
                                     <h2 className="text-2xl font-black text-neutral-900 tracking-tight">Tu pedido</h2>
@@ -945,7 +946,7 @@ function PublicMenuPage() {
                                                     key={t.id}
                                                     onClick={() => setCheckoutInfo(p => ({ ...p, type: t.id, tEdificio: '', tPiso: '', tOficina: '', tReceptor: '', tMesaEntradas: false }))}
                                                     className={`py-2.5 rounded-xl font-bold text-xs transition-all ${checkoutInfo.type === t.id ? "text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
-                                                    style={checkoutInfo.type === t.id ? { backgroundColor: fk.red } : undefined}
+                                                    style={checkoutInfo.type === t.id ? { backgroundColor: fk.primary } : undefined}
                                                 >
                                                     {t.label}
                                                 </button>
@@ -1079,7 +1080,7 @@ function PublicMenuPage() {
                                             onClick={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
                                             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 border-amber-200 bg-amber-50/80 hover:bg-amber-100/90 transition-colors"
                                         >
-                                            <User size={16} className="shrink-0" style={{ color: fk.red }} />
+                                            <User size={16} className="shrink-0" style={{ color: fk.primary }} />
                                             <p className="text-xs font-black text-left" style={{ color: fk.dark }}>
                                                 Iniciá sesión y acumulá puntos — hasta 15% OFF
                                             </p>
@@ -1092,7 +1093,7 @@ function PublicMenuPage() {
                                             onClick={handleTableCheckout}
                                             disabled={!cart.length || isPaying}
                                             className="w-full text-white py-4 rounded-xl font-black text-xl flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
-                                            style={{ backgroundColor: fk.red }}
+                                            style={{ backgroundColor: fk.primary }}
                                         >
                                             {isPaying ? 'Enviando...' : '✓ Cerrar Pedido'}
                                         </button>
@@ -1102,7 +1103,7 @@ function PublicMenuPage() {
                                             onClick={handleMercadoPagoCheckout}
                                             disabled={!cart.length || isPaying}
                                             className="w-full text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
-                                            style={{ backgroundColor: fk.red }}
+                                            style={{ backgroundColor: fk.primary }}
                                         >
                                             {isPaying ? 'Procesando...' : <><CreditCard size={20} /> Confirmar y Pagar</>}
                                         </button>
@@ -1113,7 +1114,7 @@ function PublicMenuPage() {
                                                 onClick={() => setCartStep('form')}
                                                 disabled={!cart.length}
                                                 className="w-full text-white py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg hover:opacity-95"
-                                                style={{ backgroundColor: fk.red }}
+                                                style={{ backgroundColor: fk.primary }}
                                             >
                                                 <CreditCard size={20} /> Pedir o Pagar
                                             </button>
@@ -1141,8 +1142,8 @@ export default function MenuPage() {
         <Suspense
             fallback={
                 <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: fk.cream }}>
-                    <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: fk.yellow, borderTopColor: fk.red }} />
-                    <p className="font-black text-sm uppercase tracking-[0.2em]" style={{ color: fk.red }}>
+                    <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: fk.yellow, borderTopColor: fk.primary }} />
+                    <p className="font-black text-sm uppercase tracking-[0.2em]" style={{ color: fk.primary }}>
                         Menú
                     </p>
                 </div>
