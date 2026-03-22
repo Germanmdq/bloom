@@ -378,15 +378,11 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                     ✓ Confirmar Pedido
                                 </button>
                             )}
-                            {/* Agregar al carrito */}
+                            {/* Agregar al carrito — siempre naranja Bloom + texto blanco */}
                             <button
                                 type="button"
                                 onClick={handleAddOnly}
-                                className={`w-full rounded-xl font-bold active:scale-[0.98] transition-all ${
-                                    onAddAndCheckout
-                                        ? "py-3 text-sm bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                        : "py-4 text-base bg-orange-600 text-white shadow-lg hover:bg-orange-700"
-                                }`}
+                                className="w-full rounded-xl bg-orange-600 py-4 text-base font-black text-white shadow-lg transition-all hover:bg-orange-700 active:scale-[0.98] sm:py-3.5 sm:text-sm"
                             >
                                 {onAddAndCheckout ? "+ Agregar y seguir eligiendo" : "Agregar al pedido"}
                             </button>

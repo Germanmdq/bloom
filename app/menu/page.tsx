@@ -29,6 +29,10 @@ const fk = {
 /** Ver todos los productos — vista shop por defecto */
 const ALL_CATEGORIES = { id: "all", name: "Todos los productos", virtual: true, isAll: true };
 
+/** Menos datos por fila que select('*') — acelera la carga del menú. */
+const MENU_PRODUCT_SELECT =
+    "id, name, description, price, image_url, category_id, active, options, kind";
+
 // --- HELPERS ---
 const formatCurrency = (value: number) =>
     new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value);
@@ -111,9 +115,9 @@ function PublicMenuPage() {
     useEffect(() => {
         const fetchMenu = async () => {
             const [{ data: cats }, { data: prods }, { data: settings }] = await Promise.all([
-                supabase.from('categories').select('*').order('sort_order', { ascending: true }),
-                supabase.from('products').select('*').eq('active', true),
-                supabase.from('app_settings').select('whatsapp, plato_del_dia_id').eq('id', 1).single(),
+                supabase.from("categories").select("id, name, sort_order").order("sort_order", { ascending: true }),
+                supabase.from("products").select(MENU_PRODUCT_SELECT).eq("active", true),
+                supabase.from("app_settings").select("whatsapp, plato_del_dia_id").eq("id", 1).single(),
             ]);
             if (cats) {
                 const seen = new Set();

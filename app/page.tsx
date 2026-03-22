@@ -23,11 +23,11 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 
-/** Imágenes (Unsplash) — mismo estilo visual; reemplazá por assets en /public cuando los tengas. */
+/** Hero: fotos propias en /public/images/hero (café primero, luego platos). */
 const U = {
-  hero1: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1920&q=85",
-  hero2: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1920&q=85",
-  hero3: "https://images.unsplash.com/photo-1550617931-e01a993fe264?auto=format&fit=crop&w=1920&q=85",
+  heroCafe: "/images/hero/hero-cafe-croissants.png",
+  heroFood1: "/images/hero/hero-tostadas.png",
+  heroFood2: "/images/hero/hero-wrap.png",
   catPlatos: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=85",
   catPasteleria: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=85",
   catDesayunos: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=85",
@@ -51,21 +51,21 @@ const CONTACT = {
 
 const heroSlides = [
   {
-    bg: U.hero1,
+    bg: U.heroCafe,
     eyebrow: "Mar del Plata · Argentina",
     line: "Café de especialidad, pastelería artesanal y mucho más.",
     title: "BLOOM",
     accent: ".",
   },
   {
-    bg: U.hero2,
+    bg: U.heroFood1,
     eyebrow: "Nuestra carta",
     line: "Desayunos, almuerzo, pastas, milanesas y platos del día.",
     title: "Mucho más",
     accent: " que un café.",
   },
   {
-    bg: U.hero3,
+    bg: U.heroFood2,
     eyebrow: "Pedí online",
     line: "Recibí en tu puerta sin vueltas.",
     title: "Delivery",
@@ -372,7 +372,15 @@ export default function Home() {
             transition={{ duration: 0.55 }}
             className="absolute inset-0"
           >
-            <Image src={heroSlides[slide].bg} alt="" fill className="object-cover" priority sizes="100vw" />
+            <Image
+              src={heroSlides[slide].bg}
+              alt=""
+              fill
+              className="object-cover object-center"
+              priority={slide === 0}
+              sizes="100vw"
+              quality={85}
+            />
             <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/25" />
           </motion.div>
         </AnimatePresence>
