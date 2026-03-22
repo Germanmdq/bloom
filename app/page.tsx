@@ -234,24 +234,24 @@ export default function Home() {
       <AnimatePresence>{showLogin && <LoginModal onClose={() => setShowLogin(false)} />}</AnimatePresence>
       <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
-      <div className="bg-[#ffc107] text-neutral-900 text-xs sm:text-sm font-semibold">
-        <div className="container mx-auto px-4 flex flex-wrap items-center justify-between gap-2 py-2.5">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
-            <span className="inline-flex items-center gap-1.5">
-              <MapPin size={14} className="shrink-0" />
-              {CONTACT.address}, {CONTACT.city}
+      <div className="bg-[#ffc107] text-neutral-900 text-[11px] sm:text-sm font-semibold border-b border-amber-300/40">
+        <div className="container mx-auto px-4 py-2.5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2">
+          <div className="flex flex-col gap-1.5 min-w-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-1">
+            <span className="inline-flex items-start gap-1.5 min-w-0">
+              <MapPin size={14} className="shrink-0 mt-0.5" />
+              <span className="leading-snug">{CONTACT.address}, {CONTACT.city}</span>
             </span>
-            <a href={`mailto:${CONTACT.email}`} className="hover:underline">
+            <a href={`mailto:${CONTACT.email}`} className="hover:underline truncate text-left sm:max-w-none">
               {CONTACT.email}
             </a>
-            <span className="hidden md:inline text-neutral-700">{CONTACT.hours}</span>
+            <span className="text-neutral-800 sm:text-neutral-700">{CONTACT.hours}</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 sm:justify-end shrink-0">
             <a href={CONTACT.phoneHref} className="inline-flex items-center gap-1.5 font-bold hover:underline">
-              <Phone size={14} />
-              {CONTACT.phoneDisplay}
+              <Phone size={14} className="shrink-0" />
+              <span className="whitespace-nowrap">{CONTACT.phoneDisplay}</span>
             </a>
-            <Link href="/about" className="hidden sm:inline hover:underline">
+            <Link href="/about" className="hover:underline font-bold">
               Contacto
             </Link>
           </div>

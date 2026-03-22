@@ -469,10 +469,13 @@ function PublicMenuPage() {
             {/* Top bar — FoodKing style */}
             <div className="text-neutral-900 text-xs sm:text-sm font-semibold border-b border-amber-200/50" style={{ backgroundColor: fk.yellow }}>
                 <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2 py-2">
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <span className="inline-flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 min-w-0">
+                        <span className="inline-flex items-center gap-1.5 leading-snug">
                             <Truck size={14} className="shrink-0" />
-                            Delivery en la ciudad · Pedí online
+                            <span>
+                                <span className="sm:hidden">Delivery · Pedí online</span>
+                                <span className="hidden sm:inline">Delivery en la ciudad · Pedí online</span>
+                            </span>
                         </span>
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4">
@@ -510,6 +513,14 @@ function PublicMenuPage() {
                     </nav>
                     <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                         <FoodKingMobileNavButton onOpen={() => setMobileNavOpen(true)} />
+                        <Link
+                            href="#menu-shop"
+                            className="lg:hidden inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-black text-white shadow-md active:scale-[0.98] whitespace-nowrap"
+                            style={{ backgroundColor: fk.red }}
+                        >
+                            <ShoppingBag size={15} className="shrink-0" strokeWidth={2.5} />
+                            Pedir ahora
+                        </Link>
                         {tableLabel && (
                             <span className="text-white text-xs sm:text-sm font-black px-3 py-1.5 rounded-full whitespace-nowrap" style={{ backgroundColor: fk.dark }}>
                                 {tableLabel}
@@ -555,7 +566,7 @@ function PublicMenuPage() {
                 </div>
             </header>
 
-            <div className="w-full max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div id="menu-shop" className="w-full max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 scroll-mt-28">
                 {/* Vista shop FoodKing: sidebar (categorías + precio) + grilla */}
                 <div className="space-y-6 animate-in fade-in duration-300">
                     <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 pb-4 border-b border-amber-100">
