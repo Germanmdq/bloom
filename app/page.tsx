@@ -21,6 +21,7 @@ import {
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 
 /** Imágenes (Unsplash) — mismo estilo visual; reemplazá por assets en /public cuando los tengas. */
 const U = {
@@ -213,6 +214,7 @@ function LogoWordmark({ inverted = false }: { inverted?: boolean }) {
 
 export default function Home() {
   const [showLogin, setShowLogin] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [slide, setSlide] = useState(0);
   const [scrolled, setScrolled] = useState(false);
 
@@ -230,6 +232,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#fffdf8] text-neutral-900 font-sans selection:bg-[#ffc107] selection:text-neutral-900">
       <AnimatePresence>{showLogin && <LoginModal onClose={() => setShowLogin(false)} />}</AnimatePresence>
+      <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       <div className="bg-[#ffc107] text-neutral-900 text-xs sm:text-sm font-semibold">
         <div className="container mx-auto px-4 flex flex-wrap items-center justify-between gap-2 py-2.5">
@@ -260,8 +263,8 @@ export default function Home() {
           scrolled ? "bg-white shadow-md" : "bg-white/95 backdrop-blur-md shadow-sm"
         }`}
       >
-        <div className="container mx-auto px-4 flex items-center justify-between gap-4 py-3 md:py-4">
-          <Link href="/" className="flex items-center gap-2 shrink-0">
+        <div className="container mx-auto px-4 flex items-center justify-between gap-2 sm:gap-4 py-3 md:py-4">
+          <Link href="/" className="flex items-center gap-2 shrink-0 min-w-0">
             <LogoWordmark />
           </Link>
           <nav className="hidden lg:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
@@ -278,12 +281,13 @@ export default function Home() {
               Reservas
             </Link>
           </nav>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <FoodKingMobileNavButton onOpen={() => setMobileNavOpen(true)} />
             <Link
               href="/menu"
-              className="hidden sm:inline-flex items-center gap-2 rounded-full bg-[#c41e3a] px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-[#a01830] transition-colors"
+              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-[#c41e3a] px-3 py-2 sm:px-5 sm:py-2.5 text-[11px] sm:text-sm font-bold text-white shadow hover:bg-[#a01830] transition-colors whitespace-nowrap"
             >
-              <ShoppingBag size={18} />
+              <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
               Pedir ahora
             </Link>
             <button

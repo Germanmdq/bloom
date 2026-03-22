@@ -11,6 +11,7 @@ import { CustomerAuthModal } from "@/components/Menu/CustomerAuthModal";
 import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
 import { VariantSelector } from "@/components/pos/VariantSelector"; // Reusing logic
+import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 
 /** Estilo FoodKing (demo) — rojo / amarillo / crema */
 const fk = {
@@ -96,6 +97,7 @@ function PublicMenuPage() {
     // Variant Selection State
     const [variantProduct, setVariantProduct] = useState<any>(null);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
     // Helpers for Variant Logic (Duplicated from POS/page for simplicity here)
     const HAS_VARIANTS = (p: any) => {
@@ -462,6 +464,7 @@ function PublicMenuPage() {
                 })}
             />
             <CustomerAuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+            <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
             {/* Top bar — FoodKing style */}
             <div className="text-neutral-900 text-xs sm:text-sm font-semibold border-b border-amber-200/50" style={{ backgroundColor: fk.yellow }}>
@@ -472,12 +475,14 @@ function PublicMenuPage() {
                             Delivery en la ciudad · Pedí online
                         </span>
                     </div>
-                    <div className="hidden sm:flex items-center gap-4">
-                        <span className="inline-flex items-center gap-1.5 opacity-90">
-                            <MapPin size={14} /> Mar del Plata
+                    <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4">
+                        <span className="hidden sm:inline-flex items-center gap-1.5 opacity-90">
+                            <MapPin size={14} className="shrink-0" /> Mar del Plata
                         </span>
-                        <a href="tel:+5492231234567" className="inline-flex items-center gap-1.5 font-bold hover:underline">
-                            <Phone size={14} /> +54 9 223
+                        <a href="tel:+5492231234567" className="inline-flex items-center gap-1.5 font-bold hover:underline text-xs sm:text-sm">
+                            <Phone size={14} className="shrink-0" />
+                            <span className="hidden min-[400px]:inline">+54 9 223</span>
+                            <span className="min-[400px]:hidden">Tel</span>
                         </a>
                     </div>
                 </div>
@@ -485,11 +490,11 @@ function PublicMenuPage() {
 
             {/* HEADER */}
             <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-amber-100/80 transition-all">
-                <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-                    <Link href="/" className="font-black text-xl md:text-2xl tracking-tighter text-neutral-900 shrink-0">
+                <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2 sm:gap-4">
+                    <Link href="/" className="font-black text-lg sm:text-xl md:text-2xl tracking-tighter text-neutral-900 shrink-0 min-w-0">
                         BLOOM<span style={{ color: fk.yellow }}>.</span>
                     </Link>
-                    <nav className="hidden md:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
+                    <nav className="hidden lg:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
                         <Link href="/" className="hover:opacity-80 transition-opacity" style={{ color: fk.red }}>
                             Inicio
                         </Link>
@@ -503,7 +508,8 @@ function PublicMenuPage() {
                             Reservas
                         </Link>
                     </nav>
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                        <FoodKingMobileNavButton onOpen={() => setMobileNavOpen(true)} />
                         {tableLabel && (
                             <span className="text-white text-xs sm:text-sm font-black px-3 py-1.5 rounded-full whitespace-nowrap" style={{ backgroundColor: fk.dark }}>
                                 {tableLabel}
