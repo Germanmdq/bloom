@@ -177,7 +177,7 @@ function OrderCard({
                                 {pedido.items_parseados.tipo_entrega === 'delivery' ? (
                                     <Truck className="w-4 h-4 text-blue-500" />
                                 ) : (
-                                    <ShoppingBag className="w-4 h-4 text-orange-500" />
+                                    <ShoppingBag className="w-4 h-4 text-bloom-600" />
                                 )}
                                 <span className="capitalize font-medium">{pedido.items_parseados.tipo_entrega}</span>
                                 {pedido.items_parseados.direccion && (

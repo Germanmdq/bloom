@@ -19,7 +19,7 @@ export function CategoryButton({ category, isActive, productsCount, onClick }: C
             className={`
                 w-full text-left px-4 py-3 rounded-xl transition-all duration-200 group flex items-center justify-between mb-1
                 ${isActive
-                    ? 'bg-orange-500 text-white shadow-md transform scale-[1.02]'
+                    ? 'bg-bloom-600 text-white shadow-md transform scale-[1.02]'
                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                 }
             `}

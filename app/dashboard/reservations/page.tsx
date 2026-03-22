@@ -95,13 +95,13 @@ export default function ReservationsPage() {
                                             <p className="font-black text-gray-900 text-base">{r.customer_name}</p>
                                             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${st.color}`}>{st.label}</span>
                                         </div>
-                                        <a href={`tel:${r.customer_phone}`} className="text-sm text-orange-500 font-bold flex items-center gap-1 mt-0.5">
+                                        <a href={`tel:${r.customer_phone}`} className="text-sm text-bloom-600 font-bold flex items-center gap-1 mt-0.5">
                                             <Phone size={13} /> {r.customer_phone}
                                         </a>
                                     </div>
                                     <div className="text-right text-sm text-gray-500 shrink-0">
                                         <p className="font-black text-gray-900 text-base flex items-center gap-1 justify-end">
-                                            <CalendarDays size={15} className="text-orange-400" />
+                                            <CalendarDays size={15} className="text-bloom-500" />
                                             {new Date(r.date + "T12:00:00").toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}
                                         </p>
                                         <p className="flex items-center gap-1 justify-end mt-0.5">

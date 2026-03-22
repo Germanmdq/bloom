@@ -270,7 +270,7 @@ export function OrderList() {
                                 <div>
                                     <p className="font-black text-gray-900 text-lg">{selectedOrder.customer_name || `Mesa ${selectedOrder.table_id}`}</p>
                                     {selectedOrder.customer_phone && (
-                                        <a href={`tel:${selectedOrder.customer_phone}`} className="text-sm text-orange-500 font-bold">{selectedOrder.customer_phone}</a>
+                                        <a href={`tel:${selectedOrder.customer_phone}`} className="text-sm text-bloom-600 font-bold">{selectedOrder.customer_phone}</a>
                                     )}
                                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                         <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg flex items-center gap-1">
@@ -295,7 +295,7 @@ export function OrderList() {
                                     (selectedOrder.items as any[]).map((item: any, i: number) => (
                                         <div key={i} className="flex items-start justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
                                             <div className="flex-1">
-                                                <p className="font-bold text-gray-900 text-sm">{item.quantity > 1 && <span className="text-orange-500 font-black">{item.quantity}x </span>}{item.name}</p>
+                                                <p className="font-bold text-gray-900 text-sm">{item.quantity > 1 && <span className="text-bloom-600 font-black">{item.quantity}x </span>}{item.name}</p>
                                                 {item.variants?.length > 0 && (
                                                     <p className="text-xs text-gray-400 mt-0.5">{item.variants.join(", ")}</p>
                                                 )}

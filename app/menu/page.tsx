@@ -18,12 +18,14 @@ const PEDIDOS_YA_BLOOM_URL =
     "https://www.pedidosya.com.ar/restaurantes/mar-del-plata/bloom-mar-del-plata-5c1357e3-e095-476e-9eee-eeda4620b75e-menu";
 
 /** Marca Bloom — naranja / acento cálido / crema */
+/** Paleta logo Bloom — oliva + crema */
 const fk = {
-    primary: "#ea580c",
-    primaryHover: "#c2410c",
-    yellow: "#ffc107",
-    cream: "#fffdf8",
-    dark: "#1a1a1a",
+    primary: "#7a765a",
+    primaryHover: "#5f5c46",
+    accent: "#c4b896",
+    cream: "#f2f0e6",
+    page: "#f7f5ef",
+    dark: "#2c2a24",
 } as const;
 
 /** Ver todos los productos — vista shop por defecto */
@@ -354,8 +356,8 @@ function PublicMenuPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: fk.cream }}>
-                <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: `${fk.yellow}`, borderTopColor: fk.primary }} />
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: fk.page }}>
+                <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: `${fk.accent}`, borderTopColor: fk.primary }} />
                 <p className="font-black text-sm uppercase tracking-[0.2em]" style={{ color: fk.primary }}>
                     Cargando menú…
                 </p>
@@ -364,8 +366,8 @@ function PublicMenuPage() {
     }
 
     if (orderSent) return (
-        <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: fk.cream }}>
-            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl border-2 border-amber-100 space-y-4">
+        <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: fk.page }}>
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl border-2 border-bloom-200 space-y-4">
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                     <span className="text-4xl">✅</span>
                 </div>
@@ -413,7 +415,7 @@ function PublicMenuPage() {
 
     // --- RENDER ---
     return (
-        <main className="min-h-screen text-neutral-900 font-sans pb-32 selection:bg-amber-200/60 selection:text-neutral-900" style={{ backgroundColor: fk.cream }}>
+        <main className="min-h-screen text-neutral-900 font-sans pb-32 selection:bg-bloom-200/60 selection:text-neutral-900" style={{ backgroundColor: fk.page }}>
             <VariantSelector
                 product={variantProduct}
                 isOpen={!!variantProduct}
@@ -442,7 +444,7 @@ function PublicMenuPage() {
             <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
             {/* Top bar — FoodKing style */}
-            <div className="text-neutral-900 text-xs sm:text-sm font-semibold border-b border-amber-200/50" style={{ backgroundColor: fk.yellow }}>
+            <div className="text-neutral-900 text-xs sm:text-sm font-semibold border-b border-bloom-200/50" style={{ backgroundColor: fk.accent }}>
                 <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2 py-2">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 min-w-0">
                         <span className="inline-flex items-center gap-1.5 leading-snug">
@@ -467,10 +469,10 @@ function PublicMenuPage() {
             </div>
 
             {/* HEADER */}
-            <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-amber-100/80 transition-all">
+            <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-bloom-200/80 transition-all">
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2 sm:gap-4">
                     <Link href="/" className="font-black text-lg sm:text-xl md:text-2xl tracking-tighter text-neutral-900 shrink-0 min-w-0">
-                        BLOOM<span style={{ color: fk.yellow }}>.</span>
+                        BLOOM<span style={{ color: fk.accent }}>.</span>
                     </Link>
                     <nav className="hidden xl:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
                         <Link href="/" className="hover:opacity-80 transition-opacity" style={{ color: fk.primary }}>
@@ -512,7 +514,7 @@ function PublicMenuPage() {
                         >
                             <ShoppingBag size={20} strokeWidth={2.5} />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 text-[10px] font-black min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full border-2 border-white" style={{ backgroundColor: fk.yellow, color: fk.dark }}>
+                                <span className="absolute -top-1 -right-1 text-[10px] font-black min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full border-2 border-white" style={{ backgroundColor: fk.accent, color: fk.dark }}>
                                     {cartCount}
                                 </span>
                             )}
@@ -520,7 +522,7 @@ function PublicMenuPage() {
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto px-4 py-2.5 border-t border-amber-50 flex flex-wrap items-center gap-2 text-sm bg-[#fffdf8]/90">
+                <div className="max-w-7xl mx-auto px-4 py-2.5 border-t border-bloom-100 flex flex-wrap items-center gap-2 text-sm bg-bloom-page/90">
                     <Link href="/" className="text-neutral-500 hover:text-neutral-800 font-semibold">
                         Inicio
                     </Link>
@@ -544,7 +546,7 @@ function PublicMenuPage() {
             <div id="menu-shop" className="w-full max-w-7xl mx-auto py-6 px-4 sm:px-6 xl:px-8 scroll-mt-28">
                 {/* Vista shop FoodKing: sidebar (categorías + precio) + grilla */}
                 <div className="space-y-6 animate-in fade-in duration-300">
-                    <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 pb-4 border-b border-amber-100">
+                    <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 pb-4 border-b border-bloom-200">
                         <div>
                             <p className="font-bold uppercase tracking-[0.15em] text-xs mb-1" style={{ color: fk.primary }}>
                                 Shop
@@ -563,7 +565,7 @@ function PublicMenuPage() {
                                 id="menu-sort"
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                                className="w-full sm:w-auto rounded-full border-2 border-amber-100 bg-white px-4 py-2.5 text-sm font-bold text-neutral-800 focus:border-amber-300 focus:outline-none cursor-pointer"
+                                className="w-full sm:w-auto rounded-full border-2 border-bloom-200 bg-white px-4 py-2.5 text-sm font-bold text-neutral-800 focus:border-bloom-400 focus:outline-none cursor-pointer"
                             >
                                 <option value="default">Ordenar por: predeterminado</option>
                                 <option value="price-asc">Ordenar por precio: menor a mayor</option>
@@ -577,7 +579,7 @@ function PublicMenuPage() {
                                     setPriceMin("");
                                     setPriceMax("");
                                 }}
-                                className="inline-flex items-center justify-center gap-2 text-sm font-black uppercase tracking-wide px-5 py-2.5 rounded-full border-2 hover:bg-amber-50 transition-colors whitespace-nowrap"
+                                className="inline-flex items-center justify-center gap-2 text-sm font-black uppercase tracking-wide px-5 py-2.5 rounded-full border-2 hover:bg-bloom-50 transition-colors whitespace-nowrap"
                                 style={{ color: fk.primary, borderColor: `${fk.primary}40` }}
                             >
                                 <ChevronLeft size={16} strokeWidth={2.5} /> Limpiar filtros
@@ -588,8 +590,8 @@ function PublicMenuPage() {
                     <div className="flex flex-col xl:grid xl:grid-cols-[minmax(0,280px)_1fr] xl:gap-12 items-start">
                         {/* Sidebar — siempre visible (mobile: arriba) */}
                         <aside className="hidden xl:block w-full space-y-4 xl:sticky xl:top-28 order-1">
-                            <div className="rounded-2xl bg-white border-2 border-amber-100 shadow-sm p-4">
-                                <h3 className="font-black text-neutral-900 text-lg mb-3 pb-3 border-b border-amber-50 flex items-center gap-2">
+                            <div className="rounded-2xl bg-white border-2 border-bloom-200 shadow-sm p-4">
+                                <h3 className="font-black text-neutral-900 text-lg mb-3 pb-3 border-b border-bloom-100 flex items-center gap-2">
                                     <SlidersHorizontal size={18} style={{ color: fk.primary }} />
                                     Categorías
                                 </h3>
@@ -603,7 +605,7 @@ function PublicMenuPage() {
                                                 setSearchQuery("");
                                             }}
                                             className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${
-                                                isSameCategory(selectedCategory, item.cat) ? "text-white shadow-md" : "text-neutral-700 hover:bg-amber-50"
+                                                isSameCategory(selectedCategory, item.cat) ? "text-white shadow-md" : "text-neutral-700 hover:bg-bloom-50"
                                             }`}
                                             style={isSameCategory(selectedCategory, item.cat) ? { backgroundColor: fk.primary } : undefined}
                                         >
@@ -613,8 +615,8 @@ function PublicMenuPage() {
                                 </nav>
                             </div>
 
-                            <div className="rounded-2xl bg-white border-2 border-amber-100 shadow-sm p-4">
-                                <h3 className="font-black text-neutral-900 text-lg mb-1 pb-3 border-b border-amber-50">Filtrar por precio</h3>
+                            <div className="rounded-2xl bg-white border-2 border-bloom-200 shadow-sm p-4">
+                                <h3 className="font-black text-neutral-900 text-lg mb-1 pb-3 border-b border-bloom-100">Filtrar por precio</h3>
                                 <p className="text-xs text-neutral-500 mb-4">
                                     Rango en carta: {formatCurrency(priceBounds.min)} — {formatCurrency(priceBounds.max)}
                                 </p>
@@ -628,7 +630,7 @@ function PublicMenuPage() {
                                             placeholder={String(Math.max(0, Math.floor(priceBounds.min)))}
                                             value={priceMin}
                                             onChange={(e) => setPriceMin(e.target.value)}
-                                            className="w-full rounded-xl border-2 border-amber-100 bg-[#fffdf8] px-3 py-2 text-sm font-bold text-neutral-900 focus:border-amber-300 focus:outline-none"
+                                            className="w-full rounded-xl border-2 border-bloom-200 bg-bloom-page px-3 py-2 text-sm font-bold text-neutral-900 focus:border-bloom-400 focus:outline-none"
                                         />
                                     </div>
                                     <div>
@@ -640,7 +642,7 @@ function PublicMenuPage() {
                                             placeholder={String(Math.ceil(priceBounds.max))}
                                             value={priceMax}
                                             onChange={(e) => setPriceMax(e.target.value)}
-                                            className="w-full rounded-xl border-2 border-amber-100 bg-[#fffdf8] px-3 py-2 text-sm font-bold text-neutral-900 focus:border-amber-300 focus:outline-none"
+                                            className="w-full rounded-xl border-2 border-bloom-200 bg-bloom-page px-3 py-2 text-sm font-bold text-neutral-900 focus:border-bloom-400 focus:outline-none"
                                         />
                                     </div>
                                 </div>
@@ -663,7 +665,7 @@ function PublicMenuPage() {
                                                     setPriceMin(p.min);
                                                     setPriceMax(p.max);
                                                 }}
-                                                className="text-xs font-bold px-3 py-1.5 rounded-full border-2 border-amber-100 bg-amber-50/80 hover:bg-amber-100 text-neutral-800 transition-colors"
+                                                className="text-xs font-bold px-3 py-1.5 rounded-full border-2 border-bloom-200 bg-bloom-100/80 hover:bg-bloom-100 text-neutral-800 transition-colors"
                                             >
                                                 {p.label}
                                             </button>
@@ -689,7 +691,7 @@ function PublicMenuPage() {
                                 <button
                                     type="button"
                                     onClick={() => setMobileFiltersOpen(true)}
-                                    className="flex w-full items-center gap-3 rounded-2xl border-2 border-amber-100 bg-white px-4 py-3.5 text-left shadow-sm active:bg-amber-50/50"
+                                    className="flex w-full items-center gap-3 rounded-2xl border-2 border-bloom-200 bg-white px-4 py-3.5 text-left shadow-sm active:bg-bloom-50/50"
                                 >
                                     <SlidersHorizontal className="shrink-0" size={22} style={{ color: fk.primary }} strokeWidth={2.25} />
                                     <div className="min-w-0 flex-1">
@@ -716,13 +718,13 @@ function PublicMenuPage() {
                                                     animate={{ opacity: 1 }}
                                                     exit={{ opacity: 0 }}
                                                     transition={{ duration: 0.2 }}
-                                                    className="fixed inset-0 z-[100] flex flex-col bg-[#fffdf8] xl:hidden"
+                                                    className="fixed inset-0 z-[100] flex flex-col bg-bloom-page xl:hidden"
                                                     style={{
                                                         paddingTop: "max(0.5rem, env(safe-area-inset-top))",
                                                         paddingBottom: "env(safe-area-inset-bottom)",
                                                     }}
                                                 >
-                                                    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-100 bg-white px-4 py-3 shadow-sm">
+                                                    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-bloom-200 bg-white px-4 py-3 shadow-sm">
                                                         <div className="min-w-0">
                                                             <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Menú Bloom</p>
                                                             <h2 className="font-black text-lg text-neutral-900">Filtros</h2>
@@ -730,7 +732,7 @@ function PublicMenuPage() {
                                                         <button
                                                             type="button"
                                                             onClick={() => setMobileFiltersOpen(false)}
-                                                            className="shrink-0 rounded-full p-2.5 hover:bg-amber-50 text-neutral-700"
+                                                            className="shrink-0 rounded-full p-2.5 hover:bg-bloom-50 text-neutral-700"
                                                             aria-label="Cerrar filtros"
                                                         >
                                                             <X size={22} strokeWidth={2.25} />
@@ -752,7 +754,7 @@ function PublicMenuPage() {
                                                                             className={`w-full text-left px-3 py-3 rounded-xl text-sm font-bold transition-colors ${
                                                                                 isSameCategory(selectedCategory, item.cat)
                                                                                     ? "text-white shadow-md"
-                                                                                    : "text-neutral-700 hover:bg-amber-50"
+                                                                                    : "text-neutral-700 hover:bg-bloom-50"
                                                                             }`}
                                                                             style={
                                                                                 isSameCategory(selectedCategory, item.cat)
@@ -765,7 +767,7 @@ function PublicMenuPage() {
                                                                     ))}
                                                                 </nav>
                                                             </section>
-                                                            <section className="border-t border-amber-100 pt-6">
+                                                            <section className="border-t border-bloom-200 pt-6">
                                                                 <h3 className="font-black text-neutral-900 text-base mb-1">Filtrar por precio</h3>
                                                                 <p className="text-xs text-neutral-500 mb-3">
                                                                     Rango en carta: {formatCurrency(priceBounds.min)} — {formatCurrency(priceBounds.max)}
@@ -780,7 +782,7 @@ function PublicMenuPage() {
                                                                             placeholder={String(Math.max(0, Math.floor(priceBounds.min)))}
                                                                             value={priceMin}
                                                                             onChange={(e) => setPriceMin(e.target.value)}
-                                                                            className="w-full rounded-xl border-2 border-amber-100 bg-white px-3 py-2.5 text-sm font-bold text-neutral-900 focus:border-amber-300 focus:outline-none"
+                                                                            className="w-full rounded-xl border-2 border-bloom-200 bg-white px-3 py-2.5 text-sm font-bold text-neutral-900 focus:border-bloom-400 focus:outline-none"
                                                                         />
                                                                     </div>
                                                                     <div>
@@ -792,7 +794,7 @@ function PublicMenuPage() {
                                                                             placeholder={String(Math.ceil(priceBounds.max))}
                                                                             value={priceMax}
                                                                             onChange={(e) => setPriceMax(e.target.value)}
-                                                                            className="w-full rounded-xl border-2 border-amber-100 bg-white px-3 py-2.5 text-sm font-bold text-neutral-900 focus:border-amber-300 focus:outline-none"
+                                                                            className="w-full rounded-xl border-2 border-bloom-200 bg-white px-3 py-2.5 text-sm font-bold text-neutral-900 focus:border-bloom-400 focus:outline-none"
                                                                         />
                                                                     </div>
                                                                 </div>
@@ -815,7 +817,7 @@ function PublicMenuPage() {
                                                                                     setPriceMin(p.min);
                                                                                     setPriceMax(p.max);
                                                                                 }}
-                                                                                className="text-xs font-bold px-3 py-1.5 rounded-full border-2 border-amber-100 bg-amber-50/80 hover:bg-amber-100 text-neutral-800 transition-colors"
+                                                                                className="text-xs font-bold px-3 py-1.5 rounded-full border-2 border-bloom-200 bg-bloom-100/80 hover:bg-bloom-100 text-neutral-800 transition-colors"
                                                                             >
                                                                                 {p.label}
                                                                             </button>
@@ -835,7 +837,7 @@ function PublicMenuPage() {
                                                             </section>
                                                         </div>
                                                     </div>
-                                                    <div className="shrink-0 border-t border-amber-100 bg-white px-4 py-4 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.12)]">
+                                                    <div className="shrink-0 border-t border-bloom-200 bg-white px-4 py-4 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.12)]">
                                                         <button
                                                             type="button"
                                                             onClick={() => setMobileFiltersOpen(false)}
@@ -864,7 +866,7 @@ function PublicMenuPage() {
                                         }
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full bg-white border-2 border-amber-100 rounded-full py-3.5 pl-12 pr-4 text-neutral-900 placeholder:text-neutral-400 focus:border-amber-300 focus:ring-2 focus:ring-amber-200/80 outline-none transition-all shadow-sm"
+                                        className="w-full bg-white border-2 border-bloom-200 rounded-full py-3.5 pl-12 pr-4 text-neutral-900 placeholder:text-neutral-400 focus:border-bloom-400 focus:ring-2 focus:ring-bloom-200/80 outline-none transition-all shadow-sm"
                                     />
                                 </div>
                             )}
@@ -881,11 +883,11 @@ function PublicMenuPage() {
                                         tabIndex={0}
                                         onClick={() => handleProductClick(product)}
                                         onKeyDown={(e) => e.key === "Enter" && handleProductClick(product)}
-                                        className={`group bg-white rounded-3xl overflow-hidden border-2 border-amber-100/80 shadow-md hover:shadow-xl transition-all cursor-pointer flex flex-col ${
+                                        className={`group bg-white rounded-3xl overflow-hidden border-2 border-bloom-200/80 shadow-md hover:shadow-xl transition-all cursor-pointer flex flex-col ${
                                             selectedCategory?.isPlato ? "w-full max-w-sm" : ""
                                         }`}
                                     >
-                                        <div className="relative w-full aspect-[4/3] bg-amber-50/40">
+                                        <div className="relative w-full aspect-[4/3] bg-bloom-50/40">
                                             {product.image_url ? (
                                                 <Image src={product.image_url} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                                             ) : (
@@ -903,12 +905,12 @@ function PublicMenuPage() {
                                         <div className="p-4 flex flex-col flex-1">
                                             <h3 className="font-black text-neutral-900 text-base leading-snug mb-1 line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
                                             <p className="text-neutral-500 text-xs leading-relaxed line-clamp-2 mb-3 flex-1">{product.description}</p>
-                                            <div className="flex flex-col gap-3 mt-auto pt-2 border-t border-amber-50">
+                                            <div className="flex flex-col gap-3 mt-auto pt-2 border-t border-bloom-100">
                                                 <span className="font-black text-xl" style={{ color: fk.primary }}>
                                                     {formatCurrency(product.price)}
                                                 </span>
                                                 <span
-                                                    className="text-center font-black text-xs uppercase tracking-wide py-3 rounded-full border-2 transition-colors group-hover:text-white group-hover:bg-orange-600"
+                                                    className="text-center font-black text-xs uppercase tracking-wide py-3 rounded-full border-2 transition-colors group-hover:text-white group-hover:bg-bloom-600"
                                                     style={{ borderColor: fk.primary, color: fk.primary }}
                                                 >
                                                     Agregar al pedido
@@ -920,7 +922,7 @@ function PublicMenuPage() {
                             </div>
 
                             {filteredProducts.length === 0 && (
-                                <div className="text-center py-16 rounded-3xl border-2 border-dashed border-amber-200 bg-white/60">
+                                <div className="text-center py-16 rounded-3xl border-2 border-dashed border-bloom-200 bg-white/60">
                                     <p className="text-neutral-500 font-medium">No hay productos con estos filtros.</p>
                                     <button
                                         type="button"
@@ -972,7 +974,7 @@ function PublicMenuPage() {
                             <ShoppingBag size={24} />
                             <span
                                 className="absolute -top-1 -right-1 text-xs font-black w-6 h-6 flex items-center justify-center rounded-full border-2 border-white"
-                                style={{ backgroundColor: fk.yellow, color: fk.dark }}
+                                style={{ backgroundColor: fk.accent, color: fk.dark }}
                             >
                                 {cartCount}
                             </span>
@@ -987,9 +989,9 @@ function PublicMenuPage() {
                         <motion.div
                             key="cart-drawer"
                             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="fixed top-0 right-0 h-full w-full md:w-[480px] bg-[#fffdf8] z-[60] shadow-2xl flex flex-col font-sans border-l border-amber-100"
+                            className="fixed top-0 right-0 h-full w-full md:w-[480px] bg-bloom-page z-[60] shadow-2xl flex flex-col font-sans border-l border-bloom-200"
                         >
-                            <div className="p-5 border-b border-amber-100 flex items-center justify-between bg-white sticky top-0 z-10 shadow-sm">
+                            <div className="p-5 border-b border-bloom-200 flex items-center justify-between bg-white sticky top-0 z-10 shadow-sm">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-0.5" style={{ color: fk.primary }}>
                                         Carrito
@@ -1012,7 +1014,7 @@ function PublicMenuPage() {
                             <div className="flex-1 overflow-y-auto p-5 space-y-5">
                                 {/* Delivery / retiro — pedidos web; PedidosYa va en el pie fijo del carrito */}
                                 {!tableId && (
-                                    <div className="space-y-3 rounded-2xl border border-amber-100 bg-white/80 p-4 shadow-sm">
+                                    <div className="space-y-3 rounded-2xl border border-bloom-200 bg-white/80 p-4 shadow-sm">
                                         <p className="font-black text-gray-900 text-base">¿Cómo recibís el pedido?</p>
                                         <div className="grid grid-cols-2 gap-2">
                                             {([
@@ -1058,7 +1060,7 @@ function PublicMenuPage() {
                                                             </p>
                                                         )}
                                                         {item.observations && (
-                                                            <p className="text-orange-500 text-xs italic mt-0.5 leading-relaxed">
+                                                            <p className="text-bloom-600 text-xs italic mt-0.5 leading-relaxed">
                                                                 📝 {item.observations}
                                                             </p>
                                                         )}
@@ -1088,7 +1090,7 @@ function PublicMenuPage() {
                                                 placeholder="Nombre completo *"
                                                 value={checkoutInfo.name}
                                                 onChange={e => setCheckoutInfo(p => ({ ...p, name: e.target.value }))}
-                                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${checkoutErrors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${checkoutErrors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-bloom-400'}`}
                                             />
                                             {checkoutErrors.name && <p className="text-red-500 text-xs mt-1">{checkoutErrors.name}</p>}
                                         </div>
@@ -1098,7 +1100,7 @@ function PublicMenuPage() {
                                                 placeholder="Teléfono / WhatsApp *"
                                                 value={checkoutInfo.phone}
                                                 onChange={e => setCheckoutInfo(p => ({ ...p, phone: e.target.value }))}
-                                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${checkoutErrors.phone ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${checkoutErrors.phone ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-bloom-400'}`}
                                             />
                                             {checkoutErrors.phone && <p className="text-red-500 text-xs mt-1">{checkoutErrors.phone}</p>}
                                         </div>
@@ -1111,7 +1113,7 @@ function PublicMenuPage() {
                                                     placeholder="Dirección de entrega *"
                                                     value={checkoutInfo.address}
                                                     onChange={e => setCheckoutInfo(p => ({ ...p, address: e.target.value }))}
-                                                    className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${checkoutErrors.address ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                                    className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${checkoutErrors.address ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-bloom-400'}`}
                                                 />
                                                 {checkoutErrors.address && <p className="text-red-500 text-xs mt-1">{checkoutErrors.address}</p>}
                                             </div>
@@ -1145,7 +1147,7 @@ function PublicMenuPage() {
                                     {!tableId && (
                                         <button
                                             onClick={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
-                                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 border-amber-200 bg-amber-50/80 hover:bg-amber-100/90 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 border-bloom-200 bg-bloom-100/80 hover:bg-bloom-100/90 transition-colors"
                                         >
                                             <User size={16} className="shrink-0" style={{ color: fk.primary }} />
                                             <p className="text-xs font-black text-left" style={{ color: fk.dark }}>
@@ -1208,8 +1210,8 @@ export default function MenuPage() {
     return (
         <Suspense
             fallback={
-                <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: fk.cream }}>
-                    <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: fk.yellow, borderTopColor: fk.primary }} />
+                <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: fk.page }}>
+                    <div className="w-12 h-12 border-4 rounded-full animate-spin" style={{ borderColor: fk.accent, borderTopColor: fk.primary }} />
                     <p className="font-black text-sm uppercase tracking-[0.2em]" style={{ color: fk.primary }}>
                         Menú
                     </p>

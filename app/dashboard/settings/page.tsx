@@ -245,7 +245,7 @@ export default function SettingsPage() {
                                 max={50}
                                 value={barra}
                                 onChange={e => setBarra(Math.max(0, Math.min(50, Number(e.target.value))))}
-                                className="w-full h-12 px-4 rounded-xl bg-amber-50 text-xl font-black outline-none focus:ring-2 ring-amber-400"
+                                className="w-full h-12 px-4 rounded-xl bg-amber-50 text-xl font-black outline-none focus:ring-2 ring-bloom-400"
                             />
                         </div>
                     </div>
@@ -302,7 +302,7 @@ export default function SettingsPage() {
                 {/* PLATO DEL DÍA */}
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
                     <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500">
+                        <div className="w-12 h-12 rounded-2xl bg-bloom-50 flex items-center justify-center text-bloom-600">
                             <Star size={24} />
                         </div>
                         <div>
@@ -319,7 +319,7 @@ export default function SettingsPage() {
                                     key={product.id}
                                     onClick={() => handleSavePlatoDia(product.id)}
                                     className={`relative rounded-2xl border-2 overflow-hidden transition-all duration-200 flex flex-col text-left ${
-                                        isSelected ? 'border-orange-500 shadow-lg shadow-orange-100' : 'border-gray-100 hover:border-gray-300'
+                                        isSelected ? 'border-bloom-600 shadow-lg shadow-bloom-100' : 'border-gray-100 hover:border-gray-300'
                                     }`}
                                 >
                                     <div className="relative h-28 bg-gray-100 w-full">
@@ -329,19 +329,19 @@ export default function SettingsPage() {
                                             <div className="w-full h-full flex items-center justify-center text-3xl">🍽️</div>
                                         )}
                                         {isSelected && (
-                                            <div className="absolute inset-0 bg-orange-500/20 flex items-center justify-center">
-                                                <div className="bg-orange-500 rounded-full p-1">
+                                            <div className="absolute inset-0 bg-bloom-600/20 flex items-center justify-center">
+                                                <div className="bg-bloom-600 rounded-full p-1">
                                                     <Check size={16} className="text-white" strokeWidth={3} />
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                     <div className="p-3">
-                                        <p className={`text-xs font-black leading-tight ${isSelected ? 'text-orange-600' : 'text-gray-700'}`}>
+                                        <p className={`text-xs font-black leading-tight ${isSelected ? 'text-bloom-600' : 'text-gray-700'}`}>
                                             {product.name}
                                         </p>
                                         {isSelected && (
-                                            <span className="inline-block mt-1 text-[10px] font-black uppercase bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
+                                            <span className="inline-block mt-1 text-[10px] font-black uppercase bg-bloom-100 text-bloom-600 px-2 py-0.5 rounded-full">
                                                 ⭐ Plato del día
                                             </span>
                                         )}

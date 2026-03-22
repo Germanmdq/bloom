@@ -105,7 +105,7 @@ export default function ReservationsPage() {
                                 </p>
                             </div>
                             <Link href="/menu">
-                                <button className="mt-4 px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-colors">
+                                <button className="mt-4 px-8 py-3 bg-bloom-600 hover:bg-bloom-600 text-white font-bold rounded-2xl transition-colors">
                                     Ver el Menú
                                 </button>
                             </Link>
@@ -132,7 +132,7 @@ export default function ReservationsPage() {
                                     placeholder="Tu nombre completo"
                                     value={form.name}
                                     onChange={e => set("name", e.target.value)}
-                                    className={`w-full px-4 py-3.5 rounded-2xl border-2 bg-white text-gray-900 font-medium placeholder-gray-300 outline-none transition-colors focus:border-orange-400 ${errors.name ? "border-red-400" : "border-gray-100"}`}
+                                    className={`w-full px-4 py-3.5 rounded-2xl border-2 bg-white text-gray-900 font-medium placeholder-gray-300 outline-none transition-colors focus:border-bloom-500 ${errors.name ? "border-red-400" : "border-gray-100"}`}
                                 />
                                 {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
                             </div>
@@ -147,7 +147,7 @@ export default function ReservationsPage() {
                                     placeholder="Tu número de WhatsApp"
                                     value={form.phone}
                                     onChange={e => set("phone", e.target.value)}
-                                    className={`w-full px-4 py-3.5 rounded-2xl border-2 bg-white text-gray-900 font-medium placeholder-gray-300 outline-none transition-colors focus:border-orange-400 ${errors.phone ? "border-red-400" : "border-gray-100"}`}
+                                    className={`w-full px-4 py-3.5 rounded-2xl border-2 bg-white text-gray-900 font-medium placeholder-gray-300 outline-none transition-colors focus:border-bloom-500 ${errors.phone ? "border-red-400" : "border-gray-100"}`}
                                 />
                                 {errors.phone && <p className="text-red-500 text-xs">{errors.phone}</p>}
                             </div>
@@ -162,7 +162,7 @@ export default function ReservationsPage() {
                                     min={getTodayStr()}
                                     value={form.date}
                                     onChange={e => set("date", e.target.value)}
-                                    className={`w-full px-4 py-3.5 rounded-2xl border-2 bg-white text-gray-900 font-medium outline-none transition-colors focus:border-orange-400 ${errors.date ? "border-red-400" : "border-gray-100"}`}
+                                    className={`w-full px-4 py-3.5 rounded-2xl border-2 bg-white text-gray-900 font-medium outline-none transition-colors focus:border-bloom-500 ${errors.date ? "border-red-400" : "border-gray-100"}`}
                                 />
                                 {errors.date && <p className="text-red-500 text-xs">{errors.date}</p>}
                             </div>
@@ -178,8 +178,8 @@ export default function ReservationsPage() {
                                             key={h}
                                             onClick={() => set("time", h)}
                                             className={`py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${form.time === h
-                                                ? "border-orange-500 bg-orange-50 text-orange-700"
-                                                : "border-gray-100 bg-white text-gray-600 hover:border-orange-200"
+                                                ? "border-bloom-600 bg-bloom-50 text-bloom-700"
+                                                : "border-gray-100 bg-white text-gray-600 hover:border-bloom-200"
                                             }`}
                                         >
                                             {h}
@@ -200,8 +200,8 @@ export default function ReservationsPage() {
                                             key={n}
                                             onClick={() => set("guests", n)}
                                             className={`w-12 h-12 rounded-2xl text-base font-black border-2 transition-all ${form.guests === n
-                                                ? "border-orange-500 bg-orange-500 text-white"
-                                                : "border-gray-100 bg-white text-gray-600 hover:border-orange-200"
+                                                ? "border-bloom-600 bg-bloom-600 text-white"
+                                                : "border-gray-100 bg-white text-gray-600 hover:border-bloom-200"
                                             }`}
                                         >
                                             {n}
@@ -220,14 +220,14 @@ export default function ReservationsPage() {
                                     placeholder="Alergias, cumpleaños, lugar preferido..."
                                     value={form.notes}
                                     onChange={e => set("notes", e.target.value)}
-                                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-100 bg-white text-gray-900 font-medium placeholder-gray-300 outline-none transition-colors focus:border-orange-400 resize-none"
+                                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-100 bg-white text-gray-900 font-medium placeholder-gray-300 outline-none transition-colors focus:border-bloom-500 resize-none"
                                 />
                             </div>
 
                             <button
                                 onClick={handleSubmit}
                                 disabled={loading}
-                                className="w-full bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white font-black text-lg py-4 rounded-2xl transition-all shadow-lg shadow-orange-200 disabled:opacity-50"
+                                className="w-full bg-bloom-600 hover:bg-bloom-600 active:scale-[0.98] text-white font-black text-lg py-4 rounded-2xl transition-all shadow-lg shadow-bloom-200 disabled:opacity-50"
                             >
                                 {loading ? "Enviando..." : "Confirmar Reserva"}
                             </button>

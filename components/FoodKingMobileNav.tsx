@@ -16,7 +16,7 @@ export function FoodKingMobileNavButton({ onOpen }: { onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="xl:hidden flex items-center justify-center w-11 h-11 rounded-xl border-2 border-orange-200 bg-white shadow-sm active:scale-[0.98] text-orange-600"
+      className="xl:hidden flex items-center justify-center w-11 h-11 rounded-xl border-2 border-bloom-200 bg-white shadow-sm active:scale-[0.98] text-bloom-600"
       aria-label="Abrir menú de navegación"
     >
       <Menu size={22} strokeWidth={2.5} />
@@ -43,16 +43,16 @@ export function FoodKingMobileNavPanel({ open, onClose }: { open: boolean; onClo
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
-            className="fixed inset-y-0 right-0 z-[90] w-[min(100vw,20rem)] shadow-2xl flex flex-col xl:hidden border-l-2 border-orange-100 bg-[#fffdf8]"
+            className="fixed inset-y-0 right-0 z-[90] w-[min(100vw,20rem)] shadow-2xl flex flex-col xl:hidden border-l-2 border-bloom-200 bg-bloom-page"
           >
-            <div className="flex items-center justify-between px-4 py-4 border-b border-orange-100 bg-white">
+            <div className="flex items-center justify-between px-4 py-4 border-b border-bloom-200 bg-white">
               <span className="font-black text-lg tracking-tighter text-neutral-900">
-                BLOOM<span className="text-orange-500">.</span>
+                BLOOM<span className="text-bloom-600">.</span>
               </span>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-orange-50 text-neutral-600"
+                className="p-2 rounded-full hover:bg-bloom-50 text-neutral-600"
                 aria-label="Cerrar menú"
               >
                 <X size={22} />
@@ -64,17 +64,17 @@ export function FoodKingMobileNavPanel({ open, onClose }: { open: boolean; onClo
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
-                  className="block px-4 py-3.5 rounded-xl font-black text-neutral-800 hover:bg-white border border-transparent hover:border-orange-100 transition-colors"
+                  className="block px-4 py-3.5 rounded-xl font-black text-neutral-800 hover:bg-white border border-transparent hover:border-bloom-200 transition-colors"
                 >
                   {item.label}
                 </Link>
               ))}
             </nav>
-            <div className="p-4 border-t border-orange-100 bg-white">
+            <div className="p-4 border-t border-bloom-200 bg-white">
               <Link
                 href="/menu"
                 onClick={onClose}
-                className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-black text-white shadow-md bg-orange-600 hover:bg-orange-700 active:scale-[0.98] transition-colors"
+                className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-black text-white shadow-md bg-bloom-600 hover:bg-bloom-700 active:scale-[0.98] transition-colors"
               >
                 Pedir ahora
               </Link>

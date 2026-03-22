@@ -1,51 +1,53 @@
 @import "tailwindcss";
 
 @theme {
-  /* Paleta Bloom CloudPOS */
-  --color-bloom-50: #FFFBEB;
-  --color-bloom-100: #FEF3C7;
-  --color-bloom-200: #FDE68A;
-  --color-bloom-300: #FCD34D;
-  --color-bloom-400: #FBBF24;
-  --color-bloom-500: #F59E0B;
-  /* PRIMARY */
-  --color-bloom-600: #D97706;
-  --color-bloom-700: #B45309;
-  --color-bloom-800: #92400E;
-  --color-bloom-900: #78350F;
+  /* Bloom logo — oliva (#7A765A) + crema (#F2F0E6) */
+  --color-bloom-50: #f8f7f3;
+  --color-bloom-100: #eceae0;
+  --color-bloom-200: #ddd8c8;
+  --color-bloom-300: #c4c0aa;
+  --color-bloom-400: #a39a7f;
+  --color-bloom-500: #8a8368;
+  --color-bloom-600: #7a765a;
+  --color-bloom-700: #5f5c46;
+  --color-bloom-800: #4a4838;
+  --color-bloom-900: #3d3b2f;
+
+  --color-bloom-cream: #f2f0e6;
+  --color-bloom-page: #f7f5ef;
+
+  /* Acento cálido (reemplaza amarillo/naranja puro) */
+  --color-bloom-gold: #c4b896;
+  --color-bloom-gold-dark: #a89868;
+
+  /* Compat: nombres usados en POS / legacy */
+  --color-bloom-50-legacy: var(--color-bloom-50);
+  --color-bloom-600-primary: var(--color-bloom-600);
 
   /* Estados */
-  --color-success: #10B981;
-  /* Verde (mesa libre) */
-  --color-warning: #F59E0B;
-  /* Amarillo (mesa ocupada) */
-  --color-danger: #EF4444;
-  /* Rojo (alertas) */
-  --color-info: #3B82F6;
-  /* Azul (delivery) */
+  --color-success: #10b981;
+  --color-warning: #a89868;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
 
-  /* Grises Dark UI */
-  --color-dark-50: #F9FAFB;
-  --color-dark-100: #F3F4F6;
-  --color-dark-200: #E5E7EB;
-  --color-dark-300: #D1D5DB;
-  --color-dark-400: #9CA3AF;
-  --color-dark-500: #6B7280;
-  --color-dark-600: #4B5563;
+  --color-dark-50: #f9fafb;
+  --color-dark-100: #f3f4f6;
+  --color-dark-200: #e5e7eb;
+  --color-dark-300: #d1d5db;
+  --color-dark-400: #9ca3af;
+  --color-dark-500: #6b7280;
+  --color-dark-600: #4b5563;
   --color-dark-700: #374151;
-  --color-dark-800: #1F2937;
+  --color-dark-800: #1f2937;
   --color-dark-900: #111827;
 
-  /* Legacy Compat (To not break existing Menu Page immediately) */
-  --color-chocolate: #4A3D35;
-  --color-piedra: #262220;
-  --color-crema: #F2EBE6;
-  --color-gris: #7A736E;
+  --color-chocolate: #4a4838;
+  --color-piedra: #2c2a24;
+  --color-crema: #f2f0e6;
+  --color-gris: #7a736e;
 
-  /* System Fonts */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  /* Animations */
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -61,7 +63,7 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: #fffdf8;
+  background-color: var(--color-bloom-page);
   color: var(--color-piedra);
   -webkit-font-smoothing: antialiased;
 }

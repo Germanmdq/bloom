@@ -150,11 +150,11 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.96 }}
         transition={{ duration: 0.3, ease: [0.21, 0.47, 0.32, 0.98] }}
-        className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-amber-100"
+        className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-bloom-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative bg-[#ea580c] px-8 pt-10 pb-8 text-center">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-[#ffc107] rounded-full blur-[80px] opacity-25 translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+        <div className="relative bg-bloom-600 px-8 pt-10 pb-8 text-center">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-bloom-gold rounded-full blur-[80px] opacity-25 translate-x-1/2 -translate-y-1/2 pointer-events-none" />
           <button
             type="button"
             onClick={onClose}
@@ -163,7 +163,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
             <X size={18} />
           </button>
           <h2 className="text-2xl font-black text-white tracking-tight mb-1">
-            BLOOM<span className="text-[#ffc107]">.</span>
+            BLOOM<span className="text-bloom-gold">.</span>
           </h2>
           <p className="text-white/80 text-sm font-semibold">Acceso para empleados</p>
         </div>
@@ -177,7 +177,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoFocus
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#ea580c]/20 focus:border-[#ea580c]/40 outline-none transition-all font-medium text-neutral-900"
+              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-bloom-600/20 focus:border-bloom-600/40 outline-none transition-all font-medium text-neutral-900"
               placeholder="nombre@ejemplo.com"
             />
           </div>
@@ -188,7 +188,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#ea580c]/20 focus:border-[#ea580c]/40 outline-none transition-all font-medium text-neutral-900"
+              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-bloom-600/20 focus:border-bloom-600/40 outline-none transition-all font-medium text-neutral-900"
               placeholder="••••••••"
             />
           </div>
@@ -196,7 +196,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#ea580c] text-white font-bold py-4 rounded-xl hover:bg-[#c2410c] active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full bg-bloom-600 text-white font-bold py-4 rounded-xl hover:bg-bloom-700 active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <LogIn size={18} />
             {loading ? "Iniciando sesión..." : "Ingresar"}
@@ -210,7 +210,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 function LogoWordmark({ inverted = false }: { inverted?: boolean }) {
   return (
     <span className={`font-black text-xl md:text-2xl tracking-tighter ${inverted ? "text-white" : "text-neutral-900"}`}>
-      BLOOM<span className="text-[#ffc107]">.</span>
+      BLOOM<span className="text-bloom-gold">.</span>
     </span>
   );
 }
@@ -290,11 +290,11 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#fffdf8] text-neutral-900 font-sans selection:bg-[#ffc107] selection:text-neutral-900">
+    <main className="min-h-screen bg-bloom-page text-neutral-900 font-sans selection:bg-bloom-200 selection:text-neutral-900">
       <AnimatePresence>{showLogin && <LoginModal onClose={() => setShowLogin(false)} />}</AnimatePresence>
       <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
-      <div className="bg-[#ffc107] text-neutral-900 text-[11px] sm:text-sm font-semibold border-b border-amber-300/40">
+      <div className="bg-bloom-gold text-neutral-900 text-[11px] sm:text-sm font-semibold border-b border-bloom-300/40">
         <div className="container mx-auto px-4 py-2.5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2">
           <div className="flex flex-col gap-1.5 min-w-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-1">
             <span className="inline-flex items-start gap-1.5 min-w-0">
@@ -328,16 +328,16 @@ export default function Home() {
             <LogoWordmark />
           </Link>
           <nav className="hidden xl:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
-            <Link href="/" className="text-[#ea580c]">
+            <Link href="/" className="text-bloom-600">
               Inicio
             </Link>
-            <Link href="/menu" className="hover:text-[#ea580c] transition-colors">
+            <Link href="/menu" className="hover:text-bloom-600 transition-colors">
               Menú
             </Link>
-            <Link href="/about" className="hover:text-[#ea580c] transition-colors">
+            <Link href="/about" className="hover:text-bloom-600 transition-colors">
               Nosotros
             </Link>
-            <Link href="/reservations" className="hover:text-[#ea580c] transition-colors">
+            <Link href="/reservations" className="hover:text-bloom-600 transition-colors">
               Reservas
             </Link>
           </nav>
@@ -345,7 +345,7 @@ export default function Home() {
             <FoodKingMobileNavButton onOpen={() => setMobileNavOpen(true)} />
             <Link
               href="/menu"
-              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-[#ea580c] px-3 py-2 sm:px-5 sm:py-2.5 text-[11px] sm:text-sm font-bold text-white shadow hover:bg-[#c2410c] transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-bloom-600 px-3 py-2 sm:px-5 sm:py-2.5 text-[11px] sm:text-sm font-bold text-white shadow hover:bg-bloom-700 transition-colors whitespace-nowrap"
             >
               <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
               Pedir ahora
@@ -393,15 +393,15 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             className="max-w-2xl text-white"
           >
-            <p className="text-[#ffc107] font-bold uppercase tracking-[0.2em] text-sm mb-3">{heroSlides[slide].eyebrow}</p>
+            <p className="text-bloom-cream font-bold uppercase tracking-[0.2em] text-sm mb-3">{heroSlides[slide].eyebrow}</p>
             <p className="text-white/90 text-lg md:text-xl font-medium mb-4">{heroSlides[slide].line}</p>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-8">
               {heroSlides[slide].title}
-              <span className="text-[#ffc107]">{heroSlides[slide].accent}</span>
+              <span className="text-bloom-cream">{heroSlides[slide].accent}</span>
             </h1>
             <Link
               href="/menu"
-              className="inline-flex items-center gap-2 rounded-full bg-[#ffc107] px-8 py-4 text-neutral-900 font-black text-sm uppercase tracking-wide shadow-[0_12px_40px_-8px_rgba(255,193,7,0.55)] hover:bg-[#ffcd38] transition-colors"
+              className="inline-flex items-center gap-2 rounded-full bg-bloom-600 px-8 py-4 text-white font-black text-sm uppercase tracking-wide shadow-[0_12px_40px_-8px_rgba(122,118,90,0.45)] hover:bg-bloom-700 transition-colors"
             >
               Ver menú
               <ArrowRight size={18} strokeWidth={2.5} />
@@ -414,7 +414,7 @@ export default function Home() {
                 key={i}
                 type="button"
                 onClick={() => setSlide(i)}
-                className={`h-2.5 rounded-full transition-all ${slide === i ? "w-10 bg-[#ffc107]" : "w-2.5 bg-white/40 hover:bg-white/70"}`}
+                className={`h-2.5 rounded-full transition-all ${slide === i ? "w-10 bg-bloom-cream" : "w-2.5 bg-white/40 hover:bg-white/70"}`}
                 aria-label={`Diapositiva ${i + 1}`}
               />
             ))}
@@ -422,10 +422,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 md:py-24 bg-[#fffdf8]">
+      <section className="py-16 md:py-24 bg-bloom-page">
         <div className="container mx-auto px-4">
           <FadeIn className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-[#ea580c] font-bold uppercase tracking-widest text-sm mb-2">Nuestra carta</p>
+            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Nuestra carta</p>
             <h2 className="text-3xl md:text-5xl font-black text-neutral-900 tracking-tight">Elegí por categoría</h2>
             <p className="text-neutral-600 mt-3 text-lg">Lo mejor de Bloom, ordenado para que encuentres al toque.</p>
           </FadeIn>
@@ -434,9 +434,9 @@ export default function Home() {
               <FadeIn key={c.title} delay={i * 0.05}>
                 <Link
                   href={c.href}
-                  className="group block rounded-3xl bg-white border border-amber-100/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden"
+                  className="group block rounded-3xl bg-white border border-bloom-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden"
                 >
-                  <div className="relative aspect-[4/3] bg-gradient-to-b from-amber-50 to-white">
+                  <div className="relative aspect-[4/3] bg-gradient-to-b from-bloom-50 to-white">
                     <Image
                       src={c.img}
                       alt={c.title}
@@ -461,7 +461,7 @@ export default function Home() {
         <div className="absolute inset-0 opacity-[0.07] bg-[url('https://www.transparenttextures.com/patterns/food.png')]" />
         <div className="container mx-auto px-4 relative z-10 flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
           <div className="flex-1 text-center lg:text-left">
-            <p className="text-[#ffc107] font-bold uppercase tracking-widest text-sm mb-2">Destacado</p>
+            <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2">Destacado</p>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {platoDiaProduct ? (
                 <>
@@ -469,7 +469,7 @@ export default function Home() {
                 </>
               ) : (
                 <>
-                  PLATO DEL <span className="text-[#ffc107]">DÍA</span>
+                  PLATO DEL <span className="text-bloom-gold">DÍA</span>
                 </>
               )}
             </h2>
@@ -479,14 +479,14 @@ export default function Home() {
                 : "Elegí el plato del día desde Ajustes del panel para mostrarlo acá. Mientras tanto, explorá la carta con opciones caseras."}
             </p>
             {platoDiaProduct && (
-              <p className="text-[#ffc107] font-black text-2xl mb-6">{formatCurrency(platoDiaProduct.price)}</p>
+              <p className="text-bloom-gold font-black text-2xl mb-6">{formatCurrency(platoDiaProduct.price)}</p>
             )}
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#ffc107] text-neutral-900 px-4 py-2 font-black text-sm mb-8">
+            <div className="inline-flex items-center gap-2 rounded-full bg-bloom-gold text-neutral-900 px-4 py-2 font-black text-sm mb-8">
               {platoDiaProduct ? "Marcado en Ajustes · Bloom" : "Consultá promos en el menú"}
             </div>
             <Link
               href="/menu?cat=Plato%20del%20Día"
-              className="inline-flex items-center gap-2 rounded-full bg-white text-neutral-900 px-8 py-3.5 font-black text-sm uppercase hover:bg-[#ffc107] transition-colors"
+              className="inline-flex items-center gap-2 rounded-full bg-white text-neutral-900 px-8 py-3.5 font-black text-sm uppercase hover:bg-bloom-gold transition-colors"
             >
               Ver en el menú
             </Link>
@@ -508,7 +508,7 @@ export default function Home() {
       <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-4">
           <FadeIn className="text-center mb-12">
-            <p className="text-[#ea580c] font-bold uppercase tracking-widest text-sm mb-2">Bloom</p>
+            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Bloom</p>
             <h2 className="text-3xl md:text-5xl font-black text-neutral-900">Favoritos de la casa</h2>
             <p className="text-neutral-600 mt-3 max-w-xl mx-auto">Precios y disponibilidad en el menú online.</p>
           </FadeIn>
@@ -526,7 +526,7 @@ export default function Home() {
                   : p;
               return (
                 <FadeIn key={card.name + String(i)} delay={(i % 4) * 0.05}>
-                  <div className="group rounded-3xl border border-neutral-100 bg-[#fffdf8] overflow-hidden hover:shadow-xl transition-shadow">
+                  <div className="group rounded-3xl border border-neutral-100 bg-bloom-page overflow-hidden hover:shadow-xl transition-shadow">
                     <div className="relative aspect-square">
                       <Image
                         src={card.img}
@@ -541,7 +541,7 @@ export default function Home() {
                       <p className="text-neutral-600 text-sm mb-4 min-h-[2.5rem]">{card.desc}</p>
                       <Link
                         href={platoDiaProduct && p.name === "Plato del día" ? "/menu?cat=Plato%20del%20Día" : "/menu"}
-                        className="block w-full text-center rounded-full border-2 border-[#ea580c] text-[#ea580c] font-bold py-2.5 hover:bg-[#ea580c] hover:text-white transition-colors text-sm uppercase"
+                        className="block w-full text-center rounded-full border-2 border-bloom-600 text-bloom-600 font-bold py-2.5 hover:bg-bloom-600 hover:text-white transition-colors text-sm uppercase"
                       >
                         Ver en menú
                       </Link>
@@ -552,7 +552,7 @@ export default function Home() {
             })}
           </div>
           <div className="text-center mt-12">
-            <Link href="/menu" className="inline-flex items-center gap-2 font-black text-[#ea580c] hover:underline uppercase text-sm tracking-wide">
+            <Link href="/menu" className="inline-flex items-center gap-2 font-black text-bloom-600 hover:underline uppercase text-sm tracking-wide">
               Ver menú completo
               <ArrowRight size={16} />
             </Link>
@@ -563,7 +563,7 @@ export default function Home() {
       <section className="py-16 bg-[#fff5e6] border-y border-amber-100">
         <div className="container mx-auto px-4">
           <FadeIn className="text-center mb-10">
-            <p className="text-[#ea580c] font-bold uppercase tracking-widest text-sm mb-2">Promociones</p>
+            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Promociones</p>
             <h2 className="text-2xl md:text-4xl font-black text-neutral-900">Combos y ofertas</h2>
             <p className="text-neutral-600 mt-2">Aplican según día y stock — detalle en carta.</p>
           </FadeIn>
@@ -573,9 +573,9 @@ export default function Home() {
                   <FadeIn key={o.id}>
                     <Link
                       href="/menu?cat=Promociones"
-                      className="block rounded-3xl bg-white p-2 shadow-md border border-amber-100 overflow-hidden flex flex-col hover:shadow-lg transition-shadow h-full"
+                      className="block rounded-3xl bg-white p-2 shadow-md border border-bloom-200 overflow-hidden flex flex-col hover:shadow-lg transition-shadow h-full"
                     >
-                      <div className="relative aspect-[16/10] w-full bg-amber-50">
+                      <div className="relative aspect-[16/10] w-full bg-bloom-50">
                         <Image
                           src={o.image_url || U.catPlatos}
                           alt={o.name}
@@ -589,14 +589,14 @@ export default function Home() {
                         {o.description?.trim() ? (
                           <p className="text-neutral-600 text-sm mb-3 line-clamp-2">{o.description}</p>
                         ) : null}
-                        <p className="text-[#ea580c] font-black text-lg mt-auto">{formatCurrency(o.price)}</p>
+                        <p className="text-bloom-600 font-black text-lg mt-auto">{formatCurrency(o.price)}</p>
                       </div>
                     </Link>
                   </FadeIn>
                 ))
               : comboOffersFallback.map((o) => (
                   <FadeIn key={o.t}>
-                    <div className="rounded-3xl bg-white p-2 shadow-md border border-amber-100 overflow-hidden flex flex-col">
+                    <div className="rounded-3xl bg-white p-2 shadow-md border border-bloom-200 overflow-hidden flex flex-col">
                       <div className="relative aspect-[16/10] w-full">
                         <Image src={o.img} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
                       </div>
@@ -606,7 +606,7 @@ export default function Home() {
                 ))}
           </div>
           <div className="text-center mt-10">
-            <Link href="/menu?cat=Promociones" className="text-[#ea580c] font-black hover:underline">
+            <Link href="/menu?cat=Promociones" className="text-bloom-600 font-black hover:underline">
               Ver promociones
             </Link>
           </div>
@@ -624,7 +624,7 @@ export default function Home() {
             ].map((f, i) => (
               <FadeIn key={f.title} delay={i * 0.06}>
                 <div className="text-center px-2">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ffc107]/20 text-[#ea580c]">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-bloom-gold/20 text-bloom-600">
                     <f.icon size={32} strokeWidth={2} />
                   </div>
                   <h3 className="font-black text-base uppercase tracking-wide text-neutral-900 mb-2">{f.title}</h3>
@@ -645,9 +645,9 @@ export default function Home() {
               </div>
             </FadeIn>
             <FadeIn className="lg:w-1/2">
-              <p className="text-[#ffc107] font-bold uppercase tracking-widest text-sm mb-2">Sobre Bloom</p>
+              <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2">Sobre Bloom</p>
               <h2 className="text-3xl md:text-5xl font-black mb-6 leading-tight">
-                Donde la calidad se cruza con <span className="text-[#ffc107]">un buen momento.</span>
+                Donde la calidad se cruza con <span className="text-bloom-gold">un buen momento.</span>
               </h2>
               <p className="text-neutral-400 text-lg leading-relaxed mb-8">
                 Café de especialidad, pastelería artesanal, platos del día y opciones para cada hora. Un espacio en Mar del Plata pensado para compartir, trabajar tranquilo o pedir y llevar.
@@ -655,14 +655,14 @@ export default function Home() {
               <ul className="space-y-4 mb-10">
                 {["Ambiente cuidado y atención cercana", "Menú amplio: desayuno, almuerzo y merienda"].map((x) => (
                   <li key={x} className="flex items-center gap-3 font-bold">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#ffc107] text-neutral-900 text-sm">✓</span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-bloom-gold text-neutral-900 text-sm">✓</span>
                     {x}
                   </li>
                 ))}
               </ul>
               <Link
                 href="/about"
-                className="inline-flex items-center gap-2 rounded-full bg-[#ffc107] px-8 py-3.5 font-black text-neutral-900 text-sm uppercase hover:bg-[#ffcd38] transition-colors"
+                className="inline-flex items-center gap-2 rounded-full bg-bloom-gold px-8 py-3.5 font-black text-neutral-900 text-sm uppercase hover:bg-bloom-gold-dark transition-colors"
               >
                 Conocer más
                 <ArrowRight size={18} />
@@ -672,15 +672,15 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 md:py-20 bg-[#fffdf8]">
+      <section className="py-16 md:py-20 bg-bloom-page">
         <div className="container mx-auto px-4 max-w-4xl text-center">
           <FadeIn>
-            <p className="text-[#ea580c] font-bold uppercase tracking-widest text-sm mb-2">Clientes</p>
+            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Clientes</p>
             <h2 className="text-2xl md:text-4xl font-black text-neutral-900 mb-10">La experiencia de quienes nos eligen</h2>
-            <div className="rounded-3xl bg-white border border-amber-100 shadow-lg p-8 md:p-12">
+            <div className="rounded-3xl bg-white border border-bloom-200 shadow-lg p-8 md:p-12">
               <div className="flex justify-center mb-4">
                 {[1, 2, 3, 4, 5].map((s) => (
-                  <Star key={s} className="w-6 h-6 text-[#ffc107] fill-[#ffc107]" />
+                  <Star key={s} className="w-6 h-6 text-bloom-gold fill-bloom-gold" />
                 ))}
               </div>
               <p className="text-lg md:text-xl text-neutral-700 leading-relaxed mb-8">
@@ -693,18 +693,18 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 bg-gradient-to-br from-[#ea580c] to-[#7c2d12] text-white">
+      <section className="py-16 bg-gradient-to-br from-bloom-600 to-bloom-900 text-white">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <FadeIn>
-              <p className="text-[#ffc107] font-bold uppercase tracking-widest text-sm mb-2">Merienda & café</p>
+              <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2">Merienda & café</p>
               <h2 className="text-3xl md:text-4xl font-black mb-6">Pedí tu combo favorito</h2>
               <p className="text-white/85 mb-8 max-w-lg">
                 Pastelería del día, sandwiches calientes y bebidas para acompañar. Ideal para compartir o para darte un gustito a la tarde.
               </p>
               <Link
                 href="/menu?cat=Pastelería"
-                className="inline-flex items-center gap-2 rounded-full bg-[#ffc107] px-8 py-3.5 font-black text-neutral-900 text-sm uppercase hover:bg-[#ffcd38] transition-colors"
+                className="inline-flex items-center gap-2 rounded-full bg-bloom-gold px-8 py-3.5 font-black text-neutral-900 text-sm uppercase hover:bg-bloom-gold-dark transition-colors"
               >
                 Ir al menú
               </Link>
@@ -718,7 +718,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 md:py-24 bg-[#fffdf8]">
+      <section className="py-16 md:py-24 bg-bloom-page">
         <div className="container mx-auto px-4 flex flex-col lg:flex-row items-center gap-12">
           <div className="lg:w-1/2 relative w-full">
             <div className="relative w-full max-w-lg mx-auto aspect-[4/3] rounded-3xl overflow-hidden shadow-xl">
@@ -726,14 +726,14 @@ export default function Home() {
             </div>
           </div>
           <FadeIn className="lg:w-1/2 text-center lg:text-left">
-            <p className="text-[#ea580c] font-bold uppercase tracking-widest text-sm mb-2">Pedidos online</p>
+            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Pedidos online</p>
             <h2 className="text-3xl md:text-5xl font-black text-neutral-900 mb-6">Delivery en la ciudad</h2>
             <p className="text-neutral-600 text-lg mb-8 max-w-lg">
               Hacé tu pedido desde la web y coordinamos el envío. Horarios y zonas según disponibilidad del día.
             </p>
             <Link
               href="/menu"
-              className="inline-flex items-center gap-2 rounded-full bg-[#ea580c] px-8 py-4 font-black text-white text-sm uppercase hover:bg-[#c2410c] transition-colors"
+              className="inline-flex items-center gap-2 rounded-full bg-bloom-600 px-8 py-4 font-black text-white text-sm uppercase hover:bg-bloom-700 transition-colors"
             >
               <Bike size={20} />
               Pedir ahora
@@ -744,14 +744,14 @@ export default function Home() {
 
       <section id="contact" className="py-16 bg-[#1a1a1a] text-white">
         <div className="container mx-auto px-4 text-center max-w-3xl">
-          <Clock className="mx-auto mb-4 text-[#ffc107]" size={40} />
+          <Clock className="mx-auto mb-4 text-bloom-gold" size={40} />
           <h2 className="text-2xl md:text-4xl font-black mb-4">¿Reservas o consultas?</h2>
           <p className="text-neutral-400 font-semibold mb-2">Escribinos o llamanos</p>
-          <a href={CONTACT.phoneHref} className="text-2xl md:text-3xl font-black text-[#ffc107] hover:underline block">
+          <a href={CONTACT.phoneHref} className="text-2xl md:text-3xl font-black text-bloom-gold hover:underline block">
             {CONTACT.phoneDisplay}
           </a>
           <p className="text-neutral-500 mt-4">
-            <a href={`mailto:${CONTACT.email}`} className="hover:text-[#ffc107]">
+            <a href={`mailto:${CONTACT.email}`} className="hover:text-bloom-gold">
               {CONTACT.email}
             </a>
             {" · "}
@@ -760,7 +760,7 @@ export default function Home() {
           <div className="mt-10">
             <Link
               href="/reservations"
-              className="inline-flex items-center gap-2 rounded-full bg-[#ffc107] px-10 py-4 font-black text-neutral-900 text-sm uppercase hover:bg-[#ffcd38] transition-colors"
+              className="inline-flex items-center gap-2 rounded-full bg-bloom-gold px-10 py-4 font-black text-neutral-900 text-sm uppercase hover:bg-bloom-gold-dark transition-colors"
             >
               Reservar mesa
             </Link>
@@ -773,13 +773,13 @@ export default function Home() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <LogoWordmark inverted />
             <div className="flex flex-wrap justify-center gap-6 text-sm font-semibold">
-              <Link href="/menu" className="hover:text-[#ffc107]">
+              <Link href="/menu" className="hover:text-bloom-gold">
                 Menú
               </Link>
-              <Link href="/about" className="hover:text-[#ffc107]">
+              <Link href="/about" className="hover:text-bloom-gold">
                 Nosotros
               </Link>
-              <Link href="/reservations" className="hover:text-[#ffc107]">
+              <Link href="/reservations" className="hover:text-bloom-gold">
                 Reservas
               </Link>
             </div>

@@ -93,9 +93,9 @@ export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
     if (!isOpen) return null;
 
     const discountThresholds = [
-        { spend: 50000,  discount: 5,  label: "Bronce",  color: "text-orange-500",  bg: "bg-orange-50 border-orange-200" },
+        { spend: 50000,  discount: 5,  label: "Bronce",  color: "text-bloom-600",  bg: "bg-bloom-50 border-bloom-200" },
         { spend: 150000, discount: 10, label: "Plata",   color: "text-gray-500",    bg: "bg-gray-50 border-gray-200" },
-        { spend: 300000, discount: 15, label: "Oro",     color: "text-amber-500",   bg: "bg-amber-50 border-amber-200" },
+        { spend: 300000, discount: 15, label: "Oro",     color: "text-bloom-500",   bg: "bg-bloom-50 border-bloom-200" },
     ];
 
     const totalSpent = customer?.total_spent ?? 0;
@@ -119,15 +119,15 @@ export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
 
                 {loading ? (
                     <div className="p-10 flex items-center justify-center">
-                        <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-8 h-8 border-4 border-bloom-600 border-t-transparent rounded-full animate-spin" />
                     </div>
 
                 ) : step === 'phone' ? (
                     /* PASO 1 — TELÉFONO */
                     <div className="p-6 space-y-5">
                         <div className="text-center">
-                            <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                                <Gift size={26} className="text-orange-500" />
+                            <div className="w-14 h-14 bg-bloom-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                <Gift size={26} className="text-bloom-600" />
                             </div>
                             <p className="font-black text-gray-900 text-lg">Acumulá puntos y descuentos</p>
                             <p className="text-gray-400 text-sm mt-1">Ingresá tu número para identificarte</p>
@@ -141,7 +141,7 @@ export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
                                 value={phone}
                                 onChange={e => { setPhone(e.target.value); setError(''); }}
                                 onKeyDown={e => e.key === 'Enter' && handlePhoneSubmit()}
-                                className={`w-full pl-11 pr-4 py-4 rounded-2xl border-2 text-base font-bold outline-none transition-all ${error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                className={`w-full pl-11 pr-4 py-4 rounded-2xl border-2 text-base font-bold outline-none transition-all ${error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-bloom-500'}`}
                                 autoFocus
                             />
                         </div>
@@ -160,8 +160,8 @@ export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
                     /* PASO 2 — NOMBRE (nuevo usuario) */
                     <div className="p-6 space-y-5">
                         <div className="text-center">
-                            <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                                <User size={26} className="text-orange-500" />
+                            <div className="w-14 h-14 bg-bloom-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                <User size={26} className="text-bloom-600" />
                             </div>
                             <p className="font-black text-gray-900 text-lg">¡Primera vez por acá!</p>
                             <p className="text-gray-400 text-sm mt-1">¿Cómo te llamás?</p>
@@ -173,7 +173,7 @@ export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
                             value={name}
                             onChange={e => { setName(e.target.value); setError(''); }}
                             onKeyDown={e => e.key === 'Enter' && handleRegister()}
-                            className={`w-full px-4 py-4 rounded-2xl border-2 text-base font-bold outline-none transition-all ${error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                            className={`w-full px-4 py-4 rounded-2xl border-2 text-base font-bold outline-none transition-all ${error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-bloom-500'}`}
                             autoFocus
                         />
                         {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
@@ -181,7 +181,7 @@ export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
                         <button
                             onClick={handleRegister}
                             disabled={saving}
-                            className="w-full bg-orange-500 text-white py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 hover:bg-orange-600 active:scale-[0.98] transition-all disabled:opacity-50"
+                            className="w-full bg-bloom-600 text-white py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 hover:bg-bloom-700 active:scale-[0.98] transition-all disabled:opacity-50"
                         >
                             {saving ? 'Registrando...' : '¡Listo, empezar a acumular!'}
                         </button>
@@ -196,8 +196,8 @@ export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
                     <div className="p-6 space-y-4">
                         {/* Avatar + nombre */}
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center shrink-0">
-                                <User size={22} className="text-orange-500" />
+                            <div className="w-12 h-12 rounded-2xl bg-bloom-100 flex items-center justify-center shrink-0">
+                                <User size={22} className="text-bloom-600" />
                             </div>
                             <div>
                                 <p className="font-black text-gray-900">{customer?.name}</p>
@@ -213,7 +213,7 @@ export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
                                     <span className="font-black text-gray-900 text-sm">Nivel {currentTier.label}</span>
                                 </div>
                                 {currentTier.discount > 0 && (
-                                    <span className="font-black text-orange-600 text-sm bg-orange-100 px-2 py-0.5 rounded-full">
+                                    <span className="font-black text-bloom-600 text-sm bg-bloom-100 px-2 py-0.5 rounded-full">
                                         {currentTier.discount}% OFF
                                     </span>
                                 )}
@@ -221,14 +221,14 @@ export function CustomerAuthModal({ isOpen, onClose }: CustomerAuthModalProps) {
                             {nextTier ? (
                                 <>
                                     <div className="w-full bg-gray-200 rounded-full h-2 mb-1.5">
-                                        <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${progress}%` }} />
+                                        <div className="bg-bloom-600 h-2 rounded-full" style={{ width: `${progress}%` }} />
                                     </div>
                                     <p className="text-xs text-gray-500">
                                         ${((nextTier.spend - totalSpent) / 1000).toFixed(0)}k para nivel {nextTier.label} ({nextTier.discount}% OFF)
                                     </p>
                                 </>
                             ) : (
-                                <p className="text-xs text-amber-600 font-bold">¡Nivel máximo! 🏆</p>
+                                <p className="text-xs text-bloom-600 font-bold">¡Nivel máximo! 🏆</p>
                             )}
                         </div>
 

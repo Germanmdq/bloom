@@ -26,7 +26,7 @@ export function ProductCardTouch({ product, onAdd }: ProductCardTouchProps) {
                 bg-white rounded-3xl p-5 shadow-sm border-2 border-transparent transition-all duration-150
                 min-h-[160px] w-full
                 ${isActive
-                    ? 'hover:border-orange-500 hover:shadow-xl active:scale-95 cursor-pointer hover:bg-orange-50/10'
+                    ? 'hover:border-bloom-600 hover:shadow-xl active:scale-95 cursor-pointer hover:bg-bloom-50/10'
                     : 'opacity-50 grayscale cursor-not-allowed'
                 }
             `}
@@ -47,13 +47,13 @@ export function ProductCardTouch({ product, onAdd }: ProductCardTouchProps) {
 
             {/* Bottom: Price & Action */}
             <div className="z-10 flex items-end justify-between mt-4">
-                <span className="text-3xl font-black text-orange-600 tracking-tight">
+                <span className="text-3xl font-black text-bloom-600 tracking-tight">
                     ${product.price?.toLocaleString()}
                 </span>
 
                 <div className={`
                     w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-colors
-                    ${isActive ? 'bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white' : 'bg-gray-100 text-gray-400'}
+                    ${isActive ? 'bg-bloom-100 text-bloom-600 group-hover:bg-bloom-600 group-hover:text-white' : 'bg-gray-100 text-gray-400'}
                 `}>
                     <Plus size={28} strokeWidth={4} />
                 </div>

@@ -36,7 +36,7 @@ export function HorizontalCategoryList({ categories, selectedCategory, onSelect 
                     className={`
                         snap-start shrink-0 px-6 py-3 rounded-xl font-black text-lg shadow-sm border-2 transition-all flex items-center gap-2
                         ${selectedCategory === 'ALL'
-                            ? 'bg-orange-500 text-white border-orange-600 scale-105 shadow-md'
+                            ? 'bg-bloom-600 text-white border-bloom-600 scale-105 shadow-md'
                             : 'bg-gray-50 text-gray-500 border-transparent hover:bg-gray-100 hover:text-gray-900'
                         }
                     `}
@@ -51,7 +51,7 @@ export function HorizontalCategoryList({ categories, selectedCategory, onSelect 
                         className={`
                             snap-start shrink-0 px-6 py-3 rounded-xl font-bold text-lg shadow-sm border-2 transition-all flex items-center gap-2 whitespace-nowrap
                             ${selectedCategory === cat.id
-                                ? 'bg-orange-500 text-white border-orange-600 scale-105 shadow-md z-10'
+                                ? 'bg-bloom-600 text-white border-bloom-600 scale-105 shadow-md z-10'
                                 : 'bg-gray-50 text-gray-600 border-transparent hover:bg-gray-100 hover:text-gray-900'
                             }
                         `}

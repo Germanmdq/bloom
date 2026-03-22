@@ -114,7 +114,7 @@ export default function KitchenPage() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.8, x: -50 }}
                             className={`bg-white rounded-[3rem] p-8 shadow-sm border-2 transition-all flex flex-col ${ticket.status === 'READY' ? 'border-green-500 bg-green-50/20' :
-                                ticket.status === 'PREPARING' ? 'border-orange-400 bg-orange-50/20' :
+                                ticket.status === 'PREPARING' ? 'border-bloom-500 bg-bloom-50/20' :
                                     'border-transparent shadow-2xl hover:shadow-chocolate/10'
                                 }`}
                         >
@@ -132,7 +132,7 @@ export default function KitchenPage() {
                                     </div>
                                 </div>
                                 <span className={`shrink-0 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-center min-w-[100px] leading-tight flex items-center justify-center ${ticket.status === 'READY' ? 'bg-green-500 text-white' :
-                                    ticket.status === 'PREPARING' ? 'bg-orange-400 text-white' :
+                                    ticket.status === 'PREPARING' ? 'bg-bloom-500 text-white' :
                                         'bg-gray-100 text-gray-400'
                                     }`}>
                                     {ticket.status === 'PENDING' ? 'Pendiente' :

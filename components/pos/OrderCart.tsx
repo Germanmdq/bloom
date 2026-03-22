@@ -85,7 +85,7 @@ export function OrderCart({
                                     {item.variants && item.variants.length > 0 && (
                                         <div className="mt-1 flex flex-wrap gap-1">
                                             {item.variants.map((v, idx) => (
-                                                <span key={idx} className="text-[10px] font-semibold bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded border border-orange-100">
+                                                <span key={idx} className="text-[10px] font-semibold bg-bloom-50 text-bloom-700 px-1.5 py-0.5 rounded border border-bloom-100">
                                                     {v.name}
                                                 </span>
                                             ))}
@@ -115,7 +115,7 @@ export function OrderCart({
                                 <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-1 px-1.5">
                                     <button
                                         onClick={() => onUpdateQuantity(item.cartItemId || item.id, item.quantity - 1)}
-                                        className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-gray-600 hover:text-orange-600 active:scale-95 disabled:opacity-50"
+                                        className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-gray-600 hover:text-bloom-600 active:scale-95 disabled:opacity-50"
                                         disabled={item.quantity <= 1}
                                     >
                                         <Minus size={14} strokeWidth={3} />

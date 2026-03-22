@@ -10,7 +10,7 @@ const STORAGE_KEY = 'bloom_customer';
 
 const TIERS = [
     { spend: 0,      discount: 0,  label: "Nuevo",  color: "text-gray-400",   bg: "from-gray-100 to-gray-50",   border: "border-gray-200",   badge: "bg-gray-100 text-gray-500" },
-    { spend: 50000,  discount: 5,  label: "Bronce", color: "text-orange-500", bg: "from-orange-100 to-orange-50", border: "border-orange-200", badge: "bg-orange-100 text-orange-600" },
+    { spend: 50000,  discount: 5,  label: "Bronce", color: "text-bloom-600", bg: "from-bloom-100 to-bloom-50", border: "border-bloom-200", badge: "bg-bloom-100 text-bloom-600" },
     { spend: 150000, discount: 10, label: "Plata",  color: "text-slate-500",  bg: "from-slate-100 to-slate-50",  border: "border-slate-200",  badge: "bg-slate-100 text-slate-600" },
     { spend: 300000, discount: 15, label: "Oro",    color: "text-amber-500",  bg: "from-amber-100 to-amber-50",  border: "border-amber-200",  badge: "bg-amber-100 text-amber-600" },
 ];
@@ -90,7 +90,7 @@ export default function CuentaPage() {
                         <ChevronLeft size={20} />
                         <span className="font-semibold text-sm">Menú</span>
                     </Link>
-                    <span className="font-black text-lg tracking-tighter text-gray-900">BLOOM<span className="text-orange-500">.</span></span>
+                    <span className="font-black text-lg tracking-tighter text-gray-900">BLOOM<span className="text-bloom-600">.</span></span>
                     <div className="w-16" />
                 </div>
             </header>
@@ -100,7 +100,7 @@ export default function CuentaPage() {
                 {/* LOADING */}
                 {step === 'loading' && (
                     <div className="flex items-center justify-center py-20">
-                        <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-10 h-10 border-4 border-bloom-600 border-t-transparent rounded-full animate-spin" />
                     </div>
                 )}
 
@@ -108,8 +108,8 @@ export default function CuentaPage() {
                 {step === 'login' && (
                     <>
                         <div className="text-center pt-4">
-                            <div className="w-20 h-20 bg-orange-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                                <Gift size={36} className="text-orange-500" />
+                            <div className="w-20 h-20 bg-bloom-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                                <Gift size={36} className="text-bloom-600" />
                             </div>
                             <h1 className="text-3xl font-black text-gray-900 tracking-tight">Mi Cuenta</h1>
                             <p className="text-gray-400 mt-2">Acumulá puntos y conseguí descuentos exclusivos en cada visita</p>
@@ -136,7 +136,7 @@ export default function CuentaPage() {
                                     value={phone}
                                     onChange={e => { setPhone(e.target.value); setError(''); }}
                                     onKeyDown={e => e.key === 'Enter' && handlePhoneSubmit()}
-                                    className={`w-full pl-11 pr-4 py-4 rounded-2xl border-2 text-base font-bold outline-none transition-all ${error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                    className={`w-full pl-11 pr-4 py-4 rounded-2xl border-2 text-base font-bold outline-none transition-all ${error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-bloom-500'}`}
                                     autoFocus
                                 />
                             </div>
@@ -156,8 +156,8 @@ export default function CuentaPage() {
                 {step === 'name' && (
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-amber-100/60 space-y-4 mt-8">
                         <div className="text-center mb-2">
-                            <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                                <User size={28} className="text-orange-500" />
+                            <div className="w-16 h-16 bg-bloom-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                <User size={28} className="text-bloom-600" />
                             </div>
                             <h2 className="text-xl font-black text-gray-900">¡Primera vez!</h2>
                             <p className="text-gray-400 text-sm">¿Cómo te llamás?</p>
@@ -168,14 +168,14 @@ export default function CuentaPage() {
                             value={name}
                             onChange={e => { setName(e.target.value); setError(''); }}
                             onKeyDown={e => e.key === 'Enter' && handleRegister()}
-                            className={`w-full px-4 py-4 rounded-2xl border-2 text-base font-bold outline-none transition-all ${error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                            className={`w-full px-4 py-4 rounded-2xl border-2 text-base font-bold outline-none transition-all ${error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-bloom-500'}`}
                             autoFocus
                         />
                         {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
                         <button
                             onClick={handleRegister}
                             disabled={saving}
-                            className="w-full bg-orange-500 text-white py-4 rounded-2xl font-black text-base hover:bg-orange-600 active:scale-[0.98] transition-all disabled:opacity-50"
+                            className="w-full bg-bloom-600 text-white py-4 rounded-2xl font-black text-base hover:bg-bloom-600 active:scale-[0.98] transition-all disabled:opacity-50"
                         >
                             {saving ? 'Guardando...' : '¡Empezar a acumular!'}
                         </button>
@@ -208,7 +208,7 @@ export default function CuentaPage() {
                             {tier.discount > 0 && (
                                 <div className="bg-white/70 rounded-2xl px-4 py-3 mb-4 flex items-center justify-between">
                                     <span className="text-sm font-bold text-gray-700">Tu descuento actual</span>
-                                    <span className="text-2xl font-black text-orange-600">{tier.discount}% OFF</span>
+                                    <span className="text-2xl font-black text-bloom-600">{tier.discount}% OFF</span>
                                 </div>
                             )}
 
@@ -219,7 +219,7 @@ export default function CuentaPage() {
                                         <span>{nextTier.label} ({nextTier.discount}% OFF)</span>
                                     </div>
                                     <div className="w-full bg-white/50 rounded-full h-3">
-                                        <div className="bg-orange-500 h-3 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                                        <div className="bg-bloom-600 h-3 rounded-full transition-all" style={{ width: `${progress}%` }} />
                                     </div>
                                     <p className="text-xs text-gray-500 mt-1.5">
                                         Te faltan <strong>${((nextTier.spend - (customer.total_spent ?? 0)) / 1000).toFixed(0)}k</strong> para el siguiente nivel
@@ -237,7 +237,7 @@ export default function CuentaPage() {
                         <div className="grid grid-cols-3 gap-3">
                             {[
                                 { icon: <ShoppingBag size={18} className="text-blue-500" />,   val: customer.visits ?? 0, label: 'Visitas',   bg: 'bg-blue-50' },
-                                { icon: <Star size={18} className="text-orange-500" />,         val: customer.points ?? 0, label: 'Puntos',    bg: 'bg-orange-50' },
+                                { icon: <Star size={18} className="text-bloom-600" />,         val: customer.points ?? 0, label: 'Puntos',    bg: 'bg-bloom-50' },
                                 { icon: <TrendingUp size={18} className="text-green-500" />,    val: `$${((customer.total_spent ?? 0)/1000).toFixed(0)}k`, label: 'Consumido', bg: 'bg-green-50' },
                             ].map(({ icon, val, label, bg }) => (
                                 <div key={label} className={`${bg} rounded-2xl p-4 text-center`}>

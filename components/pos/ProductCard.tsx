@@ -28,7 +28,7 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
             className={`
                 group bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden transition-all duration-300
                 ${isActive
-                    ? 'hover:shadow-lg hover:-translate-y-1 hover:border-orange-200 cursor-pointer'
+                    ? 'hover:shadow-lg hover:-translate-y-1 hover:border-bloom-200 cursor-pointer'
                     : 'opacity-50 grayscale cursor-not-allowed pointer-events-none'
                 }
             `}
@@ -44,20 +44,20 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
                         onError={() => setImgError(true)}
                     />
                 ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 group-hover:text-orange-300 transition-colors">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 group-hover:text-bloom-300 transition-colors">
                         <ShoppingBag size={32} strokeWidth={1} />
                     </div>
                 )}
 
                 {/* Price Tag Overlay */}
-                <div className="absolute bottom-2 right-2 bg-white/95 backdrop-blur shadow-sm px-2.5 py-1 rounded-lg text-sm font-black text-gray-900 border border-gray-100 group-hover:border-orange-500 group-hover:text-orange-600 transition-colors">
+                <div className="absolute bottom-2 right-2 bg-white/95 backdrop-blur shadow-sm px-2.5 py-1 rounded-lg text-sm font-black text-gray-900 border border-gray-100 group-hover:border-bloom-600 group-hover:text-bloom-600 transition-colors">
                     ${product.price?.toLocaleString()}
                 </div>
             </div>
 
             {/* Content */}
             <div className="p-3 flex flex-col flex-1">
-                <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">
+                <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-1 group-hover:text-bloom-600 transition-colors">
                     {product.name}
                 </h3>
                 <p className="text-[11px] text-gray-400 line-clamp-2 mb-2 flex-1 leading-relaxed">
@@ -74,7 +74,7 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
                         className={`
                             p-2 rounded-full shadow-sm transition-all duration-200 active:scale-95
                             ${isActive
-                                ? 'bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white'
+                                ? 'bg-bloom-50 text-bloom-600 hover:bg-bloom-600 hover:text-white'
                                 : 'bg-gray-100 text-gray-400'
                             }
                         `}

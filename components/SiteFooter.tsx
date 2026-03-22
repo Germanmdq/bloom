@@ -4,13 +4,13 @@ import { MapPin, Instagram, Facebook } from "lucide-react";
 
 export function SiteFooter() {
     return (
-        <footer className="bg-[#FAF7F2] border-t border-amber-100/60 pt-12 pb-8 mt-16">
+        <footer className="bg-bloom-page border-t border-bloom-200/60 pt-12 pb-8 mt-16">
             <div className="max-w-5xl mx-auto px-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
                     {/* Brand */}
                     <div className="col-span-2">
                         <h3 className="text-2xl font-black text-gray-900 tracking-tighter mb-3">
-                            BLOOM<span className="text-orange-500">.</span>
+                            BLOOM<span className="text-bloom-600">.</span>
                         </h3>
                         <p className="text-gray-400 text-sm leading-relaxed max-w-xs mb-4">
                             Café de especialidad, pastelería artesanal y mucho más.
@@ -18,11 +18,11 @@ export function SiteFooter() {
                         </p>
                         <div className="flex gap-3">
                             <a href="https://instagram.com" target="_blank" rel="noreferrer"
-                                className="w-9 h-9 bg-gray-100 hover:bg-orange-100 rounded-full flex items-center justify-center transition-colors">
+                                className="w-9 h-9 bg-gray-100 hover:bg-bloom-100 rounded-full flex items-center justify-center transition-colors">
                                 <Instagram size={16} className="text-gray-600" />
                             </a>
                             <a href="https://facebook.com" target="_blank" rel="noreferrer"
-                                className="w-9 h-9 bg-gray-100 hover:bg-orange-100 rounded-full flex items-center justify-center transition-colors">
+                                className="w-9 h-9 bg-gray-100 hover:bg-bloom-100 rounded-full flex items-center justify-center transition-colors">
                                 <Facebook size={16} className="text-gray-600" />
                             </a>
                         </div>
@@ -33,10 +33,10 @@ export function SiteFooter() {
                         <h4 className="font-black text-gray-800 text-sm uppercase tracking-wide mb-3">Ubicación</h4>
                         <ul className="space-y-2 text-sm text-gray-500">
                             <li className="flex items-start gap-1.5">
-                                <MapPin size={14} className="shrink-0 mt-0.5 text-orange-400" />
+                                <MapPin size={14} className="shrink-0 mt-0.5 text-bloom-500" />
                                 Almirante Brown 2005, Mar del Plata
                             </li>
-                            <li className="text-orange-500 font-bold cursor-pointer hover:underline text-xs mt-2">Ver en Maps →</li>
+                            <li className="text-bloom-600 font-bold cursor-pointer hover:underline text-xs mt-2">Ver en Maps →</li>
                         </ul>
                     </div>
 
@@ -44,10 +44,10 @@ export function SiteFooter() {
                     <div>
                         <h4 className="font-black text-gray-800 text-sm uppercase tracking-wide mb-3">Menú</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><Link href="/menu" className="text-gray-500 hover:text-orange-500 transition-colors">Carta completa</Link></li>
-                            <li><Link href="/menu?cat=Platos Diarios" className="text-gray-500 hover:text-orange-500 transition-colors">Platos del Día</Link></li>
-                            <li><Link href="/menu?cat=Promociones" className="text-gray-500 hover:text-orange-500 transition-colors">Promociones</Link></li>
-                            <li><Link href="/cuenta" className="text-gray-500 hover:text-orange-500 transition-colors">Mi Cuenta</Link></li>
+                            <li><Link href="/menu" className="text-gray-500 hover:text-bloom-600 transition-colors">Carta completa</Link></li>
+                            <li><Link href="/menu?cat=Platos Diarios" className="text-gray-500 hover:text-bloom-600 transition-colors">Platos del Día</Link></li>
+                            <li><Link href="/menu?cat=Promociones" className="text-gray-500 hover:text-bloom-600 transition-colors">Promociones</Link></li>
+                            <li><Link href="/cuenta" className="text-gray-500 hover:text-bloom-600 transition-colors">Mi Cuenta</Link></li>
                         </ul>
                     </div>
                 </div>

@@ -43,7 +43,7 @@ function QRModal({ table, baseUrl, onClose }: { table: TableEntry; baseUrl: stri
             onClick={onClose}
         >
             <div
-                className={`bg-white rounded-3xl p-10 flex flex-col items-center gap-4 shadow-2xl relative border-4 ${isBarra ? "border-amber-400" : "border-gray-900"}`}
+                className={`bg-white rounded-3xl p-10 flex flex-col items-center gap-4 shadow-2xl relative border-4 ${isBarra ? "border-bloom-400" : "border-gray-900"}`}
                 onClick={e => e.stopPropagation()}
             >
                 <button
@@ -90,7 +90,7 @@ function QRCard({ table, baseUrl, onClick }: { table: TableEntry; baseUrl: strin
         <button
             onClick={onClick}
             className={`bg-white flex flex-col items-center gap-2 p-4 rounded-2xl print:break-inside-avoid print:rounded-xl border-2 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all text-left w-full ${
-                isBarra ? "border-amber-400" : "border-gray-200"
+                isBarra ? "border-bloom-400" : "border-gray-200"
             }`}
         >
             <p className={`text-[10px] font-black uppercase tracking-widest ${isBarra ? "text-amber-500" : "text-gray-400"}`}>
@@ -221,7 +221,7 @@ export default function QRCodesPage() {
                             value={urlInput}
                             onChange={e => setUrlInput(e.target.value)}
                             placeholder="https://tu-app.vercel.app"
-                            className="flex-1 px-3 py-2 rounded-xl border-2 border-gray-200 text-sm font-medium outline-none focus:border-orange-400"
+                            className="flex-1 px-3 py-2 rounded-xl border-2 border-gray-200 text-sm font-medium outline-none focus:border-bloom-500"
                         />
                         <button onClick={saveUrl} className="px-4 py-2 bg-black text-white rounded-xl text-sm font-black">
                             Guardar

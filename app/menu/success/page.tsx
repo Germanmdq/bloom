@@ -21,7 +21,7 @@ export default function SuccessPage() {
 
                 <div className="space-y-4">
                     <Link href="/menu">
-                        <button className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 rounded-xl transition-colors uppercase tracking-widest text-xs">
+                        <button className="w-full bg-bloom-600 hover:bg-bloom-700 text-white font-bold py-4 rounded-xl transition-colors uppercase tracking-widest text-xs">
                             Volver al Menú
                         </button>
                     </Link>

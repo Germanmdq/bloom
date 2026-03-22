@@ -33,7 +33,7 @@ export function TableCard({ table, onClick }: TableCardProps) {
 
     const { text: timeText, minutes } = getTimeElapsed();
     const timeProgress = Math.min((minutes / 90) * 100, 100);
-    const barColor = minutes > 60 ? 'bg-red-400' : minutes > 30 ? 'bg-amber-300' : 'bg-white/60';
+    const barColor = minutes > 60 ? 'bg-red-400' : minutes > 30 ? 'bg-bloom-300' : 'bg-white/60';
 
     const handleFree = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -50,7 +50,7 @@ export function TableCard({ table, onClick }: TableCardProps) {
                 transition-all duration-200 hover:scale-[1.02] select-none overflow-hidden
                 ${isFree
                     ? 'bg-white border-2 border-slate-200 hover:border-slate-300 hover:shadow-md shadow-sm'
-                    : 'bg-gradient-to-br from-amber-400 to-orange-500 border-0 shadow-lg hover:shadow-xl'
+                    : 'bg-gradient-to-br from-bloom-400 to-bloom-600 border-0 shadow-lg hover:shadow-xl'
                 }
             `}
         >

@@ -260,9 +260,9 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                         <button
                                             key={option.name}
                                             onClick={() => toggleOption(group.id, option, group)}
-                                            className={`p-3 rounded-xl border-2 text-left text-sm transition-all flex justify-between items-center relative overflow-hidden ${isSelected ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-100 bg-gray-50 text-gray-700 hover:border-orange-200'}`}
+                                            className={`p-3 rounded-xl border-2 text-left text-sm transition-all flex justify-between items-center relative overflow-hidden ${isSelected ? 'border-bloom-500 bg-bloom-50 text-bloom-700' : 'border-gray-100 bg-gray-50 text-gray-700 hover:border-bloom-200'}`}
                                         >
-                                            {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-500" />}
+                                            {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-bloom-500" />}
                                             <span className="font-bold">{option.name}</span>
                                             {option.price ? <span className="text-xs text-gray-400">+${option.price.toLocaleString()}</span> : null}
                                         </button>
@@ -280,7 +280,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                             onChange={e => setObservations(e.target.value)}
                             placeholder="Ej: sin cebolla, bien cocido, sin sal…"
                             rows={2}
-                            className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-orange-300 resize-none text-sm font-medium"
+                            className="w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-bloom-300 resize-none text-sm font-medium"
                         />
                     </div>
 
@@ -299,7 +299,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                         key={t.id}
                                         type="button"
                                         onClick={() => setCi({ type: t.id })}
-                                        className={`py-2.5 rounded-xl font-bold text-xs transition-all ${ci.type === t.id ? "bg-orange-600 text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
+                                        className={`py-2.5 rounded-xl font-bold text-xs transition-all ${ci.type === t.id ? "bg-bloom-600 text-white shadow-md" : "bg-gray-100 text-gray-500"}`}
                                     >
                                         {t.label}
                                     </button>
@@ -310,7 +310,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                 href={PEDIDOS_YA_BLOOM_URL}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 py-3 text-center text-xs font-black text-white shadow-md transition-opacity hover:opacity-95"
+                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-bloom-600 py-3 text-center text-xs font-black text-white shadow-md transition-opacity hover:opacity-95"
                             >
                                 A más de 250 m — pedí en PedidosYa
                             </a>
@@ -321,7 +321,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                 placeholder="Nombre completo *"
                                 value={ci.name}
                                 onChange={e => setCi({ name: e.target.value })}
-                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-bloom-400'}`}
                             />
                             {errors.name && <p className="text-red-500 text-xs -mt-2">{errors.name}</p>}
 
@@ -331,7 +331,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                 placeholder="Teléfono / WhatsApp *"
                                 value={ci.phone}
                                 onChange={e => setCi({ phone: e.target.value })}
-                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${errors.phone ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${errors.phone ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-bloom-400'}`}
                             />
                             {errors.phone && <p className="text-red-500 text-xs -mt-2">{errors.phone}</p>}
 
@@ -343,7 +343,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                         placeholder="Dirección de entrega *"
                                         value={ci.address}
                                         onChange={e => setCi({ address: e.target.value })}
-                                        className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${errors.address ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-orange-400'}`}
+                                        className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-all ${errors.address ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-bloom-400'}`}
                                     />
                                     {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
                                 </div>
@@ -358,7 +358,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                     {totalExtra > 0 && (
                         <div className="flex justify-between text-sm px-1 mb-1">
                             <span className="text-gray-400 font-medium">Extra</span>
-                            <span className="font-black text-orange-600">+${totalExtra.toLocaleString()}</span>
+                            <span className="font-black text-bloom-600">+${totalExtra.toLocaleString()}</span>
                         </div>
                     )}
 
@@ -373,7 +373,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                 <button
                                     type="button"
                                     onClick={validateAndCheckout}
-                                    className="w-full rounded-xl bg-orange-600 py-4 text-base font-black text-white shadow-lg transition-all hover:bg-orange-700 active:scale-[0.98]"
+                                    className="w-full rounded-xl bg-bloom-600 py-4 text-base font-black text-white shadow-lg transition-all hover:bg-bloom-700 active:scale-[0.98]"
                                 >
                                     ✓ Confirmar Pedido
                                 </button>
@@ -382,7 +382,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                             <button
                                 type="button"
                                 onClick={handleAddOnly}
-                                className="w-full rounded-xl bg-orange-600 py-4 text-base font-black text-white shadow-lg transition-all hover:bg-orange-700 active:scale-[0.98] sm:py-3.5 sm:text-sm"
+                                className="w-full rounded-xl bg-bloom-600 py-4 text-base font-black text-white shadow-lg transition-all hover:bg-bloom-700 active:scale-[0.98] sm:py-3.5 sm:text-sm"
                             >
                                 {onAddAndCheckout ? "+ Agregar y seguir eligiendo" : "Agregar al pedido"}
                             </button>

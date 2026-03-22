@@ -383,7 +383,7 @@ function MiniTableCard({ table, onClick }: { table: any; onClick: (id: number) =
             className={`h-16 w-full rounded-xl flex flex-col items-center justify-center gap-0 transition-all active:scale-95 hover:scale-105 ${
                 isFree
                     ? 'bg-white border-2 border-slate-200 hover:border-slate-400 shadow-sm'
-                    : 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-md hover:shadow-lg'
+                    : 'bg-gradient-to-br from-bloom-400 to-bloom-600 shadow-md hover:shadow-lg'
             }`}
         >
             <span className={`text-xl font-black leading-none ${isFree ? 'text-slate-700' : 'text-white'}`}>{table.id}</span>
@@ -431,7 +431,7 @@ function ListView({ tables, sideTableId, onTableClick, onCloseSide, onNavigate }
                                 onClick={() => onTableClick(table.id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all hover:bg-slate-50 ${isSelected ? 'bg-amber-50 border-r-2 border-amber-500' : ''}`}
                             >
-                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${isFree ? 'bg-slate-100 text-slate-500' : 'bg-gradient-to-br from-amber-400 to-orange-500 text-white'}`}>
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${isFree ? 'bg-slate-100 text-slate-500' : 'bg-gradient-to-br from-bloom-400 to-bloom-600 text-white'}`}>
                                     {table.id}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -444,7 +444,7 @@ function ListView({ tables, sideTableId, onTableClick, onCloseSide, onNavigate }
                                         : <p className="text-xs text-amber-600 font-bold">${(table.total || 0).toLocaleString()} · {getTime(table)}</p>
                                     }
                                 </div>
-                                <div className={`w-2 h-2 rounded-full shrink-0 ${isFree ? 'bg-emerald-400' : 'bg-orange-500 animate-pulse'}`} />
+                                <div className={`w-2 h-2 rounded-full shrink-0 ${isFree ? 'bg-emerald-400' : 'bg-bloom-600 animate-pulse'}`} />
                             </button>
                         );
                     })}
