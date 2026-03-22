@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Search, Trash2, CreditCard, Check, Loader2, X, ChevronLeft, LayoutGrid, ListChecks, Users, Coffee, Package } from 'lucide-react';
 import Link from 'next/link';
@@ -64,6 +64,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
 
     const isWebTable = tableId === 998 || tableId === 999;
 
+    /** Al cambiar de mesa, vaciar el store ya (evita mezclar pedidos entre mesas). */
+    useLayoutEffect(() => {
+        useOrderStore.getState().clearCart();
+    }, [tableId]);
+
     const refreshData = async () => {
         if (isWebTable) {
             try {
@@ -91,10 +96,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
             if (tableData?.order_type) setOrderType(tableData.order_type);
 
             clearCart();
+            const status = tableData?.status as string | undefined;
             const persisted = Array.isArray(tableData?.items) ? tableData.items : [];
+
+            // Mesa libre: carrito vacío. No usar kitchen_tickets (son históricos QR/cocina, no “cuenta abierta”).
+            if (status === "FREE") {
+                return;
+            }
+
             if (persisted.length > 0) {
                 persisted.forEach((item: any) => addToCart(normalizeTableItem(item)));
-            } else if (tickets?.length) {
+            } else if (status === "OCCUPIED" && tickets?.length) {
+                // Solo si la mesa está ocupada y no hay items en salon_tables: recuperar desde tickets QR.
                 for (const ticket of tickets) {
                     for (const raw of ticket.items || []) {
                         const item = normalizeTableItem(raw);
