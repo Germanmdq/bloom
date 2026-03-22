@@ -210,7 +210,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 function LogoWordmark({ inverted = false }: { inverted?: boolean }) {
   return (
     <span className={`font-black text-xl md:text-2xl tracking-tighter ${inverted ? "text-white" : "text-neutral-900"}`}>
-      BLOOM<span className="text-bloom-gold">.</span>
+      BLOOM<span className="text-english-600">.</span>
     </span>
   );
 }
@@ -294,24 +294,24 @@ export default function Home() {
       <AnimatePresence>{showLogin && <LoginModal onClose={() => setShowLogin(false)} />}</AnimatePresence>
       <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
-      <div className="bg-bloom-gold text-neutral-900 text-[11px] sm:text-sm font-semibold border-b border-bloom-300/40">
+      <div className="bg-english-800 text-bloom-cream text-[11px] sm:text-sm font-semibold border-b border-english-900/60">
         <div className="container mx-auto px-4 py-2.5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2">
           <div className="flex flex-col gap-1.5 min-w-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-1">
             <span className="inline-flex items-start gap-1.5 min-w-0">
-              <MapPin size={14} className="shrink-0 mt-0.5" />
+              <MapPin size={14} className="shrink-0 mt-0.5 text-bloom-gold" />
               <span className="leading-snug">{CONTACT.address}, {CONTACT.city}</span>
             </span>
-            <a href={`mailto:${CONTACT.email}`} className="hover:underline truncate text-left sm:max-w-none">
+            <a href={`mailto:${CONTACT.email}`} className="hover:underline truncate text-left sm:max-w-none text-bloom-cream/95">
               {CONTACT.email}
             </a>
-            <span className="text-neutral-800 sm:text-neutral-700">{CONTACT.hours}</span>
+            <span className="text-bloom-cream/85 sm:text-bloom-cream/90">{CONTACT.hours}</span>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 sm:justify-end shrink-0">
-            <a href={CONTACT.phoneHref} className="inline-flex items-center gap-1.5 font-bold hover:underline">
+            <a href={CONTACT.phoneHref} className="inline-flex items-center gap-1.5 font-bold hover:underline hover:text-bloom-gold">
               <Phone size={14} className="shrink-0" />
               <span className="whitespace-nowrap">{CONTACT.phoneDisplay}</span>
             </a>
-            <Link href="/about" className="hover:underline font-bold">
+            <Link href="/about" className="hover:underline font-bold hover:text-bloom-gold">
               Contacto
             </Link>
           </div>
@@ -319,7 +319,7 @@ export default function Home() {
       </div>
 
       <header
-        className={`sticky top-0 z-50 transition-shadow duration-300 ${
+        className={`sticky top-0 z-50 transition-shadow duration-300 border-b border-english-100/80 ${
           scrolled ? "bg-white shadow-md" : "bg-white/95 backdrop-blur-md shadow-sm"
         }`}
       >
@@ -381,7 +381,7 @@ export default function Home() {
               sizes="100vw"
               quality={85}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/25" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-english-900/35 to-black/25" />
           </motion.div>
         </AnimatePresence>
 
@@ -693,7 +693,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 bg-gradient-to-br from-bloom-600 to-bloom-900 text-white">
+      <section className="py-16 bg-gradient-to-br from-english-800 via-english-900 to-bloom-900 text-white">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <FadeIn>

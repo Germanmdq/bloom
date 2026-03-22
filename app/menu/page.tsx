@@ -18,11 +18,14 @@ const PEDIDOS_YA_BLOOM_URL =
     "https://www.pedidosya.com.ar/restaurantes/mar-del-plata/bloom-mar-del-plata-5c1357e3-e095-476e-9eee-eeda4620b75e-menu";
 
 /** Marca Bloom — naranja / acento cálido / crema */
-/** Paleta logo Bloom — oliva + crema */
+/** Paleta Bloom — oliva (logo) + crema + verde inglés (local) */
 const fk = {
     primary: "#7a765a",
     primaryHover: "#5f5c46",
     accent: "#c4b896",
+    /** Verde inglés — color del salón (fachada / acentos) */
+    english: "#2d4a3e",
+    englishDeep: "#1a3028",
     cream: "#f2f0e6",
     page: "#f7f5ef",
     dark: "#2c2a24",
@@ -444,7 +447,7 @@ function PublicMenuPage() {
             <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
             {/* Top bar — FoodKing style */}
-            <div className="text-neutral-900 text-xs sm:text-sm font-semibold border-b border-bloom-200/50" style={{ backgroundColor: fk.accent }}>
+            <div className="text-bloom-cream text-xs sm:text-sm font-semibold border-b border-english-900/50" style={{ backgroundColor: fk.englishDeep }}>
                 <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2 py-2">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 min-w-0">
                         <span className="inline-flex items-center gap-1.5 leading-snug">
@@ -472,7 +475,7 @@ function PublicMenuPage() {
             <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-bloom-200/80 transition-all">
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2 sm:gap-4">
                     <Link href="/" className="font-black text-lg sm:text-xl md:text-2xl tracking-tighter text-neutral-900 shrink-0 min-w-0">
-                        BLOOM<span style={{ color: fk.accent }}>.</span>
+                        BLOOM<span style={{ color: fk.english }}>.</span>
                     </Link>
                     <nav className="hidden xl:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
                         <Link href="/" className="hover:opacity-80 transition-opacity" style={{ color: fk.primary }}>

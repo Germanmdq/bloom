@@ -11,6 +11,12 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import {
+    occupiedCardGradient,
+    listRowSelectedClass,
+    listPulseDotClass,
+    listSubPriceClass,
+} from "@/lib/dashboard/table-colors";
 
 type ViewMode = 'grid' | 'map' | 'list';
 
@@ -196,35 +202,35 @@ export default function TablesPage() {
             {/* STATS BAR */}
             <div className="flex gap-3 shrink-0 overflow-x-auto no-scrollbar pb-1">
                 <StatCard
-                    icon={<Monitor size={16} className="text-emerald-600" />}
-                    label="Ocupación"
+                    icon={<Monitor size={16} className="text-red-600" />}
+                    label="Ocupación (salón)"
                     value={`${stats.localOccupied} / ${stats.localTotal}`}
                     sub={`${Math.round((stats.localOccupied / Math.max(stats.localTotal, 1)) * 100)}% del salón`}
-                    accent="border-emerald-200 bg-emerald-50"
+                    accent="border-red-200 bg-red-50"
                 />
                 <StatCard
-                    icon={<TrendingUp size={16} className="text-amber-600" />}
+                    icon={<TrendingUp size={16} className="text-slate-600" />}
                     label="Total activo"
                     value={`$${stats.totalActive.toLocaleString()}`}
                     sub="En mesas abiertas"
-                    accent="border-amber-200 bg-amber-50"
+                    accent="border-slate-200 bg-slate-50"
                 />
                 <StatCard
-                    icon={<Clock size={16} className="text-blue-500" />}
+                    icon={<Clock size={16} className="text-slate-500" />}
                     label="Tiempo promedio"
                     value={stats.avgTime > 0 ? `${stats.avgTime}m` : '—'}
                     sub="Por mesa ocupada"
-                    accent="border-blue-200 bg-blue-50"
+                    accent="border-slate-200 bg-slate-50"
                 />
             </div>
 
             {/* HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-100 shrink-0">
                 <div className="flex gap-1 p-1 bg-slate-50 rounded-xl w-full md:w-auto overflow-x-auto no-scrollbar">
-                    <TabButton label="TODAS" count={counts.todas} active={activeTab === 'ALL'} onClick={() => setActiveTab('ALL')} />
-                    <TabButton icon={<Monitor size={13} />} label="LOCAL" count={counts.local} active={activeTab === 'LOCAL'} onClick={() => setActiveTab('LOCAL')} />
-                    <TabButton icon={<Bike size={13} />} label="DELIVERY" count={counts.delivery} active={activeTab === 'DELIVERY'} onClick={() => setActiveTab('DELIVERY')} />
-                    <TabButton icon={<ShoppingBag size={13} />} label="RETIRO" count={counts.retiro} active={activeTab === 'RETIRO'} onClick={() => setActiveTab('RETIRO')} />
+                    <TabButton label="TODAS" count={counts.todas} active={activeTab === 'ALL'} onClick={() => setActiveTab('ALL')} accent="all" />
+                    <TabButton icon={<Monitor size={13} />} label="LOCAL" count={counts.local} active={activeTab === 'LOCAL'} onClick={() => setActiveTab('LOCAL')} accent="local" />
+                    <TabButton icon={<Bike size={13} />} label="DELIVERY" count={counts.delivery} active={activeTab === 'DELIVERY'} onClick={() => setActiveTab('DELIVERY')} accent="delivery" />
+                    <TabButton icon={<ShoppingBag size={13} />} label="RETIRO" count={counts.retiro} active={activeTab === 'RETIRO'} onClick={() => setActiveTab('RETIRO')} accent="retiro" />
                 </div>
 
                 <div className="flex items-center gap-2 w-full md:w-auto">
@@ -235,7 +241,7 @@ export default function TablesPage() {
                             placeholder="Buscar n° mesa..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-900 border border-slate-200 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all"
+                            className="w-full pl-9 pr-3 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-900 border border-slate-200 focus:ring-2 focus:ring-slate-400/30 outline-none transition-all"
                         />
                     </div>
 
@@ -276,7 +282,7 @@ export default function TablesPage() {
                             onClick={() => handleNewOrder('RETIRO')}
                             className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-50"
                         >
-                            <ShoppingBag size={18} className="text-purple-500" />
+                            <ShoppingBag size={18} className="text-amber-500" />
                             <span className="font-bold text-gray-800 text-sm">Nuevo Retiro</span>
                         </button>
                     </div>
@@ -328,12 +334,13 @@ function MapView({ tables, onTableClick }: { tables: any[]; onTableClick: (id: n
     const getTable = (id: number) => tables.find(t => t.id === id);
 
     const zones = [
-        { label: "Salón A", color: "border-emerald-200 bg-emerald-50", header: "bg-emerald-100 text-emerald-700", tables: [1,2,3,4,5,6,7,8,9,10,11,12] },
-        { label: "Salón B", color: "border-blue-200 bg-blue-50", header: "bg-blue-100 text-blue-700", tables: [13,14,15,16,17,18,19,20,21,22,23,24] },
-        { label: "Terraza", color: "border-purple-200 bg-purple-50", header: "bg-purple-100 text-purple-700", tables: [25,26,27,28,29,30,31,32,33,34,35,36] },
+        { label: "Salón A", color: "border-red-200 bg-red-50/50", header: "bg-red-100 text-red-800", tables: [1,2,3,4,5,6,7,8,9,10,11,12] },
+        { label: "Salón B", color: "border-red-200 bg-red-50/50", header: "bg-red-100 text-red-800", tables: [13,14,15,16,17,18,19,20,21,22,23,24] },
+        { label: "Terraza", color: "border-red-200 bg-red-50/50", header: "bg-red-100 text-red-800", tables: [25,26,27,28,29,30,31,32,33,34,35,36] },
     ];
 
-    const externalTables = tables.filter(t => (t.id >= 40 && t.id <= 99) || t.id >= 100);
+    const deliveryTables = tables.filter(t => t.id >= 40 && t.id <= 99);
+    const retiroTables = tables.filter(t => t.id >= 100);
 
     return (
         <div className="flex-1 overflow-y-auto pb-20">
@@ -355,13 +362,23 @@ function MapView({ tables, onTableClick }: { tables: any[]; onTableClick: (id: n
                 ))}
             </div>
 
-            {externalTables.length > 0 && (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden">
-                    <div className="px-4 py-2.5 bg-amber-100 text-amber-700">
-                        <h3 className="text-xs font-black uppercase tracking-widest">Delivery & Retiro</h3>
+            {deliveryTables.length > 0 && (
+                <div className="rounded-2xl border border-blue-200 bg-blue-50/60 overflow-hidden mb-4">
+                    <div className="px-4 py-2.5 bg-blue-100 text-blue-900">
+                        <h3 className="text-xs font-black uppercase tracking-widest">Delivery</h3>
                     </div>
                     <div className="p-3 flex flex-wrap gap-2">
-                        {externalTables.map(t => <MiniTableCard key={t.id} table={t} onClick={onTableClick} />)}
+                        {deliveryTables.map(t => <MiniTableCard key={t.id} table={t} onClick={onTableClick} />)}
+                    </div>
+                </div>
+            )}
+            {retiroTables.length > 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/60 overflow-hidden">
+                    <div className="px-4 py-2.5 bg-amber-100 text-amber-900">
+                        <h3 className="text-xs font-black uppercase tracking-widest">Retiro</h3>
+                    </div>
+                    <div className="p-3 flex flex-wrap gap-2">
+                        {retiroTables.map(t => <MiniTableCard key={t.id} table={t} onClick={onTableClick} />)}
                     </div>
                 </div>
             )}
@@ -383,7 +400,7 @@ function MiniTableCard({ table, onClick }: { table: any; onClick: (id: number) =
             className={`h-16 w-full rounded-xl flex flex-col items-center justify-center gap-0 transition-all active:scale-95 hover:scale-105 ${
                 isFree
                     ? 'bg-white border-2 border-slate-200 hover:border-slate-400 shadow-sm'
-                    : 'bg-gradient-to-br from-bloom-400 to-bloom-600 shadow-md hover:shadow-lg'
+                    : `${occupiedCardGradient(table.id)} shadow-md hover:shadow-lg`
             }`}
         >
             <span className={`text-xl font-black leading-none ${isFree ? 'text-slate-700' : 'text-white'}`}>{table.id}</span>
@@ -429,9 +446,9 @@ function ListView({ tables, sideTableId, onTableClick, onCloseSide, onNavigate }
                             <button
                                 key={table.id}
                                 onClick={() => onTableClick(table.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all hover:bg-slate-50 ${isSelected ? 'bg-amber-50 border-r-2 border-amber-500' : ''}`}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all hover:bg-slate-50 ${isSelected ? listRowSelectedClass(table.id) : ''}`}
                             >
-                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${isFree ? 'bg-slate-100 text-slate-500' : 'bg-gradient-to-br from-bloom-400 to-bloom-600 text-white'}`}>
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${isFree ? 'bg-slate-100 text-slate-500' : `${occupiedCardGradient(table.id)} text-white`}`}>
                                     {table.id}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -441,10 +458,10 @@ function ListView({ tables, sideTableId, onTableClick, onCloseSide, onNavigate }
                                     </p>
                                     {isFree
                                         ? <p className="text-xs text-emerald-500 font-bold">Libre</p>
-                                        : <p className="text-xs text-amber-600 font-bold">${(table.total || 0).toLocaleString()} · {getTime(table)}</p>
+                                        : <p className={`text-xs font-bold ${listSubPriceClass(table.id)}`}>${(table.total || 0).toLocaleString()} · {getTime(table)}</p>
                                     }
                                 </div>
-                                <div className={`w-2 h-2 rounded-full shrink-0 ${isFree ? 'bg-emerald-400' : 'bg-bloom-600 animate-pulse'}`} />
+                                <div className={`w-2 h-2 rounded-full shrink-0 ${isFree ? 'bg-emerald-400' : `${listPulseDotClass(table.id)} animate-pulse`}`} />
                             </button>
                         );
                     })}
@@ -474,16 +491,21 @@ function ListView({ tables, sideTableId, onTableClick, onCloseSide, onNavigate }
 }
 
 // ─── TAB BUTTON ───────────────────────────────────────────────────
-function TabButton({ icon, label, count, active, onClick }: any) {
+function TabButton({ icon, label, count, active, onClick, accent = "all" }: any) {
+    const activeStyle =
+        accent === "local"
+            ? "bg-red-600 text-white shadow-md shadow-red-500/30 scale-105"
+            : accent === "delivery"
+              ? "bg-blue-600 text-white shadow-md shadow-blue-500/30 scale-105"
+              : accent === "retiro"
+                ? "bg-amber-500 text-white shadow-md shadow-amber-500/30 scale-105"
+                : "bg-slate-800 text-white shadow-md scale-105";
     return (
         <button
             onClick={onClick}
             className={`
                 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 shrink-0
-                ${active
-                    ? 'bg-amber-500 text-white shadow-md shadow-amber-500/25 scale-105'
-                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                }
+                ${active ? activeStyle : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"}
             `}
         >
             {icon}
@@ -501,7 +523,7 @@ function ViewBtn({ icon, active, onClick, label }: any) {
         <button
             onClick={onClick}
             title={label}
-            className={`p-2 rounded-lg transition-all ${active ? 'bg-white shadow-sm text-amber-600 font-black' : 'text-slate-400 hover:text-slate-700'}`}
+            className={`p-2 rounded-lg transition-all ${active ? "bg-white shadow-sm text-slate-800 font-black" : "text-slate-400 hover:text-slate-700"}`}
         >
             {icon}
         </button>

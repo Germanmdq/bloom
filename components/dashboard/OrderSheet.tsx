@@ -10,6 +10,7 @@ import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket } from
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ReceiptModal } from "@/components/pos/ReceiptModal";
 import { WebOrderList } from "@/components/pos/WebOrderList";
+import { orderSheetHeaderBorderClass } from "@/lib/dashboard/table-colors";
 import type { CartItem } from "@/lib/store/order-store";
 
 /** Ítems guardados en salon_tables o JSON de kitchen_tickets → mismo formato que el carrito POS. */
@@ -341,7 +342,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         <div className="h-full flex flex-col bg-gray-100 overflow-hidden">
 
             {/* ── HEADER ── */}
-            <div className="flex items-center justify-between px-5 py-3 bg-white border-b border-gray-200 shrink-0">
+            <div className={`flex items-center justify-between px-5 py-3 bg-white border-b border-gray-200 shrink-0 ${orderSheetHeaderBorderClass(tableId)}`}>
                 <div className="flex items-center gap-3">
                     {isWebTable && currentWebOrderId && (
                         <button onClick={handleBackToWebList} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">

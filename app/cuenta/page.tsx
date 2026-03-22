@@ -90,7 +90,7 @@ export default function CuentaPage() {
                         <ChevronLeft size={20} />
                         <span className="font-semibold text-sm">Menú</span>
                     </Link>
-                    <span className="font-black text-lg tracking-tighter text-gray-900">BLOOM<span className="text-bloom-600">.</span></span>
+                    <span className="font-black text-lg tracking-tighter text-gray-900">BLOOM<span className="text-english-600">.</span></span>
                     <div className="w-16" />
                 </div>
             </header>

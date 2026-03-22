@@ -4,13 +4,13 @@ import { MapPin, Instagram, Facebook } from "lucide-react";
 
 export function SiteFooter() {
     return (
-        <footer className="bg-bloom-page border-t border-bloom-200/60 pt-12 pb-8 mt-16">
+        <footer className="bg-bloom-page border-t border-english-200/70 pt-12 pb-8 mt-16">
             <div className="max-w-5xl mx-auto px-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
                     {/* Brand */}
                     <div className="col-span-2">
                         <h3 className="text-2xl font-black text-gray-900 tracking-tighter mb-3">
-                            BLOOM<span className="text-bloom-600">.</span>
+                            BLOOM<span className="text-english-600">.</span>
                         </h3>
                         <p className="text-gray-400 text-sm leading-relaxed max-w-xs mb-4">
                             Café de especialidad, pastelería artesanal y mucho más.

@@ -20,6 +20,18 @@
   --color-bloom-gold: #c4b896;
   --color-bloom-gold-dark: #a89868;
 
+  /* Local — verde inglés (fachada / identidad del salón) */
+  --color-english-50: #eef4f0;
+  --color-english-100: #d4e4dc;
+  --color-english-200: #a8c9b8;
+  --color-english-300: #7aab92;
+  --color-english-400: #528a6f;
+  --color-english-500: #3d6b52;
+  --color-english-600: #2d4a3e;
+  --color-english-700: #243d32;
+  --color-english-800: #1a3028;
+  --color-english-900: #142620;
+
   /* Compat: nombres usados en POS / legacy */
   --color-bloom-50-legacy: var(--color-bloom-50);
   --color-bloom-600-primary: var(--color-bloom-600);

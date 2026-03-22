@@ -47,7 +47,7 @@ export function FoodKingMobileNavPanel({ open, onClose }: { open: boolean; onClo
           >
             <div className="flex items-center justify-between px-4 py-4 border-b border-bloom-200 bg-white">
               <span className="font-black text-lg tracking-tighter text-neutral-900">
-                BLOOM<span className="text-bloom-600">.</span>
+                BLOOM<span className="text-english-600">.</span>
               </span>
               <button
                 type="button"
