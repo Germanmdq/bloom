@@ -362,7 +362,7 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="relative h-[min(88vh,820px)] w-full overflow-hidden bg-neutral-900">
+      <section className="relative min-h-[min(90vh,840px)] h-[min(90vh,840px)] w-full overflow-hidden bg-neutral-950">
         <AnimatePresence mode="wait">
           <motion.div
             key={slide}
@@ -376,45 +376,52 @@ export default function Home() {
               src={heroSlides[slide].bg}
               alt=""
               fill
-              className="object-cover object-center"
+              className="object-cover object-center scale-[1.02]"
               priority={slide === 0}
               sizes="100vw"
-              quality={85}
+              quality={88}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-english-900/35 to-black/25" />
+            {/* Degradados más suaves: se ve la foto, el texto sigue legible */}
+            <div className="absolute inset-0 bg-gradient-to-br from-english-950/75 via-black/35 to-transparent sm:from-english-950/65" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
+            <div className="absolute inset-0 ring-1 ring-inset ring-white/[0.06]" aria-hidden />
           </motion.div>
         </AnimatePresence>
 
-        <div className="relative z-10 h-full flex flex-col justify-center container mx-auto px-4 md:px-6">
+        <div className="relative z-10 h-full flex flex-col justify-center container mx-auto px-4 md:px-6 pb-16 sm:pb-20">
           <motion.div
             key={slide}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="max-w-2xl text-white"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
+            className="max-w-2xl text-white [text-shadow:0_2px_28px_rgba(0,0,0,0.35)]"
           >
-            <p className="text-bloom-cream font-bold uppercase tracking-[0.2em] text-sm mb-3">{heroSlides[slide].eyebrow}</p>
-            <p className="text-white/90 text-lg md:text-xl font-medium mb-4">{heroSlides[slide].line}</p>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-8">
+            <p className="text-bloom-cream/95 font-bold uppercase tracking-[0.18em] text-xs sm:text-sm mb-3">
+              {heroSlides[slide].eyebrow}
+            </p>
+            <p className="text-white/92 text-base sm:text-lg md:text-xl font-medium leading-snug mb-5 max-w-xl">
+              {heroSlides[slide].line}
+            </p>
+            <h1 className="text-[2.25rem] sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.06] tracking-tight mb-8">
               {heroSlides[slide].title}
               <span className="text-bloom-cream">{heroSlides[slide].accent}</span>
             </h1>
             <Link
               href="/menu"
-              className="inline-flex items-center gap-2 rounded-full bg-bloom-600 px-8 py-4 text-white font-black text-sm uppercase tracking-wide shadow-[0_12px_40px_-8px_rgba(122,118,90,0.45)] hover:bg-bloom-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-full bg-bloom-600 px-7 sm:px-8 py-3.5 sm:py-4 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-[0_12px_40px_-8px_rgba(122,118,90,0.5)] hover:bg-bloom-700 transition-colors"
             >
               Ver menú
               <ArrowRight size={18} strokeWidth={2.5} />
             </Link>
           </motion.div>
 
-          <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-2">
+          <div className="absolute bottom-6 sm:bottom-8 left-0 right-0 flex justify-center gap-2 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
             {heroSlides.map((_, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setSlide(i)}
-                className={`h-2.5 rounded-full transition-all ${slide === i ? "w-10 bg-bloom-cream" : "w-2.5 bg-white/40 hover:bg-white/70"}`}
+                className={`h-2 rounded-full transition-all duration-300 ${slide === i ? "w-9 sm:w-10 bg-bloom-cream" : "w-2 bg-white/35 hover:bg-white/60"}`}
                 aria-label={`Diapositiva ${i + 1}`}
               />
             ))}
