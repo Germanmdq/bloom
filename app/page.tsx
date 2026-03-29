@@ -462,7 +462,7 @@ export default function Home() {
         <div className="absolute inset-0 opacity-[0.07] bg-[url('https://www.transparenttextures.com/patterns/food.png')]" />
         <div className="container mx-auto px-4 relative z-10 flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
           <div className="flex-1 text-center lg:text-left">
-            <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2">Destacado</p>
+            <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2">Plato del día</p>
             <h2 className="text-3xl md:text-5xl font-black mb-4">
               {platoDiaProduct ? (
                 <>
@@ -477,19 +477,16 @@ export default function Home() {
             <p className="text-neutral-400 text-lg font-medium mb-4 max-w-lg">
               {platoDiaProduct?.description?.trim()
                 ? platoDiaProduct.description
-                : "Elegí el plato del día desde Ajustes del panel para mostrarlo acá. Mientras tanto, explorá la carta con opciones caseras."}
+                : "Consultá el menú online para ver el plato del día y el resto de la carta."}
             </p>
             {platoDiaProduct && (
-              <p className="text-bloom-gold font-black text-2xl mb-6">{formatCurrency(platoDiaProduct.price)}</p>
+              <p className="text-bloom-gold font-black text-2xl mb-8">{formatCurrency(platoDiaProduct.price)}</p>
             )}
-            <div className="inline-flex items-center gap-2 rounded-full bg-bloom-gold text-neutral-900 px-4 py-2 font-black text-sm mb-8">
-              {platoDiaProduct ? "Marcado en Ajustes · Bloom" : "Consultá promos en el menú"}
-            </div>
             <Link
               href="/menu?cat=Plato%20del%20Día"
               className="inline-flex items-center gap-2 rounded-full bg-white text-neutral-900 px-8 py-3.5 font-black text-sm uppercase hover:bg-bloom-gold transition-colors"
             >
-              Ver en el menú
+              Pedir
             </Link>
           </div>
           <div className="flex-1 flex justify-center w-full">
