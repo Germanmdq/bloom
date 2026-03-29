@@ -29,7 +29,7 @@ import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/Fo
 
 /** Video de fondo del hero: colocar el archivo en /public/videos/ (p. ej. hero-bloom.mp4). */
 const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
-/** Logo marca (hero loader + header/footer). Reemplazar en /public/images/bloom-logo.png si actualizás arte. */
+/** Logo PNG con tipografía marrón bloom-600 y fondo transparente (ver scripts/process-bloom-logo.mjs). */
 const HERO_LOGO_SRC = "/images/bloom-logo.png";
 
 const U = {
