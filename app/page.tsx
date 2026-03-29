@@ -416,18 +416,18 @@ export default function Home() {
                 : { opacity: 0, y: 16 }
             }
             transition={{ duration: 0.55, ease: [0.21, 0.47, 0.32, 0.98] }}
-            className="w-full max-w-3xl text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.45)] pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+            className="w-full max-w-3xl text-white pb-[max(0.5rem,env(safe-area-inset-bottom))]"
           >
-            <h1 className="text-[1.85rem] sm:text-4xl md:text-5xl lg:text-6xl font-black leading-[1.08] tracking-tight mb-4 sm:mb-5">
+            <h1 className="text-[1.85rem] sm:text-4xl md:text-5xl lg:text-6xl font-black leading-[1.08] tracking-tight mb-4 sm:mb-5 [text-shadow:0_4px_36px_rgba(0,0,0,0.55),0_2px_12px_rgba(0,0,0,0.45),0_1px_0_rgba(0,0,0,0.2)]">
               Mucho más
-              <span className="text-bloom-cream"> que un café.</span>
+              <span className="text-bloom-cream [text-shadow:0_4px_28px_rgba(0,0,0,0.5),0_2px_10px_rgba(61,59,47,0.4)]"> que un café.</span>
             </h1>
-            <p className="text-white/88 text-sm sm:text-base md:text-lg font-medium leading-relaxed max-w-xl mb-6 sm:mb-8">
+            <p className="text-white/88 text-sm sm:text-base md:text-lg font-medium leading-relaxed max-w-xl mb-6 sm:mb-8 [text-shadow:0_3px_20px_rgba(0,0,0,0.45),0_1px_4px_rgba(0,0,0,0.35)]">
               Especialidad, pastelería y cocina: todo en un solo lugar.
             </p>
             <Link
               href="/menu"
-              className="inline-flex items-center gap-2 rounded-full bg-bloom-600 px-6 sm:px-8 py-3 sm:py-3.5 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-[0_12px_40px_-8px_rgba(122,118,90,0.5)] hover:bg-bloom-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-full bg-bloom-600 px-6 sm:px-8 py-3 sm:py-3.5 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-[0_12px_40px_-8px_rgba(122,118,90,0.55),0_4px_14px_rgba(45,74,62,0.25)] hover:bg-bloom-700 hover:shadow-[0_16px_44px_-6px_rgba(95,92,70,0.5)] transition-all"
             >
               Ver menú
               <ArrowRight size={18} strokeWidth={2.5} />
@@ -439,8 +439,12 @@ export default function Home() {
       <section className="py-16 md:py-24 bg-bloom-page">
         <div className="container mx-auto px-4">
           <FadeIn className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Nuestra carta</p>
-            <h2 className="text-3xl md:text-5xl font-black text-neutral-900 tracking-tight">Elegí por categoría</h2>
+            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_1px_2px_rgba(122,118,90,0.25)]">
+              Nuestra carta
+            </p>
+            <h2 className="text-3xl md:text-5xl font-black text-neutral-900 tracking-tight drop-shadow-[0_2px_14px_rgba(61,59,47,0.12),0_1px_2px_rgba(61,59,47,0.08)]">
+              Elegí por categoría
+            </h2>
           </FadeIn>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 max-w-5xl mx-auto">
             {categoryCards.map((c, i) => {
@@ -449,18 +453,22 @@ export default function Home() {
               <FadeIn key={c.title} delay={i * 0.05}>
                 <Link
                   href={c.href}
-                  className="group flex aspect-square flex-col rounded-2xl bg-bloom-600 p-4 sm:p-5 text-bloom-cream shadow-[0_12px_40px_-8px_rgba(122,118,90,0.45)] ring-1 ring-bloom-700/35 transition-all duration-300 hover:-translate-y-1.5 hover:bg-bloom-700 hover:shadow-[0_18px_44px_-6px_rgba(95,92,70,0.5)] hover:ring-bloom-500/40 outline-none focus-visible:ring-2 focus-visible:ring-bloom-cream focus-visible:ring-offset-2 focus-visible:ring-offset-bloom-page"
+                  className="group flex aspect-square flex-col rounded-2xl bg-bloom-600 p-4 sm:p-5 text-bloom-cream shadow-[0_14px_44px_-10px_rgba(95,92,70,0.42),0_6px_18px_rgba(45,74,62,0.18)] ring-1 ring-bloom-700/40 transition-all duration-300 hover:-translate-y-1.5 hover:bg-bloom-700 hover:shadow-[0_22px_52px_-8px_rgba(95,92,70,0.55),0_8px_24px_rgba(45,74,62,0.22)] hover:ring-bloom-500/45 outline-none focus-visible:ring-2 focus-visible:ring-bloom-cream focus-visible:ring-offset-2 focus-visible:ring-offset-bloom-page"
                 >
                   <div className="flex min-h-0 flex-1 w-full items-center justify-center">
                     <Icon
-                      className="h-14 w-14 sm:h-[4.25rem] sm:w-[4.25rem] text-white transition-transform duration-300 group-hover:scale-105"
+                      className="h-14 w-14 sm:h-[4.25rem] sm:w-[4.25rem] text-white transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_4px_16px_rgba(0,0,0,0.35),0_2px_6px_rgba(0,0,0,0.25)]"
                       strokeWidth={1.35}
                       aria-hidden
                     />
                   </div>
                   <div className="shrink-0 pt-3 text-center border-t border-bloom-cream/15">
-                    <h3 className="text-bloom-cream text-sm sm:text-base font-black leading-tight tracking-tight">{c.title}</h3>
-                    <p className="text-bloom-cream/75 text-[11px] sm:text-xs font-medium mt-1 leading-snug">{c.hint}</p>
+                    <h3 className="text-bloom-cream text-sm sm:text-base font-black leading-tight tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
+                      {c.title}
+                    </h3>
+                    <p className="text-bloom-cream/80 text-[11px] sm:text-xs font-medium mt-1 leading-snug drop-shadow-[0_1px_6px_rgba(0,0,0,0.2)]">
+                      {c.hint}
+                    </p>
                   </div>
                 </Link>
               </FadeIn>
@@ -478,37 +486,41 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.55, ease: [0.21, 0.47, 0.32, 0.98] }}
-            className="max-w-5xl mx-auto rounded-2xl md:rounded-3xl bg-bloom-600 text-bloom-cream shadow-[0_12px_40px_-8px_rgba(122,118,90,0.45)] ring-1 ring-bloom-700/35 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:bg-bloom-700 hover:shadow-[0_18px_44px_-6px_rgba(95,92,70,0.5)] hover:ring-bloom-500/40"
+            className="max-w-5xl mx-auto rounded-2xl md:rounded-3xl bg-bloom-600 text-bloom-cream shadow-[0_14px_44px_-10px_rgba(95,92,70,0.45),0_6px_20px_rgba(45,74,62,0.18)] ring-1 ring-bloom-700/40 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:bg-bloom-700 hover:shadow-[0_22px_56px_-10px_rgba(95,92,70,0.52),0_8px_26px_rgba(45,74,62,0.22)] hover:ring-bloom-500/45"
           >
             <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12 p-6 sm:p-8 md:p-10 lg:p-12">
               <div className="flex-1 text-center lg:text-left w-full min-w-0">
-                <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2">Plato del día</p>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-4 text-bloom-cream leading-tight">
+                <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+                  Plato del día
+                </p>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-4 text-bloom-cream leading-tight [text-shadow:0_4px_24px_rgba(0,0,0,0.28),0_2px_8px_rgba(0,0,0,0.2)]">
                   {platoDiaProduct ? (
                     <span className="block sm:inline">{platoDiaProduct.name}</span>
                   ) : (
                     <>
-                      PLATO DEL <span className="text-bloom-gold">DÍA</span>
+                      PLATO DEL <span className="text-bloom-gold [text-shadow:0_3px_16px_rgba(0,0,0,0.3)]">DÍA</span>
                     </>
                   )}
                 </h2>
-                <p className="text-bloom-cream/85 text-base md:text-lg font-medium mb-4 max-w-lg mx-auto lg:mx-0">
+                <p className="text-bloom-cream/90 text-base md:text-lg font-medium mb-4 max-w-lg mx-auto lg:mx-0 [text-shadow:0_2px_14px_rgba(0,0,0,0.2)]">
                   {platoDiaProduct?.description?.trim()
                     ? platoDiaProduct.description
                     : "Consultá el menú online para ver el plato del día y el resto de la carta."}
                 </p>
                 {platoDiaProduct && (
-                  <p className="text-bloom-gold font-black text-2xl mb-8">{formatCurrency(platoDiaProduct.price)}</p>
+                  <p className="text-bloom-gold font-black text-2xl mb-8 drop-shadow-[0_3px_12px_rgba(0,0,0,0.25)]">
+                    {formatCurrency(platoDiaProduct.price)}
+                  </p>
                 )}
                 <Link
                   href="/menu?cat=Plato%20del%20Día"
-                  className="inline-flex items-center gap-2 rounded-full bg-bloom-cream text-bloom-900 px-8 py-3.5 font-black text-sm uppercase shadow-md hover:bg-white hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  className="inline-flex items-center gap-2 rounded-full bg-bloom-cream text-bloom-900 px-8 py-3.5 font-black text-sm uppercase shadow-[0_8px_28px_-4px_rgba(61,59,47,0.35),0_2px_8px_rgba(61,59,47,0.15)] hover:bg-white hover:scale-[1.02] hover:shadow-[0_12px_36px_-4px_rgba(61,59,47,0.4)] active:scale-[0.98] transition-all"
                 >
                   Pedir
                 </Link>
               </div>
               <div className="flex-1 flex justify-center w-full shrink-0 lg:max-w-[min(100%,420px)]">
-                <div className="relative w-full max-w-[320px] sm:max-w-[380px] lg:max-w-none aspect-square rounded-2xl overflow-hidden bg-bloom-800/30 shadow-inner ring-1 ring-black/10">
+                <div className="relative w-full max-w-[320px] sm:max-w-[380px] lg:max-w-none aspect-square rounded-2xl overflow-hidden bg-bloom-800/30 shadow-[0_24px_56px_-10px_rgba(0,0,0,0.42),0_12px_32px_-6px_rgba(45,74,62,0.28),inset_0_1px_0_0_rgba(255,255,255,0.08)] ring-1 ring-black/15">
                   <motion.div style={{ y: platoImageY }} className="absolute inset-0 will-change-transform">
                     <Image
                       src={platoDiaProduct?.image_url || U.promoPlato}
@@ -528,9 +540,15 @@ export default function Home() {
       <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-4">
           <FadeIn className="text-center mb-12">
-            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Bloom</p>
-            <h2 className="text-3xl md:text-5xl font-black text-neutral-900">Favoritos de la casa</h2>
-            <p className="text-neutral-600 mt-3 max-w-xl mx-auto">Precios y disponibilidad en el menú online.</p>
+            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_1px_2px_rgba(122,118,90,0.2)]">
+              Bloom
+            </p>
+            <h2 className="text-3xl md:text-5xl font-black text-neutral-900 drop-shadow-[0_2px_14px_rgba(61,59,47,0.1),0_1px_2px_rgba(61,59,47,0.06)]">
+              Favoritos de la casa
+            </h2>
+            <p className="text-neutral-600 mt-3 max-w-xl mx-auto drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
+              Precios y disponibilidad en el menú online.
+            </p>
           </FadeIn>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             {destacados.map((p, i) => {
@@ -546,8 +564,8 @@ export default function Home() {
                   : p;
               return (
                 <FadeIn key={card.name + String(i)} delay={(i % 4) * 0.05}>
-                  <div className="group rounded-3xl border border-neutral-100 bg-bloom-page overflow-hidden hover:shadow-xl transition-shadow">
-                    <div className="relative aspect-square">
+                  <div className="group rounded-3xl border border-neutral-100/90 bg-bloom-page overflow-hidden shadow-[0_12px_40px_-10px_rgba(61,59,47,0.14),0_4px_14px_rgba(61,59,47,0.06)] hover:shadow-[0_24px_48px_-12px_rgba(61,59,47,0.2),0_8px_20px_rgba(61,59,47,0.08)] hover:-translate-y-1 transition-all duration-300">
+                    <div className="relative aspect-square ring-1 ring-inset ring-black/[0.04] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)]">
                       <Image
                         src={card.img}
                         alt={card.name}
@@ -557,8 +575,12 @@ export default function Home() {
                       />
                     </div>
                     <div className="p-5">
-                      <h3 className="font-black text-neutral-900 text-lg leading-snug mb-2">{card.name}</h3>
-                      <p className="text-neutral-600 text-sm mb-4 min-h-[2.5rem]">{card.desc}</p>
+                      <h3 className="font-black text-neutral-900 text-lg leading-snug mb-2 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
+                        {card.name}
+                      </h3>
+                      <p className="text-neutral-600 text-sm mb-4 min-h-[2.5rem] drop-shadow-[0_1px_1px_rgba(255,255,255,0.6)]">
+                        {card.desc}
+                      </p>
                       <Link
                         href={platoDiaProduct && p.name === "Plato del día" ? "/menu?cat=Plato%20del%20Día" : "/menu"}
                         className="block w-full text-center rounded-full border-2 border-bloom-600 text-bloom-600 font-bold py-2.5 hover:bg-bloom-600 hover:text-white transition-colors text-sm uppercase"
@@ -583,9 +605,15 @@ export default function Home() {
       <section className="py-16 bg-[#fff5e6] border-y border-amber-100">
         <div className="container mx-auto px-4">
           <FadeIn className="text-center mb-10">
-            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Promociones</p>
-            <h2 className="text-2xl md:text-4xl font-black text-neutral-900">Combos y ofertas</h2>
-            <p className="text-neutral-600 mt-2">Aplican según día y stock — detalle en carta.</p>
+            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_1px_2px_rgba(122,118,90,0.2)]">
+              Promociones
+            </p>
+            <h2 className="text-2xl md:text-4xl font-black text-neutral-900 drop-shadow-[0_2px_12px_rgba(61,59,47,0.1)]">
+              Combos y ofertas
+            </h2>
+            <p className="text-neutral-600 mt-2 drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)]">
+              Aplican según día y stock — detalle en carta.
+            </p>
           </FadeIn>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {promoProducts.length > 0
@@ -593,9 +621,9 @@ export default function Home() {
                   <FadeIn key={o.id}>
                     <Link
                       href="/menu?cat=Promociones"
-                      className="block rounded-3xl bg-white p-2 shadow-md border border-bloom-200 overflow-hidden flex flex-col hover:shadow-lg transition-shadow h-full"
+                      className="block rounded-3xl bg-white p-2 shadow-[0_12px_36px_-8px_rgba(61,59,47,0.16),0_4px_12px_rgba(61,59,47,0.06)] border border-bloom-200 overflow-hidden flex flex-col hover:shadow-[0_20px_48px_-10px_rgba(61,59,47,0.22)] hover:-translate-y-0.5 transition-all duration-300 h-full"
                     >
-                      <div className="relative aspect-[16/10] w-full bg-bloom-50">
+                      <div className="relative aspect-[16/10] w-full bg-bloom-50 ring-1 ring-inset ring-black/[0.04] shadow-[inset_0_2px_8px_rgba(61,59,47,0.06)]">
                         <Image
                           src={o.image_url || U.catPlatos}
                           alt={o.name}
@@ -605,7 +633,9 @@ export default function Home() {
                         />
                       </div>
                       <div className="p-5 text-center flex flex-col flex-1">
-                        <p className="font-black text-neutral-900 text-lg leading-tight mb-1">{o.name}</p>
+                        <p className="font-black text-neutral-900 text-lg leading-tight mb-1 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]">
+                          {o.name}
+                        </p>
                         {o.description?.trim() ? (
                           <p className="text-neutral-600 text-sm mb-3 line-clamp-2">{o.description}</p>
                         ) : null}
@@ -616,11 +646,13 @@ export default function Home() {
                 ))
               : comboOffersFallback.map((o) => (
                   <FadeIn key={o.t}>
-                    <div className="rounded-3xl bg-white p-2 shadow-md border border-bloom-200 overflow-hidden flex flex-col">
-                      <div className="relative aspect-[16/10] w-full">
+                    <div className="rounded-3xl bg-white p-2 shadow-[0_12px_36px_-8px_rgba(61,59,47,0.14)] border border-bloom-200 overflow-hidden flex flex-col">
+                      <div className="relative aspect-[16/10] w-full ring-1 ring-inset ring-black/[0.05]">
                         <Image src={o.img} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
                       </div>
-                      <p className="font-bold text-neutral-800 leading-snug p-5 text-center">{o.t}</p>
+                      <p className="font-bold text-neutral-800 leading-snug p-5 text-center drop-shadow-[0_1px_1px_rgba(255,255,255,0.85)]">
+                        {o.t}
+                      </p>
                     </div>
                   </FadeIn>
                 ))}
@@ -641,17 +673,24 @@ export default function Home() {
               { icon: ChefHat, title: "Cocina y pastelería", body: "Recetas propias y elaboración diaria en la mayoría de nuestras opciones." },
               { icon: Truck, title: "Delivery", body: "Pedidos online para que disfrutes Bloom donde estés." },
               { icon: Leaf, title: "Ingredientes frescos", body: "Priorizamos calidad y estación en platos y jugos." },
-            ].map((f, i) => (
+            ].map((f, i) => {
+              const FeatureIcon = f.icon;
+              return (
               <FadeIn key={f.title} delay={i * 0.06}>
                 <div className="text-center px-2">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-bloom-gold/20 text-bloom-600">
-                    <f.icon size={32} strokeWidth={2} />
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-bloom-gold/25 text-bloom-600 shadow-[0_8px_28px_-4px_rgba(196,184,150,0.55),0_2px_8px_rgba(196,184,150,0.25)] ring-1 ring-bloom-gold/35">
+                    <FeatureIcon size={32} strokeWidth={2} className="drop-shadow-[0_2px_4px_rgba(122,118,90,0.2)]" />
                   </div>
-                  <h3 className="font-black text-base uppercase tracking-wide text-neutral-900 mb-2">{f.title}</h3>
-                  <p className="text-neutral-600 text-sm leading-relaxed">{f.body}</p>
+                  <h3 className="font-black text-base uppercase tracking-wide text-neutral-900 mb-2 drop-shadow-[0_1px_3px_rgba(61,59,47,0.08)]">
+                    {f.title}
+                  </h3>
+                  <p className="text-neutral-600 text-sm leading-relaxed drop-shadow-[0_1px_1px_rgba(255,255,255,0.75)]">
+                    {f.body}
+                  </p>
                 </div>
               </FadeIn>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -660,14 +699,17 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
             <FadeIn className="lg:w-1/2 relative w-full max-w-lg mx-auto">
-              <div className="relative aspect-square rounded-3xl overflow-hidden">
+              <div className="relative aspect-square rounded-3xl overflow-hidden shadow-[0_28px_64px_-12px_rgba(0,0,0,0.55),0_12px_36px_-6px_rgba(0,0,0,0.35)] ring-1 ring-white/10">
                 <Image src={U.featLatte} alt="Bloom café" fill className="object-cover" />
               </div>
             </FadeIn>
             <FadeIn className="lg:w-1/2">
-              <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2">Sobre Bloom</p>
-              <h2 className="text-3xl md:text-5xl font-black mb-6 leading-tight">
-                Donde la calidad se cruza con <span className="text-bloom-gold">un buen momento.</span>
+              <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">
+                Sobre Bloom
+              </p>
+              <h2 className="text-3xl md:text-5xl font-black mb-6 leading-tight [text-shadow:0_4px_28px_rgba(0,0,0,0.35),0_2px_10px_rgba(0,0,0,0.25)]">
+                Donde la calidad se cruza con{" "}
+                <span className="text-bloom-gold [text-shadow:0_4px_24px_rgba(0,0,0,0.4)]">un buen momento.</span>
               </h2>
               <p className="text-neutral-400 text-lg leading-relaxed mb-8">
                 Café de especialidad, pastelería artesanal, platos del día y opciones para cada hora. Un espacio en Mar del Plata pensado para compartir, trabajar tranquilo o pedir y llevar.
@@ -695,18 +737,24 @@ export default function Home() {
       <section className="py-16 md:py-20 bg-bloom-page">
         <div className="container mx-auto px-4 max-w-4xl text-center">
           <FadeIn>
-            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Clientes</p>
-            <h2 className="text-2xl md:text-4xl font-black text-neutral-900 mb-10">La experiencia de quienes nos eligen</h2>
-            <div className="rounded-3xl bg-white border border-bloom-200 shadow-lg p-8 md:p-12">
+            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_1px_2px_rgba(122,118,90,0.2)]">
+              Clientes
+            </p>
+            <h2 className="text-2xl md:text-4xl font-black text-neutral-900 mb-10 drop-shadow-[0_2px_12px_rgba(61,59,47,0.1)]">
+              La experiencia de quienes nos eligen
+            </h2>
+            <div className="rounded-3xl bg-white border border-bloom-200 shadow-[0_16px_48px_-10px_rgba(61,59,47,0.14),0_6px_20px_rgba(61,59,47,0.08)] p-8 md:p-12">
               <div className="flex justify-center mb-4">
                 {[1, 2, 3, 4, 5].map((s) => (
                   <Star key={s} className="w-6 h-6 text-bloom-gold fill-bloom-gold" />
                 ))}
               </div>
-              <p className="text-lg md:text-xl text-neutral-700 leading-relaxed mb-8">
+              <p className="text-lg md:text-xl text-neutral-700 leading-relaxed mb-8 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]">
                 &ldquo;Excelente café y las tortas son un viaje de ida. Volvemos siempre que podemos; el servicio es súper atento.&rdquo;
               </p>
-              <p className="font-black text-neutral-900 text-lg">María · Mar del Plata</p>
+              <p className="font-black text-neutral-900 text-lg drop-shadow-[0_1px_2px_rgba(255,255,255,0.85)]">
+                María · Mar del Plata
+              </p>
               <p className="text-neutral-500 text-sm font-semibold">Cliente frecuente</p>
             </div>
           </FadeIn>
@@ -717,20 +765,24 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <FadeIn>
-              <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2">Merienda & café</p>
-              <h2 className="text-3xl md:text-4xl font-black mb-6">Pedí tu combo favorito</h2>
-              <p className="text-white/85 mb-8 max-w-lg">
+              <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
+                Merienda & café
+              </p>
+              <h2 className="text-3xl md:text-4xl font-black mb-6 [text-shadow:0_4px_24px_rgba(0,0,0,0.25)]">
+                Pedí tu combo favorito
+              </h2>
+              <p className="text-white/85 mb-8 max-w-lg [text-shadow:0_2px_12px_rgba(0,0,0,0.2)]">
                 Pastelería del día, sandwiches calientes y bebidas para acompañar. Ideal para compartir o para darte un gustito a la tarde.
               </p>
               <Link
                 href="/menu?cat=Pastelería"
-                className="inline-flex items-center gap-2 rounded-full bg-bloom-gold px-8 py-3.5 font-black text-neutral-900 text-sm uppercase hover:bg-bloom-gold-dark transition-colors"
+                className="inline-flex items-center gap-2 rounded-full bg-bloom-gold px-8 py-3.5 font-black text-neutral-900 text-sm uppercase shadow-[0_8px_28px_-4px_rgba(0,0,0,0.35)] hover:bg-bloom-gold-dark hover:shadow-[0_12px_32px_-4px_rgba(0,0,0,0.4)] transition-all"
               >
                 Ir al menú
               </Link>
             </FadeIn>
             <FadeIn>
-              <div className="relative aspect-[4/3] max-w-lg mx-auto rounded-3xl overflow-hidden shadow-2xl">
+              <div className="relative aspect-[4/3] max-w-lg mx-auto rounded-3xl overflow-hidden shadow-[0_28px_60px_-10px_rgba(0,0,0,0.5),0_12px_32px_-6px_rgba(26,38,32,0.35)] ring-1 ring-white/10">
                 <Image src={U.combo} alt="Comida Bloom" fill className="object-cover" />
               </div>
             </FadeIn>
@@ -741,14 +793,18 @@ export default function Home() {
       <section className="py-16 md:py-24 bg-bloom-page">
         <div className="container mx-auto px-4 flex flex-col lg:flex-row items-center gap-12">
           <div className="lg:w-1/2 relative w-full">
-            <div className="relative w-full max-w-lg mx-auto aspect-[4/3] rounded-3xl overflow-hidden shadow-xl">
+            <div className="relative w-full max-w-lg mx-auto aspect-[4/3] rounded-3xl overflow-hidden shadow-[0_24px_56px_-12px_rgba(61,59,47,0.28),0_8px_24px_rgba(61,59,47,0.12)] ring-1 ring-black/[0.06]">
               <Image src={U.delivery} alt="Delivery Bloom" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
             </div>
           </div>
           <FadeIn className="lg:w-1/2 text-center lg:text-left">
-            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Pedidos online</p>
-            <h2 className="text-3xl md:text-5xl font-black text-neutral-900 mb-6">Delivery en la ciudad</h2>
-            <p className="text-neutral-600 text-lg mb-8 max-w-lg">
+            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_1px_2px_rgba(122,118,90,0.2)]">
+              Pedidos online
+            </p>
+            <h2 className="text-3xl md:text-5xl font-black text-neutral-900 mb-6 drop-shadow-[0_2px_14px_rgba(61,59,47,0.1)]">
+              Delivery en la ciudad
+            </h2>
+            <p className="text-neutral-600 text-lg mb-8 max-w-lg drop-shadow-[0_1px_1px_rgba(255,255,255,0.75)]">
               Hacé tu pedido desde la web y coordinamos el envío. Horarios y zonas según disponibilidad del día.
             </p>
             <Link
