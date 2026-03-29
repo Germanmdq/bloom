@@ -38,11 +38,10 @@ const U = {
   catDesayunos: "/images/categories/desayunos.png",
   catJugos: "/images/categories/jugos.png",
   promoPlato: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=85",
-  /** Fachada real — Bloom Coffee & More */
+  /** Fachada real — Bloom Coffee & More (about, Storage, etc.) */
   fachada: "/images/bloom-fachada.png",
-  featLatte: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=800&q=85",
-  featWrap: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=800&q=85",
-  featEmpanadas: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=85",
+  /** Flat lay marca — sección Sobre Bloom en home */
+  sobreBloom: "/images/sobre-bloom-cafe.png",
   delivery: "https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=1200&q=85",
   combo: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=85",
 };
@@ -63,11 +62,31 @@ const categoryCards: { title: string; hint: string; href: string; Icon: LucideIc
   { title: "Pastelería", hint: "Dulces y panificados", href: "/menu?cat=Pastelería", Icon: Cookie },
 ];
 
-const destacados = [
-  { name: "Submarino", desc: "Chocolate artesanal con leche caliente.", img: U.featLatte },
-  { name: "Wraps", desc: "Frescos, abundantes y para llevar.", img: U.featWrap },
-  { name: "Empanadas", desc: "Clásicas argentinas, siempre recién horneadas.", img: U.featEmpanadas },
-  { name: "Plato del día", desc: "El favorito de la casa con bebida incluida.", img: U.promoPlato },
+const destacados: { name: string; desc: string; img: string; menuHref: string }[] = [
+  {
+    name: "Los wraps",
+    desc: "Recién armados, frescos y para llevar.",
+    img: "/images/categories/wraps.png",
+    menuHref: "/menu?cat=wrap",
+  },
+  {
+    name: "Las ensaladas",
+    desc: "Verdes, completas y con aderezos de la casa.",
+    img: "/images/categories/ensaladas.png",
+    menuHref: "/menu?cat=ensalada",
+  },
+  {
+    name: "Arroz con pollo",
+    desc: "Un clásico de la cocina, abundante y casero.",
+    img: "/images/categories/platos-diarios.png",
+    menuHref: "/menu?cat=Platos%20Diarios",
+  },
+  {
+    name: "Tostado pan árabe",
+    desc: "Crocante, bien dorado, ideal para desayunar o merendar.",
+    img: "/images/categories/desayunos.png",
+    menuHref: "/menu?cat=tostado",
+  },
 ];
 
 const comboOffersFallback = [
@@ -205,7 +224,6 @@ export default function Home() {
   const [promoProducts, setPromoProducts] = useState<
     { id: string; name: string; description: string | null; price: number; image_url: string | null }[]
   >([]);
-  const [fachadaImageSrc, setFachadaImageSrc] = useState(U.fachada);
 
   const platoDelDiaRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress: platoScroll } = useScroll({
@@ -228,13 +246,7 @@ export default function Home() {
   useEffect(() => {
     const supabase = createClient();
     const load = async () => {
-      const { data: settings } = await supabase
-        .from("app_settings")
-        .select("plato_del_dia_id, fachada_image_url")
-        .eq("id", 1)
-        .maybeSingle();
-      const fachadaUrl = settings?.fachada_image_url?.trim();
-      if (fachadaUrl) setFachadaImageSrc(fachadaUrl);
+      const { data: settings } = await supabase.from("app_settings").select("plato_del_dia_id").eq("id", 1).maybeSingle();
       if (settings?.plato_del_dia_id) {
         const { data: p } = await supabase
           .from("products")
@@ -560,47 +572,35 @@ export default function Home() {
             </p>
           </FadeIn>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {destacados.map((p, i) => {
-              const card =
-                platoDiaProduct && p.name === "Plato del día"
-                  ? {
-                      name: platoDiaProduct.name,
-                      desc:
-                        (platoDiaProduct.description || "").trim().slice(0, 120) ||
-                        "Plato destacado — pedilo desde el menú online.",
-                      img: platoDiaProduct.image_url || U.promoPlato,
-                    }
-                  : p;
-              return (
-                <FadeIn key={card.name + String(i)} delay={(i % 4) * 0.05}>
-                  <div className="group rounded-3xl border border-neutral-100/90 bg-bloom-page overflow-hidden shadow-[0_12px_40px_-10px_rgba(61,59,47,0.14),0_4px_14px_rgba(61,59,47,0.06)] hover:shadow-[0_24px_48px_-12px_rgba(61,59,47,0.2),0_8px_20px_rgba(61,59,47,0.08)] hover:-translate-y-1 transition-all duration-300">
-                    <div className="relative aspect-square ring-1 ring-inset ring-black/[0.04] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)]">
-                      <Image
-                        src={card.img}
-                        alt={card.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        sizes="(max-width: 640px) 100vw, 25vw"
-                      />
-                    </div>
-                    <div className="p-5">
-                      <h3 className="font-black text-neutral-900 text-lg leading-snug mb-2 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
-                        {card.name}
-                      </h3>
-                      <p className="text-neutral-600 text-sm mb-4 min-h-[2.5rem] drop-shadow-[0_1px_1px_rgba(255,255,255,0.6)]">
-                        {card.desc}
-                      </p>
-                      <Link
-                        href={platoDiaProduct && p.name === "Plato del día" ? "/menu?cat=Plato%20del%20Día" : "/menu"}
-                        className="block w-full text-center rounded-full border-2 border-bloom-600 text-bloom-600 font-bold py-2.5 hover:bg-bloom-600 hover:text-white transition-colors text-sm uppercase"
-                      >
-                        Ver en menú
-                      </Link>
-                    </div>
+            {destacados.map((p, i) => (
+              <FadeIn key={p.name + String(i)} delay={(i % 4) * 0.05}>
+                <div className="group rounded-3xl border border-neutral-100/90 bg-bloom-page overflow-hidden shadow-[0_12px_40px_-10px_rgba(61,59,47,0.14),0_4px_14px_rgba(61,59,47,0.06)] hover:shadow-[0_24px_48px_-12px_rgba(61,59,47,0.2),0_8px_20px_rgba(61,59,47,0.08)] hover:-translate-y-1 transition-all duration-300">
+                  <div className="relative aspect-square ring-1 ring-inset ring-black/[0.04] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)]">
+                    <Image
+                      src={p.img}
+                      alt={p.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 640px) 100vw, 25vw"
+                    />
                   </div>
-                </FadeIn>
-              );
-            })}
+                  <div className="p-5">
+                    <h3 className="font-black text-neutral-900 text-lg leading-snug mb-2 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
+                      {p.name}
+                    </h3>
+                    <p className="text-neutral-600 text-sm mb-4 min-h-[2.5rem] drop-shadow-[0_1px_1px_rgba(255,255,255,0.6)]">
+                      {p.desc}
+                    </p>
+                    <Link
+                      href={p.menuHref}
+                      className="block w-full text-center rounded-full border-2 border-bloom-600 text-bloom-600 font-bold py-2.5 hover:bg-bloom-600 hover:text-white transition-colors text-sm uppercase"
+                    >
+                      Ver en menú
+                    </Link>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
           </div>
           <div className="text-center mt-12">
             <Link href="/menu" className="inline-flex items-center gap-2 font-black text-bloom-600 hover:underline uppercase text-sm tracking-wide">
@@ -710,12 +710,11 @@ export default function Home() {
             <FadeIn className="lg:w-1/2 relative w-full max-w-lg mx-auto">
               <div className="relative aspect-square rounded-3xl overflow-hidden shadow-[0_28px_64px_-12px_rgba(0,0,0,0.55),0_12px_36px_-6px_rgba(0,0,0,0.35)] ring-1 ring-white/10">
                 <Image
-                  src={fachadaImageSrc}
-                  alt="Fachada Bloom Coffee & More, Mar del Plata"
+                  src={U.sobreBloom}
+                  alt="Vasos Bloom Coffee & More y pastelería sobre mantel verde"
                   fill
                   className="object-cover object-center"
                   sizes="(max-width: 1024px) 100vw, 50vw"
-                  priority
                 />
               </div>
             </FadeIn>
