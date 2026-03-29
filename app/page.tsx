@@ -26,11 +26,9 @@ import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/Fo
 /** Video de fondo del hero: colocar el archivo en /public/videos/ (p. ej. hero-bloom.mp4). */
 const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
 
-/** Hero: fotos propias en /public/images/hero (café primero, luego platos). Fallback si el video no carga. */
+/** Poster del hero (mientras carga el video). */
 const U = {
   heroCafe: "/images/hero/hero-cafe-croissants.png",
-  heroFood1: "/images/hero/hero-tostadas.png",
-  heroFood2: "/images/hero/hero-wrap.png",
   catPlatos: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=85",
   catPasteleria: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=85",
   catDesayunos: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=85",
@@ -51,30 +49,6 @@ const CONTACT = {
   phoneHref: "tel:+5492231234567",
   hours: "Lun–Dom · 08:00–22:00",
 };
-
-const heroSlides = [
-  {
-    bg: U.heroCafe,
-    eyebrow: "Mar del Plata · Argentina",
-    line: "Café de especialidad, pastelería artesanal y mucho más.",
-    title: "BLOOM",
-    accent: ".",
-  },
-  {
-    bg: U.heroFood1,
-    eyebrow: "Nuestra carta",
-    line: "Desayunos, almuerzo, pastas, milanesas y platos del día.",
-    title: "Mucho más",
-    accent: " que un café.",
-  },
-  {
-    bg: U.heroFood2,
-    eyebrow: "Pedí online",
-    line: "Recibí en tu puerta sin vueltas.",
-    title: "Delivery",
-    accent: " en la ciudad.",
-  },
-];
 
 const categoryCards = [
   { title: "Platos del día", hint: "Almuerzo y cena", img: U.catPlatos, href: "/menu?cat=Platos%20Diarios" },
@@ -221,8 +195,6 @@ function LogoWordmark({ inverted = false }: { inverted?: boolean }) {
 export default function Home() {
   const [showLogin, setShowLogin] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [slide, setSlide] = useState(0);
-  const [heroVideoFailed, setHeroVideoFailed] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [platoDiaProduct, setPlatoDiaProduct] = useState<{
     id: string;
@@ -234,11 +206,6 @@ export default function Home() {
   const [promoProducts, setPromoProducts] = useState<
     { id: string; name: string; description: string | null; price: number; image_url: string | null }[]
   >([]);
-
-  useEffect(() => {
-    const t = setInterval(() => setSlide((s) => (s + 1) % heroSlides.length), 5500);
-    return () => clearInterval(t);
-  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -367,89 +334,50 @@ export default function Home() {
       </header>
 
       <section className="relative min-h-[min(90vh,840px)] h-[min(90vh,840px)] w-full overflow-hidden bg-neutral-950">
-        {heroVideoFailed ? (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={slide}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.55 }}
-              className="absolute inset-0"
-            >
-              <Image
-                src={heroSlides[slide].bg}
-                alt=""
-                fill
-                className="object-cover object-center scale-[1.02]"
-                priority={slide === 0}
-                sizes="100vw"
-                quality={88}
-              />
-              <div className="absolute inset-0 bg-gradient-to-br from-english-950/75 via-black/35 to-transparent sm:from-english-950/65" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
-              <div className="absolute inset-0 ring-1 ring-inset ring-white/[0.06]" aria-hidden />
-            </motion.div>
-          </AnimatePresence>
-        ) : (
-          <div className="absolute inset-0">
-            <video
-              className="absolute inset-0 h-full w-full object-cover object-center scale-[1.02]"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              poster={U.heroCafe}
-              aria-hidden
-              onError={() => setHeroVideoFailed(true)}
-            >
-              <source src={HERO_VIDEO_SRC} type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 bg-gradient-to-br from-english-950/75 via-black/35 to-transparent sm:from-english-950/65" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
-            <div className="absolute inset-0 ring-1 ring-inset ring-white/[0.06]" aria-hidden />
-          </div>
-        )}
-
-        <div className="relative z-10 h-full flex flex-col justify-center container mx-auto px-4 md:px-6 pb-16 sm:pb-20">
-          <motion.div
-            key={slide}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-            className="max-w-2xl text-white [text-shadow:0_2px_28px_rgba(0,0,0,0.35)]"
+        <div className="absolute inset-0">
+          <video
+            className="absolute inset-0 h-full w-full object-cover object-center scale-[1.02]"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster={U.heroCafe}
+            aria-hidden
           >
-            <p className="text-bloom-cream/95 font-bold uppercase tracking-[0.18em] text-xs sm:text-sm mb-3">
-              {heroSlides[slide].eyebrow}
-            </p>
-            <p className="text-white/92 text-base sm:text-lg md:text-xl font-medium leading-snug mb-5 max-w-xl">
-              {heroSlides[slide].line}
-            </p>
-            <h1 className="text-[2.25rem] sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.06] tracking-tight mb-8">
-              {heroSlides[slide].title}
-              <span className="text-bloom-cream">{heroSlides[slide].accent}</span>
+            <source src={HERO_VIDEO_SRC} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-br from-english-950/75 via-black/35 to-transparent sm:from-english-950/65" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
+          <div
+            className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/70 via-black/25 to-transparent pointer-events-none"
+            aria-hidden
+          />
+          <div className="absolute inset-0 ring-1 ring-inset ring-white/[0.06]" aria-hidden />
+        </div>
+
+        <div className="relative z-10 h-full flex flex-col justify-end container mx-auto px-4 md:px-6 pb-10 sm:pb-12 md:pb-14 pt-24">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: [0.21, 0.47, 0.32, 0.98] }}
+            className="w-full max-w-3xl text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.45)] pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+          >
+            <h1 className="text-[1.85rem] sm:text-4xl md:text-5xl lg:text-6xl font-black leading-[1.08] tracking-tight mb-4 sm:mb-5">
+              Mucho más
+              <span className="text-bloom-cream"> que un café.</span>
             </h1>
+            <p className="text-white/88 text-sm sm:text-base md:text-lg font-medium leading-relaxed max-w-xl mb-6 sm:mb-8">
+              Especialidad, pastelería y cocina: todo en un solo lugar.
+            </p>
             <Link
               href="/menu"
-              className="inline-flex items-center gap-2 rounded-full bg-bloom-600 px-7 sm:px-8 py-3.5 sm:py-4 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-[0_12px_40px_-8px_rgba(122,118,90,0.5)] hover:bg-bloom-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-full bg-bloom-600 px-6 sm:px-8 py-3 sm:py-3.5 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-[0_12px_40px_-8px_rgba(122,118,90,0.5)] hover:bg-bloom-700 transition-colors"
             >
               Ver menú
               <ArrowRight size={18} strokeWidth={2.5} />
             </Link>
           </motion.div>
-
-          <div className="absolute bottom-6 sm:bottom-8 left-0 right-0 flex justify-center gap-2 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-            {heroSlides.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setSlide(i)}
-                className={`h-2 rounded-full transition-all duration-300 ${slide === i ? "w-9 sm:w-10 bg-bloom-cream" : "w-2 bg-white/35 hover:bg-white/60"}`}
-                aria-label={`Diapositiva ${i + 1}`}
-              />
-            ))}
-          </div>
         </div>
       </section>
 
