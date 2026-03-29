@@ -25,6 +25,8 @@ import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/Fo
 
 /** Video de fondo del hero: colocar el archivo en /public/videos/ (p. ej. hero-bloom.mp4). */
 const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
+/** Logo marca (hero loader + header/footer). Reemplazar en /public/images/bloom-logo.png si actualizás arte. */
+const HERO_LOGO_SRC = "/images/bloom-logo.png";
 
 const U = {
   catPlatos: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=85",
@@ -182,17 +184,10 @@ function LoginModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function LogoWordmark({ inverted = false }: { inverted?: boolean }) {
-  return (
-    <span className={`font-black text-xl md:text-2xl tracking-tighter ${inverted ? "text-white" : "text-neutral-900"}`}>
-      BLOOM<span className="text-english-600">.</span>
-    </span>
-  );
-}
-
 export default function Home() {
   const [showLogin, setShowLogin] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [heroVideoReady, setHeroVideoReady] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [platoDiaProduct, setPlatoDiaProduct] = useState<{
     id: string;
@@ -209,6 +204,11 @@ export default function Home() {
     const onScroll = () => setScrolled(window.scrollY > 24);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const maxWait = window.setTimeout(() => setHeroVideoReady(true), 12000);
+    return () => window.clearTimeout(maxWait);
   }, []);
 
   useEffect(() => {
@@ -293,8 +293,15 @@ export default function Home() {
         }`}
       >
         <div className="container mx-auto px-4 flex items-center justify-between gap-2 sm:gap-4 py-3 md:py-4">
-          <Link href="/" className="flex items-center gap-2 shrink-0 min-w-0">
-            <LogoWordmark />
+          <Link href="/" className="flex items-center shrink-0 min-w-0">
+            <Image
+              src={HERO_LOGO_SRC}
+              alt="Bloom Coffee & More"
+              width={168}
+              height={56}
+              className="h-9 sm:h-10 w-auto max-w-[min(168px,42vw)] object-contain object-left"
+              priority
+            />
           </Link>
           <nav className="hidden xl:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
             <Link href="/" className="text-bloom-600">
@@ -333,7 +340,6 @@ export default function Home() {
 
       <section className="relative min-h-[min(90vh,840px)] h-[min(90vh,840px)] w-full overflow-hidden bg-neutral-950">
         <div className="absolute inset-0 bg-neutral-950">
-          {/* Sin poster: evita el flash de la imagen estática antes del primer frame del video */}
           <video
             className="absolute inset-0 h-full w-full object-cover object-center scale-[1.02] bg-neutral-950"
             autoPlay
@@ -342,6 +348,8 @@ export default function Home() {
             playsInline
             preload="auto"
             aria-hidden
+            onCanPlay={() => setHeroVideoReady(true)}
+            onError={() => setHeroVideoReady(true)}
           >
             <source src={HERO_VIDEO_SRC} type="video/mp4" />
           </video>
@@ -354,10 +362,48 @@ export default function Home() {
           <div className="absolute inset-0 ring-1 ring-inset ring-white/[0.06]" aria-hidden />
         </div>
 
+        <AnimatePresence>
+          {!heroVideoReady && (
+            <motion.div
+              key="hero-loader"
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.45, ease: [0.21, 0.47, 0.32, 0.98] }}
+              className="absolute inset-0 z-[25] flex flex-col items-center justify-center gap-6 bg-neutral-950 px-6"
+              aria-busy
+              aria-label="Cargando"
+            >
+              <div className="relative h-28 w-full max-w-[300px] sm:h-36">
+                <Image
+                  src={HERO_LOGO_SRC}
+                  alt="Bloom"
+                  fill
+                  className="object-contain object-center drop-shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+                  sizes="300px"
+                  priority
+                />
+              </div>
+              <p className="text-bloom-cream font-bold tracking-[0.35em] text-[11px] sm:text-xs uppercase">Bloom</p>
+              <div className="h-0.5 w-28 overflow-hidden rounded-full bg-white/10">
+                <motion.div
+                  className="h-full w-1/3 rounded-full bg-bloom-cream/70"
+                  initial={{ x: "-120%" }}
+                  animate={{ x: "320%" }}
+                  transition={{ repeat: Infinity, duration: 1.15, ease: "linear" }}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="relative z-10 h-full flex flex-col justify-end container mx-auto px-4 md:px-6 pb-10 sm:pb-12 md:pb-14 pt-24">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={
+              heroVideoReady
+                ? { opacity: 1, y: 0 }
+                : { opacity: 0, y: 16 }
+            }
             transition={{ duration: 0.55, ease: [0.21, 0.47, 0.32, 0.98] }}
             className="w-full max-w-3xl text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.45)] pb-[max(0.5rem,env(safe-area-inset-bottom))]"
           >
@@ -728,7 +774,13 @@ export default function Home() {
       <footer className="bg-[#0d0d0d] text-neutral-400 py-14 border-t border-white/10">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <LogoWordmark inverted />
+            <Image
+              src={HERO_LOGO_SRC}
+              alt="Bloom Coffee & More"
+              width={160}
+              height={52}
+              className="h-8 sm:h-9 w-auto max-w-[200px] object-contain opacity-95"
+            />
             <div className="flex flex-wrap justify-center gap-6 text-sm font-semibold">
               <Link href="/menu" className="hover:text-bloom-gold">
                 Menú
