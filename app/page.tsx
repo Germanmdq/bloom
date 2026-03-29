@@ -29,10 +29,10 @@ const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
 const HERO_LOGO_SRC = "/images/bloom-logo.png";
 
 const U = {
-  catPlatos: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=85",
-  catPasteleria: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=85",
-  catDesayunos: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=85",
-  catJugos: "https://images.unsplash.com/photo-1622597467836-f3285f2131b9?auto=format&fit=crop&w=800&q=85",
+  catPlatos: "/images/categories/platos-diarios.png",
+  catPasteleria: "/images/categories/pasteleria.png",
+  catDesayunos: "/images/categories/desayunos.png",
+  catJugos: "/images/categories/jugos.png",
   promoPlato: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=85",
   featLatte: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=800&q=85",
   featWrap: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=800&q=85",
@@ -430,28 +430,26 @@ export default function Home() {
           <FadeIn className="text-center max-w-2xl mx-auto mb-12">
             <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Nuestra carta</p>
             <h2 className="text-3xl md:text-5xl font-black text-neutral-900 tracking-tight">Elegí por categoría</h2>
-            <p className="text-neutral-600 mt-3 text-lg">Lo mejor de Bloom, ordenado para que encuentres al toque.</p>
           </FadeIn>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {categoryCards.map((c, i) => (
               <FadeIn key={c.title} delay={i * 0.05}>
                 <Link
                   href={c.href}
-                  className="group block rounded-3xl bg-white border border-bloom-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden"
+                  className="group flex h-full flex-col rounded-3xl bg-white border border-bloom-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden"
                 >
-                  <div className="relative aspect-[4/3] bg-gradient-to-b from-bloom-50 to-white">
+                  <div className="px-4 pt-5 pb-2 text-center">
+                    <h3 className="text-neutral-900 text-base sm:text-lg font-black leading-tight">{c.title}</h3>
+                    <p className="text-neutral-500 text-xs sm:text-sm font-medium mt-1">{c.hint}</p>
+                  </div>
+                  <div className="relative aspect-[5/4] w-full bg-gradient-to-b from-bloom-50/90 to-white">
                     <Image
                       src={c.img}
-                      alt={c.title}
+                      alt=""
                       fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="object-contain object-bottom p-4 sm:p-5 group-hover:scale-[1.04] transition-transform duration-500"
                       sizes="(max-width: 1024px) 50vw, 25vw"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
-                      <p className="text-white/80 text-xs font-semibold uppercase tracking-wide">{c.hint}</p>
-                      <h3 className="text-white text-lg font-black leading-tight">{c.title}</h3>
-                    </div>
                   </div>
                 </Link>
               </FadeIn>
