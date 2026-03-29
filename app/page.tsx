@@ -18,7 +18,7 @@ import {
   Star,
   Truck,
   UtensilsCrossed,
-  Wine,
+  GlassWater,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -55,9 +55,9 @@ const CONTACT = {
 };
 
 const categoryCards: { title: string; hint: string; href: string; Icon: LucideIcon }[] = [
-  { title: "Cafetería", hint: "Cafés y más", href: "/menu?cat=Cafetería", Icon: Coffee },
+  { title: "Cafetería", hint: "Cafés y bebidas calientes", href: "/menu?cat=Cafetería", Icon: Coffee },
   { title: "Comidas", hint: "Platos del día y más", href: "/menu?cat=Platos%20Diarios", Icon: UtensilsCrossed },
-  { title: "Bebidas", hint: "Frías y calientes", href: "/menu?cat=Bebidas", Icon: Wine },
+  { title: "Bebidas", hint: "Bebidas frías", href: "/menu?cat=Bebidas", Icon: GlassWater },
   { title: "Pastelería", hint: "Dulces y panificados", href: "/menu?cat=Pastelería", Icon: Cookie },
 ];
 
@@ -442,7 +442,7 @@ export default function Home() {
               <FadeIn key={c.title} delay={i * 0.05}>
                 <Link
                   href={c.href}
-                  className="group flex aspect-square flex-col rounded-2xl bg-bloom-800 p-4 sm:p-5 text-bloom-cream shadow-[0_14px_40px_-12px_rgba(61,59,47,0.45)] ring-1 ring-bloom-900/40 transition-all duration-300 hover:-translate-y-1.5 hover:bg-bloom-700 hover:shadow-[0_22px_50px_-10px_rgba(61,59,47,0.55)] hover:ring-bloom-gold/25 outline-none focus-visible:ring-2 focus-visible:ring-bloom-cream focus-visible:ring-offset-2 focus-visible:ring-offset-bloom-page"
+                  className="group flex aspect-square flex-col rounded-2xl bg-bloom-600 p-4 sm:p-5 text-bloom-cream shadow-[0_12px_40px_-8px_rgba(122,118,90,0.45)] ring-1 ring-bloom-700/35 transition-all duration-300 hover:-translate-y-1.5 hover:bg-bloom-700 hover:shadow-[0_18px_44px_-6px_rgba(95,92,70,0.5)] hover:ring-bloom-500/40 outline-none focus-visible:ring-2 focus-visible:ring-bloom-cream focus-visible:ring-offset-2 focus-visible:ring-offset-bloom-page"
                 >
                   <div className="flex min-h-0 flex-1 w-full items-center justify-center">
                     <Icon
