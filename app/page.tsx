@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import {
   ArrowRight,
   Bike,
@@ -22,7 +22,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
@@ -203,6 +203,13 @@ export default function Home() {
   const [promoProducts, setPromoProducts] = useState<
     { id: string; name: string; description: string | null; price: number; image_url: string | null }[]
   >([]);
+
+  const platoDelDiaRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress: platoScroll } = useScroll({
+    target: platoDelDiaRef,
+    offset: ["start end", "end start"],
+  });
+  const platoImageY = useTransform(platoScroll, [0, 1], [16, -16]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -463,48 +470,58 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative py-16 md:py-20 overflow-hidden bg-[#1a1a1a] text-white">
-        <div className="absolute inset-0 opacity-[0.07] bg-[url('https://www.transparenttextures.com/patterns/food.png')]" />
-        <div className="container mx-auto px-4 relative z-10 flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-          <div className="flex-1 text-center lg:text-left">
-            <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2">Plato del día</p>
-            <h2 className="text-3xl md:text-5xl font-black mb-4">
-              {platoDiaProduct ? (
-                <>
-                  <span className="block sm:inline">{platoDiaProduct.name}</span>
-                </>
-              ) : (
-                <>
-                  PLATO DEL <span className="text-bloom-gold">DÍA</span>
-                </>
-              )}
-            </h2>
-            <p className="text-neutral-400 text-lg font-medium mb-4 max-w-lg">
-              {platoDiaProduct?.description?.trim()
-                ? platoDiaProduct.description
-                : "Consultá el menú online para ver el plato del día y el resto de la carta."}
-            </p>
-            {platoDiaProduct && (
-              <p className="text-bloom-gold font-black text-2xl mb-8">{formatCurrency(platoDiaProduct.price)}</p>
-            )}
-            <Link
-              href="/menu?cat=Plato%20del%20Día"
-              className="inline-flex items-center gap-2 rounded-full bg-white text-neutral-900 px-8 py-3.5 font-black text-sm uppercase hover:bg-bloom-gold transition-colors"
-            >
-              Pedir
-            </Link>
-          </div>
-          <div className="flex-1 flex justify-center w-full">
-            <div className="relative w-full max-w-md aspect-square rounded-3xl overflow-hidden shadow-2xl bg-neutral-800">
-              <Image
-                src={platoDiaProduct?.image_url || U.promoPlato}
-                alt={platoDiaProduct?.name ?? "Plato del día Bloom"}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 90vw, 400px"
-              />
+      <section className="py-10 md:py-14 bg-bloom-page">
+        <div className="container mx-auto px-4">
+          <motion.div
+            ref={platoDelDiaRef}
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.55, ease: [0.21, 0.47, 0.32, 0.98] }}
+            className="max-w-5xl mx-auto rounded-2xl md:rounded-3xl bg-bloom-600 text-bloom-cream shadow-[0_12px_40px_-8px_rgba(122,118,90,0.45)] ring-1 ring-bloom-700/35 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:bg-bloom-700 hover:shadow-[0_18px_44px_-6px_rgba(95,92,70,0.5)] hover:ring-bloom-500/40"
+          >
+            <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12 p-6 sm:p-8 md:p-10 lg:p-12">
+              <div className="flex-1 text-center lg:text-left w-full min-w-0">
+                <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2">Plato del día</p>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-4 text-bloom-cream leading-tight">
+                  {platoDiaProduct ? (
+                    <span className="block sm:inline">{platoDiaProduct.name}</span>
+                  ) : (
+                    <>
+                      PLATO DEL <span className="text-bloom-gold">DÍA</span>
+                    </>
+                  )}
+                </h2>
+                <p className="text-bloom-cream/85 text-base md:text-lg font-medium mb-4 max-w-lg mx-auto lg:mx-0">
+                  {platoDiaProduct?.description?.trim()
+                    ? platoDiaProduct.description
+                    : "Consultá el menú online para ver el plato del día y el resto de la carta."}
+                </p>
+                {platoDiaProduct && (
+                  <p className="text-bloom-gold font-black text-2xl mb-8">{formatCurrency(platoDiaProduct.price)}</p>
+                )}
+                <Link
+                  href="/menu?cat=Plato%20del%20Día"
+                  className="inline-flex items-center gap-2 rounded-full bg-bloom-cream text-bloom-900 px-8 py-3.5 font-black text-sm uppercase shadow-md hover:bg-white hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  Pedir
+                </Link>
+              </div>
+              <div className="flex-1 flex justify-center w-full shrink-0 lg:max-w-[min(100%,420px)]">
+                <div className="relative w-full max-w-[320px] sm:max-w-[380px] lg:max-w-none aspect-square rounded-2xl overflow-hidden bg-bloom-800/30 shadow-inner ring-1 ring-black/10">
+                  <motion.div style={{ y: platoImageY }} className="absolute inset-0 will-change-transform">
+                    <Image
+                      src={platoDiaProduct?.image_url || U.promoPlato}
+                      alt={platoDiaProduct?.name ?? "Plato del día Bloom"}
+                      fill
+                      className="object-cover scale-[1.08]"
+                      sizes="(max-width: 1024px) 85vw, 420px"
+                    />
+                  </motion.div>
+                </div>
+              </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
