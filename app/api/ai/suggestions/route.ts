@@ -1,26 +1,36 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY || process.env.NEXT_PUBLIC_GROQ_API_KEY
-});
+function getGroqClient(): Groq | null {
+    const apiKey = process.env.GROQ_API_KEY || process.env.NEXT_PUBLIC_GROQ_API_KEY;
+    if (!apiKey?.trim()) return null;
+    return new Groq({ apiKey });
+}
+
+type OrderLine = { name: string };
+type MenuProduct = { name: string; price: number };
 
 export async function POST(request: NextRequest) {
     try {
-        const { currentOrder, availableProducts } = await request.json();
+        const groq = getGroqClient();
+        if (!groq) {
+            return NextResponse.json({ suggestions: [], message: 'GROQ_API_KEY no configurada' }, { status: 503 });
+        }
+
+        const { currentOrder, availableProducts } = await request.json() as {
+            currentOrder: OrderLine[];
+            availableProducts: MenuProduct[];
+        };
 
         // Valida que tengas productos disponibles
         if (!availableProducts || availableProducts.length === 0) {
             return NextResponse.json({ suggestions: [] });
         }
 
-        const orderItems = currentOrder.map((i: any) => i.name).join(', ');
+        const orderItems = (currentOrder || []).map((i) => i.name).join(', ');
 
         // Lista de productos disponibles para que la IA elija SOLO de ahí
-        const menuList = availableProducts
-            .map((p: any) => `${p.name} ($${p.price})`)
-            .join(', ');
+        const menuList = availableProducts.map((p) => `${p.name} ($${p.price})`).join(', ');
 
         const completion = await groq.chat.completions.create({
             messages: [
@@ -64,22 +74,21 @@ Responde EXACTAMENTE en este formato JSON:
         const cleanJson = response?.replace(/```json\n?|\n?```/g, '').trim();
         const parsed = JSON.parse(cleanJson || '{"suggestions":[]}');
 
+        type RawSuggestion = { item: string; reason?: string; price?: number };
+        const raw = (parsed.suggestions || []) as RawSuggestion[];
+
         // 🔒 VALIDACIÓN: Solo devuelve productos que existen en el menú
-        const validSuggestions = (parsed.suggestions || []).filter((s: any) => {
-            return availableProducts.some((p: any) =>
-                p.name.toLowerCase() === s.item.toLowerCase()
-            );
-        });
+        const validSuggestions = raw.filter((s) =>
+            availableProducts.some((p) => p.name.toLowerCase() === String(s.item).toLowerCase())
+        );
 
         // console.log('✅ [API] Valid suggestions from menu:', validSuggestions);
 
         return NextResponse.json({ suggestions: validSuggestions });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Error desconocido';
         console.error('❌ Error in API route:', error);
-        return NextResponse.json(
-            { error: error.message, suggestions: [] },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: message, suggestions: [] }, { status: 500 });
     }
 }

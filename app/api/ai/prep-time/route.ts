@@ -1,18 +1,22 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY || process.env.NEXT_PUBLIC_GROQ_API_KEY
-});
+function getGroqClient(): Groq | null {
+    const apiKey = process.env.GROQ_API_KEY || process.env.NEXT_PUBLIC_GROQ_API_KEY;
+    if (!apiKey?.trim()) return null;
+    return new Groq({ apiKey });
+}
 
 export async function POST(request: NextRequest) {
     try {
+        const groq = getGroqClient();
+        if (!groq) {
+            return NextResponse.json({ time: 15, message: 'GROQ_API_KEY no configurada' }, { status: 503 });
+        }
+
         const { items } = await request.json();
 
-        // console.log('🤖 API Route received items for prep time:', items);
-
-        const itemsList = items.map((i: any) => i.name).join(', ');
+        const itemsList = (items as { name: string }[]).map((i) => i.name).join(', ');
 
         const completion = await groq.chat.completions.create({
             messages: [
@@ -39,11 +43,9 @@ Estima el tiempo TOTAL de preparación en minutos. Solo el número.`
 
         return NextResponse.json({ time: isNaN(time) ? 15 : time });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Error desconocido';
         console.error('❌ Error in API route (Prep Time):', error);
-        return NextResponse.json(
-            { error: error.message, time: 15 },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: message, time: 15 }, { status: 500 });
     }
 }
