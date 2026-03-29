@@ -26,9 +26,7 @@ import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/Fo
 /** Video de fondo del hero: colocar el archivo en /public/videos/ (p. ej. hero-bloom.mp4). */
 const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
 
-/** Poster del hero (mientras carga el video). */
 const U = {
-  heroCafe: "/images/hero/hero-cafe-croissants.png",
   catPlatos: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=85",
   catPasteleria: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=85",
   catDesayunos: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=85",
@@ -334,15 +332,15 @@ export default function Home() {
       </header>
 
       <section className="relative min-h-[min(90vh,840px)] h-[min(90vh,840px)] w-full overflow-hidden bg-neutral-950">
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-neutral-950">
+          {/* Sin poster: evita el flash de la imagen estática antes del primer frame del video */}
           <video
-            className="absolute inset-0 h-full w-full object-cover object-center scale-[1.02]"
+            className="absolute inset-0 h-full w-full object-cover object-center scale-[1.02] bg-neutral-950"
             autoPlay
             muted
             loop
             playsInline
             preload="auto"
-            poster={U.heroCafe}
             aria-hidden
           >
             <source src={HERO_VIDEO_SRC} type="video/mp4" />
