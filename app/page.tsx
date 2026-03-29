@@ -50,11 +50,12 @@ const CONTACT = {
   hours: "Lun–Dom · 08:00–22:00",
 };
 
+/** Iconos ilustrativos: /public/images/categories/home/ */
 const categoryCards = [
-  { title: "Platos del día", hint: "Almuerzo y cena", img: U.catPlatos, href: "/menu?cat=Platos%20Diarios" },
-  { title: "Pastelería", hint: "Tortas y dulces", img: U.catPasteleria, href: "/menu?cat=Pastelería" },
-  { title: "Desayunos", hint: "Café y medialunas", img: U.catDesayunos, href: "/menu?cat=Desayunos" },
-  { title: "Jugos y licuados", hint: "Fríos y naturales", img: U.catJugos, href: "/menu?cat=Jugos" },
+  { title: "Cafetería", hint: "Cafés y más", img: "/images/categories/home/cafeteria.png", href: "/menu?cat=Cafetería" },
+  { title: "Comidas", hint: "Platos del día y más", img: "/images/categories/home/comidas.png", href: "/menu?cat=Platos%20Diarios" },
+  { title: "Bebidas", hint: "Frías y calientes", img: "/images/categories/home/bebidas.png", href: "/menu?cat=Bebidas" },
+  { title: "Pastelería", hint: "Dulces y panificados", img: "/images/categories/home/pasteleria.png", href: "/menu?cat=Pastelería" },
 ];
 
 const destacados = [
@@ -431,25 +432,25 @@ export default function Home() {
             <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2">Nuestra carta</p>
             <h2 className="text-3xl md:text-5xl font-black text-neutral-900 tracking-tight">Elegí por categoría</h2>
           </FadeIn>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 max-w-5xl mx-auto">
             {categoryCards.map((c, i) => (
               <FadeIn key={c.title} delay={i * 0.05}>
                 <Link
                   href={c.href}
-                  className="group flex h-full flex-col rounded-3xl bg-white border border-bloom-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden"
+                  className="group flex aspect-square flex-col rounded-2xl bg-white p-4 sm:p-5 shadow-[0_14px_44px_-16px_rgba(26,38,32,0.22)] ring-1 ring-neutral-900/[0.06] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_22px_56px_-14px_rgba(26,38,32,0.32)] hover:ring-bloom-300/50 outline-none focus-visible:ring-2 focus-visible:ring-bloom-500 focus-visible:ring-offset-2"
                 >
-                  <div className="px-4 pt-5 pb-2 text-center">
-                    <h3 className="text-neutral-900 text-base sm:text-lg font-black leading-tight">{c.title}</h3>
-                    <p className="text-neutral-500 text-xs sm:text-sm font-medium mt-1">{c.hint}</p>
-                  </div>
-                  <div className="relative aspect-[5/4] w-full bg-gradient-to-b from-bloom-50/90 to-white">
+                  <div className="relative min-h-0 flex-1 w-full">
                     <Image
                       src={c.img}
                       alt=""
                       fill
-                      className="object-contain object-bottom p-4 sm:p-5 group-hover:scale-[1.04] transition-transform duration-500"
-                      sizes="(max-width: 1024px) 50vw, 25vw"
+                      className="object-contain p-2 sm:p-3 transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 1024px) 45vw, 200px"
                     />
+                  </div>
+                  <div className="shrink-0 pt-3 text-center border-t border-bloom-100/90">
+                    <h3 className="text-neutral-900 text-sm sm:text-base font-black leading-tight tracking-tight">{c.title}</h3>
+                    <p className="text-neutral-500 text-[11px] sm:text-xs font-medium mt-1 leading-snug">{c.hint}</p>
                   </div>
                 </Link>
               </FadeIn>
