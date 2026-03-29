@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { MenuProductCard } from "./MenuProductCard";
 import { X, Send, MapPin, User, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +30,10 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
         });
     };
 
+    const removeFromCart = useCallback((productId: string) => {
+        setCart((prev) => prev.filter((item) => item.product.id !== productId));
+    }, []);
+
     const updateQuantity = (productId: string, delta: number) => {
         setCart(prev => {
             return prev.map(item => {
@@ -45,6 +49,16 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
     const total = useMemo(() => {
         return cart.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
     }, [cart]);
+
+    useEffect(() => {
+        const w = window as Window & {
+            __bloomPublicMenu?: { removeFromCart: (productId: string) => void };
+        };
+        w.__bloomPublicMenu = { removeFromCart };
+        return () => {
+            delete w.__bloomPublicMenu;
+        };
+    }, [removeFromCart]);
 
     const handleCheckout = () => {
         if (!address) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useMemo } from "react";
+import { useState, useEffect, Suspense, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
@@ -57,6 +57,8 @@ function PublicMenuPage() {
         : null;
     const [products, setProducts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
+    /** Número WhatsApp del local (app_settings); usado por checkout WA y futuro flujo Groq */
+    const [whatsappNumber, setWhatsappNumber] = useState("5491112345678");
     const [loading, setLoading] = useState(true);
 
     // Virtual categories
@@ -115,7 +117,7 @@ function PublicMenuPage() {
             const [{ data: cats }, { data: prods }, { data: settings }] = await Promise.all([
                 supabase.from("categories").select("id, name, sort_order").order("sort_order", { ascending: true }),
                 supabase.from("products").select(MENU_PRODUCT_SELECT).eq("active", true),
-                supabase.from("app_settings").select("plato_del_dia_id").eq("id", 1).single(),
+                supabase.from("app_settings").select("whatsapp, plato_del_dia_id").eq("id", 1).single(),
             ]);
             if (cats) {
                 const seen = new Set();
@@ -128,6 +130,7 @@ function PublicMenuPage() {
                 setCategories(unique);
             }
             if (prods) setProducts(prods);
+            if (settings?.whatsapp) setWhatsappNumber(settings.whatsapp);
             if (settings?.plato_del_dia_id && prods) {
                 const featured = prods.find((p: any) => p.id === settings.plato_del_dia_id);
                 if (featured) {
@@ -276,6 +279,31 @@ function PublicMenuPage() {
             setIsPaying(false);
         }
     };
+
+    /** Abre WhatsApp con el pedido (sin botón en UI por ahora; chat Groq u otros pueden llamar `window.__bloomMenuCheckout?.handleWhatsAppCheckout`). */
+    const handleWhatsAppCheckout = useCallback(() => {
+        if (cart.length === 0) return;
+        const itemsList = cart.map((i) => {
+            const vars = i.variants?.length ? ` [${i.variants.map((v: { name: string }) => v.name).join(", ")}]` : "";
+            const obs = i.observations ? ` _(${i.observations})_` : "";
+            return `• ${i.quantity}x ${i.name}${vars}${obs} (${formatCurrency(i.price * i.quantity)})`;
+        }).join("%0A");
+
+        const cartTotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        const mesaInfo = tableLabel ? `📍 *${tableLabel}*%0A%0A` : "";
+        const text = `Hola Bloom! 👋 Quiero pedir:%0A%0A${mesaInfo}${itemsList}%0A%0A*Total: ${formatCurrency(cartTotal)}*`;
+        window.open(`https://wa.me/${whatsappNumber}?text=${text}`, "_blank");
+    }, [cart, tableLabel, whatsappNumber]);
+
+    useEffect(() => {
+        const w = window as Window & {
+            __bloomMenuCheckout?: { whatsappNumber: string; handleWhatsAppCheckout: () => void };
+        };
+        w.__bloomMenuCheckout = { whatsappNumber, handleWhatsAppCheckout };
+        return () => {
+            delete w.__bloomMenuCheckout;
+        };
+    }, [whatsappNumber, handleWhatsAppCheckout]);
 
     // TABLE SELF-ORDER: send directly to kitchen and update table items
     const handleTableCheckout = async () => {
