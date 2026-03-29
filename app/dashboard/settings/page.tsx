@@ -25,12 +25,13 @@ export default function SettingsPage() {
     const [platoDiaProducts, setPlatoDiaProducts] = useState<any[]>([]);
     const [selectedPlatoDia, setSelectedPlatoDia] = useState<string | null>(null);
     const [savingPlatoDia, setSavingPlatoDia] = useState(false);
+    const [fachadaImageUrl, setFachadaImageUrl] = useState("");
 
     useEffect(() => {
         const loadSettings = async () => {
             const { data } = await supabase
                 .from("app_settings")
-                .select("mesas, barra, whatsapp, plato_del_dia_id")
+                .select("mesas, barra, whatsapp, plato_del_dia_id, fachada_image_url")
                 .eq("id", 1)
                 .single();
             if (data) {
@@ -38,6 +39,7 @@ export default function SettingsPage() {
                 setBarra(data.barra);
                 setPhone(data.whatsapp);
                 if (data.plato_del_dia_id) setSelectedPlatoDia(data.plato_del_dia_id);
+                if (typeof data.fachada_image_url === "string") setFachadaImageUrl(data.fachada_image_url);
             }
             const savedF1 = localStorage.getItem('bloom_f1_action') as ComparisonType | null;
             const savedF2 = localStorage.getItem('bloom_f2_action') as ComparisonType | null;
@@ -88,7 +90,13 @@ export default function SettingsPage() {
         setIsLoading(true);
         const { error } = await supabase
             .from("app_settings")
-            .update({ mesas, barra, whatsapp: phone, updated_at: new Date().toISOString() })
+            .update({
+                mesas,
+                barra,
+                whatsapp: phone,
+                fachada_image_url: fachadaImageUrl.trim() || null,
+                updated_at: new Date().toISOString(),
+            })
             .eq("id", 1);
         // Save F-key actions to localStorage
         localStorage.setItem('bloom_f1_action', f1Action);
@@ -154,6 +162,22 @@ export default function SettingsPage() {
                                 onChange={(e) => setPhone(e.target.value)}
                                 className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none focus:ring-2 ring-[#FFD60A]"
                             />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-black uppercase text-gray-400 mb-2">
+                                URL imagen fachada (sitio público)
+                            </label>
+                            <input
+                                type="url"
+                                value={fachadaImageUrl}
+                                onChange={(e) => setFachadaImageUrl(e.target.value)}
+                                placeholder="https://….supabase.co/storage/v1/object/public/site/…"
+                                className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none focus:ring-2 ring-[#FFD60A] text-sm"
+                            />
+                            <p className="text-[11px] text-gray-400 font-medium mt-1.5">
+                                Vacío = imagen local. Podés pegar la URL tras subir con{" "}
+                                <code className="text-gray-600">npm run upload:fachada</code>.
+                            </p>
                         </div>
                     </div>
                 </section>

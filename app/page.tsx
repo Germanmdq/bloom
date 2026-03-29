@@ -38,6 +38,8 @@ const U = {
   catDesayunos: "/images/categories/desayunos.png",
   catJugos: "/images/categories/jugos.png",
   promoPlato: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=85",
+  /** Fachada real — Bloom Coffee & More */
+  fachada: "/images/bloom-fachada.png",
   featLatte: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=800&q=85",
   featWrap: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=800&q=85",
   featEmpanadas: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=85",
@@ -203,6 +205,7 @@ export default function Home() {
   const [promoProducts, setPromoProducts] = useState<
     { id: string; name: string; description: string | null; price: number; image_url: string | null }[]
   >([]);
+  const [fachadaImageSrc, setFachadaImageSrc] = useState(U.fachada);
 
   const platoDelDiaRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress: platoScroll } = useScroll({
@@ -225,7 +228,13 @@ export default function Home() {
   useEffect(() => {
     const supabase = createClient();
     const load = async () => {
-      const { data: settings } = await supabase.from("app_settings").select("plato_del_dia_id").eq("id", 1).maybeSingle();
+      const { data: settings } = await supabase
+        .from("app_settings")
+        .select("plato_del_dia_id, fachada_image_url")
+        .eq("id", 1)
+        .maybeSingle();
+      const fachadaUrl = settings?.fachada_image_url?.trim();
+      if (fachadaUrl) setFachadaImageSrc(fachadaUrl);
       if (settings?.plato_del_dia_id) {
         const { data: p } = await supabase
           .from("products")
@@ -700,7 +709,14 @@ export default function Home() {
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
             <FadeIn className="lg:w-1/2 relative w-full max-w-lg mx-auto">
               <div className="relative aspect-square rounded-3xl overflow-hidden shadow-[0_28px_64px_-12px_rgba(0,0,0,0.55),0_12px_36px_-6px_rgba(0,0,0,0.35)] ring-1 ring-white/10">
-                <Image src={U.featLatte} alt="Bloom café" fill className="object-cover" />
+                <Image
+                  src={fachadaImageSrc}
+                  alt="Fachada Bloom Coffee & More, Mar del Plata"
+                  fill
+                  className="object-cover object-center"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
               </div>
             </FadeIn>
             <FadeIn className="lg:w-1/2">
