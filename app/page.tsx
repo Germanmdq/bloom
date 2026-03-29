@@ -9,6 +9,7 @@ import {
   ChefHat,
   Clock,
   Coffee,
+  Cookie,
   Leaf,
   LogIn,
   MapPin,
@@ -16,7 +17,10 @@ import {
   ShoppingBag,
   Star,
   Truck,
+  UtensilsCrossed,
+  Wine,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -50,12 +54,11 @@ const CONTACT = {
   hours: "Lun–Dom · 08:00–22:00",
 };
 
-/** Iconos ilustrativos: /public/images/categories/home/ */
-const categoryCards = [
-  { title: "Cafetería", hint: "Cafés y más", img: "/images/categories/home/cafeteria.png", href: "/menu?cat=Cafetería" },
-  { title: "Comidas", hint: "Platos del día y más", img: "/images/categories/home/comidas.png", href: "/menu?cat=Platos%20Diarios" },
-  { title: "Bebidas", hint: "Frías y calientes", img: "/images/categories/home/bebidas.png", href: "/menu?cat=Bebidas" },
-  { title: "Pastelería", hint: "Dulces y panificados", img: "/images/categories/home/pasteleria.png", href: "/menu?cat=Pastelería" },
+const categoryCards: { title: string; hint: string; href: string; Icon: LucideIcon }[] = [
+  { title: "Cafetería", hint: "Cafés y más", href: "/menu?cat=Cafetería", Icon: Coffee },
+  { title: "Comidas", hint: "Platos del día y más", href: "/menu?cat=Platos%20Diarios", Icon: UtensilsCrossed },
+  { title: "Bebidas", hint: "Frías y calientes", href: "/menu?cat=Bebidas", Icon: Wine },
+  { title: "Pastelería", hint: "Dulces y panificados", href: "/menu?cat=Pastelería", Icon: Cookie },
 ];
 
 const destacados = [
@@ -433,20 +436,18 @@ export default function Home() {
             <h2 className="text-3xl md:text-5xl font-black text-neutral-900 tracking-tight">Elegí por categoría</h2>
           </FadeIn>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 max-w-5xl mx-auto">
-            {categoryCards.map((c, i) => (
+            {categoryCards.map((c, i) => {
+              const Icon = c.Icon;
+              return (
               <FadeIn key={c.title} delay={i * 0.05}>
                 <Link
                   href={c.href}
-                  className="group flex aspect-square flex-col rounded-2xl bg-white p-4 sm:p-5 shadow-[0_14px_44px_-16px_rgba(26,38,32,0.22)] ring-1 ring-neutral-900/[0.06] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_22px_56px_-14px_rgba(26,38,32,0.32)] hover:ring-bloom-300/50 outline-none focus-visible:ring-2 focus-visible:ring-bloom-500 focus-visible:ring-offset-2"
+                  className="group flex aspect-square flex-col rounded-2xl bg-white p-4 sm:p-5 shadow-[0_14px_44px_-16px_rgba(26,38,32,0.18)] ring-1 ring-neutral-900/[0.05] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_22px_56px_-14px_rgba(26,38,32,0.28)] hover:ring-bloom-300/45 outline-none focus-visible:ring-2 focus-visible:ring-bloom-500 focus-visible:ring-offset-2"
                 >
-                  <div className="relative min-h-0 flex-1 w-full">
-                    <Image
-                      src={c.img}
-                      alt=""
-                      fill
-                      className="object-contain p-2 sm:p-3 transition-transform duration-300 group-hover:scale-105"
-                      sizes="(max-width: 1024px) 45vw, 200px"
-                    />
+                  <div className="flex min-h-0 flex-1 w-full items-center justify-center p-1">
+                    <div className="flex h-[76px] w-[76px] sm:h-[92px] sm:w-[92px] items-center justify-center rounded-2xl bg-gradient-to-br from-bloom-50 via-white to-bloom-100/90 text-english-700 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9)] ring-1 ring-bloom-200/70 transition-all duration-300 group-hover:scale-[1.04] group-hover:bg-gradient-to-br group-hover:from-bloom-100/80 group-hover:to-bloom-50 group-hover:text-bloom-800 group-hover:ring-bloom-300/80 group-hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.95),0_8px_24px_-8px_rgba(45,74,62,0.2)]">
+                      <Icon className="h-[46%] w-[46%] sm:h-[48%] sm:w-[48%]" strokeWidth={1.35} aria-hidden />
+                    </div>
                   </div>
                   <div className="shrink-0 pt-3 text-center border-t border-bloom-100/90">
                     <h3 className="text-neutral-900 text-sm sm:text-base font-black leading-tight tracking-tight">{c.title}</h3>
@@ -454,7 +455,8 @@ export default function Home() {
                   </div>
                 </Link>
               </FadeIn>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
