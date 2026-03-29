@@ -180,14 +180,12 @@ export default function StockPage() {
                                 <h3 className="text-xl font-black text-gray-900 mb-1">{item.name}</h3>
                                 <div className="flex items-baseline gap-1">
                                     <span className={`text-4xl font-black ${isLow ? 'text-red-500' : 'text-gray-900'}`}>
-                                        {/* @ts-ignore */}
-                                        {(['g', 'grams', 'gr', 'gramos'].includes(item.unit?.toLowerCase())
+                                        {(['g', 'grams', 'gr', 'gramos'].includes(String(item.unit ?? '').toLowerCase())
                                             ? Number(item.current_stock / 1000).toLocaleString()
                                             : Number(item.current_stock).toLocaleString())}
                                     </span>
                                     <span className="text-sm font-bold text-gray-400 uppercase">
-                                        {/* @ts-ignore */}
-                                        {['g', 'grams', 'gr', 'gramos'].includes(item.unit?.toLowerCase()) ? 'kg' : item.unit}
+                                        {['g', 'grams', 'gr', 'gramos'].includes(String(item.unit ?? '').toLowerCase()) ? 'kg' : item.unit}
                                     </span>
                                 </div>
                                 <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-400">

@@ -300,7 +300,9 @@ export function OrderList() {
                                                     <p className="text-xs text-gray-400 mt-0.5">{item.variants.join(", ")}</p>
                                                 )}
                                                 {item.observations && (
-                                                    <p className="text-xs text-gray-400 italic">"{item.observations}"</p>
+                                                    <p className="text-xs text-gray-400 italic">
+                                                        {`\u201C${item.observations}\u201D`}
+                                                    </p>
                                                 )}
                                             </div>
                                             <p className="text-sm font-black text-gray-700 shrink-0">${((item.price || 0) * (item.quantity || 1)).toLocaleString()}</p>

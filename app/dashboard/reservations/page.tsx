@@ -111,7 +111,9 @@ export default function ReservationsPage() {
                                 </div>
 
                                 {r.notes && (
-                                    <p className="text-xs text-gray-400 bg-gray-50 px-3 py-2 rounded-xl italic">"{r.notes}"</p>
+                                    <p className="text-xs text-gray-400 bg-gray-50 px-3 py-2 rounded-xl italic">
+                                        {`\u201C${r.notes}\u201D`}
+                                    </p>
                                 )}
 
                                 {r.status === "PENDING" && (

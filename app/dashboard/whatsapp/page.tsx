@@ -191,7 +191,7 @@ function OrderCard({
                     </div>
                 ) : (
                     <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600 italic">
-                        "{pedido.mensaje}"
+                        {`\u201C${pedido.mensaje}\u201D`}
                     </div>
                 )}
 
