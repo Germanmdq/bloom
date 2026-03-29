@@ -708,20 +708,18 @@ export default function Home() {
                 Sobre Bloom
               </p>
               <h2 className="text-3xl md:text-5xl font-black mb-6 leading-tight [text-shadow:0_4px_28px_rgba(0,0,0,0.35),0_2px_10px_rgba(0,0,0,0.25)]">
-                Donde la calidad se cruza con{" "}
-                <span className="text-bloom-gold [text-shadow:0_4px_24px_rgba(0,0,0,0.4)]">un buen momento.</span>
+                Cafetería familiar,{" "}
+                <span className="text-bloom-gold [text-shadow:0_4px_24px_rgba(0,0,0,0.4)]">hecha con el corazón</span>
               </h2>
-              <p className="text-neutral-400 text-lg leading-relaxed mb-8">
-                Café de especialidad, pastelería artesanal, platos del día y opciones para cada hora. Un espacio en Mar del Plata pensado para compartir, trabajar tranquilo o pedir y llevar.
+              <p className="text-neutral-400 text-lg leading-relaxed mb-5">
+                Bloom es una cafetería familiar creada por Bárbara y Agustín como un proyecto lleno de amor, desafío y vocación. Somos un
+                espacio cálido y de encuentro, donde ofrecemos cafés clásicos, sabores tradicionales y comidas caseras, elaboradas con
+                ingredientes de calidad y ese toque hogareño que te hace sentir como en casa.
               </p>
-              <ul className="space-y-4 mb-10">
-                {["Ambiente cuidado y atención cercana", "Menú amplio: desayuno, almuerzo y merienda"].map((x) => (
-                  <li key={x} className="flex items-center gap-3 font-bold">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-bloom-gold text-neutral-900 text-sm">✓</span>
-                    {x}
-                  </li>
-                ))}
-              </ul>
+              <p className="text-neutral-400 text-lg leading-relaxed mb-10">
+                Nuestros hijos forman parte de nuestro día a día, y esa esencia familiar se refleja en el ambiente, en el equipo y en la forma
+                en que recibimos a cada cliente. En Bloom buscamos que todos se sientan bienvenidos, cómodos y felices de volver.
+              </p>
               <Link
                 href="/about"
                 className="inline-flex items-center gap-2 rounded-full bg-bloom-gold px-8 py-3.5 font-black text-neutral-900 text-sm uppercase hover:bg-bloom-gold-dark transition-colors"
