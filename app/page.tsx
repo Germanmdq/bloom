@@ -442,16 +442,18 @@ export default function Home() {
               <FadeIn key={c.title} delay={i * 0.05}>
                 <Link
                   href={c.href}
-                  className="group flex aspect-square flex-col rounded-2xl bg-white p-4 sm:p-5 shadow-[0_14px_44px_-16px_rgba(26,38,32,0.18)] ring-1 ring-neutral-900/[0.05] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_22px_56px_-14px_rgba(26,38,32,0.28)] hover:ring-bloom-300/45 outline-none focus-visible:ring-2 focus-visible:ring-bloom-500 focus-visible:ring-offset-2"
+                  className="group flex aspect-square flex-col rounded-2xl bg-bloom-800 p-4 sm:p-5 text-bloom-cream shadow-[0_14px_40px_-12px_rgba(61,59,47,0.45)] ring-1 ring-bloom-900/40 transition-all duration-300 hover:-translate-y-1.5 hover:bg-bloom-700 hover:shadow-[0_22px_50px_-10px_rgba(61,59,47,0.55)] hover:ring-bloom-gold/25 outline-none focus-visible:ring-2 focus-visible:ring-bloom-cream focus-visible:ring-offset-2 focus-visible:ring-offset-bloom-page"
                 >
-                  <div className="flex min-h-0 flex-1 w-full items-center justify-center p-1">
-                    <div className="flex h-[76px] w-[76px] sm:h-[92px] sm:w-[92px] items-center justify-center rounded-2xl bg-gradient-to-br from-bloom-50 via-white to-bloom-100/90 text-english-700 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9)] ring-1 ring-bloom-200/70 transition-all duration-300 group-hover:scale-[1.04] group-hover:bg-gradient-to-br group-hover:from-bloom-100/80 group-hover:to-bloom-50 group-hover:text-bloom-800 group-hover:ring-bloom-300/80 group-hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.95),0_8px_24px_-8px_rgba(45,74,62,0.2)]">
-                      <Icon className="h-[46%] w-[46%] sm:h-[48%] sm:w-[48%]" strokeWidth={1.35} aria-hidden />
-                    </div>
+                  <div className="flex min-h-0 flex-1 w-full items-center justify-center">
+                    <Icon
+                      className="h-14 w-14 sm:h-[4.25rem] sm:w-[4.25rem] text-white transition-transform duration-300 group-hover:scale-105"
+                      strokeWidth={1.35}
+                      aria-hidden
+                    />
                   </div>
-                  <div className="shrink-0 pt-3 text-center border-t border-bloom-100/90">
-                    <h3 className="text-neutral-900 text-sm sm:text-base font-black leading-tight tracking-tight">{c.title}</h3>
-                    <p className="text-neutral-500 text-[11px] sm:text-xs font-medium mt-1 leading-snug">{c.hint}</p>
+                  <div className="shrink-0 pt-3 text-center border-t border-bloom-cream/15">
+                    <h3 className="text-bloom-cream text-sm sm:text-base font-black leading-tight tracking-tight">{c.title}</h3>
+                    <p className="text-bloom-cream/75 text-[11px] sm:text-xs font-medium mt-1 leading-snug">{c.hint}</p>
                   </div>
                 </Link>
               </FadeIn>
