@@ -23,7 +23,10 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 
-/** Hero: fotos propias en /public/images/hero (café primero, luego platos). */
+/** Video de fondo del hero: colocar el archivo en /public/videos/ (p. ej. hero-bloom.mp4). */
+const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
+
+/** Hero: fotos propias en /public/images/hero (café primero, luego platos). Fallback si el video no carga. */
 const U = {
   heroCafe: "/images/hero/hero-cafe-croissants.png",
   heroFood1: "/images/hero/hero-tostadas.png",
@@ -219,6 +222,7 @@ export default function Home() {
   const [showLogin, setShowLogin] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [slide, setSlide] = useState(0);
+  const [heroVideoFailed, setHeroVideoFailed] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [platoDiaProduct, setPlatoDiaProduct] = useState<{
     id: string;
@@ -363,30 +367,50 @@ export default function Home() {
       </header>
 
       <section className="relative min-h-[min(90vh,840px)] h-[min(90vh,840px)] w-full overflow-hidden bg-neutral-950">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={slide}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.55 }}
-            className="absolute inset-0"
-          >
-            <Image
-              src={heroSlides[slide].bg}
-              alt=""
-              fill
-              className="object-cover object-center scale-[1.02]"
-              priority={slide === 0}
-              sizes="100vw"
-              quality={88}
-            />
-            {/* Degradados más suaves: se ve la foto, el texto sigue legible */}
+        {heroVideoFailed ? (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={slide}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.55 }}
+              className="absolute inset-0"
+            >
+              <Image
+                src={heroSlides[slide].bg}
+                alt=""
+                fill
+                className="object-cover object-center scale-[1.02]"
+                priority={slide === 0}
+                sizes="100vw"
+                quality={88}
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-english-950/75 via-black/35 to-transparent sm:from-english-950/65" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
+              <div className="absolute inset-0 ring-1 ring-inset ring-white/[0.06]" aria-hidden />
+            </motion.div>
+          </AnimatePresence>
+        ) : (
+          <div className="absolute inset-0">
+            <video
+              className="absolute inset-0 h-full w-full object-cover object-center scale-[1.02]"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              poster={U.heroCafe}
+              aria-hidden
+              onError={() => setHeroVideoFailed(true)}
+            >
+              <source src={HERO_VIDEO_SRC} type="video/mp4" />
+            </video>
             <div className="absolute inset-0 bg-gradient-to-br from-english-950/75 via-black/35 to-transparent sm:from-english-950/65" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
             <div className="absolute inset-0 ring-1 ring-inset ring-white/[0.06]" aria-hidden />
-          </motion.div>
-        </AnimatePresence>
+          </div>
+        )}
 
         <div className="relative z-10 h-full flex flex-col justify-center container mx-auto px-4 md:px-6 pb-16 sm:pb-20">
           <motion.div
