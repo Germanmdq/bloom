@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { CalendarDays, Clock, Users, Phone, User, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { CalendarDays, Clock, Users, Phone, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 
 type Reservation = {
     id: string;

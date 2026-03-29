@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Order } from "@/lib/types";
 import * as XLSX from "xlsx";
-import { Loader2, Calendar, X, Filter, Download, Bike, Store, Building2, UtensilsCrossed } from "lucide-react";
+import { Loader2, X, Filter, Download, Bike, Store, Building2, UtensilsCrossed } from "lucide-react";
 import { getPaymentIcon, getPaymentLabel } from "@/lib/utils/payment";
 import { motion, AnimatePresence } from "framer-motion";
 

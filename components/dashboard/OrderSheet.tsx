@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Search, Trash2, CreditCard, Check, Loader2, X, ChevronLeft, LayoutGrid, ListChecks, Users, Coffee, Package } from 'lucide-react';
-import Link from 'next/link';
+import { Search, Trash2, CreditCard, Check, Loader2, X, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket } from "@/lib/hooks/use-pos-data";
@@ -35,7 +34,7 @@ type OrderSheetProps = {
 export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: OrderSheetProps) {
     const {
         cart, addToCart, removeFromCart, clearCart,
-        getTotal, paymentMethod, setPaymentMethod, notes, setNotes,
+        paymentMethod, setPaymentMethod, notes, setNotes,
         discount, setDiscount
     } = useOrderStore();
 
@@ -50,14 +49,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const finishingRef = useRef(false);
     const [selectedWaiter, setSelectedWaiter] = useState<string>("");
     const [invoiceType, setInvoiceType] = useState('Factura C');
-    const [clientName, setClientName] = useState('Consumidor Final');
+    const [, setClientName] = useState('Consumidor Final');
     const [isFinishing, setIsFinishing] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [extraTotal] = useState(0);
     const [productSearch, setProductSearch] = useState("");
     const [waiters, setWaiters] = useState<Array<{ id: string; full_name: string }>>([]);
-    const [orderType, setOrderType] = useState<'LOCAL' | 'DELIVERY'>('LOCAL');
+    const [, setOrderType] = useState<'LOCAL' | 'DELIVERY'>('LOCAL');
     const [webOrders, setWebOrders] = useState<any[]>([]);
     const [currentWebOrderId, setCurrentWebOrderId] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);

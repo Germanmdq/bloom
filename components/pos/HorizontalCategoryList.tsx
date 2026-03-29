@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface HorizontalCategoryListProps {

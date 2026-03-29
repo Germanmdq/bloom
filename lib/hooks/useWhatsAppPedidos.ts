@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { createClient } from '../supabase/client';
 import { useWhatsAppStore, WhatsAppOrder, WhatsAppOrderStatus } from '../store/whatsappStore';
 import { toast } from 'sonner';
@@ -8,7 +8,6 @@ const NOTIFICATION_SOUND_URL = '/notification.mp3'; // Ensure you add a sound fi
 
 export function useWhatsAppPedidos() {
     const supabase = createClient();
-    const queryClient = useQueryClient();
     const { setPedidos, addPedido, updatePedido, pedidos } = useWhatsAppStore();
 
     // --- Fetch Initial Data ---

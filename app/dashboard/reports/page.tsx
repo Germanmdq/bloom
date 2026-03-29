@@ -23,7 +23,6 @@ export default function ReportsPage() {
 
     async function fetchReports() {
         setLoading(true);
-        setError(null);
 
         // Calculate the date threshold
         const now = new Date();
@@ -51,8 +50,6 @@ export default function ReportsPage() {
         }
         setLoading(false);
     }
-
-    const [error, setError] = useState<string | null>(null);
 
     const cashPercentage = stats.total > 0 ? (stats.cash / stats.total) * 100 : 0;
     const cardPercentage = stats.total > 0 ? (stats.card / stats.total) * 100 : 0;

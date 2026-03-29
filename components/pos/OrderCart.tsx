@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Trash2, Plus, Minus, Printer, DollarSign, Bike, ShoppingBag, Store, Clock, User } from 'lucide-react';
+import React from 'react';
+import { Trash2, Plus, Minus, Printer, DollarSign, Bike, ShoppingBag, Store } from 'lucide-react';
 
 interface CartItem {
     id: string; // Product ID

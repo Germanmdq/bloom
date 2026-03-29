@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useKitchenTickets } from "@/lib/hooks/use-pos-data";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, CheckCircle2, ChevronRight, CookingPot, Timer, MessageSquare, Loader2, Sparkles } from "lucide-react";
+import { Clock, CheckCircle2, ChevronRight, CookingPot, Timer, MessageSquare, Loader2 } from "lucide-react";
 
 type KitchenTicket = {
     id: string;

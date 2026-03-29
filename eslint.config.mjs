@@ -11,8 +11,16 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-explicit-any": "off",
       // Efectos con [] intencional; incluir deps en cada caso cuesta ruido masivo
       "react-hooks/exhaustive-deps": "off",
-      // Revisar imports/vars con el IDE; reactivar cuando se afine el POS/menú
-      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          args: "after-used",
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrors: "none",
+          ignoreRestSiblings: true,
+        },
+      ],
       "@typescript-eslint/no-unused-expressions": "off",
       "@next/next/no-img-element": "off",
       // React 19 / plugin estricto: patrones comunes (init en mount, fetch en effect) son válidos

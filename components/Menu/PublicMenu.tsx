@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { MenuProductCard } from "./MenuProductCard";
-import { ShoppingBag, X, Send, MapPin, User, ChevronRight } from "lucide-react";
+import { X, Send, MapPin, User, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type CartItem = {
@@ -28,10 +28,6 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
             }
             return [...prev, { product, quantity: 1 }];
         });
-    };
-
-    const removeFromCart = (productId: string) => {
-        setCart(prev => prev.filter(item => item.product.id !== productId));
     };
 
     const updateQuantity = (productId: string, delta: number) => {

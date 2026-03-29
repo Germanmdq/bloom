@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, ListChecks, Coffee, Settings, CalendarDays, MoreHorizontal } from "lucide-react";
+import { LayoutGrid, ListChecks, Settings, CalendarDays, MoreHorizontal } from "lucide-react";
 
 const mainLinks = [
     { href: "/dashboard/tables",       label: "Mesas",    icon: LayoutGrid },

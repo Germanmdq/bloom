@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { motion } from "framer-motion";
-import { Tag, DollarSign, Image as ImageIcon, Check, X } from "lucide-react";
+import { Tag, DollarSign, Image as ImageIcon, Check } from "lucide-react";
 
 interface Category {
     id: string;

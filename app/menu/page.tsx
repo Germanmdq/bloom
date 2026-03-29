@@ -57,7 +57,6 @@ function PublicMenuPage() {
         : null;
     const [products, setProducts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
-    const [whatsappNumber, setWhatsappNumber] = useState("5491112345678");
     const [loading, setLoading] = useState(true);
 
     // Virtual categories
@@ -110,19 +109,13 @@ function PublicMenuPage() {
         };
     }, [mobileFiltersOpen]);
 
-    // Helpers for Variant Logic (Duplicated from POS/page for simplicity here)
-    const HAS_VARIANTS = (p: any) => {
-        const name = p.name.toLowerCase();
-        return name.includes('milanesa') || name.includes('hamburguesa') || name.includes('pizza') || name.includes('lomo') || name.includes('empanada') || name.includes('pasta') || name.includes('sorrentinos') || name.includes('ravioles') || name.includes('noquis') || name.includes('ñoquis') || name.includes('pechuga') || name.includes('patamuslo') || name.includes('filet') || name.includes('bife') || name.includes('guarnición') || name.includes('guarnicion');
-    };
-
     // FETCH DATA — deps fijas [] (evita warning “dependency array changed size” con HMR/hidratación)
     useEffect(() => {
         const fetchMenu = async () => {
             const [{ data: cats }, { data: prods }, { data: settings }] = await Promise.all([
                 supabase.from("categories").select("id, name, sort_order").order("sort_order", { ascending: true }),
                 supabase.from("products").select(MENU_PRODUCT_SELECT).eq("active", true),
-                supabase.from("app_settings").select("whatsapp, plato_del_dia_id").eq("id", 1).single(),
+                supabase.from("app_settings").select("plato_del_dia_id").eq("id", 1).single(),
             ]);
             if (cats) {
                 const seen = new Set();
@@ -135,7 +128,6 @@ function PublicMenuPage() {
                 setCategories(unique);
             }
             if (prods) setProducts(prods);
-            if (settings?.whatsapp) setWhatsappNumber(settings.whatsapp);
             if (settings?.plato_del_dia_id && prods) {
                 const featured = prods.find((p: any) => p.id === settings.plato_del_dia_id);
                 if (featured) {
@@ -283,20 +275,6 @@ function PublicMenuPage() {
         } finally {
             setIsPaying(false);
         }
-    };
-
-    const handleWhatsAppCheckout = () => {
-        if (cart.length === 0) return;
-        const itemsList = cart.map(i => {
-            const vars = i.variants?.length ? ` [${i.variants.map((v: any) => v.name).join(', ')}]` : '';
-            const obs = i.observations ? ` _(${i.observations})_` : '';
-            return `• ${i.quantity}x ${i.name}${vars}${obs} (${formatCurrency(i.price * i.quantity)})`;
-        }).join('%0A');
-
-        const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-        const mesaInfo = tableLabel ? `📍 *${tableLabel}*%0A%0A` : '';
-        const text = `Hola Bloom! 👋 Quiero pedir:%0A%0A${mesaInfo}${itemsList}%0A%0A*Total: ${formatCurrency(cartTotal)}*`;
-        window.open(`https://wa.me/${whatsappNumber}?text=${text}`, '_blank');
     };
 
     // TABLE SELF-ORDER: send directly to kitchen and update table items
@@ -1223,27 +1201,4 @@ export default function MenuPage() {
             <PublicMenuPage />
         </Suspense>
     );
-}
-
-// Helper for Mock Images
-function getCategoryImage(name: string) {
-    const n = name.toLowerCase();
-    if (n.includes('milanesa')) return "/images/categories/milanesas.png";
-    if (n.includes('pasta') || n.includes('sorrentino') || n.includes('raviole') || n.includes('ñoqui') || n.includes('noqui')) return "/images/categories/pastas.png";
-    if (n.includes('pizza')) return "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=800&auto=format&fit=crop";
-    if (n.includes('hamburguesa') || n.includes('burger')) return "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800&auto=format&fit=crop";
-    if (n.includes('postre')) return "/images/categories/postres.png";
-    if (n.includes('bebida')) return "/images/categories/bebidas.png";
-    if (n.includes('ensalada')) return "/images/categories/ensaladas.png";
-    if (n.includes('tortilla')) return "/images/categories/tortilla.png";
-    if (n.includes('empanada')) return "/images/categories/empanadas.png";
-    if (n.includes('café') || n.includes('cafe') || n.includes('cafetería') || n.includes('cafeteria')) return "/images/categories/cafeteria.png";
-    if (n.includes('desayuno') || n.includes('merienda')) return "/images/categories/desayunos.png";
-    if (n.includes('promo')) return "/images/categories/promociones.png";
-    if (n.includes('jugo') || n.includes('licuado')) return "/images/categories/jugos.png";
-    if (n.includes('panif') || n.includes('pan')) return "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=800&auto=format&fit=crop";
-    if (n.includes('pastel') || n.includes('torta') || n.includes('alfajor')) return "/images/categories/pasteleria.png";
-    if (n.includes('wrap')) return "/images/categories/wraps.png";
-    if (n.includes('plato') || n.includes('almuerzo') || n.includes('cena') || n.includes('diario')) return "/images/categories/platos-diarios.png";
-    return "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800&auto=format&fit=crop";
 }

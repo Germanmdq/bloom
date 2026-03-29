@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Save, Store, Sliders, Database, Printer, Shield, Download, LayoutGrid, Keyboard, Star, Check } from "lucide-react";
 import type { ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
-import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 

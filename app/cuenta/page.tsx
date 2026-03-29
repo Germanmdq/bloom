@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { Phone, Star, Gift, ArrowRight, User, ChevronLeft, Trophy, TrendingUp, ShoppingBag, X } from "lucide-react";
+import { Phone, Star, Gift, ArrowRight, User, ChevronLeft, Trophy, TrendingUp, ShoppingBag } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 
 const STORAGE_KEY = 'bloom_customer';

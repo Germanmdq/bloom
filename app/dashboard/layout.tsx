@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { MobileBottomNav } from "@/components/dashboard/MobileBottomNav";
-import { Lock, Delete, Menu } from "lucide-react";
+import { Lock, Delete } from "lucide-react";
 import { SalesComparisonPanel, ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import "./dashboard.css";
 

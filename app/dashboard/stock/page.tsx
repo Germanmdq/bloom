@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useStock, useInventoryMovements, useCreateMovement, useProducts } from "@/lib/hooks/use-pos-data";
-import { Loader2, Plus, ArrowDown, ArrowUp, AlertTriangle, History, Package, Search } from "lucide-react";
+import { Loader2, Plus, ArrowDown, AlertTriangle, Package, Search } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function StockPage() {
     const { data: stock = [], isLoading: stockLoading } = useStock();
-    const { data: movements = [], isLoading: movLoading } = useInventoryMovements();
+    const { data: movements = [] } = useInventoryMovements();
     const { data: rawProducts = [] } = useProducts(); // We need to filter for raw only locally or use another hook if products list is huge
     const createMovement = useCreateMovement();
 
@@ -53,7 +53,6 @@ export default function StockPage() {
         if (!selectedProduct || !qty) return;
 
         const quantity = parseFloat(qty);
-        const finalQty = type === 'purchase' ? quantity : -quantity; // Waste/Adjustment usually negative (out)
 
         // If adjustment is positive (found extra stock), allow it. 
         // But simplified logic: Purchase (+), Waste (-), Adjustment (+/- user decides? Let's assume adjustment overwrites... NO, ledger means delta.)

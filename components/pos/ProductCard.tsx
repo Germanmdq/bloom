@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Plus, Store, ShoppingBag } from 'lucide-react';
+import { Plus, ShoppingBag } from 'lucide-react';
 
 interface ProductCardProps {
     product: {

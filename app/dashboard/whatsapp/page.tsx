@@ -6,12 +6,9 @@ import { WhatsAppOrder, WhatsAppOrderStatus } from '@/lib/store/whatsappStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     MessageCircle,
-    MapPin,
     ShoppingBag,
     Clock,
-    CheckCircle,
     XCircle,
-    ChefHat,
     Truck,
     AlertCircle
 } from 'lucide-react';

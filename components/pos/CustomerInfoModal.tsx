@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MapPin, Phone, User, Monitor } from 'lucide-react';
+import { X, MapPin, Phone, User } from 'lucide-react';
 
 interface CustomerInfo {
     name: string;

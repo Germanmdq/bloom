@@ -147,7 +147,7 @@ export default function TablesPage() {
         }
     };
 
-    const handleCreateOrder = async (customerData: any) => {
+    const handleCreateOrder = async (_customerData: unknown) => {
         if (!selectedTable) return;
         try {
             await supabase.from('salon_tables').upsert({
@@ -263,7 +263,6 @@ export default function TablesPage() {
                     sideTableId={sideTableId}
                     onTableClick={handleTableClick}
                     onCloseSide={() => setSideTableId(null)}
-                    onNavigate={(id) => router.push(`/dashboard/tables/${id}`)}
                 />
             )}
 
@@ -416,12 +415,11 @@ function MiniTableCard({ table, onClick }: { table: any; onClick: (id: number) =
 }
 
 // ─── LIST VIEW ────────────────────────────────────────────────────
-function ListView({ tables, sideTableId, onTableClick, onCloseSide, onNavigate }: {
+function ListView({ tables, sideTableId, onTableClick, onCloseSide }: {
     tables: any[];
     sideTableId: number | null;
     onTableClick: (id: number) => void;
     onCloseSide: () => void;
-    onNavigate: (id: number) => void;
 }) {
     const getType = (id: number) => id >= 100 ? 'Retiro' : id >= 40 ? 'Delivery' : 'Local';
     const getTime = (t: any) => {
