@@ -9,6 +9,7 @@ type ConfirmBody = {
     price: number;
     quantity: number;
     observations?: string;
+    variants?: { name: string }[];
   }>;
   customer_name: string;
   customer_phone: string;
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
       price: Number(i.price),
       quantity: Number(i.quantity),
       ...(i.observations?.trim() ? { observations: i.observations.trim() } : {}),
+      ...(i.variants?.length ? { variants: i.variants } : {}),
     }));
 
     const url = getSupabaseUrl();
