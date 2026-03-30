@@ -69,6 +69,7 @@ const CHANNEL_LABEL: Record<OrderChannel, string> = {
 
 export function OrderList() {
     const [orders, setOrders] = useState<Order[]>([]);
+    const [fetchError, setFetchError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>('day');
     const [selectedGroup, setSelectedGroup] = useState<GroupedData | null>(null);
@@ -81,12 +82,27 @@ export function OrderList() {
 
     async function fetchOrders() {
         setLoading(true);
+        setFetchError(null);
         try {
-            const res = await fetch('/api/orders/list');
+            const res = await fetch("/api/orders/list", { credentials: "include" });
             const result = await res.json();
-            if (res.ok && result.data) setOrders(result.data as Order[]);
+            if (!res.ok) {
+                const msg =
+                    typeof result.error === "string"
+                        ? result.error
+                        : res.status === 401
+                          ? "Sesión inválida o no sos el admin del panel."
+                          : `No se pudieron cargar los pedidos (${res.status}).`;
+                setOrders([]);
+                setFetchError(msg);
+                console.error("[OrderList] /api/orders/list", res.status, result);
+                return;
+            }
+            setOrders(Array.isArray(result.data) ? (result.data as Order[]) : []);
         } catch (e) {
             console.error(e);
+            setOrders([]);
+            setFetchError("Error de red al cargar pedidos.");
         } finally {
             setLoading(false);
         }
@@ -237,6 +253,22 @@ export function OrderList() {
             <div className="flex flex-col items-center justify-center py-40 gap-4">
                 <Loader2 className="animate-spin text-[#FFD60A]" size={64} />
                 <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-xs">Cargando historial...</p>
+            </div>
+        );
+    }
+
+    if (fetchError) {
+        return (
+            <div className="rounded-3xl border-2 border-red-200 bg-red-50/90 p-6 space-y-3">
+                <p className="font-black text-red-900">No se pudo cargar el historial</p>
+                <p className="text-sm text-red-800 leading-relaxed">{fetchError}</p>
+                <button
+                    type="button"
+                    onClick={() => void fetchOrders()}
+                    className="rounded-xl bg-red-900 text-white px-4 py-2 text-sm font-bold hover:bg-red-800"
+                >
+                    Reintentar
+                </button>
             </div>
         );
     }

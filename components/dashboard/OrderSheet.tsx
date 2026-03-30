@@ -72,13 +72,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const refreshData = async () => {
         if (isWebTable) {
             try {
-                const resp = await fetch('/api/orders/list');
+                const resp = await fetch("/api/orders/list", { credentials: "include" });
                 const res = await resp.json();
-                if (res.data) {
+                if (!resp.ok) {
+                    console.error("[OrderSheet] /api/orders/list", resp.status, res);
+                    setWebOrders([]);
+                    return;
+                }
+                if (Array.isArray(res.data)) {
                     setWebOrders(res.data.filter((o: any) => orderMatchesWebVirtualTable(o, tableId)));
                 }
             } catch (e) {
                 console.error("Error loading web orders:", e);
+                setWebOrders([]);
             }
         } else {
             // Estado de mesa + tickets QR (mismo pedido: la API /api/table-order intenta volcar el QR en salon_tables.items;
@@ -155,9 +161,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
             }
 
             if (webOrderId) {
-                const resp = await fetch('/api/orders/list');
+                const resp = await fetch("/api/orders/list", { credentials: "include" });
                 const res = await resp.json();
-                if (res.data) {
+                if (resp.ok && Array.isArray(res.data)) {
                     const order = res.data.find((o: any) => o.id === webOrderId);
                     if (order) handleSelectWebOrder(order);
                 }

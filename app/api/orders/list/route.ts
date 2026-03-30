@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { isAdminEmail } from "@/lib/auth/admin";
-import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 /**
  * Lista pedidos para el dashboard.
- * Identidad: sesión vía cookies (mismo admin que /dashboard). Datos: service role para saltar RLS.
- * Sin `SUPABASE_SERVICE_ROLE_KEY`, cae en anon (comportamiento anterior sujeto a RLS).
+ * Identidad: sesión admin (mismo criterio que /dashboard). Datos: obligatorio service role (RLS no aplica a anon aquí).
  */
 export async function GET() {
   try {
@@ -20,15 +18,25 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-    const supabase = createSupabaseJsClient(getSupabaseUrl(), serviceKey ?? getSupabaseAnonKey(), {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    let supabase;
+    try {
+      supabase = createServiceRoleClient();
+    } catch {
+      return NextResponse.json(
+        {
+          error:
+            "Falta SUPABASE_SERVICE_ROLE_KEY en el servidor (Vercel / env). Sin ella no se pueden listar pedidos.",
+          code: "MISSING_SERVICE_ROLE_KEY",
+        },
+        { status: 503 }
+      );
+    }
 
     const { data, error } = await supabase
       .from("orders")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(3000);
 
     if (error) {
       console.error("Supabase API Error:", error);
