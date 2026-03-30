@@ -6,6 +6,13 @@ import { MessageCircle, X, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
+export type ProductOptionGroup = {
+  name: string;
+  min: number;
+  max: number;
+  options: string[];
+};
+
 type ProductRow = {
   id: string;
   name: string;
@@ -14,8 +21,10 @@ type ProductRow = {
   category_id: string | null;
   /** Nombre de categoría (join) para sugerencias post-encargo */
   category_name?: string | null;
-  /** Sabores/opciones desde `products.options.variants` (jsonb). */
+  /** Lista plana desde `products.options.variants` (ej. gaseosas). */
   variants?: string[];
+  /** Grupos desde `products.options.groups` (platos, pastas, etc.). */
+  optionGroups?: ProductOptionGroup[];
 };
 
 type CartLine = {
@@ -25,10 +34,15 @@ type CartLine = {
   price: number;
   quantity: number;
   observations: string;
-  /** Opción elegida (bebida); va al pedido como variants en items. */
+  /** Detalle para el pedido / ticket */
   variants?: { name: string }[];
-  /** Si el producto tenía lista de variantes, se puede volver a encargar otro sabor. */
+  /** Producto tenía opciones configurables (plano o grupos). */
   productHadVariants?: boolean;
+};
+
+export type VariantChoice = {
+  summaryLabel: string;
+  variants: { name: string }[];
 };
 
 function drinkVariantsFromOptions(options: unknown): string[] {
@@ -36,6 +50,45 @@ function drinkVariantsFromOptions(options: unknown): string[] {
   const v = (options as { variants?: unknown }).variants;
   if (!Array.isArray(v)) return [];
   return v.filter((x): x is string => typeof x === "string" && x.trim().length > 0).map((s) => s.trim());
+}
+
+function optionGroupsFromJson(options: unknown): ProductOptionGroup[] {
+  if (options == null || typeof options !== "object" || Array.isArray(options)) return [];
+  const raw = (options as { groups?: unknown }).groups;
+  if (!Array.isArray(raw)) return [];
+  const out: ProductOptionGroup[] = [];
+  for (const item of raw) {
+    if (item == null || typeof item !== "object") continue;
+    const name = typeof (item as { name?: unknown }).name === "string" ? (item as { name: string }).name.trim() : "";
+    const min = Number((item as { min?: unknown }).min);
+    const max = Number((item as { max?: unknown }).max);
+    const opts = (item as { options?: unknown }).options;
+    const optionsList = Array.isArray(opts)
+      ? opts
+          .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+          .map((s) => s.trim())
+      : [];
+    if (!name || !optionsList.length) continue;
+    out.push({
+      name,
+      min: Number.isFinite(min) ? min : 0,
+      max: Number.isFinite(max) ? max : 1,
+      options: optionsList,
+    });
+  }
+  return out;
+}
+
+function parseProductOptionsRow(options: unknown): Pick<ProductRow, "variants" | "optionGroups"> {
+  const groups = optionGroupsFromJson(options);
+  if (groups.length > 0) return { optionGroups: groups };
+  const flat = drinkVariantsFromOptions(options);
+  if (flat.length > 0) return { variants: flat };
+  return {};
+}
+
+function productHasConfigurableOptions(p: ProductRow): boolean {
+  return (p.variants?.length ?? 0) > 0 || (p.optionGroups?.length ?? 0) > 0;
 }
 
 export type OpenCategoryOpts = {
@@ -99,6 +152,36 @@ type ChatContext = {
   productIds: string[] | null;
 };
 
+function buildChoiceFromGroups(
+  groups: ProductOptionGroup[],
+  single: Record<string, string>,
+  multi: Record<string, string[]>
+): VariantChoice | null {
+  const detail: { name: string }[] = [];
+  const summaryParts: string[] = [];
+  for (const g of groups) {
+    if (g.max <= 1) {
+      const v = single[g.name]?.trim() ?? "";
+      if (g.min >= 1 && !v) return null;
+      if (v) {
+        summaryParts.push(v);
+        detail.push({ name: `${g.name}: ${v}` });
+      }
+    } else {
+      const arr = multi[g.name] ?? [];
+      if (arr.length < g.min) return null;
+      if (arr.length > g.max) return null;
+      for (const v of arr) {
+        detail.push({ name: `${g.name}: ${v}` });
+        summaryParts.push(v);
+      }
+    }
+  }
+  if (!summaryParts.length && groups.some((g) => g.min >= 1)) return null;
+  if (!summaryParts.length) return { summaryLabel: "", variants: [] };
+  return { summaryLabel: summaryParts.join(" · "), variants: detail };
+}
+
 function ProductCard({
   product,
   added,
@@ -106,28 +189,68 @@ function ProductCard({
 }: {
   product: ProductRow;
   added: boolean;
-  onEncargar: (observations: string, variantLabel?: string) => void;
+  onEncargar: (observations: string, choice?: VariantChoice) => void;
 }) {
   const [observation, setObservation] = useState("");
   const [pickOpen, setPickOpen] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState("");
+  const [selectedFlat, setSelectedFlat] = useState("");
+  const [groupSingle, setGroupSingle] = useState<Record<string, string>>({});
+  const [groupMulti, setGroupMulti] = useState<Record<string, string[]>>({});
+
   const variantList = product.variants ?? [];
-  const hasVariants = variantList.length > 0;
+  const groups = product.optionGroups ?? [];
+  const hasFlat = variantList.length > 0;
+  const hasGroups = groups.length > 0;
+  const needsPicker = hasFlat || hasGroups;
+
+  const resetPicker = () => {
+    setSelectedFlat("");
+    setGroupSingle({});
+    setGroupMulti({});
+  };
 
   const handleEncargarClick = () => {
-    if (hasVariants) {
+    if (needsPicker) {
       setPickOpen(true);
-      setSelectedVariant("");
+      resetPicker();
       return;
     }
     onEncargar(observation.trim());
   };
 
-  const handleConfirmVariant = () => {
-    if (!selectedVariant) return;
-    onEncargar(observation.trim(), selectedVariant);
+  const handleConfirmFlat = () => {
+    if (!selectedFlat) return;
+    onEncargar(observation.trim(), {
+      summaryLabel: selectedFlat,
+      variants: [{ name: selectedFlat }],
+    });
     setPickOpen(false);
-    setSelectedVariant("");
+    resetPicker();
+  };
+
+  const handleConfirmGroups = () => {
+    const choice = buildChoiceFromGroups(groups, groupSingle, groupMulti);
+    if (!choice) {
+      toast.error("Completá las opciones obligatorias");
+      return;
+    }
+    onEncargar(observation.trim(), choice);
+    setPickOpen(false);
+    resetPicker();
+  };
+
+  const toggleMulti = (groupName: string, opt: string, max: number) => {
+    setGroupMulti((prev) => {
+      const cur = prev[groupName] ?? [];
+      if (cur.includes(opt)) {
+        return { ...prev, [groupName]: cur.filter((x) => x !== opt) };
+      }
+      if (cur.length >= max) {
+        toast.info(`Máximo ${max} opciones en ${groupName}`);
+        return prev;
+      }
+      return { ...prev, [groupName]: [...cur, opt] };
+    });
   };
 
   return (
@@ -147,31 +270,92 @@ function ProductCard({
         ) : null}
       </div>
 
-      {pickOpen && hasVariants ? (
-        <div className="space-y-3 border-t border-[#e8e4dc] pt-3">
-          <p className="text-xs font-black uppercase tracking-wide text-neutral-500">Elegí una opción</p>
-          <fieldset className="space-y-2">
-            {variantList.map((v) => (
-              <label
-                key={v}
-                className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-[#e0dcd4] bg-[#faf8f3] px-3 py-2 text-sm font-medium text-neutral-800 has-[:checked]:border-[#2d4a3e] has-[:checked]:bg-white"
-              >
-                <input
-                  type="radio"
-                  name={`bloom-variant-${product.id}`}
-                  value={v}
-                  checked={selectedVariant === v}
-                  onChange={() => setSelectedVariant(v)}
-                  className="accent-[#2d4a3e]"
-                />
-                {v}
-              </label>
-            ))}
-          </fieldset>
+      {pickOpen && needsPicker ? (
+        <div className="space-y-4 border-t border-[#e8e4dc] pt-3">
+          {hasFlat ? (
+            <div className="space-y-2">
+              <p className="text-xs font-black uppercase tracking-wide text-neutral-500">Elegí una opción</p>
+              <fieldset className="space-y-2">
+                {variantList.map((v) => (
+                  <label
+                    key={v}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-[#e0dcd4] bg-[#faf8f3] px-3 py-2 text-sm font-medium text-neutral-800"
+                  >
+                    <input
+                      type="radio"
+                      name={`bloom-flat-${product.id}`}
+                      value={v}
+                      checked={selectedFlat === v}
+                      onChange={() => setSelectedFlat(v)}
+                      className="accent-[#2d4a3e]"
+                    />
+                    {v}
+                  </label>
+                ))}
+              </fieldset>
+            </div>
+          ) : null}
+
+          {hasGroups
+            ? groups.map((g) => (
+                <div key={`${product.id}-${g.name}`} className="space-y-2">
+                  <p className="text-xs font-black uppercase tracking-wide text-neutral-600">
+                    {g.name}
+                    {g.min > 0 ? <span className="font-bold text-red-600"> *</span> : null}
+                    {g.max > 1 ? (
+                      <span className="block text-[10px] font-semibold normal-case text-neutral-500">
+                        Elegí hasta {g.max}
+                      </span>
+                    ) : null}
+                  </p>
+                  {g.max <= 1 ? (
+                    <fieldset className="space-y-2">
+                      {g.options.map((opt) => (
+                        <label
+                          key={opt}
+                          className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-[#e0dcd4] bg-[#faf8f3] px-3 py-2 text-sm font-medium text-neutral-800"
+                        >
+                          <input
+                            type="radio"
+                            name={`bloom-g-${product.id}-${g.name}`}
+                            value={opt}
+                            checked={(groupSingle[g.name] ?? "") === opt}
+                            onChange={() => setGroupSingle((s) => ({ ...s, [g.name]: opt }))}
+                            className="accent-[#2d4a3e]"
+                          />
+                          {opt}
+                        </label>
+                      ))}
+                    </fieldset>
+                  ) : (
+                    <fieldset className="space-y-2">
+                      {g.options.map((opt) => (
+                        <label
+                          key={opt}
+                          className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-[#e0dcd4] bg-[#faf8f3] px-3 py-2 text-sm font-medium text-neutral-800"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={(groupMulti[g.name] ?? []).includes(opt)}
+                            onChange={() => toggleMulti(g.name, opt, g.max)}
+                            className="accent-[#2d4a3e]"
+                          />
+                          {opt}
+                        </label>
+                      ))}
+                    </fieldset>
+                  )}
+                </div>
+              ))
+            : null}
+
           <button
             type="button"
-            disabled={!selectedVariant}
-            onClick={handleConfirmVariant}
+            disabled={hasFlat ? !selectedFlat : false}
+            onClick={() => {
+              if (hasFlat) handleConfirmFlat();
+              else handleConfirmGroups();
+            }}
             className="w-full rounded-xl bg-[#2d4a3e] px-3 py-2.5 text-xs font-black uppercase tracking-wide text-white transition hover:bg-[#1f342c] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Agregar al encargo
@@ -180,7 +364,7 @@ function ProductCard({
             type="button"
             onClick={() => {
               setPickOpen(false);
-              setSelectedVariant("");
+              resetPicker();
             }}
             className="w-full text-center text-xs font-bold text-neutral-500 underline-offset-2 hover:text-neutral-800 hover:underline"
           >
@@ -189,13 +373,18 @@ function ProductCard({
         </div>
       ) : (
         <>
-          <label className="block text-left text-xs font-bold text-neutral-500">Observaciones (opcional)</label>
+          <label className="block text-left text-xs font-bold text-neutral-500" htmlFor={`bloom-obs-${product.id}`}>
+            Observaciones (opcional)
+          </label>
           <input
+            id={`bloom-obs-${product.id}`}
             type="text"
+            name={`obs-${product.id}`}
             value={observation}
             onChange={(e) => setObservation(e.target.value)}
             disabled={added}
-            className="w-full rounded-lg border border-[#d4cfc4] bg-white px-3 py-2 text-sm text-left disabled:bg-neutral-100"
+            autoComplete="off"
+            className="w-full rounded-lg border border-[#d4cfc4] bg-white px-3 py-2 text-sm text-left text-neutral-900 disabled:bg-neutral-100"
           />
           <button
             type="button"
@@ -214,7 +403,7 @@ function ProductCard({
 }
 
 export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, ref) {
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
   const [open, setOpen] = useState(false);
   const [context, setContext] = useState<ChatContext | null>(null);
   const [contextKey, setContextKey] = useState(0);
@@ -309,7 +498,6 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
             : typeof c?.name === "string"
               ? c.name
               : null;
-          const vars = drinkVariantsFromOptions(raw.options);
           return {
             id: raw.id as string,
             name: raw.name as string,
@@ -317,7 +505,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
             price: Number(raw.price),
             category_id: (raw.category_id as string | null) ?? null,
             category_name: categoryName,
-            ...(vars.length ? { variants: vars } : {}),
+            ...parseProductOptionsRow(raw.options),
           } as ProductRow;
         });
         setProducts(rows);
@@ -457,18 +645,22 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setUpsellVariant(null);
   }, []);
 
-  const addLine = useCallback((p: ProductRow, observations: string, variantLabel?: string) => {
+  const addLine = useCallback((p: ProductRow, observations: string, choice?: VariantChoice) => {
     const lineId =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
         : `line-${Date.now()}-${Math.random()}`;
-    const hadVariants = (p.variants?.length ?? 0) > 0;
-    if (hadVariants && !variantLabel?.trim()) {
-      toast.error("Elegí una opción para este producto");
-      return;
+    const hadVariants = productHasConfigurableOptions(p);
+    if (hadVariants) {
+      if (!choice) {
+        toast.error("Completá las opciones del producto");
+        return;
+      }
     }
-    const displayName = variantLabel?.trim() ? `${p.name} (${variantLabel.trim()})` : p.name;
-    const variantsPayload = variantLabel?.trim() ? [{ name: variantLabel.trim() }] : undefined;
+    const displayName = choice?.summaryLabel?.trim()
+      ? `${p.name} (${choice.summaryLabel.trim()})`
+      : p.name;
+    const variantsPayload = choice?.variants?.length ? choice.variants : undefined;
     setCart((prev) => [
       ...prev,
       {
@@ -665,7 +857,15 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         : typeof c?.name === "string"
           ? c.name
           : "Menú";
-      const vars = drinkVariantsFromOptions(raw.options);
+      const productRow: ProductRow = {
+        id: raw.id as string,
+        name: raw.name as string,
+        description: (raw.description as string | null) ?? null,
+        price: Number(raw.price),
+        category_id: (raw.category_id as string | null) ?? null,
+        category_name: categoryName,
+        ...parseProductOptionsRow(raw.options),
+      };
       resetForContext();
       setContext({
         displayName: categoryName,
@@ -675,18 +875,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       setIntroText(categoryIntro(categoryName));
       setContextKey((k) => k + 1);
       setOpen(true);
-      if (vars.length > 0) {
+      if (productHasConfigurableOptions(productRow)) {
         toast.info("Elegí sabor u opción en la lista");
         return;
       }
-      const productRow: ProductRow = {
-        id: raw.id as string,
-        name: raw.name as string,
-        description: (raw.description as string | null) ?? null,
-        price: Number(raw.price),
-        category_id: (raw.category_id as string | null) ?? null,
-        category_name: categoryName,
-      };
       addLine(productRow, "");
     },
     [addLine, resetForContext, supabase]
@@ -806,7 +998,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     Para confirmar tu encargo necesitás iniciar sesión o registrarte.
                   </p>
                   <Link
-                    href="/auth"
+                    href="/auth?redirect=%2Fmenu"
                     className="inline-flex w-full items-center justify-center rounded-xl bg-[#2d4a3e] px-4 py-3 text-center text-sm font-black text-white shadow hover:bg-[#1f342c] sm:max-w-md sm:mx-auto"
                   >
                     Iniciar sesión o registrarse →
@@ -1031,7 +1223,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     💡 Iniciá sesión o registrate para una mejor atención — guardamos tus datos y tu historial de
                     encargos.{" "}
                     <Link
-                      href="/auth"
+                      href="/auth?redirect=%2Fmenu"
                       className="font-semibold text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
                     >
                       Iniciar sesión →
@@ -1047,7 +1239,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   </div>
                   {showHistoryLink && (
                     <Link
-                      href="/auth"
+                      href="/auth?redirect=%2Fmenu&mode=register"
                       className="inline-block text-xs font-semibold text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
                     >
                       Creá tu cuenta para ver el historial de tus encargos
@@ -1072,8 +1264,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     <ProductCard
                       key={`${productListKey}-${p.id}`}
                       product={p}
-                      added={!p.variants?.length && addedProductIds.has(p.id)}
-                      onEncargar={(obs, variantLabel) => addLine(p, obs, variantLabel)}
+                      added={!productHasConfigurableOptions(p) && addedProductIds.has(p.id)}
+                      onEncargar={(obs, choice) => addLine(p, obs, choice)}
                     />
                   ))}
                 </div>

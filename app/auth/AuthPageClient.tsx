@@ -32,6 +32,32 @@ function translateAuthError(err: AuthError): string {
   return err.message || "Algo salió mal. Intentá de nuevo.";
 }
 
+/** Ruta interna segura para `redirect` (evita open redirect). */
+function safeInternalPath(raw: string | null | undefined): string | null {
+  const t = raw?.trim();
+  if (!t || !t.startsWith("/") || t.startsWith("//")) return null;
+  if (t.includes("..")) return null;
+  return t;
+}
+
+function customerDestinationAfterAuth(searchParams: URLSearchParams): string {
+  const fromQuery = safeInternalPath(searchParams.get("redirect"));
+  if (fromQuery && (fromQuery === "/menu" || fromQuery.startsWith("/menu?"))) {
+    return fromQuery;
+  }
+  if (typeof document !== "undefined" && document.referrer) {
+    try {
+      const u = new URL(document.referrer);
+      if (u.origin === window.location.origin && u.pathname === "/menu") {
+        return "/menu" + u.search;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return "/cuenta";
+}
+
 export function AuthPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -83,7 +109,7 @@ export function AuthPageClient() {
     if (isAdminEmail(data?.user?.email)) {
       router.replace("/dashboard");
     } else {
-      router.replace("/cuenta");
+      router.replace(customerDestinationAfterAuth(searchParams));
     }
     router.refresh();
   };
@@ -105,8 +131,13 @@ export function AuthPageClient() {
       setError("La contraseña debe tener al menos 6 caracteres.");
       return;
     }
-    setLoading(true);
     const phone = regPhone.trim();
+    if (!phone) {
+      setError("El teléfono es requerido");
+      return;
+    }
+    setLoading(true);
+    const dest = customerDestinationAfterAuth(searchParams);
     const { data, error: err } = await supabase.auth.signUp({
       email,
       password: regPassword,
@@ -114,9 +145,10 @@ export function AuthPageClient() {
         data: {
           full_name: name,
           is_customer: true,
-          ...(phone ? { phone } : {}),
+          phone,
         },
-        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/cuenta` : undefined,
+        emailRedirectTo:
+          typeof window !== "undefined" ? `${window.location.origin}${dest === "/cuenta" ? "/cuenta" : dest}` : undefined,
       },
     });
     setLoading(false);
@@ -126,7 +158,7 @@ export function AuthPageClient() {
       return;
     }
     if (data.session) {
-      router.push("/cuenta");
+      router.push(customerDestinationAfterAuth(searchParams));
       router.refresh();
       return;
     }
@@ -239,7 +271,7 @@ export function AuthPageClient() {
                 autoFocus
               />
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Teléfono (opcional)</label>
+                <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Teléfono</label>
                 <input
                   type="tel"
                   autoComplete="tel"
@@ -255,7 +287,7 @@ export function AuthPageClient() {
                     error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
                   }`}
                 />
-                <p className="mt-1.5 text-xs font-medium text-neutral-500">Para avisarte cuando tu encargo está listo</p>
+                <p className="mt-1.5 text-xs font-medium text-neutral-500">Requerido — te avisamos cuando tu encargo está listo</p>
               </div>
               <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Email</label>
               <input
