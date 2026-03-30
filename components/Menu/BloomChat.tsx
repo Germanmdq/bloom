@@ -141,6 +141,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const [softAuthHintVisible, setSoftAuthHintVisible] = useState(false);
   /** Muestra datos del encargo solo si hay sesión o el usuario eligió "Continuar sin cuenta". */
   const [encargoCheckoutUnlocked, setEncargoCheckoutUnlocked] = useState(false);
+  /** Sesión detectada al abrir el modal de encargo: mostrar mensaje de confirmación de datos. */
+  const [encargoLoggedInPrefill, setEncargoLoggedInPrefill] = useState(false);
   const [checkoutSubmitAttempted, setCheckoutSubmitAttempted] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -155,15 +157,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     });
   };
 
-  const scrollChatToTop = (behavior: ScrollBehavior) => {
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ top: 0, behavior });
-    });
-  };
-
   useEffect(() => {
     if (!open) return;
-    scrollChatToTop("auto");
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [open]);
 
   useEffect(() => {
@@ -176,7 +172,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     const hasScope = (context.productIds?.length ?? 0) > 0 || !!context.categoryId;
     if (!hasScope) {
       setProducts([]);
-      scrollChatToTop("smooth");
+      if (scrollRef.current) scrollRef.current.scrollTop = 0;
       return;
     }
 
@@ -199,14 +195,14 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           console.error("[BloomChat] products", error);
           toast.error("No se pudieron cargar los productos");
           setProducts([]);
+          if (scrollRef.current) scrollRef.current.scrollTop = 0;
           return;
         }
-        setProducts((data ?? []) as ProductRow[]);
+        const rows = (data ?? []) as ProductRow[];
+        setProducts(rows);
+        if (scrollRef.current) scrollRef.current.scrollTop = 0;
       } finally {
-        if (!cancelled) {
-          setLoadingProducts(false);
-          scrollChatToTop("smooth");
-        }
+        if (!cancelled) setLoadingProducts(false);
       }
     })();
 
@@ -224,15 +220,24 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         data: { session },
       } = await supabase.auth.getSession();
       if (cancelled) return;
-      if (session?.user) {
+      const user = session?.user;
+      if (user) {
         setEncargoCheckoutUnlocked(true);
-        const meta = session.user.user_metadata ?? {};
-        const fullName = typeof meta.full_name === "string" ? meta.full_name.trim() : "";
-        const phoneMeta = typeof meta.phone === "string" ? meta.phone.trim() : "";
-        setCheckoutName((prev) => (prev.trim() ? prev : fullName));
-        setCheckoutPhone((prev) => (prev.trim() ? prev : phoneMeta));
+        setEncargoLoggedInPrefill(true);
+        const meta = user.user_metadata ?? {};
+        const nameFromMeta =
+          (typeof meta.full_name === "string" && meta.full_name.trim()) ||
+          (typeof meta.name === "string" && meta.name.trim()) ||
+          "";
+        const phoneFromProfile =
+          (typeof meta.phone === "string" && meta.phone.trim()) ||
+          (typeof user.phone === "string" && user.phone.trim()) ||
+          "";
+        setCheckoutName(nameFromMeta);
+        setCheckoutPhone(phoneFromProfile);
       } else {
         setEncargoCheckoutUnlocked(false);
+        setEncargoLoggedInPrefill(false);
       }
     })();
     return () => {
@@ -253,14 +258,22 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
+      const user = session?.user;
+      if (user) {
         setSoftAuthHintVisible(false);
         setEncargoCheckoutUnlocked(true);
-        const meta = session.user.user_metadata ?? {};
-        const fullName = typeof meta.full_name === "string" ? meta.full_name.trim() : "";
-        const phoneMeta = typeof meta.phone === "string" ? meta.phone.trim() : "";
-        setCheckoutName((prev) => (prev.trim() ? prev : fullName));
-        setCheckoutPhone((prev) => (prev.trim() ? prev : phoneMeta));
+        setEncargoLoggedInPrefill(true);
+        const meta = user.user_metadata ?? {};
+        const nameFromMeta =
+          (typeof meta.full_name === "string" && meta.full_name.trim()) ||
+          (typeof meta.name === "string" && meta.name.trim()) ||
+          "";
+        const phoneFromProfile =
+          (typeof meta.phone === "string" && meta.phone.trim()) ||
+          (typeof user.phone === "string" && user.phone.trim()) ||
+          "";
+        setCheckoutName(nameFromMeta);
+        setCheckoutPhone(phoneFromProfile);
       }
     });
     return () => subscription.unsubscribe();
@@ -306,6 +319,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setDeliveryType("local");
     setPaymentMethod("cash_on_delivery");
     setEncargoCheckoutUnlocked(false);
+    setEncargoLoggedInPrefill(false);
     setCheckoutSubmitAttempted(false);
   }, []);
 
@@ -412,6 +426,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         }
 
         setEncargoOpen(false);
+        setEncargoLoggedInPrefill(false);
         setCart([]);
         setAddedProductIds(new Set());
         setCheckoutName("");
@@ -426,6 +441,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       }
 
       setEncargoOpen(false);
+      setEncargoLoggedInPrefill(false);
       setSuccessMessage(
         paymentMethod === "bank_transfer"
           ? `Te enviamos los datos de transferencia por WhatsApp al ${phone}.`
@@ -495,6 +511,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setSuccessMessage(null);
     setShowHistoryLink(false);
     setEncargoCheckoutUnlocked(false);
+    setEncargoLoggedInPrefill(false);
     setCheckoutSubmitAttempted(false);
   };
 
@@ -572,7 +589,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     </Link>
                     <button
                       type="button"
-                      onClick={() => setEncargoCheckoutUnlocked(true)}
+                      onClick={() => {
+                        setEncargoCheckoutUnlocked(true);
+                        setEncargoLoggedInPrefill(false);
+                      }}
                       className="inline-flex w-full items-center justify-center rounded-xl border-2 border-[#d4cfc4] bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50 sm:w-auto sm:min-w-[10rem]"
                     >
                       Continuar sin cuenta
@@ -581,7 +601,13 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                 </div>
               ) : (
               <div className="mt-6 space-y-3 border-t border-[#e0dcd4] pt-4">
-                <p className="text-xs font-bold uppercase text-neutral-500">Datos para tu encargo</p>
+                {encargoLoggedInPrefill ? (
+                  <p className="text-sm font-semibold leading-snug text-[#2d4a3e]">
+                    Confirmamos estos datos para tu encargo:
+                  </p>
+                ) : (
+                  <p className="text-xs font-bold uppercase text-neutral-500">Datos para tu encargo</p>
+                )}
                 <div>
                   <label className="text-xs font-bold text-neutral-500">Nombre</label>
                   <input
@@ -610,6 +636,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                       setCheckoutPhone(e.target.value);
                       if (checkoutSubmitAttempted) setCheckoutSubmitAttempted(false);
                     }}
+                    placeholder={!checkoutPhone.trim() ? "Tu teléfono" : undefined}
                     className={`mt-1 w-full rounded-xl border bg-white px-3 py-2 text-sm ${
                       checkoutSubmitAttempted && !checkoutPhone.trim()
                         ? "border-red-400"
