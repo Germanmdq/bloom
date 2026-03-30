@@ -7,8 +7,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ChevronLeft, ChevronRight, Plus, Minus, Search, CreditCard, User, MapPin, Phone, Truck, SlidersHorizontal, X } from "lucide-react";
-import { CustomerAuthModal } from "@/components/Menu/CustomerAuthModal";
+import { ShoppingBag, ChevronLeft, ChevronRight, Plus, Minus, Search, CreditCard, MapPin, Phone, Truck, SlidersHorizontal, X } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
 import { VariantSelector } from "@/components/pos/VariantSelector"; // Reusing logic
@@ -94,7 +93,6 @@ function PublicMenuPage() {
 
     // Variant Selection State
     const [variantProduct, setVariantProduct] = useState<any>(null);
-    const [isAuthOpen, setIsAuthOpen] = useState(false);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     /** Móvil: categorías + precio en un solo desplegable */
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -219,11 +217,6 @@ function PublicMenuPage() {
 
         toast.success(`Agregado: ${product.name}`);
         setVariantProduct(null);
-    };
-
-    const handleProductClick = (product: any) => {
-        // Siempre abrir el popup para variantes u observaciones
-        setVariantProduct(product);
     };
 
     const updateQuantity = (cartItemId: string, delta: number) => {
@@ -470,7 +463,6 @@ function PublicMenuPage() {
                     }
                 })}
             />
-            <CustomerAuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
             <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
             {/* Top bar — FoodKing style */}
@@ -533,9 +525,9 @@ function PublicMenuPage() {
                                 {tableLabel}
                             </span>
                         )}
-                        <button type="button" onClick={() => setIsAuthOpen(true)} className="p-2.5 rounded-full border border-neutral-200 bg-white hover:bg-neutral-50 transition-colors">
-                            <User size={20} className="text-neutral-800" strokeWidth={2} />
-                        </button>
+                        <Link href="/auth" className="text-sm font-bold text-neutral-600 underline-offset-4 hover:underline hover:text-neutral-900">
+                            Iniciar sesión
+                        </Link>
                         <button
                             type="button"
                             onClick={() => setIsCartOpen(true)}
@@ -909,11 +901,7 @@ function PublicMenuPage() {
                                 {filteredProducts.map((product) => (
                                     <div
                                         key={product.id}
-                                        role="button"
-                                        tabIndex={0}
-                                        onClick={() => handleProductClick(product)}
-                                        onKeyDown={(e) => e.key === "Enter" && handleProductClick(product)}
-                                        className={`group bg-white rounded-3xl overflow-hidden border-2 border-bloom-200/80 shadow-md hover:shadow-xl transition-all cursor-pointer flex flex-col ${
+                                        className={`group bg-white rounded-3xl overflow-hidden border-2 border-bloom-200/80 shadow-md hover:shadow-xl transition-all flex flex-col ${
                                             selectedCategory?.isPlato ? "w-full max-w-sm" : ""
                                         }`}
                                     >
@@ -938,11 +926,6 @@ function PublicMenuPage() {
                                             <div className="flex flex-col gap-3 mt-auto pt-2 border-t border-bloom-100">
                                                 <span className="font-black text-xl" style={{ color: fk.primary }}>
                                                     {formatCurrency(product.price)}
-                                                </span>
-                                                <span
-                                                    className="text-center font-black text-xs uppercase tracking-wide py-3 rounded-full border-2 border-bloom-600 bg-bloom-600 text-white shadow-sm transition-all group-hover:bg-bloom-700 group-hover:border-bloom-700 active:scale-[0.98]"
-                                                >
-                                                    Agregar al pedido
                                                 </span>
                                             </div>
                                         </div>
@@ -1174,15 +1157,13 @@ function PublicMenuPage() {
                                 <div className="space-y-3">
                                     {/* Prompt login */}
                                     {!tableId && (
-                                        <button
-                                            onClick={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
-                                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 border-bloom-200 bg-bloom-100/80 hover:bg-bloom-100/90 transition-colors"
+                                        <Link
+                                            href="/auth"
+                                            onClick={() => setIsCartOpen(false)}
+                                            className="block w-full text-center text-sm font-bold text-neutral-600 underline-offset-4 hover:underline hover:text-neutral-900 py-2"
                                         >
-                                            <User size={16} className="shrink-0" style={{ color: fk.primary }} />
-                                            <p className="text-xs font-black text-left" style={{ color: fk.dark }}>
-                                                Iniciá sesión y acumulá puntos — hasta 15% OFF
-                                            </p>
-                                        </button>
+                                            Iniciar sesión
+                                        </Link>
                                     )}
 
                                     {tableId ? (

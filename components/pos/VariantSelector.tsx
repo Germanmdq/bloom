@@ -330,7 +330,7 @@ const EMPTY_CHECKOUT: CheckoutInfo = {
     type: "delivery",
 };
 
-export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddAndCheckout }: VariantSelectorProps) {
+export function VariantSelector({ product, isOpen, onClose, onAddToOrder: _onAddToOrder, onAddAndCheckout }: VariantSelectorProps) {
     const [selections, setSelections] = useState<Record<string, VariantOption[]>>({});
     const [quantitySelections, setQuantitySelections] = useState<Record<string, Record<string, number>>>({});
     const [observations, setObservations] = useState("");
@@ -396,12 +396,6 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
         setObservations("");
         setCheckoutInfo(EMPTY_CHECKOUT);
         setErrors({});
-    };
-
-    const handleAddOnly = () => {
-        if (!canSubmit) return;
-        onAddToOrder(product, previewVariants, observations.trim());
-        reset();
     };
 
     const validateAndCheckout = () => {
@@ -621,13 +615,6 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder, onAddA
                                     ✓ Confirmar Pedido
                                 </button>
                             )}
-                            <button
-                                type="button"
-                                onClick={handleAddOnly}
-                                className="w-full rounded-xl bg-bloom-600 py-4 text-base font-black text-white shadow-lg transition-all hover:bg-bloom-700 active:scale-[0.98] sm:py-3.5 sm:text-sm"
-                            >
-                                {onAddAndCheckout ? "+ Agregar y seguir eligiendo" : "Agregar al pedido"}
-                            </button>
                         </>
                     )}
                 </div>
