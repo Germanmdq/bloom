@@ -13,8 +13,6 @@ import {
   Coffee,
   Cookie,
   Leaf,
-  MapPin,
-  Phone,
   Star,
   Truck,
   UtensilsCrossed,
@@ -141,30 +139,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-bloom-page text-neutral-900 font-sans selection:bg-bloom-200 selection:text-neutral-900">
       <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-
-      <div className="bg-english-800 text-bloom-cream text-[11px] sm:text-sm font-semibold border-b border-english-900/60">
-        <div className="container mx-auto px-4 py-2.5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2">
-          <div className="flex flex-col gap-1.5 min-w-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-1">
-            <span className="inline-flex items-start gap-1.5 min-w-0">
-              <MapPin size={14} className="shrink-0 mt-0.5 text-bloom-gold" />
-              <span className="leading-snug">{CONTACT.address}, {CONTACT.city}</span>
-            </span>
-            <a href={`mailto:${CONTACT.email}`} className="hover:underline truncate text-left sm:max-w-none text-bloom-cream/95">
-              {CONTACT.email}
-            </a>
-            <span className="text-bloom-cream/85 sm:text-bloom-cream/90">{CONTACT.hours}</span>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 sm:justify-end shrink-0">
-            <a href={CONTACT.phoneHref} className="inline-flex items-center gap-1.5 font-bold hover:underline hover:text-bloom-gold">
-              <Phone size={14} className="shrink-0" />
-              <span className="whitespace-nowrap">{CONTACT.phoneDisplay}</span>
-            </a>
-            <Link href="/about" className="hover:underline font-bold hover:text-bloom-gold">
-              Contacto
-            </Link>
-          </div>
-        </div>
-      </div>
 
       <SiteHeader scrolled={scrolled} onMobileNavOpen={() => setMobileNavOpen(true)} activeNav="home" />
 

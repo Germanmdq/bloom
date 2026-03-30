@@ -3,9 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { MapPin, Instagram, ArrowLeft } from "lucide-react";
+import { MapPin, Instagram } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useFachadaImageUrl } from "@/lib/hooks/useFachadaImageUrl";
-import { PublicAccountNav } from "@/components/PublicAccountNav";
+import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
+import { SiteHeader } from "@/components/SiteHeader";
 
 const STORY_P1 =
   "Bloom es una cafetería familiar creada por Bárbara y Agustín como un proyecto lleno de amor, desafío y vocación. Somos un espacio cálido y de encuentro, donde ofrecemos cafés clásicos, sabores tradicionales y comidas caseras, elaboradas con ingredientes de calidad y ese toque hogareño que te hace sentir como en casa.";
@@ -13,24 +15,9 @@ const STORY_P1 =
 const STORY_P2 =
   "Nuestros hijos forman parte de nuestro día a día, y esa esencia familiar se refleja en el ambiente, en el equipo y en la forma en que recibimos a cada cliente. En Bloom buscamos que todos se sientan bienvenidos, cómodos y felices de volver.";
 
-function Navbar() {
-  return (
-    <nav className="fixed top-0 left-0 right-0 z-50 py-5 bg-gradient-to-b from-black/50 to-transparent backdrop-blur-[2px]">
-      <div className="container mx-auto px-6 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-white/90 hover:text-white transition-colors group">
-          <ArrowLeft size={20} />
-          <span className="text-xs font-bold tracking-widest uppercase">Volver al inicio</span>
-        </Link>
-        <span className="font-sans text-xl font-black tracking-[0.2em] text-white drop-shadow-md">BLOOM</span>
-        <PublicAccountNav tone="onDark" />
-      </div>
-    </nav>
-  );
-}
-
 function Hero({ fachadaSrc }: { fachadaSrc: string }) {
   return (
-    <header className="relative w-full min-h-[min(72vh,820px)] overflow-hidden bg-neutral-950">
+    <section className="relative w-full min-h-[min(72vh,820px)] overflow-hidden bg-neutral-950">
       <Image
         src={fachadaSrc}
         alt="Fachada Bloom Coffee & More, Mar del Plata"
@@ -39,11 +26,10 @@ function Hero({ fachadaSrc }: { fachadaSrc: string }) {
         className="object-cover object-center"
         sizes="100vw"
       />
-      {/* Capas: legibilidad + tono verde oliva acorde a la marca */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#142620] via-black/50 to-black/35" />
       <div className="absolute inset-0 bg-gradient-to-br from-english-900/40 via-transparent to-bloom-900/20" />
 
-      <div className="relative z-10 flex min-h-[min(72vh,820px)] flex-col items-center justify-end pb-16 md:pb-20 pt-28 px-6 text-center">
+      <div className="relative z-10 flex min-h-[min(72vh,820px)] flex-col items-center justify-end px-6 pb-16 pt-12 text-center md:pb-20">
         <motion.div
           initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -63,7 +49,7 @@ function Hero({ fachadaSrc }: { fachadaSrc: string }) {
           </p>
         </motion.div>
       </div>
-    </header>
+    </section>
   );
 }
 
@@ -157,9 +143,19 @@ function Footer() {
 
 export default function AboutPage() {
   const fachadaSrc = useFachadaImageUrl();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <main className="min-h-screen bg-crema selection:bg-chocolate selection:text-crema">
-      <Navbar />
+      <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <SiteHeader scrolled={scrolled} onMobileNavOpen={() => setMobileNavOpen(true)} activeNav="about" />
       <Hero fachadaSrc={fachadaSrc} />
       <StoryBody />
       <LocationCard fachadaSrc={fachadaSrc} />

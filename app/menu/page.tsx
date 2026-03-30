@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ChevronLeft, Plus, Minus, CreditCard, MapPin, Phone, Truck, X } from "lucide-react";
+import { ShoppingBag, ChevronLeft, Plus, Minus, CreditCard, X } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
 import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
@@ -68,27 +68,6 @@ function categoryCardImageUrl(
     return firstByCat.get(c.id) ?? null;
 }
 
-/** Solo dígitos para `wa.me/...` (p. ej. app_settings.whatsapp = "5492231234567"). */
-function whatsappDigits(raw: string): string {
-    return raw.replace(/\D/g, "");
-}
-
-/** Formato lectura: +54 9 223 123-4567 a partir de 5492231234567 */
-function formatWhatsappDisplay(digitsRaw: string): string {
-    const d = digitsRaw.replace(/\D/g, "");
-    if (d.length >= 12 && d.startsWith("54")) {
-        const afterCountry = d.slice(2);
-        if (afterCountry.length >= 10 && afterCountry[0] === "9") {
-            const area = afterCountry.slice(1, 4);
-            const num = afterCountry.slice(4);
-            if (num.length >= 6) {
-                return `+54 9 ${area} ${num.slice(0, 3)}-${num.slice(3)}`;
-            }
-        }
-    }
-    return d || digitsRaw.trim();
-}
-
 // --- MAIN COMPONENT ---
 function PublicMenuPage() {
     const supabase = createClient();
@@ -107,8 +86,6 @@ function PublicMenuPage() {
     const [whatsappNumber, setWhatsappNumber] = useState("5491112345678");
     const [loading, setLoading] = useState(true);
 
-    const whatsappDisplay = useMemo(() => formatWhatsappDisplay(whatsappNumber), [whatsappNumber]);
-    const whatsappHref = useMemo(() => `https://wa.me/${whatsappDigits(whatsappNumber)}`, [whatsappNumber]);
 
     const bloomChatRef = useRef<BloomChatHandle>(null);
 
@@ -381,39 +358,14 @@ function PublicMenuPage() {
 
             <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
-            <div className="text-bloom-cream text-xs sm:text-sm font-semibold border-b border-english-900/50" style={{ backgroundColor: fk.englishDeep }}>
-                <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2 py-2">
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 min-w-0">
-                        <span className="inline-flex items-center gap-1.5 leading-snug">
-                            <Truck size={14} className="shrink-0" />
-                            <span>
-                                <span className="sm:hidden">Delivery · Pedí online</span>
-                                <span className="hidden sm:inline">Delivery en la ciudad · Pedí online</span>
-                            </span>
-                        </span>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4">
-                        <span className="hidden sm:inline-flex items-center gap-1.5 opacity-90">
-                            <MapPin size={14} className="shrink-0" /> Mar del Plata
-                        </span>
-                        <a
-                            href={whatsappHref}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 font-bold hover:underline text-xs sm:text-sm"
-                        >
-                            <Phone size={14} className="shrink-0" />
-                            <span>{whatsappDisplay}</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
             <SiteHeader
                 scrolled={false}
                 onMobileNavOpen={() => setMobileNavOpen(true)}
                 activeNav="menu"
                 accentColor={fk.primary}
+                showCartButton
+                cartCount={cartCount}
+                onCartOpen={() => setIsCartOpen(true)}
                 menuExtras={
                     <>
                         <Link
@@ -433,22 +385,6 @@ function PublicMenuPage() {
                             </span>
                         ) : null}
                         <PublicAccountNav />
-                        <button
-                            type="button"
-                            onClick={() => setIsCartOpen(true)}
-                            className="relative inline-flex items-center justify-center p-2.5 rounded-full text-white font-bold shadow-md hover:opacity-95 transition-opacity"
-                            style={{ backgroundColor: fk.primary }}
-                        >
-                            <ShoppingBag size={20} strokeWidth={2.5} />
-                            {cartCount > 0 ? (
-                                <span
-                                    className="absolute -top-1 -right-1 text-[10px] font-black min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full border-2 border-white"
-                                    style={{ backgroundColor: fk.accent, color: fk.dark }}
-                                >
-                                    {cartCount}
-                                </span>
-                            ) : null}
-                        </button>
                     </>
                 }
             />
@@ -591,7 +527,7 @@ function PublicMenuPage() {
                             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
                             className="fixed top-0 right-0 h-full w-full md:w-[480px] bg-bloom-page z-[60] shadow-2xl flex flex-col font-sans border-l border-bloom-200"
                         >
-                            <div className="p-5 border-b border-bloom-200 flex items-center justify-between bg-white sticky top-0 z-10 shadow-sm">
+                            <div className="shrink-0 z-10 flex items-center justify-between border-b border-bloom-200 bg-white p-5 shadow-sm">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-0.5" style={{ color: fk.primary }}>
                                         Carrito

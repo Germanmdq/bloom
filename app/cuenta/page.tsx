@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import {
-  ChevronLeft,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -18,6 +17,8 @@ import {
   Gift,
 } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
+import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
+import { SiteHeader } from "@/components/SiteHeader";
 
 const COFFEE_GOAL = 10;
 
@@ -50,6 +51,7 @@ export default function CuentaPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const loadOrders = useCallback(
     async (uid: string) => {
@@ -122,25 +124,8 @@ export default function CuentaPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] font-sans text-neutral-900">
-      <header className="sticky top-0 z-40 border-b border-amber-100/60 bg-[#FAF7F2]/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-lg items-center justify-between px-5 py-4">
-          <Link href="/menu" className="flex items-center gap-1.5 text-sm font-semibold text-neutral-500 hover:text-neutral-900">
-            <ChevronLeft size={20} />
-            Menú
-          </Link>
-          <span className="font-black tracking-tighter text-lg">
-            BLOOM<span className="text-[#2d4a3e]">.</span>
-          </span>
-          <button
-            type="button"
-            onClick={() => void handleSignOut()}
-            className="flex items-center gap-1 text-xs font-bold text-neutral-400 hover:text-neutral-700"
-          >
-            <LogOut size={16} />
-            Salir
-          </button>
-        </div>
-      </header>
+      <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <SiteHeader scrolled={false} onMobileNavOpen={() => setMobileNavOpen(true)} activeNav={null} />
 
       <main className="mx-auto max-w-lg space-y-6 px-5 py-8">
         {/* Perfil */}
@@ -184,12 +169,22 @@ export default function CuentaPage() {
           </div>
         </div>
 
-        <Link
-          href="/menu"
-          className="flex w-full items-center justify-center rounded-full bg-[#2d4a3e] px-6 py-3 font-black text-white shadow-md transition hover:bg-[#1f352c]"
-        >
-          Ir al menú →
-        </Link>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/menu"
+            className="flex w-full flex-1 items-center justify-center rounded-full bg-[#2d4a3e] px-6 py-3 text-center font-black text-white shadow-md transition hover:bg-[#1f352c]"
+          >
+            Ir al menú →
+          </Link>
+          <button
+            type="button"
+            onClick={() => void handleSignOut()}
+            className="flex w-full flex-1 items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-bold text-neutral-600 transition hover:bg-neutral-50"
+          >
+            <LogOut size={16} />
+            Salir
+          </button>
+        </div>
 
         {/* Historial */}
         <div>

@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isAdminEmail } from "@/lib/auth/admin";
-import { ChevronLeft, Loader2, Mail } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
+import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
+import { SiteHeader } from "@/components/SiteHeader";
 
 type Panel = "login" | "register";
 
@@ -47,6 +49,7 @@ export default function AuthPage() {
   const [regPhone, setRegPhone] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const emailValid = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim().toLowerCase());
 
@@ -137,18 +140,8 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] font-sans text-neutral-900">
-      <header className="sticky top-0 z-40 border-b border-amber-100/60 bg-[#FAF7F2]/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-lg items-center justify-between px-5 py-4">
-          <Link href="/menu" className="flex items-center gap-1.5 text-sm font-semibold text-neutral-500 transition-colors hover:text-neutral-900">
-            <ChevronLeft size={20} />
-            Menú
-          </Link>
-          <span className="font-black tracking-tighter text-lg text-neutral-900">
-            BLOOM<span className="text-[#2d4a3e]">.</span>
-          </span>
-          <div className="w-14" />
-        </div>
-      </header>
+      <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <SiteHeader scrolled={false} onMobileNavOpen={() => setMobileNavOpen(true)} activeNav={null} />
 
       <main className="mx-auto max-w-md px-5 pb-16 pt-10">
         <div className="mb-8 text-center">

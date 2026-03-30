@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, Users, User, Phone, MessageSquare, ChevronLeft, CheckCircle2 } from "lucide-react";
+import { CalendarDays, Clock, Users, User, Phone, MessageSquare, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { SiteFooter } from "@/components/SiteFooter";
-import { PublicAccountNav } from "@/components/PublicAccountNav";
+import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
+import { SiteHeader } from "@/components/SiteHeader";
 
 const HORARIOS = [
     "08:00", "08:30", "09:00", "09:30",
@@ -38,6 +39,14 @@ export default function ReservationsPage() {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
     const [sent, setSent] = useState(false);
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+
+    useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 24);
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
 
     const set = (key: string, val: any) => {
         setForm(f => ({ ...f, [key]: val }));
@@ -76,18 +85,12 @@ export default function ReservationsPage() {
 
     return (
         <div className="min-h-screen bg-[#FAF7F2] flex flex-col">
-            {/* Header */}
-            <header className="sticky top-0 z-30 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-amber-100/60 px-5 py-4 flex items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-3">
-                    <Link href="/" className="flex items-center gap-2 text-gray-400 hover:text-gray-700 transition-colors shrink-0">
-                        <ChevronLeft size={20} />
-                        <span className="text-sm font-bold">Inicio</span>
-                    </Link>
-                    <span className="text-gray-200 shrink-0">|</span>
-                    <h1 className="text-lg font-black text-gray-900 tracking-tight truncate">Reservar Mesa</h1>
-                </div>
-                <PublicAccountNav className="shrink-0" />
-            </header>
+            <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+            <SiteHeader
+                scrolled={scrolled}
+                onMobileNavOpen={() => setMobileNavOpen(true)}
+                activeNav="reservations"
+            />
 
             <main className="flex-1 max-w-lg mx-auto w-full px-5 py-10">
                 <AnimatePresence mode="wait">
