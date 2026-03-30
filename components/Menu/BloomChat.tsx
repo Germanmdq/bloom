@@ -142,6 +142,44 @@ function combineDeliveryAddress(line: string, extra: string): string {
   return `${a} - ${b}`;
 }
 
+/** Bloom — Almirante Brown 2005, Mar del Plata */
+const BLOOM_COORDINATES = { lat: -38.0023, lng: -57.5575 } as const;
+const DELIVERY_RADIUS_STRAIGHT_LINE_M = 300;
+const WHATSAPP_COORDINATE_ORDERS = "5492231234567";
+
+function haversineMeters(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+): number {
+  const R = 6371000;
+  const φ1 = (a.lat * Math.PI) / 180;
+  const φ2 = (b.lat * Math.PI) / 180;
+  const Δφ = ((b.lat - a.lat) * Math.PI) / 180;
+  const Δλ = ((b.lng - a.lng) * Math.PI) / 180;
+  const s =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  return 2 * R * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
+async function geocodeAddressGoogle(
+  fullAddress: string,
+  apiKey: string
+): Promise<{ lat: number; lng: number } | null> {
+  const q = `${fullAddress.trim()}, Mar del Plata, Argentina`;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&key=${encodeURIComponent(apiKey)}&region=AR`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = (await res.json()) as {
+    status?: string;
+    results?: { geometry?: { location?: { lat?: number; lng?: number } } }[];
+  };
+  if (data.status !== "OK" || !data.results?.length) return null;
+  const loc = data.results[0]?.geometry?.location;
+  if (typeof loc?.lat !== "number" || typeof loc?.lng !== "number") return null;
+  return { lat: loc.lat, lng: loc.lng };
+}
+
 function prefillCheckoutFromUser(user: {
   user_metadata?: Record<string, unknown>;
   phone?: string | null;
@@ -488,6 +526,12 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const [checkoutSubmitAttempted, setCheckoutSubmitAttempted] = useState(false);
   /** Tras Encargar: sugerencia antes de mostrar «Ver encargo». */
   const [upsellVariant, setUpsellVariant] = useState<UpsellVariant | null>(null);
+  /** Zona delivery (geocodigo + distancia recta vs Bloom). */
+  const [deliveryZoneStatus, setDeliveryZoneStatus] = useState<
+    "idle" | "checking" | "in_zone" | "out_of_zone" | "skipped_no_key"
+  >("idle");
+  const [deliveryZoneCheckedFor, setDeliveryZoneCheckedFor] = useState("");
+  const deliveryZoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -497,6 +541,80 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     () => combineDeliveryAddress(checkoutAddressLine, checkoutAddressExtra),
     [checkoutAddressLine, checkoutAddressExtra]
   );
+
+  const googleMapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
+
+  useEffect(() => {
+    if (deliveryZoneTimerRef.current) {
+      clearTimeout(deliveryZoneTimerRef.current);
+      deliveryZoneTimerRef.current = null;
+    }
+
+    if (!encargoOpen || deliveryType !== "delivery" || !googleMapsKey) {
+      setDeliveryZoneStatus(googleMapsKey ? "idle" : "skipped_no_key");
+      setDeliveryZoneCheckedFor("");
+      return;
+    }
+
+    const addr = deliveryAddressCombined.trim();
+    if (addr.length < 6) {
+      setDeliveryZoneStatus("idle");
+      setDeliveryZoneCheckedFor("");
+      return;
+    }
+
+    deliveryZoneTimerRef.current = setTimeout(() => {
+      void (async () => {
+        setDeliveryZoneStatus("checking");
+        try {
+          const coords = await geocodeAddressGoogle(addr, googleMapsKey);
+          if (!coords) {
+            setDeliveryZoneStatus("in_zone");
+            setDeliveryZoneCheckedFor(addr);
+            return;
+          }
+          const m = haversineMeters(BLOOM_COORDINATES, coords);
+          setDeliveryZoneCheckedFor(addr);
+          setDeliveryZoneStatus(m <= DELIVERY_RADIUS_STRAIGHT_LINE_M ? "in_zone" : "out_of_zone");
+        } catch (e) {
+          console.error("[BloomChat] delivery zone", e);
+          setDeliveryZoneStatus("in_zone");
+          setDeliveryZoneCheckedFor(addr);
+        }
+      })();
+    }, 650);
+
+    return () => {
+      if (deliveryZoneTimerRef.current) clearTimeout(deliveryZoneTimerRef.current);
+    };
+  }, [
+    encargoOpen,
+    deliveryType,
+    deliveryAddressCombined,
+    googleMapsKey,
+  ]);
+
+  const whatsappOutOfZoneHref = useMemo(() => {
+    const text = `Hola! Quiero hacer un pedido a domicilio a ${deliveryAddressCombined.trim()}`;
+    return `https://wa.me/${WHATSAPP_COORDINATE_ORDERS}?text=${encodeURIComponent(text)}`;
+  }, [deliveryAddressCombined]);
+
+  /** Con API key: no confirmar hasta tener chequeo `in_zone` para la dirección actual. */
+  const deliveryGeoBlocksConfirm = useMemo(() => {
+    if (deliveryType !== "delivery" || !googleMapsKey) return false;
+    const full = deliveryAddressCombined.trim();
+    if (full.length < 6) return false;
+    if (deliveryZoneStatus === "checking" || deliveryZoneStatus === "idle") return true;
+    if (deliveryZoneStatus === "out_of_zone") return true;
+    if (deliveryZoneStatus === "in_zone" && deliveryZoneCheckedFor !== full) return true;
+    return false;
+  }, [
+    deliveryType,
+    googleMapsKey,
+    deliveryAddressCombined,
+    deliveryZoneStatus,
+    deliveryZoneCheckedFor,
+  ]);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -697,6 +815,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setSuccessMessage(null);
     setShowHistoryLink(false);
     setUpsellVariant(null);
+    setDeliveryZoneStatus("idle");
+    setDeliveryZoneCheckedFor("");
   }, []);
 
   const addLine = useCallback((p: ProductRow, observations: string, choice?: VariantChoice) => {
@@ -745,6 +865,14 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     }
     if (deliveryType === "delivery" && !checkoutAddressLine.trim()) {
       toast.error("Ingresá la calle y el número de entrega");
+      return;
+    }
+    if (deliveryType === "delivery" && deliveryGeoBlocksConfirm) {
+      if (deliveryZoneStatus === "out_of_zone" && deliveryZoneCheckedFor === address) {
+        toast.error("Esta dirección queda fuera de la zona de delivery web. Coordiná por WhatsApp.");
+        return;
+      }
+      toast.error("Esperá la verificación de la dirección o corregila antes de confirmar.");
       return;
     }
 
@@ -886,6 +1014,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     paymentMethod,
     saveDefaultAddress,
     supabase,
+    googleMapsKey,
+    deliveryZoneStatus,
+    deliveryZoneCheckedFor,
+    deliveryGeoBlocksConfirm,
   ]);
 
   const openFabChat = useCallback(() => {
@@ -1135,6 +1267,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                       onChange={() => {
                         setDeliveryType("local");
                         setAddressConfirmation("yes");
+                        setDeliveryZoneStatus(googleMapsKey ? "idle" : "skipped_no_key");
+                        setDeliveryZoneCheckedFor("");
                       }}
                       className="accent-[#2d4a3e]"
                     />
@@ -1148,6 +1282,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                       onChange={() => {
                         setDeliveryType("delivery");
                         setAddressConfirmation("yes");
+                        setDeliveryZoneStatus(googleMapsKey ? "idle" : "skipped_no_key");
+                        setDeliveryZoneCheckedFor("");
                       }}
                       className="accent-[#2d4a3e]"
                     />
@@ -1237,6 +1373,38 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                         <p className="mt-1 text-xs text-neutral-600">Editá la dirección arriba si hace falta.</p>
                       ) : null}
                     </div>
+                    {googleMapsKey && deliveryAddressCombined.trim().length >= 6 ? (
+                      <div className="text-xs text-neutral-600">
+                        {deliveryZoneStatus === "checking" ? (
+                          <p className="flex items-center gap-2 font-medium text-[#2d4a3e]">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                            Verificando zona de delivery…
+                          </p>
+                        ) : null}
+                        {deliveryZoneStatus === "in_zone" &&
+                        deliveryZoneCheckedFor === deliveryAddressCombined.trim() ? (
+                          <p className="font-medium text-emerald-800">✓ Dentro de la zona de delivery cercana.</p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {deliveryZoneStatus === "out_of_zone" &&
+                    deliveryZoneCheckedFor === deliveryAddressCombined.trim() &&
+                    googleMapsKey ? (
+                      <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-3 py-3 text-sm text-amber-950">
+                        <p className="font-semibold leading-snug">
+                          La dirección está fuera de nuestra zona de delivery cercana. Por favor coordiná tu pedido
+                          directamente por WhatsApp:
+                        </p>
+                        <a
+                          href={whatsappOutOfZoneHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-[#25D366] px-3 py-2.5 text-center text-xs font-black uppercase tracking-wide text-white hover:bg-[#1fb855]"
+                        >
+                          WhatsApp
+                        </a>
+                      </div>
+                    ) : null}
                   </div>
                 )}
                 <fieldset className="space-y-2 border-t border-[#e0dcd4] pt-4">
@@ -1280,7 +1448,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
               {encargoCheckoutUnlocked ? (
                 <button
                   type="button"
-                  disabled={submittingOrder}
+                  disabled={submittingOrder || deliveryGeoBlocksConfirm}
                   onClick={() => void submitOrder()}
                   className="w-full rounded-xl bg-[#7a765a] px-4 py-3 text-sm font-black uppercase text-white hover:bg-[#5f5c46] disabled:opacity-50"
                 >
