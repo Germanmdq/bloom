@@ -15,6 +15,10 @@ type ConfirmBody = {
   /** Retiro en local vs delivery (dashboard) */
   delivery_type: "local" | "delivery";
   delivery_address?: string;
+  /** Cliente confirmó la dirección tal como está (delivery) */
+  address_confirmed?: boolean;
+  /** Web encargo: contra entrega → CASH; transferencia → BANK_TRANSFER */
+  payment_method?: "cash_on_delivery" | "bank_transfer";
   access_token?: string;
 };
 
@@ -69,8 +73,22 @@ export async function POST(request: NextRequest) {
     const url = getSupabaseUrl();
     const anon = getSupabaseAnonKey();
 
-    const deliveryInfo =
-      deliveryType === "delivery" ? deliveryAddress : "Retiro en local";
+    const pay =
+      body.payment_method === "bank_transfer" ? ("bank_transfer" as const) : ("cash_on_delivery" as const);
+    const paymentMethodDb = pay === "bank_transfer" ? "BANK_TRANSFER" : "CASH";
+    const paymentNotes =
+      pay === "bank_transfer" ? "Transferencia bancaria (pedido web)" : null;
+
+    let deliveryInfo: string;
+    if (deliveryType === "delivery") {
+      const confirmed = body.address_confirmed === true;
+      deliveryInfo = [
+        deliveryAddress,
+        confirmed ? "Dirección confirmada por el cliente." : "Cliente indicó que revisa o corrige la dirección.",
+      ].join("\n");
+    } else {
+      deliveryInfo = "Retiro en local";
+    }
 
     const insertRow: Record<string, unknown> = {
       table_id: null,
@@ -83,6 +101,8 @@ export async function POST(request: NextRequest) {
       status: "pending",
       order_type: "web",
       paid: false,
+      payment_method: paymentMethodDb,
+      ...(paymentNotes ? { payment_notes: paymentNotes } : { payment_notes: null }),
     };
 
     const db =

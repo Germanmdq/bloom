@@ -44,6 +44,7 @@ export default function AuthPage() {
   const [loginPassword, setLoginPassword] = useState("");
 
   const [regName, setRegName] = useState("");
+  const [regPhone, setRegPhone] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
 
@@ -95,11 +96,16 @@ export default function AuthPage() {
       return;
     }
     setLoading(true);
+    const phone = regPhone.trim();
     const { data, error: err } = await supabase.auth.signUp({
       email,
       password: regPassword,
       options: {
-        data: { full_name: name, is_customer: true },
+        data: {
+          full_name: name,
+          is_customer: true,
+          ...(phone ? { phone } : {}),
+        },
         emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/cuenta` : undefined,
       },
     });
@@ -232,6 +238,25 @@ export default function AuthPage() {
                 }`}
                 autoFocus
               />
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Teléfono (opcional)</label>
+                <input
+                  type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  placeholder="Ej. 11 2345-6789"
+                  value={regPhone}
+                  onChange={(e) => {
+                    setRegPhone(e.target.value);
+                    setError("");
+                    setInfo("");
+                  }}
+                  className={`mt-1 w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
+                    error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
+                  }`}
+                />
+                <p className="mt-1.5 text-xs font-medium text-neutral-500">Para avisarte cuando tu encargo está listo</p>
+              </div>
               <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Email</label>
               <input
                 type="email"

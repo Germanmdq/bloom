@@ -1,5 +1,5 @@
-
-import { create } from 'zustand';
+import { create } from "zustand";
+import type { PaymentMethod } from "@/lib/types";
 
 export interface CartItem {
     id: string; // Product ID required for Stock
@@ -19,8 +19,8 @@ interface OrderState {
     updateQuantity: (index: number, delta: number) => void;
     clearCart: () => void;
 
-    paymentMethod: 'CASH' | 'CARD' | 'MERCADO_PAGO';
-    setPaymentMethod: (method: 'CASH' | 'CARD' | 'MERCADO_PAGO') => void;
+    paymentMethod: PaymentMethod;
+    setPaymentMethod: (method: PaymentMethod) => void;
 
     notes: string;
     setNotes: (notes: string) => void;

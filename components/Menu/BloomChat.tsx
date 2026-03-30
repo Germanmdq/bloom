@@ -125,7 +125,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const [checkoutName, setCheckoutName] = useState("");
   const [checkoutPhone, setCheckoutPhone] = useState("");
   const [checkoutAddress, setCheckoutAddress] = useState("");
+  const [addressConfirmation, setAddressConfirmation] = useState<"yes" | "no">("yes");
   const [deliveryType, setDeliveryType] = useState<"local" | "delivery">("local");
+  const [paymentMethod, setPaymentMethod] = useState<"cash_on_delivery" | "bank_transfer">("cash_on_delivery");
   const [submittingOrder, setSubmittingOrder] = useState(false);
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -189,6 +191,25 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   }, [open, context, supabase]);
 
   useEffect(() => {
+    if (!encargoOpen) return;
+    let cancelled = false;
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled || !session?.user) return;
+      const meta = session.user.user_metadata ?? {};
+      const fullName = typeof meta.full_name === "string" ? meta.full_name.trim() : "";
+      const phoneMeta = typeof meta.phone === "string" ? meta.phone.trim() : "";
+      setCheckoutName((prev) => (prev.trim() ? prev : fullName));
+      setCheckoutPhone((prev) => (prev.trim() ? prev : phoneMeta));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [encargoOpen, supabase]);
+
+  useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -206,7 +227,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setCheckoutName("");
     setCheckoutPhone("");
     setCheckoutAddress("");
+    setAddressConfirmation("yes");
     setDeliveryType("local");
+    setPaymentMethod("cash_on_delivery");
   }, []);
 
   const addLine = useCallback((p: ProductRow, observations: string) => {
@@ -266,7 +289,13 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           customer_name: name,
           customer_phone: phone,
           delivery_type: deliveryType,
-          ...(deliveryType === "delivery" ? { delivery_address: address } : {}),
+          payment_method: paymentMethod,
+          ...(deliveryType === "delivery"
+            ? {
+                delivery_address: address,
+                address_confirmed: addressConfirmation === "yes",
+              }
+            : {}),
           ...(session?.access_token ? { access_token: session.access_token } : {}),
         }),
       });
@@ -277,14 +306,20 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       }
 
       setEncargoOpen(false);
-      setSuccessMessage("Encargo enviado, te esperamos en Bloom!");
+      setSuccessMessage(
+        paymentMethod === "bank_transfer"
+          ? `Te enviamos los datos de transferencia por WhatsApp al ${phone}.`
+          : "Encargo enviado, te esperamos en Bloom!"
+      );
       setShowHistoryLink(!loggedIn);
       setCart([]);
       setAddedProductIds(new Set());
       setCheckoutName("");
       setCheckoutPhone("");
       setCheckoutAddress("");
+      setAddressConfirmation("yes");
       setDeliveryType("local");
+      setPaymentMethod("cash_on_delivery");
       setContextKey((k) => k + 1);
       toast.success("Listo");
     } catch (e) {
@@ -293,7 +328,16 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     } finally {
       setSubmittingOrder(false);
     }
-  }, [cart, checkoutName, checkoutPhone, checkoutAddress, deliveryType, supabase]);
+  }, [
+    cart,
+    checkoutName,
+    checkoutPhone,
+    checkoutAddress,
+    deliveryType,
+    addressConfirmation,
+    paymentMethod,
+    supabase,
+  ]);
 
   const openFabChat = useCallback(() => {
     resetForContext();
@@ -419,7 +463,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                       type="radio"
                       name="delivery"
                       checked={deliveryType === "local"}
-                      onChange={() => setDeliveryType("local")}
+                      onChange={() => {
+                        setDeliveryType("local");
+                        setAddressConfirmation("yes");
+                      }}
                       className="accent-[#2d4a3e]"
                     />
                     <span className="text-sm font-medium">Retiro en local</span>
@@ -429,24 +476,70 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                       type="radio"
                       name="delivery"
                       checked={deliveryType === "delivery"}
-                      onChange={() => setDeliveryType("delivery")}
+                      onChange={() => {
+                        setDeliveryType("delivery");
+                        setAddressConfirmation("yes");
+                      }}
                       className="accent-[#2d4a3e]"
                     />
                     <span className="text-sm font-medium">Delivery</span>
                   </label>
                 </fieldset>
                 {deliveryType === "delivery" && (
-                  <div>
-                    <label className="text-xs font-bold text-neutral-500">Dirección</label>
-                    <textarea
-                      value={checkoutAddress}
-                      onChange={(e) => setCheckoutAddress(e.target.value)}
-                      rows={2}
-                      className="mt-1 w-full resize-none rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
-                      placeholder="Calle, número, piso…"
-                    />
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs font-bold text-neutral-500">Dirección</label>
+                      <textarea
+                        value={checkoutAddress}
+                        onChange={(e) => setCheckoutAddress(e.target.value)}
+                        readOnly={addressConfirmation === "yes" && checkoutAddress.trim().length > 0}
+                        rows={2}
+                        className="mt-1 w-full resize-none rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm read-only:bg-neutral-50"
+                        placeholder="Calle, número, piso…"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="address-confirm" className="text-xs font-bold text-neutral-500">
+                        ¿Confirmás la dirección?
+                      </label>
+                      <select
+                        id="address-confirm"
+                        value={addressConfirmation}
+                        onChange={(e) => setAddressConfirmation(e.target.value === "no" ? "no" : "yes")}
+                        className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm font-medium"
+                      >
+                        <option value="yes">Sí</option>
+                        <option value="no">No</option>
+                      </select>
+                      {addressConfirmation === "no" ? (
+                        <p className="mt-1 text-xs text-neutral-600">Editá la dirección arriba si hace falta.</p>
+                      ) : null}
+                    </div>
                   </div>
                 )}
+                <fieldset className="space-y-2 border-t border-[#e0dcd4] pt-4">
+                  <legend className="text-xs font-bold text-neutral-500">Forma de pago</legend>
+                  <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2">
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked={paymentMethod === "cash_on_delivery"}
+                      onChange={() => setPaymentMethod("cash_on_delivery")}
+                      className="accent-[#2d4a3e]"
+                    />
+                    <span className="text-sm font-medium">Pago contra entrega</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2">
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked={paymentMethod === "bank_transfer"}
+                      onChange={() => setPaymentMethod("bank_transfer")}
+                      className="accent-[#2d4a3e]"
+                    />
+                    <span className="text-sm font-medium">Transferencia bancaria</span>
+                  </label>
+                </fieldset>
               </div>
             </div>
 

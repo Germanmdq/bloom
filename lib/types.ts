@@ -56,7 +56,7 @@ export type DashboardProduct = {
     categories?: { name: string };
 };
 
-export type PaymentMethod = 'CASH' | 'CARD' | 'MERCADO_PAGO';
+export type PaymentMethod = 'CASH' | 'CARD' | 'MERCADO_PAGO' | 'BANK_TRANSFER';
 
 export type OrderItem = {
     id?: string;
