@@ -6,13 +6,16 @@ import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODEL = "llama3-70b-8192";
+/** Mismo id que `app/api/ai/prep-time` — `llama3-70b-8192` suele fallar en la API actual de Groq. */
+const MODEL = "llama-3.3-70b-versatile";
 
 /** Mensaje "vacío" del cliente para el primer turno (Groq no acepta content totalmente vacío). */
 const OPENING_USER_PLACEHOLDER = "\u200b";
 
+const LOG = "[bloom-chat]";
+
 function getGroq(): Groq | null {
-  const apiKey = process.env.GROQ_API_KEY?.trim();
+  const apiKey = process.env.GROQ_API_KEY?.trim() || process.env.NEXT_PUBLIC_GROQ_API_KEY?.trim();
   if (!apiKey) return null;
   return new Groq({ apiKey });
 }
@@ -46,20 +49,42 @@ type MenuCtx = {
   mealLine: string;
 };
 
-async function loadMenuContext(clientTimeISO: string): Promise<MenuCtx> {
-  const supabase = createClient(getSupabaseUrl(), getSupabaseAnonKey());
+async function loadMenuContext(clientTimeISO: string, supabaseUrl: string): Promise<MenuCtx> {
+  const supabase = createClient(supabaseUrl, getSupabaseAnonKey());
   const tod = timeOfDayLabel(clientTimeISO);
   const mealLine = mealSuggestionLine(clientTimeISO);
 
-  const [{ data: categories }, { data: products }, { data: settings }] = await Promise.all([
-    supabase.from("categories").select("id, name, sort_order").order("sort_order", { ascending: true }),
-    supabase
-      .from("products")
-      .select("id, name, description, price, category_id, active, options")
-      .eq("active", true)
-      .order("name"),
-    supabase.from("app_settings").select("plato_del_dia_id").eq("id", 1).maybeSingle(),
-  ]);
+  const catRes = await supabase.from("categories").select("id, name, sort_order").order("sort_order", { ascending: true });
+  console.error(`${LOG} supabase categories`, {
+    ok: !catRes.error,
+    error: catRes.error?.message,
+    code: catRes.error?.code,
+    rowCount: catRes.data?.length ?? 0,
+  });
+
+  const prodRes = await supabase
+    .from("products")
+    .select("id, name, description, price, category_id, active, options")
+    .eq("active", true)
+    .order("name");
+  console.error(`${LOG} supabase products`, {
+    ok: !prodRes.error,
+    error: prodRes.error?.message,
+    code: prodRes.error?.code,
+    rowCount: prodRes.data?.length ?? 0,
+  });
+
+  const settingsRes = await supabase.from("app_settings").select("plato_del_dia_id").eq("id", 1).maybeSingle();
+  console.error(`${LOG} supabase app_settings`, {
+    ok: !settingsRes.error,
+    error: settingsRes.error?.message,
+    code: settingsRes.error?.code,
+    hasRow: settingsRes.data != null,
+  });
+
+  const categories = catRes.data;
+  const products = prodRes.data;
+  const settings = settingsRes.data;
 
   const catMap = new Map<string, string>();
   for (const c of categories ?? []) {
@@ -78,11 +103,21 @@ async function loadMenuContext(clientTimeISO: string): Promise<MenuCtx> {
   }
 
   let topSellersBlock = "No hay datos de lo más pedido todavía.";
-  const { data: topCatsBySales, error: salesErr } = await supabase
+  const salesRes = await supabase
     .from("categories")
     .select("id, name, sales_count")
     .order("sales_count", { ascending: false, nullsFirst: false })
     .limit(3);
+  console.error(`${LOG} supabase categories by sales_count`, {
+    ok: !salesRes.error,
+    error: salesRes.error?.message,
+    code: salesRes.error?.code,
+    details: salesRes.error?.details,
+    rowCount: salesRes.data?.length ?? 0,
+  });
+
+  const topCatsBySales = salesRes.data;
+  const salesErr = salesRes.error;
 
   let topCatIds: { id: string; name: string }[] = [];
   if (!salesErr && topCatsBySales?.length) {
@@ -130,9 +165,7 @@ async function loadMenuContext(clientTimeISO: string): Promise<MenuCtx> {
 }
 
 function buildSystemPrompt(ctx: MenuCtx, clientTimeISO: string, opts: { openingAppend?: string }) {
-  const openingAppend =
-    opts.openingAppend ??
-    "";
+  const openingAppend = opts.openingAppend ?? "";
 
   return `You are the virtual waiter of Bloom Café & More in Mar del Plata (Bárbara y Agustín).
 You speak casual Argentine Spanish (vos, che, bárbaro, dale).
@@ -170,77 +203,115 @@ function streamGroqText(completion: AsyncIterable<Groq.Chat.Completions.ChatComp
         }
         controller.close();
       } catch (e) {
-        controller.error(e);
+        console.error(`${LOG} streamGroqText error`, e);
+        if (e instanceof Error) console.error(e.stack);
+        try {
+          controller.error(e);
+        } catch {
+          /* closed */
+        }
       }
     },
   });
 }
 
 export async function POST(request: NextRequest) {
-  const groq = getGroq();
-  if (!groq) {
-    return new Response(JSON.stringify({ error: "GROQ_API_KEY no configurada" }), {
-      status: 503,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  let body: {
-    mode?: "opening" | "chat";
-    messages?: { role: "user" | "assistant" | "system"; content: string }[];
-    clientTimeISO?: string;
-  };
+  console.error(`${LOG} GROQ_API_KEY present`, !!process.env.GROQ_API_KEY);
+  console.error(`${LOG} NEXT_PUBLIC_GROQ_API_KEY present`, !!process.env.NEXT_PUBLIC_GROQ_API_KEY);
 
   try {
-    body = await request.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "JSON inválido" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
+    const groq = getGroq();
+    if (!groq) {
+      console.error(`${LOG} abort: no Groq client (missing API key)`);
+      return new Response(JSON.stringify({ error: "GROQ_API_KEY no configurada" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    let body: {
+      mode?: "opening" | "chat";
+      messages?: { role: "user" | "assistant" | "system"; content: string }[];
+      clientTimeISO?: string;
+    };
+
+    try {
+      body = await request.json();
+    } catch (parseErr) {
+      console.error(`${LOG} invalid JSON body`, parseErr);
+      return new Response(JSON.stringify({ error: "JSON inválido" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = getSupabaseUrl();
+    console.error(`${LOG} Supabase URL configured`, !!supabaseUrl, "length", supabaseUrl?.length ?? 0);
+
+    const clientTimeISO = body.clientTimeISO || new Date().toISOString();
+    const ctx = await loadMenuContext(clientTimeISO, supabaseUrl);
+    console.error(`${LOG} menu context loaded`, {
+      menuChars: ctx.menuText.length,
+      tod: ctx.tod,
     });
-  }
 
-  const clientTimeISO = body.clientTimeISO || new Date().toISOString();
-  const ctx = await loadMenuContext(clientTimeISO);
-  const openingAppend =
-    body.mode === "opening"
-      ? `\n\nOPENING TURN: The customer has not spoken yet. You open the conversation alone. One message only: greet for the time of day, mention today's special with price (if configured), tease something from the top sellers if natural, and invite them to order. Three to five short sentences. Seductive waiter energy, not a support bot.`
-      : "";
+    const openingAppend =
+      body.mode === "opening"
+        ? `\n\nOPENING TURN: The customer has not spoken yet. You open the conversation alone. One message only: greet for the time of day, mention today's special with price (if configured), tease something from the top sellers if natural, and invite them to order. Three to five short sentences. Seductive waiter energy, not a support bot.`
+        : "";
 
-  const systemContent = buildSystemPrompt(ctx, clientTimeISO, { openingAppend });
+    const systemContent = buildSystemPrompt(ctx, clientTimeISO, { openingAppend });
 
-  if (body.mode === "opening") {
+    if (body.mode === "opening") {
+      console.error(`${LOG} Groq request`, { mode: "opening", model: MODEL });
+      const completion = await groq.chat.completions.create({
+        model: MODEL,
+        temperature: 0.85,
+        max_tokens: 400,
+        stream: true,
+        messages: [
+          { role: "system", content: systemContent },
+          { role: "user", content: OPENING_USER_PLACEHOLDER },
+        ],
+      });
+      return new Response(streamGroqText(completion), {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-store",
+        },
+      });
+    }
+
+    const messages = body.messages ?? [];
+    console.error(`${LOG} Groq request`, { mode: "chat", model: MODEL, messageCount: messages.length });
     const completion = await groq.chat.completions.create({
       model: MODEL,
-      temperature: 0.85,
-      max_tokens: 400,
+      temperature: 0.7,
+      max_tokens: 1024,
       stream: true,
-      messages: [
-        { role: "system", content: systemContent },
-        { role: "user", content: OPENING_USER_PLACEHOLDER },
-      ],
+      messages: [{ role: "system", content: systemContent }, ...messages],
     });
+
     return new Response(streamGroqText(completion), {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-store",
       },
     });
+  } catch (err: unknown) {
+    console.error(`${LOG} POST failed`, err);
+    if (err instanceof Error) {
+      console.error(`${LOG} name`, err.name, "message", err.message);
+      console.error(`${LOG} stack`, err.stack);
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    const isDev = process.env.NODE_ENV === "development";
+    return new Response(
+      JSON.stringify({
+        error: "Error en bloom-chat",
+        ...(isDev ? { detail: message } : {}),
+      }),
+      { status: 500, headers: { "Content-Type": "application/json; charset=utf-8" } }
+    );
   }
-
-  const messages = body.messages ?? [];
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
-    temperature: 0.7,
-    max_tokens: 1024,
-    stream: true,
-    messages: [{ role: "system", content: systemContent }, ...messages],
-  });
-
-  return new Response(streamGroqText(completion), {
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-store",
-    },
-  });
 }
