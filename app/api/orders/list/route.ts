@@ -8,6 +8,12 @@ import { isAdminEmail } from "@/lib/auth/admin";
  * Identidad: sesión admin (mismo criterio que /dashboard). Datos: obligatorio service role (RLS no aplica a anon aquí).
  */
 export async function GET() {
+  console.log(
+    "[orders/list] SERVICE_ROLE_KEY present:",
+    !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    "length:",
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.length
+  );
   try {
     const supabaseSession = await createClient();
     const {
