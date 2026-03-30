@@ -1,6 +1,7 @@
 "use client";
 
 import { LayoutGrid, X } from "lucide-react";
+import { WEB_ORDER_TABLE_DELIVERY, WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
 
 interface WebOrder {
     id: string;
@@ -25,7 +26,7 @@ interface WebOrderListProps {
 }
 
 export function WebOrderList({ tableId, webOrders, onSelectOrder, onClose }: WebOrderListProps) {
-    const title = tableId === 998 ? "Retiro" : "Envío";
+    const title = tableId === WEB_ORDER_TABLE_RETIRO ? "Retiro" : "Envío";
 
     if (webOrders.length === 0) {
         return (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
+import { WEB_ORDER_TABLE_DELIVERY, WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
 
 type ConfirmBody = {
   items: Array<{
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
     }
 
     const insertRow: Record<string, unknown> = {
-      table_id: null,
+      table_id: deliveryType === "delivery" ? WEB_ORDER_TABLE_DELIVERY : WEB_ORDER_TABLE_RETIRO,
       customer_name: customer_name.trim(),
       customer_phone: phone,
       delivery_type: deliveryType,

@@ -10,6 +10,7 @@ import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ReceiptModal } from "@/components/pos/ReceiptModal";
 import { WebOrderList } from "@/components/pos/WebOrderList";
 import { orderSheetHeaderBorderClass } from "@/lib/dashboard/table-colors";
+import { orderMatchesWebVirtualTable, WEB_ORDER_TABLE_DELIVERY, WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
 import type { CartItem } from "@/lib/store/order-store";
 
 /** Ítems guardados en salon_tables o JSON de kitchen_tickets → mismo formato que el carrito POS. */
@@ -61,7 +62,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const [currentWebOrderId, setCurrentWebOrderId] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-    const isWebTable = tableId === 998 || tableId === 999;
+    const isWebTable = tableId === WEB_ORDER_TABLE_RETIRO || tableId === WEB_ORDER_TABLE_DELIVERY;
 
     /** Al cambiar de mesa, vaciar el store ya (evita mezclar pedidos entre mesas). */
     useLayoutEffect(() => {
@@ -74,7 +75,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 const resp = await fetch('/api/orders/list');
                 const res = await resp.json();
                 if (res.data) {
-                    setWebOrders(res.data.filter((o: any) => o.table_id === tableId));
+                    setWebOrders(res.data.filter((o: any) => orderMatchesWebVirtualTable(o, tableId)));
                 }
             } catch (e) {
                 console.error("Error loading web orders:", e);
@@ -362,11 +363,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                         </button>
                     )}
                     <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center text-white font-black text-base">
-                        {tableId === 998 ? 'R' : tableId === 999 ? 'E' : tableId}
+                        {tableId === WEB_ORDER_TABLE_RETIRO ? 'R' : tableId === WEB_ORDER_TABLE_DELIVERY ? 'E' : tableId}
                     </div>
                     <div>
                         <p className="font-black text-gray-900 leading-none">
-                            {tableId === 998 ? 'Retiro' : tableId === 999 ? 'Envío' : `Mesa ${tableId}`}
+                            {tableId === WEB_ORDER_TABLE_RETIRO ? 'Retiro' : tableId === WEB_ORDER_TABLE_DELIVERY ? 'Envío' : `Mesa ${tableId}`}
                         </p>
                         <p className="text-[11px] text-gray-400 mt-0.5">
                             {cart.length === 0 ? 'Sin productos' : `${cart.reduce((s, i) => s + i.quantity, 0)} productos`}

@@ -13,6 +13,7 @@ import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 import { PublicAccountNav } from "@/components/PublicAccountNav";
 import { SiteHeader } from "@/components/SiteHeader";
 import { BloomChat, type BloomChatHandle } from "@/components/Menu/BloomChat";
+import { WEB_ORDER_TABLE_DELIVERY, WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
 import type { BloomChatCartLine } from "@/lib/bloom-chat-types";
 
 const PEDIDOS_YA_BLOOM_URL =
@@ -179,7 +180,7 @@ function PublicMenuPage() {
 
         const { data: { session } } = await supabase.auth.getSession();
         const row: Record<string, unknown> = {
-            table_id: null,
+            table_id: ci.type === "delivery" ? WEB_ORDER_TABLE_DELIVERY : WEB_ORDER_TABLE_RETIRO,
             customer_name: ci.name, customer_phone: ci.phone,
             delivery_type: ci.type, delivery_info: deliveryInfo,
             items, total, status: 'PENDING', order_type: 'WEB',

@@ -1,8 +1,12 @@
 /** Colores POS: local (mesa salón) = rojo, delivery = azul, retiro = amarillo */
 
+import { WEB_ORDER_TABLE_DELIVERY, WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
+
 export type TableChannel = "local" | "delivery" | "retiro";
 
 export function tableChannelFromId(id: number): TableChannel {
+    if (id === WEB_ORDER_TABLE_RETIRO) return "retiro";
+    if (id === WEB_ORDER_TABLE_DELIVERY) return "delivery";
     if (id >= 100) return "retiro";
     if (id >= 40) return "delivery";
     return "local";
@@ -47,8 +51,8 @@ export function listSubPriceClass(id: number): string {
 
 /** Barra superior del panel de pedido (mesa / delivery / retiro) */
 export function orderSheetHeaderBorderClass(tableId: number): string {
-    if (tableId === 998) return "border-t-4 border-t-amber-500";
-    if (tableId === 999) return "border-t-4 border-t-blue-600";
+    if (tableId === WEB_ORDER_TABLE_RETIRO) return "border-t-4 border-t-amber-500";
+    if (tableId === WEB_ORDER_TABLE_DELIVERY) return "border-t-4 border-t-blue-600";
     if (tableId >= 100) return "border-t-4 border-t-amber-500";
     if (tableId >= 40) return "border-t-4 border-t-blue-600";
     return "border-t-4 border-t-red-600";
