@@ -81,6 +81,150 @@ function assistantDisplayText(raw: string): string {
   return raw.slice(0, start).trim();
 }
 
+/** Precio en pesos tipo $ 1.500 o $500 (separador de miles con punto). */
+const ARS_PRICE_RE = String.raw`\$\s*(?:\d{1,3}(?:\.\d{3})+|\d+)\b`;
+
+type ProductPriceMatch = { start: number; end: number; name: string; price: string };
+
+function findProductPriceMatches(text: string): ProductPriceMatch[] {
+  const raw: ProductPriceMatch[] = [];
+  const price = ARS_PRICE_RE;
+
+  const patterns: RegExp[] = [
+    new RegExp(String.raw`"([^"]{1,120})"\s+a\s+(${price})`, "gu"),
+    new RegExp(String.raw`«([^»]{1,120})»\s+a\s+(${price})`, "gu"),
+    new RegExp(String.raw`'([^']{1,120})'\s+a\s+(${price})`, "gu"),
+  ];
+
+  for (const re of patterns) {
+    re.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      const name = m[1].replace(/\s+/g, " ").trim();
+      if (name.length < 2) continue;
+      raw.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        name,
+        price: m[2].replace(/\s+/g, " ").trim(),
+      });
+    }
+  }
+
+  raw.sort((a, b) => a.start - b.start || a.end - b.end);
+  const merged: ProductPriceMatch[] = [];
+  for (const m of raw) {
+    if (merged.some((k) => !(m.end <= k.start || m.start >= k.end))) continue;
+    merged.push(m);
+  }
+  return merged.sort((a, b) => a.start - b.start);
+}
+
+type AssistantSeg =
+  | { type: "text"; text: string }
+  | { type: "product"; name: string; price: string };
+
+function parseAssistantSegments(text: string): AssistantSeg[] {
+  const matches = findProductPriceMatches(text);
+  if (matches.length === 0) return [{ type: "text", text }];
+
+  const out: AssistantSeg[] = [];
+  let cursor = 0;
+  for (const m of matches) {
+    if (m.start > cursor) {
+      const t = text.slice(cursor, m.start);
+      if (t.trim()) out.push({ type: "text", text: t });
+    }
+    out.push({ type: "product", name: m.name, price: m.price });
+    cursor = m.end;
+  }
+  if (cursor < text.length) {
+    const t = text.slice(cursor);
+    if (t.trim()) out.push({ type: "text", text: t });
+  }
+  return out.length ? out : [{ type: "text", text }];
+}
+
+type AssistantRun =
+  | { kind: "text"; text: string }
+  | { kind: "cards"; items: { name: string; price: string }[] };
+
+function groupAssistantRuns(segments: AssistantSeg[]): AssistantRun[] {
+  const runs: AssistantRun[] = [];
+  for (const seg of segments) {
+    if (seg.type === "text") {
+      if (!seg.text.trim()) continue;
+      const last = runs[runs.length - 1];
+      if (last?.kind === "text") last.text += seg.text;
+      else runs.push({ kind: "text", text: seg.text });
+    } else {
+      const last = runs[runs.length - 1];
+      if (last?.kind === "cards") last.items.push({ name: seg.name, price: seg.price });
+      else runs.push({ kind: "cards", items: [{ name: seg.name, price: seg.price }] });
+    }
+  }
+  return runs;
+}
+
+function renderTextWithLineBreaks(text: string) {
+  const lines = text.split("\n");
+  return lines.map((line, li) => (
+    <span key={li}>
+      {line}
+      {li < lines.length - 1 ? <br /> : null}
+    </span>
+  ));
+}
+
+function AssistantMessageBody({
+  rawContent,
+  onPedirEste,
+  pedirDisabled,
+}: {
+  rawContent: string;
+  onPedirEste: (productName: string) => void;
+  pedirDisabled: boolean;
+}) {
+  const visible = assistantDisplayText(rawContent);
+  const runs = groupAssistantRuns(parseAssistantSegments(visible));
+
+  if (runs.length === 1 && runs[0].kind === "text") {
+    return <>{renderTextWithLineBreaks(runs[0].text)}</>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {runs.map((run, i) =>
+        run.kind === "text" ? (
+          <div key={i} className="whitespace-pre-wrap">
+            {renderTextWithLineBreaks(run.text)}
+          </div>
+        ) : (
+          <div key={i} className="flex flex-col gap-2">
+            {run.items.map((item, j) => (
+              <div
+                key={`${j}-${item.name}-${item.price}`}
+                className="rounded-xl border border-[#e0dcd4] bg-[#fbfaf7] p-3 shadow-sm"
+              >
+                <p className="font-bold text-neutral-900">{item.name}</p>
+                <p className="mt-1 text-sm font-medium text-[#2d4a3e]">{item.price}</p>
+                <button
+                  type="button"
+                  disabled={pedirDisabled}
+                  onClick={() => onPedirEste(item.name)}
+                  className="mt-2 w-full rounded-lg bg-[#7a765a] px-3 py-2 text-xs font-black uppercase tracking-wide text-white transition hover:bg-[#5f5c46] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Pedir este
+                </button>
+              </div>
+            ))}
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 function formatArs(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
 }
@@ -494,12 +638,20 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                       : "mr-auto bg-white text-neutral-800 shadow-sm ring-1 ring-black/5"
                   }`}
                 >
-                  {(m.role === "assistant" ? assistantDisplayText(m.content) : m.content).split("\n").map((line, li, arr) => (
-                    <span key={li}>
-                      {line}
-                      {li < arr.length - 1 ? <br /> : null}
-                    </span>
-                  ))}
+                  {m.role === "assistant" ? (
+                    <AssistantMessageBody
+                      rawContent={m.content}
+                      pedirDisabled={streaming || loadingOpening}
+                      onPedirEste={(name) => void sendUserMessageWithText(`Quiero ${name}`)}
+                    />
+                  ) : (
+                    m.content.split("\n").map((line, li, arr) => (
+                      <span key={li}>
+                        {line}
+                        {li < arr.length - 1 ? <br /> : null}
+                      </span>
+                    ))
+                  )}
                 </div>
               ))}
               {streaming && (
