@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 type Msg = { role: "assistant" | "user"; content: string };
 
 export type BloomChatHandle = {
-  /** Abre el modal, título = categoría, y envía contexto a Groq tras el saludo. */
+  /** Abre el modal, título = categoría, y envía contexto al asistente tras el saludo. */
   openWithCategoryMessage: (categoryName: string) => void;
   /** Abre el modal sin mensaje automático (botón flotante). */
   openChat: () => void;
@@ -80,13 +80,19 @@ function formatArs(n: number) {
 
 async function streamOpeningMessage(
   clientTimeISO: string,
-  onDelta: (full: string) => void
+  onDelta: (full: string) => void,
+  category?: string
 ): Promise<void> {
   const res = await fetch("/api/bloom-chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mode: "opening", clientTimeISO }),
+    body: JSON.stringify({
+      mode: "opening",
+      clientTimeISO,
+      ...(category ? { category } : {}),
+    }),
   });
+  console.log("[BloomChat] POST /api/bloom-chat (opening) status:", res.status, res.statusText);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { error?: string }).error || "Error al abrir el chat");
@@ -129,19 +135,26 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const loadOpening = useCallback(async () => {
     setLoadingOpening(true);
     setMessages([{ role: "assistant", content: "" }]);
-    try {
-      await streamOpeningMessage(new Date().toISOString(), (full) => {
-        setMessages([{ role: "assistant", content: assistantDisplayText(full) }]);
-      });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se pudo cargar el mozo virtual");
-      setMessages([
-        {
-          role: "assistant",
-          content:
-            "Se trabó el saludo. Probá de nuevo en un ratito — en Bloom estamos para lo que necesites.",
+    const runStream = async () => {
+      await streamOpeningMessage(
+        new Date().toISOString(),
+        (full) => {
+          setMessages([{ role: "assistant", content: assistantDisplayText(full) }]);
         },
-      ]);
+        undefined
+      );
+    };
+    try {
+      await runStream();
+    } catch (e) {
+      console.error("[BloomChat] opening failed, retry in 2s", e);
+      await new Promise((r) => setTimeout(r, 2000));
+      try {
+        await runStream();
+      } catch (e2) {
+        console.error("[BloomChat] opening failed after retry", e2);
+        setMessages([]);
+      }
     } finally {
       setLoadingOpening(false);
     }
@@ -264,14 +277,17 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const runChatCompletion = useCallback(
     async (nextMessages: Msg[]) => {
       const clientTimeISO = new Date().toISOString();
+      const category = chatHeaderTitle !== "Bloom" ? chatHeaderTitle : undefined;
       const res = await fetch("/api/bloom-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           clientTimeISO,
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          ...(category ? { category } : {}),
         }),
       });
+      console.log("[BloomChat] POST /api/bloom-chat (chat) status:", res.status, res.statusText);
 
       if (!res.ok) {
         toast.error("No se pudo enviar el mensaje");
@@ -299,16 +315,18 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
       await finalizeAssistantMessage(assistant);
     },
-    [finalizeAssistantMessage]
+    [finalizeAssistantMessage, chatHeaderTitle]
   );
 
   const sendUserMessageWithText = useCallback(
-    async (trimmed: string) => {
+    async (trimmed: string, opts?: { hideUserInUi?: boolean }) => {
       if (!trimmed || streaming || loadingOpening) return;
       setStreaming(true);
       try {
         const nextMessages: Msg[] = [...messages, { role: "user", content: trimmed }];
-        setMessages(nextMessages);
+        if (!opts?.hideUserInUi) {
+          setMessages(nextMessages);
+        }
         await runChatCompletion(nextMessages);
       } finally {
         setStreaming(false);
@@ -343,7 +361,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     const msg = pendingUserMessageRef.current;
     if (!msg) return;
     pendingUserMessageRef.current = null;
-    void sendUserMessageWithText(msg);
+    void sendUserMessageWithText(msg, { hideUserInUi: true });
   }, [open, loadingOpening, streaming, sendUserMessageWithText]);
 
   const sendUserMessage = async () => {

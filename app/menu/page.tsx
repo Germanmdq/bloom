@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ChevronLeft, Plus, Minus, CreditCard, MapPin, Phone, Truck, X, Star } from "lucide-react";
+import { ShoppingBag, ChevronLeft, Plus, Minus, CreditCard, MapPin, Phone, Truck, X } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
 import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
@@ -38,13 +38,6 @@ const MENU_PRODUCT_SELECT =
 // --- HELPERS ---
 const formatCurrency = (value: number) =>
     new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value);
-
-function categoryEmoji(c: { icon?: string | null; name: string }) {
-    const i = c.icon?.trim();
-    if (i) return i;
-    const m = c.name.match(/^\p{Extended_Pictographic}/u);
-    return m ? m[0] : "🍽️";
-}
 
 function categoryLabel(c: { name: string }) {
     return c.name.replace(/^\p{Extended_Pictographic}\s*/u, "").trim() || c.name;
@@ -474,9 +467,6 @@ function PublicMenuPage() {
                                 className="absolute inset-0 bg-gradient-to-t from-amber-950/90 via-amber-600/40 to-amber-300/30"
                                 aria-hidden
                             />
-                            <span className="absolute right-2 top-2 drop-shadow-md" aria-hidden>
-                                <Star className="h-5 w-5 text-amber-100" fill="currentColor" strokeWidth={0} />
-                            </span>
                             <div className="absolute bottom-0 left-0 right-0 p-3 pt-10">
                                 <span className="text-base font-bold leading-tight text-white drop-shadow-md md:text-lg">
                                     Plato del Día
@@ -513,12 +503,6 @@ function PublicMenuPage() {
                                     className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10"
                                     aria-hidden
                                 />
-                                <span
-                                    className="absolute right-2 top-2 text-base leading-none drop-shadow-md md:text-lg"
-                                    aria-hidden
-                                >
-                                    {categoryEmoji(c)}
-                                </span>
                                 <div className="absolute bottom-0 left-0 right-0 p-3 pt-10">
                                     <span className="text-base font-bold leading-tight text-white drop-shadow-md md:text-lg">
                                         {label}
