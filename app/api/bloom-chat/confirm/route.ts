@@ -11,24 +11,37 @@ type ConfirmBody = {
   }>;
   customer_name: string;
   customer_phone: string;
-  /** takeaway = para llevar; salon = comer en el local */
-  service?: "takeaway" | "salon";
+  /** Retiro en el local vs delivery (con dirección) */
+  fulfillment?: "retiro" | "delivery";
+  delivery_address?: string;
   /** JWT del usuario logueado para vincular customer_id */
   access_token?: string;
+  /** @deprecated usar fulfillment */
+  service?: "takeaway" | "salon";
 };
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as ConfirmBody;
     const { items, customer_name, customer_phone } = body;
-    const service = body.service === "salon" ? "salon" : "takeaway";
 
     if (!items?.length || !customer_name?.trim()) {
       return NextResponse.json({ error: "Faltan datos del pedido o del cliente" }, { status: 400 });
     }
+
     const phone = (customer_phone ?? "").trim();
-    if (service === "takeaway" && !phone) {
-      return NextResponse.json({ error: "Para llevar necesitamos un teléfono de contacto" }, { status: 400 });
+    if (!phone) {
+      return NextResponse.json({ error: "Necesitamos un teléfono de contacto" }, { status: 400 });
+    }
+
+    const fulfillment: "retiro" | "delivery" =
+      body.fulfillment === "delivery" ? "delivery" : "retiro";
+
+    if (fulfillment === "delivery") {
+      const addr = (body.delivery_address ?? "").trim();
+      if (!addr) {
+        return NextResponse.json({ error: "Ingresá la dirección de entrega" }, { status: 400 });
+      }
     }
 
     let customerId: string | null = null;
@@ -36,7 +49,10 @@ export async function POST(request: NextRequest) {
       const authClient = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
         global: { headers: { Authorization: `Bearer ${body.access_token.trim()}` } },
       });
-      const { data: { user }, error: userErr } = await authClient.auth.getUser();
+      const {
+        data: { user },
+        error: userErr,
+      } = await authClient.auth.getUser();
       if (!userErr && user?.id) {
         customerId = user.id;
       }
@@ -54,15 +70,15 @@ export async function POST(request: NextRequest) {
     const anon = getSupabaseAnonKey();
 
     const deliveryInfo =
-      service === "salon"
-        ? "Pedido mozo virtual — comer en el local"
-        : "Pedido mozo virtual — para llevar";
+      fulfillment === "delivery"
+        ? `Encargo mozo virtual — delivery: ${(body.delivery_address ?? "").trim()}`
+        : "Encargo mozo virtual — retiro en local";
 
     const insertRow: Record<string, unknown> = {
       table_id: null,
       customer_name: customer_name.trim(),
-      customer_phone: phone || "—",
-      delivery_type: "local",
+      customer_phone: phone,
+      delivery_type: fulfillment,
       delivery_info: deliveryInfo,
       items: itemsJson,
       total,

@@ -144,8 +144,8 @@ function PublicMenuPage() {
         [products]
     );
 
-    const openChatWithCategory = useCallback((name: string) => {
-        bloomChatRef.current?.openWithCategoryMessage(name);
+    const openChatWithCategory = useCallback((categoryId: string, displayName: string) => {
+        bloomChatRef.current?.openWithCategoryMessage({ categoryId, displayName });
     }, []);
 
     const updateQuantity = (cartItemId: string, delta: number) => {
@@ -437,7 +437,7 @@ function PublicMenuPage() {
                     </p>
                     <h1 className="text-2xl sm:text-4xl font-black text-neutral-900 tracking-tight">Elegí una categoría</h1>
                     <p className="text-neutral-600 text-sm mt-2 max-w-xl">
-                        Tocá una tarjeta: el asistente te muestra los productos destacados con precios.
+                        Tocá una tarjeta para ver productos y armar tu encargo.
                     </p>
                 </div>
 
@@ -445,9 +445,15 @@ function PublicMenuPage() {
                     {platoDiaProduct && (
                         <button
                             type="button"
-                            onClick={() => openChatWithCategory("Plato del Día")}
+                            onClick={() =>
+                                platoDiaProduct &&
+                                bloomChatRef.current?.openWithCategoryMessage({
+                                    displayName: "Plato del Día",
+                                    productIds: [platoDiaProduct.id],
+                                })
+                            }
                             className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl text-left shadow-md transition active:scale-[0.98] md:aspect-video"
-                            aria-label="Plato del Día — abrir asistente"
+                            aria-label="Plato del Día — armar encargo"
                         >
                             {platoDiaProduct.image_url?.trim() ? (
                                 <Image
@@ -481,9 +487,9 @@ function PublicMenuPage() {
                             <button
                                 key={c.id}
                                 type="button"
-                                onClick={() => openChatWithCategory(label)}
+                                onClick={() => openChatWithCategory(c.id, label)}
                                 className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl text-left shadow-md transition active:scale-[0.98] md:aspect-video"
-                                aria-label={`${label} — abrir asistente`}
+                                aria-label={`${label} — armar encargo`}
                             >
                                 {cardUrl ? (
                                     <Image
