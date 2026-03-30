@@ -76,37 +76,39 @@ function ProductCard({
   const [observation, setObservation] = useState("");
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[#e0dcd4] bg-white p-3 shadow-sm ring-1 ring-black/5">
-      {added && (
-        <div
-          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md"
-          aria-label="Agregado"
-        >
-          <Check className="h-5 w-5" strokeWidth={3} />
+    <div className="flex w-full flex-col gap-3 rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-black/5">
+      <div className="flex w-full items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 text-left">
+          <p className="font-bold text-neutral-900">{product.name}</p>
+          <p className="text-sm font-semibold text-[#2d4a3e]">{formatArs(Number(product.price))}</p>
         </div>
-      )}
-      <div className="pr-10">
-        <p className="font-bold text-neutral-900">{product.name}</p>
-        <p className="mt-1 text-sm font-semibold text-[#2d4a3e]">{formatArs(Number(product.price))}</p>
-        <label className="mt-2 block text-xs font-bold text-neutral-500">Observaciones (opcional)</label>
-        <input
-          type="text"
-          value={observation}
-          onChange={(e) => setObservation(e.target.value)}
-          disabled={added}
-          className="mt-1 w-full rounded-lg border border-[#d4cfc4] bg-white px-2 py-1.5 text-sm disabled:bg-neutral-100"
-        />
-        <button
-          type="button"
-          disabled={added}
-          onClick={() => onEncargar(observation.trim())}
-          className={`mt-2 w-full rounded-xl px-3 py-2 text-xs font-black uppercase tracking-wide text-white transition ${
-            added ? "bg-emerald-600" : "bg-[#7a765a] hover:bg-[#5f5c46]"
-          } disabled:cursor-default`}
-        >
-          {added ? "Agregado ✓" : "Encargar"}
-        </button>
+        {added ? (
+          <span
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md"
+            aria-label="Agregado"
+          >
+            <Check className="h-5 w-5" strokeWidth={3} />
+          </span>
+        ) : null}
       </div>
+      <label className="block text-left text-xs font-bold text-neutral-500">Observaciones (opcional)</label>
+      <input
+        type="text"
+        value={observation}
+        onChange={(e) => setObservation(e.target.value)}
+        disabled={added}
+        className="w-full rounded-lg border border-[#d4cfc4] bg-white px-3 py-2 text-sm text-left disabled:bg-neutral-100"
+      />
+      <button
+        type="button"
+        disabled={added}
+        onClick={() => onEncargar(observation.trim())}
+        className={`w-full rounded-xl px-3 py-2.5 text-xs font-black uppercase tracking-wide text-white transition ${
+          added ? "bg-emerald-600" : "bg-[#7a765a] hover:bg-[#5f5c46]"
+        } disabled:cursor-default`}
+      >
+        {added ? "Agregado ✓" : "Encargar"}
+      </button>
     </div>
   );
 }
@@ -657,7 +659,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
       {open && (
         <div
-          className="fixed inset-0 z-[190] flex items-stretch justify-center bg-[#f7f5ef] md:items-center md:bg-black/50 md:p-4"
+          className="fixed inset-0 z-[190] flex items-stretch justify-start bg-[#f7f5ef] md:items-center md:justify-center md:bg-black/50 md:p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="bloom-chat-title"
@@ -680,7 +682,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
               </button>
             </div>
 
-            <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3 pb-24">
+            <div
+              ref={scrollRef}
+              className="min-h-0 w-full flex-1 space-y-3 overflow-y-auto px-3 py-3 pb-24"
+            >
               <div className="max-w-[92%] rounded-2xl bg-white px-3 py-2 text-sm leading-relaxed text-neutral-800 shadow-sm ring-1 ring-black/5">
                 {introText.split("\n").map((line, li, arr) => (
                   <span key={li}>
