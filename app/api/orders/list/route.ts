@@ -1,22 +1,29 @@
 import { NextResponse } from "next/server";
+import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/lib/auth/admin";
+import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 /**
  * Lista pedidos para el dashboard.
- * Usa la sesión del usuario (cookies) para que RLS permita a staff (`is_customer = false`)
- * leer todos los pedidos, incluidos `order_type = 'web'`.
- * No filtra por order_type: devuelve toda la tabla permitida por RLS.
+ * Identidad: sesión vía cookies (mismo admin que /dashboard). Datos: service role para saltar RLS.
+ * Sin `SUPABASE_SERVICE_ROLE_KEY`, cae en anon (comportamiento anterior sujeto a RLS).
  */
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const supabaseSession = await createClient();
     const {
       data: { user },
       error: userErr,
-    } = await supabase.auth.getUser();
-    if (userErr || !user) {
+    } = await supabaseSession.auth.getUser();
+    if (userErr || !user || !isAdminEmail(user.email)) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+    const supabase = createSupabaseJsClient(getSupabaseUrl(), serviceKey ?? getSupabaseAnonKey(), {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     const { data, error } = await supabase
       .from("orders")
