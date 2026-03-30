@@ -9,8 +9,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, ChevronLeft, Plus, Minus, CreditCard, MapPin, Phone, Truck, X } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
-import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
+import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 import { PublicAccountNav } from "@/components/PublicAccountNav";
+import { SiteHeader } from "@/components/SiteHeader";
 import { BloomChat, type BloomChatHandle } from "@/components/Menu/BloomChat";
 import type { BloomChatCartLine } from "@/lib/bloom-chat-types";
 
@@ -408,25 +409,13 @@ function PublicMenuPage() {
                 </div>
             </div>
 
-            <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-bloom-200/80 transition-all">
-                <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2 sm:gap-4">
-                    <Link href="/" className="font-black text-lg sm:text-xl md:text-2xl tracking-tighter text-neutral-900 shrink-0 min-w-0">
-                        BLOOM<span style={{ color: fk.english }}>.</span>
-                    </Link>
-                    <nav className="hidden xl:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
-                        <Link href="/" className="hover:opacity-80 transition-opacity" style={{ color: fk.primary }}>
-                            Inicio
-                        </Link>
-                        <span className="font-bold" style={{ color: fk.primary }}>Menú</span>
-                        <Link href="/about" className="hover:text-neutral-900 transition-colors">
-                            Nosotros
-                        </Link>
-                        <Link href="/reservations" className="hover:text-neutral-900 transition-colors">
-                            Reservas
-                        </Link>
-                    </nav>
-                    <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-                        <FoodKingMobileNavButton onOpen={() => setMobileNavOpen(true)} />
+            <SiteHeader
+                scrolled={false}
+                onMobileNavOpen={() => setMobileNavOpen(true)}
+                activeNav="menu"
+                accentColor={fk.primary}
+                menuExtras={
+                    <>
                         <Link
                             href="#menu-categories"
                             className="xl:hidden inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-black text-white shadow-md active:scale-[0.98] whitespace-nowrap"
@@ -435,11 +424,14 @@ function PublicMenuPage() {
                             <ShoppingBag size={15} className="shrink-0" strokeWidth={2.5} />
                             Categorías
                         </Link>
-                        {tableLabel && (
-                            <span className="text-white text-xs sm:text-sm font-black px-3 py-1.5 rounded-full whitespace-nowrap" style={{ backgroundColor: fk.dark }}>
+                        {tableLabel ? (
+                            <span
+                                className="text-white text-xs sm:text-sm font-black px-3 py-1.5 rounded-full whitespace-nowrap"
+                                style={{ backgroundColor: fk.dark }}
+                            >
                                 {tableLabel}
                             </span>
-                        )}
+                        ) : null}
                         <PublicAccountNav />
                         <button
                             type="button"
@@ -448,15 +440,18 @@ function PublicMenuPage() {
                             style={{ backgroundColor: fk.primary }}
                         >
                             <ShoppingBag size={20} strokeWidth={2.5} />
-                            {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 text-[10px] font-black min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full border-2 border-white" style={{ backgroundColor: fk.accent, color: fk.dark }}>
+                            {cartCount > 0 ? (
+                                <span
+                                    className="absolute -top-1 -right-1 text-[10px] font-black min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full border-2 border-white"
+                                    style={{ backgroundColor: fk.accent, color: fk.dark }}
+                                >
                                     {cartCount}
                                 </span>
-                            )}
+                            ) : null}
                         </button>
-                    </div>
-                </div>
-            </header>
+                    </>
+                }
+            />
 
             <div id="menu-categories" className="w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 xl:px-8 scroll-mt-28">
                 <div className="mb-8">

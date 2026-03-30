@@ -139,6 +139,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showHistoryLink, setShowHistoryLink] = useState(false);
   const [softAuthHintVisible, setSoftAuthHintVisible] = useState(false);
+  /** Muestra datos del encargo solo si hay sesión o el usuario eligió "Continuar sin cuenta". */
+  const [encargoCheckoutUnlocked, setEncargoCheckoutUnlocked] = useState(false);
+  const [checkoutSubmitAttempted, setCheckoutSubmitAttempted] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -200,16 +203,22 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   useEffect(() => {
     if (!encargoOpen) return;
     let cancelled = false;
+    setCheckoutSubmitAttempted(false);
     (async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (cancelled || !session?.user) return;
-      const meta = session.user.user_metadata ?? {};
-      const fullName = typeof meta.full_name === "string" ? meta.full_name.trim() : "";
-      const phoneMeta = typeof meta.phone === "string" ? meta.phone.trim() : "";
-      setCheckoutName((prev) => (prev.trim() ? prev : fullName));
-      setCheckoutPhone((prev) => (prev.trim() ? prev : phoneMeta));
+      if (cancelled) return;
+      if (session?.user) {
+        setEncargoCheckoutUnlocked(true);
+        const meta = session.user.user_metadata ?? {};
+        const fullName = typeof meta.full_name === "string" ? meta.full_name.trim() : "";
+        const phoneMeta = typeof meta.phone === "string" ? meta.phone.trim() : "";
+        setCheckoutName((prev) => (prev.trim() ? prev : fullName));
+        setCheckoutPhone((prev) => (prev.trim() ? prev : phoneMeta));
+      } else {
+        setEncargoCheckoutUnlocked(false);
+      }
     })();
     return () => {
       cancelled = true;
@@ -229,7 +238,15 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) setSoftAuthHintVisible(false);
+      if (session?.user) {
+        setSoftAuthHintVisible(false);
+        setEncargoCheckoutUnlocked(true);
+        const meta = session.user.user_metadata ?? {};
+        const fullName = typeof meta.full_name === "string" ? meta.full_name.trim() : "";
+        const phoneMeta = typeof meta.phone === "string" ? meta.phone.trim() : "";
+        setCheckoutName((prev) => (prev.trim() ? prev : fullName));
+        setCheckoutPhone((prev) => (prev.trim() ? prev : phoneMeta));
+      }
     });
     return () => subscription.unsubscribe();
   }, [supabase]);
@@ -273,6 +290,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setAddressConfirmation("yes");
     setDeliveryType("local");
     setPaymentMethod("cash_on_delivery");
+    setEncargoCheckoutUnlocked(false);
+    setCheckoutSubmitAttempted(false);
   }, []);
 
   const addLine = useCallback((p: ProductRow, observations: string) => {
@@ -298,12 +317,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     const name = checkoutName.trim();
     const phone = checkoutPhone.trim();
     const address = checkoutAddress.trim();
-    if (!name) {
-      toast.error("Ingresá tu nombre");
-      return;
-    }
-    if (!phone) {
-      toast.error("Ingresá tu teléfono");
+    setCheckoutSubmitAttempted(true);
+    if (!name || !phone) {
       return;
     }
     if (deliveryType === "delivery" && !address) {
@@ -464,6 +479,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setEncargoOpen(false);
     setSuccessMessage(null);
     setShowHistoryLink(false);
+    setEncargoCheckoutUnlocked(false);
+    setCheckoutSubmitAttempted(false);
   };
 
   const showProductGrid =
@@ -526,25 +543,69 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                 Total: {formatArs(cartTotal)}
               </p>
 
+              {!encargoCheckoutUnlocked ? (
+                <div className="mt-6 space-y-4 border-t border-[#e0dcd4] pt-4">
+                  <p className="text-sm font-medium leading-relaxed text-neutral-800">
+                    Para confirmar tu encargo necesitás iniciar sesión o registrarte.
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    <Link
+                      href="/auth"
+                      className="inline-flex w-full items-center justify-center rounded-xl bg-[#2d4a3e] px-4 py-3 text-center text-sm font-black text-white shadow hover:bg-[#1f342c] sm:w-auto sm:min-w-[10rem]"
+                    >
+                      Iniciar sesión
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setEncargoCheckoutUnlocked(true)}
+                      className="inline-flex w-full items-center justify-center rounded-xl border-2 border-[#d4cfc4] bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50 sm:w-auto sm:min-w-[10rem]"
+                    >
+                      Continuar sin cuenta
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <div className="mt-6 space-y-3 border-t border-[#e0dcd4] pt-4">
                 <p className="text-xs font-bold uppercase text-neutral-500">Datos para tu encargo</p>
                 <div>
                   <label className="text-xs font-bold text-neutral-500">Nombre</label>
                   <input
                     value={checkoutName}
-                    onChange={(e) => setCheckoutName(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
+                    onChange={(e) => {
+                      setCheckoutName(e.target.value);
+                      if (checkoutSubmitAttempted) setCheckoutSubmitAttempted(false);
+                    }}
+                    className={`mt-1 w-full rounded-xl border bg-white px-3 py-2 text-sm ${
+                      checkoutSubmitAttempted && !checkoutName.trim()
+                        ? "border-red-400"
+                        : "border-[#d4cfc4]"
+                    }`}
                     autoComplete="name"
+                    required
                   />
+                  {checkoutSubmitAttempted && !checkoutName.trim() ? (
+                    <p className="mt-1 text-xs text-red-600">Campo requerido</p>
+                  ) : null}
                 </div>
                 <div>
                   <label className="text-xs font-bold text-neutral-500">Teléfono</label>
                   <input
                     value={checkoutPhone}
-                    onChange={(e) => setCheckoutPhone(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
+                    onChange={(e) => {
+                      setCheckoutPhone(e.target.value);
+                      if (checkoutSubmitAttempted) setCheckoutSubmitAttempted(false);
+                    }}
+                    className={`mt-1 w-full rounded-xl border bg-white px-3 py-2 text-sm ${
+                      checkoutSubmitAttempted && !checkoutPhone.trim()
+                        ? "border-red-400"
+                        : "border-[#d4cfc4]"
+                    }`}
                     autoComplete="tel"
+                    required
                   />
+                  {checkoutSubmitAttempted && !checkoutPhone.trim() ? (
+                    <p className="mt-1 text-xs text-red-600">Campo requerido</p>
+                  ) : null}
                 </div>
                 <fieldset className="space-y-2">
                   <legend className="text-xs font-bold text-neutral-500">Entrega</legend>
@@ -641,17 +702,20 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   </label>
                 </fieldset>
               </div>
+              )}
             </div>
 
             <div className="shrink-0 border-t border-[#e0dcd4] bg-[#f7f5ef] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-              <button
-                type="button"
-                disabled={submittingOrder}
-                onClick={() => void submitOrder()}
-                className="w-full rounded-xl bg-[#7a765a] px-4 py-3 text-sm font-black uppercase text-white hover:bg-[#5f5c46] disabled:opacity-50"
-              >
-                {submittingOrder ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : "Confirmar encargo"}
-              </button>
+              {encargoCheckoutUnlocked ? (
+                <button
+                  type="button"
+                  disabled={submittingOrder}
+                  onClick={() => void submitOrder()}
+                  className="w-full rounded-xl bg-[#7a765a] px-4 py-3 text-sm font-black uppercase text-white hover:bg-[#5f5c46] disabled:opacity-50"
+                >
+                  {submittingOrder ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : "Confirmar encargo"}
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
