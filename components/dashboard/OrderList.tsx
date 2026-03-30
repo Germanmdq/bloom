@@ -36,6 +36,37 @@ function isDeliveryOrder(o: Order & { delivery_type?: string | null }) {
     return String(o.delivery_type ?? "").toLowerCase() === "delivery";
 }
 
+/** Canal visual: delivery > mesa POS > retiro (web local / sucursal). */
+type OrderChannel = "mesa" | "delivery" | "retiro";
+
+function getOrderChannel(order: Order): OrderChannel {
+    const dt = String(order.delivery_type ?? "").toLowerCase();
+    const ot = String(order.order_type ?? "").toLowerCase();
+    if (dt === "delivery") return "delivery";
+    /** Mesa: comanda con mesa (p. ej. POS); pedidos web usan `order_type` web y suelen ir sin mesa. */
+    if (order.table_id != null && ot !== "web") return "mesa";
+    return "retiro";
+}
+
+/** Borde izquierdo grueso + color (el resto del borde viene de paid/unpaid). */
+const CHANNEL_LEFT: Record<OrderChannel, string> = {
+    mesa: "border-l-4 border-l-red-500",
+    delivery: "border-l-4 border-l-green-500",
+    retiro: "border-l-4 border-l-amber-400",
+};
+
+const CHANNEL_BADGE: Record<OrderChannel, string> = {
+    mesa: "bg-red-500 text-white",
+    delivery: "bg-green-600 text-white",
+    retiro: "bg-amber-400 text-gray-900",
+};
+
+const CHANNEL_LABEL: Record<OrderChannel, string> = {
+    mesa: "Mesa",
+    delivery: "Delivery",
+    retiro: "Retiro",
+};
+
 export function OrderList() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
@@ -237,6 +268,16 @@ export function OrderList() {
                 </button>
             </div>
 
+            {/* Leyenda de canales */}
+            <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Leyenda</p>
+                <p className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-black text-gray-800 leading-relaxed">
+                    <span>🔴 Mesa</span>
+                    <span>🟢 Delivery</span>
+                    <span>🟡 Retiro en sucursal</span>
+                </p>
+            </div>
+
             {/* CONTROLS */}
             <div className="flex flex-wrap gap-3 items-center">
                 <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100 flex gap-1 flex-wrap">
@@ -328,13 +369,29 @@ export function OrderList() {
                                 {selectedGroup.orders.map(order => {
                                     const o = order as Order & { paid?: boolean };
                                     const paid = isOrderPaid(o);
+                                    const channel = getOrderChannel(o);
+                                    const chLeft = CHANNEL_LEFT[channel];
+                                    const chBadge = CHANNEL_BADGE[channel];
+                                    const chShort = CHANNEL_LABEL[channel];
                                     const { label: typeLabel, icon: typeIcon } = orderTypeLabel(o);
                                     const time = new Date(o.created_at).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' });
+                                    const frame = paid
+                                        ? "border-2 border-gray-200 bg-gray-50"
+                                        : "border-2 border-amber-400 bg-amber-50/50";
                                     return (
-                                        <div key={o.id} className={`rounded-2xl border-2 transition-all flex flex-col gap-2 p-1 ${paid ? "border-gray-100 bg-gray-50" : "border-amber-400 bg-amber-50/50"}`}>
+                                        <div
+                                            key={o.id}
+                                            className={`rounded-2xl transition-all flex flex-col gap-2 p-1 shadow-sm ${frame} ${chLeft}`}
+                                        >
                                             <button type="button" onClick={() => setSelectedOrder(o)}
                                                 className="w-full hover:bg-white/80 rounded-xl px-3 py-2 text-left flex items-center gap-3"
                                             >
+                                                <span
+                                                    className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-wide shadow-sm ${chBadge}`}
+                                                    title={chShort}
+                                                >
+                                                    {chShort}
+                                                </span>
                                                 <div className="text-gray-400 shrink-0">{typeIcon}</div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-black text-gray-900 text-sm truncate">
@@ -417,10 +474,15 @@ export function OrderList() {
                             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         />
                         <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
-                            className="bg-white w-full sm:max-w-md max-h-[85vh] rounded-t-[2rem] sm:rounded-[2rem] overflow-hidden shadow-2xl relative flex flex-col"
+                            className={`bg-white w-full sm:max-w-md max-h-[85vh] rounded-t-[2rem] sm:rounded-[2rem] overflow-hidden shadow-2xl relative flex flex-col border-2 border-gray-200 ${CHANNEL_LEFT[getOrderChannel(selectedOrder)]}`}
                         >
                             <div className="px-5 pt-5 pb-4 border-b border-gray-100 flex items-start justify-between shrink-0">
                                 <div>
+                                    <span
+                                        className={`inline-flex rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide mb-2 ${CHANNEL_BADGE[getOrderChannel(selectedOrder)]}`}
+                                    >
+                                        {CHANNEL_LABEL[getOrderChannel(selectedOrder)]}
+                                    </span>
                                     <p className="font-black text-gray-900 text-lg">{selectedOrder.customer_name || `Mesa ${selectedOrder.table_id}`}</p>
                                     {selectedOrder.customer_phone && (
                                         <a href={`tel:${selectedOrder.customer_phone}`} className="text-sm text-bloom-600 font-bold">{selectedOrder.customer_phone}</a>
