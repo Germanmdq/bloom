@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { isAdminEmail } from "@/lib/auth/admin";
 import { ChevronLeft, Loader2, Mail } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -61,14 +62,18 @@ export default function AuthPage() {
       return;
     }
     setLoading(true);
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password: loginPassword });
+    const { data, error: err } = await supabase.auth.signInWithPassword({ email, password: loginPassword });
     setLoading(false);
     if (err) {
       console.error(err);
       setError(translateAuthError(err));
       return;
     }
-    router.push("/cuenta");
+    if (isAdminEmail(data?.user?.email)) {
+      router.replace("/dashboard");
+    } else {
+      router.replace("/cuenta");
+    }
     router.refresh();
   };
 

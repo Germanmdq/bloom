@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 import { supabaseSessionCookieOptions } from "@/lib/supabase/cookie-options";
+import { isAdminEmail } from "@/lib/auth/admin";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -30,6 +31,12 @@ export async function middleware(request: NextRequest) {
 
   if (!user && request.nextUrl.pathname.startsWith("/cuenta")) {
     return NextResponse.redirect(new URL("/auth", request.url));
+  }
+
+  if (request.nextUrl.pathname.startsWith("/dashboard")) {
+    if (!user || !isAdminEmail(user.email)) {
+      return NextResponse.redirect(new URL("/auth", request.url));
+    }
   }
 
   return response;
