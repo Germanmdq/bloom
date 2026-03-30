@@ -32,14 +32,19 @@ function isOrderPaid(o: Order & { paid?: boolean | null }) {
     return Boolean(o.paid);
 }
 
+function isDeliveryOrder(o: Order & { delivery_type?: string | null }) {
+    return String(o.delivery_type ?? "").toLowerCase() === "delivery";
+}
+
 export function OrderList() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>('day');
     const [selectedGroup, setSelectedGroup] = useState<GroupedData | null>(null);
-    const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [unpaidOnly, setUnpaidOnly] = useState(false);
     const [togglingId, setTogglingId] = useState<string | null>(null);
+    const [assigningDeliveryId, setAssigningDeliveryId] = useState<string | null>(null);
 
     useEffect(() => { fetchOrders(); }, []);
 
@@ -72,6 +77,45 @@ export function OrderList() {
             await fetchOrders();
         } finally {
             setTogglingId(null);
+        }
+    }
+
+    function patchOrderDeliveryPerson(orderId: string, delivery_person_id: number | null) {
+        setOrders((prev) =>
+            prev.map((o) => (o.id === orderId ? { ...o, delivery_person_id } : o))
+        );
+        setSelectedOrder((prev) =>
+            prev?.id === orderId ? { ...prev, delivery_person_id } : prev
+        );
+        setSelectedGroup((prev) =>
+            prev
+                ? {
+                      ...prev,
+                      orders: prev.orders.map((o) =>
+                          o.id === orderId ? { ...o, delivery_person_id } : o
+                      ),
+                  }
+                : null
+        );
+    }
+
+    async function setDeliveryPerson(orderId: string, delivery_person_id: number | null) {
+        setAssigningDeliveryId(orderId);
+        try {
+            const res = await fetch("/api/orders/delivery-person", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId, delivery_person_id }),
+            });
+            if (!res.ok) {
+                const j = await res.json().catch(() => ({}));
+                console.error(j);
+                return;
+            }
+            patchOrderDeliveryPerson(orderId, delivery_person_id);
+            await fetchOrders();
+        } finally {
+            setAssigningDeliveryId(null);
         }
     }
 
@@ -313,12 +357,44 @@ export function OrderList() {
                                                 </div>
                                                 <p className="font-black text-gray-900 text-base shrink-0">${Number(o.total).toLocaleString()}</p>
                                             </button>
-                                            <div className="flex justify-end px-2 pb-2">
+                                            <div className="flex flex-col items-stretch gap-2 px-2 pb-2 sm:flex-row sm:items-center sm:justify-end">
+                                                {isDeliveryOrder(o) && (
+                                                    <div className="flex items-center gap-2 sm:mr-auto">
+                                                        <label className="text-[10px] font-black uppercase text-gray-500 shrink-0">
+                                                            Repartidor
+                                                        </label>
+                                                        <select
+                                                            value={
+                                                                o.delivery_person_id != null
+                                                                    ? String(o.delivery_person_id)
+                                                                    : ""
+                                                            }
+                                                            disabled={assigningDeliveryId === o.id}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            onChange={(e) => {
+                                                                e.stopPropagation();
+                                                                const v = e.target.value;
+                                                                void setDeliveryPerson(
+                                                                    o.id,
+                                                                    v === "" ? null : Number(v)
+                                                                );
+                                                            }}
+                                                            className="text-xs font-bold rounded-xl border border-gray-200 bg-white px-2 py-1.5 min-w-[7rem]"
+                                                        >
+                                                            <option value="">Sin asignar</option>
+                                                            {[1, 2, 3, 4, 5].map((n) => (
+                                                                <option key={n} value={n}>
+                                                                    {n}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                )}
                                                 <button
                                                     type="button"
                                                     disabled={togglingId === o.id}
                                                     onClick={(e) => { e.stopPropagation(); void setOrderPaid(o.id, !paid); }}
-                                                    className={`inline-flex items-center gap-1.5 text-xs font-black uppercase px-3 py-1.5 rounded-xl transition-all ${paid ? "bg-amber-100 text-amber-900 hover:bg-amber-200" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
+                                                    className={`inline-flex items-center justify-center gap-1.5 text-xs font-black uppercase px-3 py-1.5 rounded-xl transition-all ${paid ? "bg-amber-100 text-amber-900 hover:bg-amber-200" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
                                                 >
                                                     {togglingId === o.id ? <Loader2 className="animate-spin" size={14} /> : paid ? <><AlertCircle size={14} /> Marcar impago</> : <><CheckCircle2 size={14} /> Marcar pagado</>}
                                                 </button>
@@ -401,7 +477,38 @@ export function OrderList() {
                                     </div>
                                     <p className="text-2xl font-black text-gray-900">${Number(selectedOrder.total).toLocaleString()}</p>
                                 </div>
-                                <div className="flex items-center justify-between gap-2">
+                                <div className="flex flex-col gap-3">
+                                    {isDeliveryOrder(selectedOrder as Order) && (
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-[10px] font-black uppercase text-gray-500">
+                                                Repartidor
+                                            </span>
+                                            <select
+                                                value={
+                                                    selectedOrder.delivery_person_id != null
+                                                        ? String(selectedOrder.delivery_person_id)
+                                                        : ""
+                                                }
+                                                disabled={assigningDeliveryId === selectedOrder.id}
+                                                onChange={(e) => {
+                                                    const v = e.target.value;
+                                                    void setDeliveryPerson(
+                                                        selectedOrder.id,
+                                                        v === "" ? null : Number(v)
+                                                    );
+                                                }}
+                                                className="text-xs font-bold rounded-xl border border-gray-200 bg-white px-2 py-2 min-w-[8rem]"
+                                            >
+                                                <option value="">Sin asignar</option>
+                                                {[1, 2, 3, 4, 5].map((n) => (
+                                                    <option key={n} value={n}>
+                                                        {n}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center justify-between gap-2">
                                     <span className={`text-xs font-black uppercase px-2 py-1 rounded-lg ${isOrderPaid(selectedOrder) ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}`}>
                                         {isOrderPaid(selectedOrder) ? "Pagado" : "Pendiente de cobro"}
                                     </span>
@@ -413,6 +520,7 @@ export function OrderList() {
                                     >
                                         {togglingId === selectedOrder.id ? "…" : isOrderPaid(selectedOrder) ? "Marcar impago" : "Marcar pagado"}
                                     </button>
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>

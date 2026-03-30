@@ -49,7 +49,10 @@ export default function CuentaPage() {
   const [sessionPending, setSessionPending] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  /** Solo pedidos pagados — barra de lealtad y contador “Llevás N pedidos”. */
+  /**
+   * Lealtad: por ahora solo `paid = true`. Más adelante: incluir pedidos con nota
+   * tipo “cuenta corriente” aunque paid sea false.
+   */
   const [paidOrderCount, setPaidOrderCount] = useState(0);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);

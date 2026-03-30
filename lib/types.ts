@@ -85,4 +85,6 @@ export type Order = {
     /** Cobrado en caja */
     paid?: boolean | null;
     customer_id?: string | null;
+    /** Repartidor 1–5 (dashboard), solo delivery */
+    delivery_person_id?: number | null;
 };

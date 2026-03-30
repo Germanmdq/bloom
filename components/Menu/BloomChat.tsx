@@ -161,7 +161,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showHistoryLink, setShowHistoryLink] = useState(false);
   const [softAuthHintVisible, setSoftAuthHintVisible] = useState(false);
-  /** Muestra datos del encargo solo si hay sesión o el usuario eligió "Continuar sin cuenta". */
+  /** Solo con sesión: formulario de confirmación. */
   const [encargoCheckoutUnlocked, setEncargoCheckoutUnlocked] = useState(false);
   /** Sesión detectada al abrir el modal de encargo: mostrar mensaje de confirmación de datos. */
   const [encargoLoggedInPrefill, setEncargoLoggedInPrefill] = useState(false);
@@ -315,6 +315,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           "";
         setCheckoutName(nameFromMeta);
         setCheckoutPhone(phoneFromProfile);
+      } else {
+        setEncargoCheckoutUnlocked(false);
+        setEncargoLoggedInPrefill(false);
       }
     });
     return () => subscription.unsubscribe();
@@ -682,24 +685,12 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   <p className="text-sm font-medium leading-relaxed text-neutral-800">
                     Para confirmar tu encargo necesitás iniciar sesión o registrarte.
                   </p>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                    <Link
-                      href="/auth"
-                      className="inline-flex w-full items-center justify-center rounded-xl bg-[#2d4a3e] px-4 py-3 text-center text-sm font-black text-white shadow hover:bg-[#1f342c] sm:w-auto sm:min-w-[10rem]"
-                    >
-                      Iniciar sesión
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEncargoCheckoutUnlocked(true);
-                        setEncargoLoggedInPrefill(false);
-                      }}
-                      className="inline-flex w-full items-center justify-center rounded-xl border-2 border-[#d4cfc4] bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50 sm:w-auto sm:min-w-[10rem]"
-                    >
-                      Continuar sin cuenta
-                    </button>
-                  </div>
+                  <Link
+                    href="/auth"
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-[#2d4a3e] px-4 py-3 text-center text-sm font-black text-white shadow hover:bg-[#1f342c] sm:max-w-md sm:mx-auto"
+                  >
+                    Iniciar sesión o registrarse →
+                  </Link>
                 </div>
               ) : (
               <div className="mt-6 space-y-3 border-t border-[#e0dcd4] pt-4">
