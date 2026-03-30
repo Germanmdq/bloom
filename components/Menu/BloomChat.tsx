@@ -350,6 +350,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     };
   }, [open, cart.length, supabase]);
 
+  /** Nueva sesión desde el FAB: vacía carrito y formularios. */
   const resetForContext = useCallback(() => {
     setCart([]);
     setAddedProductIds(new Set());
@@ -365,6 +366,14 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setEncargoCheckoutUnlocked(false);
     setEncargoLoggedInPrefill(false);
     setCheckoutSubmitAttempted(false);
+    setUpsellVariant(null);
+  }, []);
+
+  /** Cambiar categoría / «Ver categorías»: solo cierra overlays y upsell; mantiene carrito y contexto de checkout. */
+  const resetChatUiPreservingCart = useCallback(() => {
+    setEncargoOpen(false);
+    setSuccessMessage(null);
+    setShowHistoryLink(false);
     setUpsellVariant(null);
   }, []);
 
@@ -537,6 +546,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   }, []);
 
   const closeChatKeepCart = useCallback(() => {
+    setEncargoOpen(false);
     setOpen(false);
     setUpsellVariant(null);
   }, []);
@@ -588,7 +598,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     ref,
     () => ({
       openWithCategoryMessage: (opts: OpenCategoryOpts) => {
-        resetForContext();
+        resetChatUiPreservingCart();
         const productIds = opts.productIds?.length ? opts.productIds : null;
         setContext({
           displayName: opts.displayName,
@@ -598,11 +608,12 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         setIntroText(categoryIntro(opts.displayName));
         setContextKey((k) => k + 1);
         setOpen(true);
+        setAddedProductIds(new Set(cart.map((l) => l.product_id)));
       },
       openChat: openFabChat,
       openWithProductEncargado,
     }),
-    [openFabChat, openWithProductEncargado, resetForContext]
+    [openFabChat, openWithProductEncargado, resetChatUiPreservingCart, cart]
   );
 
   const closeModal = () => {
@@ -633,10 +644,19 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
             if (cart.length > 0 && context) resumeChat();
             else openFabChat();
           }}
-          className="fixed bottom-6 right-6 z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-[#7a765a] text-white shadow-[0_10px_40px_-8px_rgba(45,74,62,0.55)] ring-2 ring-white/30 transition hover:bg-[#5f5c46] hover:scale-105 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#c4b896]"
-          aria-label="Abrir encargo Bloom"
+          className="fixed bottom-6 right-6 z-[100] relative flex h-14 w-14 items-center justify-center rounded-full bg-[#7a765a] text-white shadow-[0_10px_40px_-8px_rgba(45,74,62,0.55)] ring-2 ring-white/30 transition hover:bg-[#5f5c46] hover:scale-105 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#c4b896]"
+          aria-label={
+            cartCount > 0
+              ? `Abrir encargo Bloom, ${cartCount} productos en el carrito`
+              : "Abrir encargo Bloom"
+          }
         >
           <MessageCircle className="h-7 w-7" strokeWidth={2} />
+          {cartCount > 0 ? (
+            <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c4b896] px-1 text-[10px] font-black tabular-nums text-[#1a3028] ring-2 ring-white">
+              {cartCount > 99 ? "99+" : cartCount}
+            </span>
+          ) : null}
         </button>
       )}
 
