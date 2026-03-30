@@ -1,23 +1,36 @@
 import { NextRequest } from "next/server";
-import Groq from "groq-sdk";
+import { GoogleGenerativeAI, type GenerateContentStreamResult } from "@google/generative-ai";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/** Mismo id que `app/api/ai/prep-time` — `llama3-70b-8192` suele fallar en la API actual de Groq. */
-const MODEL = "llama-3.3-70b-versatile";
+const MODEL = "gemini-2.0-flash";
 
-/** Mensaje "vacío" del cliente para el primer turno (Groq no acepta content totalmente vacío). */
+/** Mensaje mínimo para el primer turno (evitar prompt vacío). */
 const OPENING_USER_PLACEHOLDER = "\u200b";
 
 const LOG = "[bloom-chat]";
 
-function getGroq(): Groq | null {
-  const apiKey = process.env.GROQ_API_KEY?.trim() || process.env.NEXT_PUBLIC_GROQ_API_KEY?.trim();
+function getGenAI(): GoogleGenerativeAI | null {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) return null;
-  return new Groq({ apiKey });
+  return new GoogleGenerativeAI(apiKey);
+}
+
+/** Convierte mensajes del cliente (user/assistant) al formato Gemini (user/model). El primer turno debe ser user. */
+function messagesToGeminiContents(messages: { role: "user" | "assistant" | "system"; content: string }[]) {
+  const parts = messages
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => ({
+      role: m.role === "assistant" ? ("model" as const) : ("user" as const),
+      parts: [{ text: m.content }],
+    }));
+  if (parts.length > 0 && parts[0].role === "model") {
+    parts.unshift({ role: "user", parts: [{ text: OPENING_USER_PLACEHOLDER }] });
+  }
+  return parts;
 }
 
 function formatArs(n: number) {
@@ -41,15 +54,77 @@ function mealSuggestionLine(clientTimeISO: string): string {
   return "Horario poco habitual: ofrecé café, algo liviano o lo clásico de la carta.";
 }
 
+const MAX_MENU_PRODUCTS = 20;
+
+type MenuProductRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  category_id: string | null;
+  options: unknown;
+};
+
 type MenuCtx = {
   menuText: string;
+  categoriesListText: string;
+  productScopeNote: string;
   platoBlock: string;
   topSellersBlock: string;
   tod: "mañana" | "tarde" | "noche";
   mealLine: string;
 };
 
-async function loadMenuContext(clientTimeISO: string, supabaseUrl: string): Promise<MenuCtx> {
+/** Incluye siempre el plato del día; si hay `category`, solo productos de esa categoría (nombre, sin distinguir mayúsculas). Máximo `maxTotal` ítems. */
+function pickProductsForMenuText(
+  productList: MenuProductRow[],
+  catMap: Map<string, string>,
+  platoId: string | null,
+  category: string | undefined,
+  maxTotal: number
+): MenuProductRow[] {
+  const catNorm = category?.trim().toLowerCase();
+  const plato = platoId ? productList.find((x) => x.id === platoId) : undefined;
+
+  const inScope = (p: MenuProductRow): boolean => {
+    if (!catNorm) return true;
+    const n = (catMap.get(p.category_id ?? "") ?? "").trim().toLowerCase();
+    return n === catNorm;
+  };
+
+  const ordered: MenuProductRow[] = [];
+  const seen = new Set<string>();
+
+  const push = (p: MenuProductRow) => {
+    if (seen.has(p.id) || ordered.length >= maxTotal) return;
+    seen.add(p.id);
+    ordered.push(p);
+  };
+
+  if (plato) {
+    push(plato);
+  }
+
+  const rest = productList
+    .filter((p) => {
+      if (plato && p.id === plato.id) return false;
+      return inScope(p);
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+
+  for (const p of rest) {
+    push(p);
+    if (ordered.length >= maxTotal) break;
+  }
+
+  return ordered;
+}
+
+async function loadMenuContext(
+  clientTimeISO: string,
+  supabaseUrl: string,
+  category?: string | null
+): Promise<MenuCtx> {
   const supabase = createClient(supabaseUrl, getSupabaseAnonKey());
   const tod = timeOfDayLabel(clientTimeISO);
   const mealLine = mealSuggestionLine(clientTimeISO);
@@ -93,6 +168,17 @@ async function loadMenuContext(clientTimeISO: string, supabaseUrl: string): Prom
 
   const productList = products ?? [];
   const platoId = settings?.plato_del_dia_id ?? null;
+
+  const categoriesListText = (categories ?? [])
+    .slice()
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map((c) => c.name)
+    .join("; ");
+
+  const catTrim = category?.trim() ?? "";
+  const productScopeNote = catTrim
+    ? `Lista de productos acotada a la categoría «${catTrim}» (comparación sin distinguir mayúsculas), siempre incluyendo el plato del día si está configurado. Máximo ${MAX_MENU_PRODUCTS} ítems.`
+    : `Lista de productos: hasta ${MAX_MENU_PRODUCTS} ítems activos (vista resumida del menú).`;
   let platoBlock =
     "Hoy no hay plato del día cargado en el sistema. No inventes uno; decilo si preguntan.";
   if (platoId) {
@@ -142,9 +228,17 @@ async function loadMenuContext(clientTimeISO: string, supabaseUrl: string): Prom
     topSellersBlock = `Lo más pedido últimamente (referencia, podés mencionar uno o dos si encaja): ${topSellerLines.join("; ")}.`;
   }
 
+  const picked = pickProductsForMenuText(
+    productList as MenuProductRow[],
+    catMap,
+    platoId,
+    catTrim || undefined,
+    MAX_MENU_PRODUCTS
+  );
+
   const lines: string[] = [];
-  for (const p of productList) {
-    const cat = catMap.get(p.category_id) ?? "General";
+  for (const p of picked) {
+    const cat = catMap.get(p.category_id ?? "") ?? "General";
     const isPlato = platoId && p.id === platoId;
     const desc = (p.description || "").trim();
     const opts = p.options != null ? ` Opciones: ${JSON.stringify(p.options)}` : "";
@@ -157,6 +251,8 @@ async function loadMenuContext(clientTimeISO: string, supabaseUrl: string): Prom
 
   return {
     menuText,
+    categoriesListText,
+    productScopeNote,
     platoBlock,
     topSellersBlock,
     tod,
@@ -175,11 +271,16 @@ Your job is to guide the customer through ordering.
 Clock (client): ${clientTimeISO}. Time of day word: ${ctx.tod} (use for greeting: buenos días / buenas tardes / buenas noches when it fits).
 ${ctx.mealLine}
 
+All category names in the venue (for context; may be more than the filtered product list):
+${ctx.categoriesListText}
+
+${ctx.productScopeNote}
+
 Today's special and bestsellers (use these facts, don't invent others):
 ${ctx.platoBlock}
 ${ctx.topSellersBlock}
 
-Full menu for reference (prices ARS; only recommend what appears here; never invent prices or dishes):
+Products in scope for this reply (prices ARS; only recommend what appears here; never invent prices or dishes):
 ${ctx.menuText}
 
 How you behave (your replies to the customer, not this list format): Always mention today's special with its price in the FIRST message if the facts above include a plato del día; if there isn't one, don't invent it. Suggest based on time of day using the meal hint. If they ask something vague, give a few concrete options with prices in flowing prose, not the whole menu. If they name a category (or tap a category card), list the main products of that category with prices in ARS from the menu text only. When they pick something, confirm and ask if they want anything else. When they're done, ask their name and if it's para llevar or para comer acá. Then give the total and confirm. Write like speech: no lines starting with hyphen or asterisk, no bullet lists. Avoid "¡Claro!", "¡Por supuesto!" and generic assistant phrases.
@@ -191,18 +292,23 @@ Prices and names must match the menu. If something is missing, ask before emitti
 If the order is not confirmed, do not include order_ready true.${openingAppend}`;
 }
 
-function streamGroqText(completion: AsyncIterable<Groq.Chat.Completions.ChatCompletionChunk>) {
+function streamGeminiText(result: GenerateContentStreamResult) {
   const encoder = new TextEncoder();
   return new ReadableStream({
     async start(controller) {
       try {
-        for await (const chunk of completion) {
-          const content = chunk.choices[0]?.delta?.content ?? "";
-          if (content) controller.enqueue(encoder.encode(content));
+        for await (const chunk of result.stream) {
+          let text = "";
+          try {
+            text = chunk.text();
+          } catch {
+            /* bloqueo de seguridad o candidato vacío */
+          }
+          if (text) controller.enqueue(encoder.encode(text));
         }
         controller.close();
       } catch (e) {
-        console.error(`${LOG} streamGroqText error`, e);
+        console.error(`${LOG} streamGeminiText error`, e);
         if (e instanceof Error) console.error(e.stack);
         try {
           controller.error(e);
@@ -215,14 +321,13 @@ function streamGroqText(completion: AsyncIterable<Groq.Chat.Completions.ChatComp
 }
 
 export async function POST(request: NextRequest) {
-  console.error(`${LOG} GROQ_API_KEY present`, !!process.env.GROQ_API_KEY);
-  console.error(`${LOG} NEXT_PUBLIC_GROQ_API_KEY present`, !!process.env.NEXT_PUBLIC_GROQ_API_KEY);
+  console.error("[bloom-chat] GEMINI_API_KEY present:", !!process.env.GEMINI_API_KEY, "length:", process.env.GEMINI_API_KEY?.length);
 
   try {
-    const groq = getGroq();
-    if (!groq) {
-      console.error(`${LOG} abort: no Groq client (missing API key)`);
-      return new Response(JSON.stringify({ error: "GROQ_API_KEY no configurada" }), {
+    const genAI = getGenAI();
+    if (!genAI) {
+      console.error(`${LOG} abort: no Gemini client (missing API key)`);
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY no configurada" }), {
         status: 503,
         headers: { "Content-Type": "application/json" },
       });
@@ -232,6 +337,8 @@ export async function POST(request: NextRequest) {
       mode?: "opening" | "chat";
       messages?: { role: "user" | "assistant" | "system"; content: string }[];
       clientTimeISO?: string;
+      /** Si viene, el menú en contexto solo incluye productos de esta categoría (+ plato del día). */
+      category?: string;
     };
 
     try {
@@ -248,10 +355,12 @@ export async function POST(request: NextRequest) {
     console.error(`${LOG} Supabase URL configured`, !!supabaseUrl, "length", supabaseUrl?.length ?? 0);
 
     const clientTimeISO = body.clientTimeISO || new Date().toISOString();
-    const ctx = await loadMenuContext(clientTimeISO, supabaseUrl);
+    const category = typeof body.category === "string" ? body.category : undefined;
+    const ctx = await loadMenuContext(clientTimeISO, supabaseUrl, category);
     console.error(`${LOG} menu context loaded`, {
       menuChars: ctx.menuText.length,
       tod: ctx.tod,
+      category: category ?? null,
     });
 
     const openingAppend =
@@ -262,18 +371,19 @@ export async function POST(request: NextRequest) {
     const systemContent = buildSystemPrompt(ctx, clientTimeISO, { openingAppend });
 
     if (body.mode === "opening") {
-      console.error(`${LOG} Groq request`, { mode: "opening", model: MODEL });
-      const completion = await groq.chat.completions.create({
+      console.error(`${LOG} Gemini request`, { mode: "opening", model: MODEL });
+      const model = genAI.getGenerativeModel({
         model: MODEL,
-        temperature: 0.85,
-        max_tokens: 400,
-        stream: true,
-        messages: [
-          { role: "system", content: systemContent },
-          { role: "user", content: OPENING_USER_PLACEHOLDER },
-        ],
+        systemInstruction: systemContent,
+        generationConfig: {
+          temperature: 0.85,
+          maxOutputTokens: 400,
+        },
       });
-      return new Response(streamGroqText(completion), {
+      const streamResult = await model.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: OPENING_USER_PLACEHOLDER }] }],
+      });
+      return new Response(streamGeminiText(streamResult), {
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
           "Cache-Control": "no-store",
@@ -282,16 +392,25 @@ export async function POST(request: NextRequest) {
     }
 
     const messages = body.messages ?? [];
-    console.error(`${LOG} Groq request`, { mode: "chat", model: MODEL, messageCount: messages.length });
-    const completion = await groq.chat.completions.create({
+    console.error(`${LOG} Gemini request`, { mode: "chat", model: MODEL, messageCount: messages.length });
+    const contents = messagesToGeminiContents(messages);
+    if (contents.length === 0) {
+      return new Response(JSON.stringify({ error: "messages vacío" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    const model = genAI.getGenerativeModel({
       model: MODEL,
-      temperature: 0.7,
-      max_tokens: 1024,
-      stream: true,
-      messages: [{ role: "system", content: systemContent }, ...messages],
+      systemInstruction: systemContent,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1024,
+      },
     });
+    const streamResult = await model.generateContentStream({ contents });
 
-    return new Response(streamGroqText(completion), {
+    return new Response(streamGeminiText(streamResult), {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-store",
