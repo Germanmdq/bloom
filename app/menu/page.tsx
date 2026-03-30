@@ -253,12 +253,19 @@ function PublicMenuPage() {
 
         const deliveryInfo = ci.type === "delivery" ? `Delivery a: ${ci.address}` : "Retiro en local";
 
-        const { error } = await supabase.from('orders').insert({
+        const { data: { session } } = await supabase.auth.getSession();
+        const row: Record<string, unknown> = {
             table_id: null,
             customer_name: ci.name, customer_phone: ci.phone,
             delivery_type: ci.type, delivery_info: deliveryInfo,
             items, total, status: 'PENDING', order_type: 'WEB',
-        });
+            paid: false,
+        };
+        if (session?.user?.id) {
+            row.customer_id = session.user.id;
+        }
+
+        const { error } = await supabase.from('orders').insert(row);
         if (error) console.error('Error guardando pedido:', error.message, error.details);
         // Guardamos el checkoutInfo para mostrarlo en la confirmación
         setCheckoutInfo(ci);

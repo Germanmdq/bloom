@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Order } from "@/lib/types";
 import * as XLSX from "xlsx";
-import { Loader2, X, Filter, Download, Bike, Store, Building2, UtensilsCrossed } from "lucide-react";
+import { Loader2, X, Filter, Download, Bike, Store, Building2, UtensilsCrossed, AlertCircle, CheckCircle2 } from "lucide-react";
 import { getPaymentIcon, getPaymentLabel } from "@/lib/utils/payment";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -28,12 +28,18 @@ function orderTypeLabel(order: any) {
     return { label: "Web", icon: <Store size={13} /> };
 }
 
+function isOrderPaid(o: Order & { paid?: boolean | null }) {
+    return Boolean(o.paid);
+}
+
 export function OrderList() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>('day');
     const [selectedGroup, setSelectedGroup] = useState<GroupedData | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+    const [unpaidOnly, setUnpaidOnly] = useState(false);
+    const [togglingId, setTogglingId] = useState<string | null>(null);
 
     useEffect(() => { fetchOrders(); }, []);
 
@@ -49,6 +55,36 @@ export function OrderList() {
             setLoading(false);
         }
     }
+
+    async function setOrderPaid(orderId: string, paid: boolean) {
+        setTogglingId(orderId);
+        try {
+            const res = await fetch("/api/orders/paid", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId, paid }),
+            });
+            if (!res.ok) {
+                const j = await res.json().catch(() => ({}));
+                console.error(j);
+                return;
+            }
+            await fetchOrders();
+        } finally {
+            setTogglingId(null);
+        }
+    }
+
+    const unpaidSummary = useMemo(() => {
+        const unpaid = orders.filter((o) => !isOrderPaid(o as Order & { paid?: boolean }));
+        const total = unpaid.reduce((s, o) => s + Number(o.total), 0);
+        return { count: unpaid.length, total };
+    }, [orders]);
+
+    const visibleOrders = useMemo(
+        () => (unpaidOnly ? orders.filter((o) => !isOrderPaid(o as Order & { paid?: boolean })) : orders),
+        [orders, unpaidOnly]
+    );
 
     const exportToExcel = () => {
         if (orders.length === 0) return;
@@ -92,7 +128,7 @@ export function OrderList() {
 
     const groupedOrders = useMemo(() => {
         const groups: Record<string, GroupedData> = {};
-        orders.forEach(order => {
+        visibleOrders.forEach(order => {
             const date = new Date(order.created_at);
             let key = "", label = "", subLabel = "";
             if (viewMode === 'day') {
@@ -119,7 +155,7 @@ export function OrderList() {
             groups[key].count += 1;
         });
         return Object.values(groups).sort((a, b) => b.date.getTime() - a.date.getTime());
-    }, [orders, viewMode]);
+    }, [visibleOrders, viewMode]);
 
     if (loading) {
         return (
@@ -132,6 +168,31 @@ export function OrderList() {
 
     return (
         <div className="space-y-6">
+            {/* Resumen impagos */}
+            <div className={`rounded-3xl border-2 p-5 flex flex-wrap items-center justify-between gap-4 ${unpaidSummary.count > 0 ? "border-amber-400 bg-amber-50/90" : "border-gray-200 bg-white"}`}>
+                <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${unpaidSummary.count > 0 ? "bg-amber-200 text-amber-900" : "bg-gray-100 text-gray-500"}`}>
+                        <AlertCircle size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Cuentas por cobrar</p>
+                        <p className="text-xl font-black text-gray-900">
+                            {unpaidSummary.count} pedido{unpaidSummary.count === 1 ? "" : "s"} impago{unpaidSummary.count === 1 ? "" : "s"}
+                        </p>
+                        <p className="text-sm font-bold text-amber-800">
+                            Total: <span className="text-lg">${unpaidSummary.total.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</span>
+                        </p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => setUnpaidOnly((v) => !v)}
+                    className={`px-4 py-2.5 rounded-2xl text-sm font-black uppercase tracking-wide transition-all ${unpaidOnly ? "bg-black text-[#FFD60A]" : "bg-white border border-gray-200 text-gray-700 hover:border-amber-300"}`}
+                >
+                    {unpaidOnly ? "Ver todos" : "Ver solo impagos"}
+                </button>
+            </div>
+
             {/* CONTROLS */}
             <div className="flex flex-wrap gap-3 items-center">
                 <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100 flex gap-1 flex-wrap">
@@ -221,32 +282,48 @@ export function OrderList() {
                             {/* Lista de pedidos */}
                             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2">
                                 {selectedGroup.orders.map(order => {
-                                    const o = order as any;
+                                    const o = order as Order & { paid?: boolean };
+                                    const paid = isOrderPaid(o);
                                     const { label: typeLabel, icon: typeIcon } = orderTypeLabel(o);
                                     const time = new Date(o.created_at).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' });
                                     return (
-                                        <button key={o.id} onClick={() => setSelectedOrder(o)}
-                                            className="w-full bg-gray-50 hover:bg-white border border-gray-100 hover:border-gray-200 hover:shadow-sm rounded-2xl px-4 py-3 text-left transition-all flex items-center gap-3"
-                                        >
-                                            <div className="text-gray-400 shrink-0">{typeIcon}</div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-black text-gray-900 text-sm truncate">
-                                                    {o.customer_name || `Mesa ${o.table_id}`}
-                                                </p>
-                                                <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-0.5">
-                                                    <span>{time}</span>
-                                                    <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                                                    <span>{typeLabel}</span>
-                                                    {o.customer_phone && (
-                                                        <>
-                                                            <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                                                            <span>{o.customer_phone}</span>
-                                                        </>
-                                                    )}
-                                                </p>
+                                        <div key={o.id} className={`rounded-2xl border-2 transition-all flex flex-col gap-2 p-1 ${paid ? "border-gray-100 bg-gray-50" : "border-amber-400 bg-amber-50/50"}`}>
+                                            <button type="button" onClick={() => setSelectedOrder(o)}
+                                                className="w-full hover:bg-white/80 rounded-xl px-3 py-2 text-left flex items-center gap-3"
+                                            >
+                                                <div className="text-gray-400 shrink-0">{typeIcon}</div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-black text-gray-900 text-sm truncate">
+                                                        {o.customer_name || `Mesa ${o.table_id}`}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                        <span>{time}</span>
+                                                        <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                                                        <span>{typeLabel}</span>
+                                                        {o.customer_phone && (
+                                                            <>
+                                                                <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                                                                <span>{o.customer_phone}</span>
+                                                            </>
+                                                        )}
+                                                        <span className={`ml-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${paid ? "bg-emerald-100 text-emerald-800" : "bg-amber-200 text-amber-900"}`}>
+                                                            {paid ? "Pagado" : "Impago"}
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                                <p className="font-black text-gray-900 text-base shrink-0">${Number(o.total).toLocaleString()}</p>
+                                            </button>
+                                            <div className="flex justify-end px-2 pb-2">
+                                                <button
+                                                    type="button"
+                                                    disabled={togglingId === o.id}
+                                                    onClick={(e) => { e.stopPropagation(); void setOrderPaid(o.id, !paid); }}
+                                                    className={`inline-flex items-center gap-1.5 text-xs font-black uppercase px-3 py-1.5 rounded-xl transition-all ${paid ? "bg-amber-100 text-amber-900 hover:bg-amber-200" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
+                                                >
+                                                    {togglingId === o.id ? <Loader2 className="animate-spin" size={14} /> : paid ? <><AlertCircle size={14} /> Marcar impago</> : <><CheckCircle2 size={14} /> Marcar pagado</>}
+                                                </button>
                                             </div>
-                                            <p className="font-black text-gray-900 text-base shrink-0">${Number(o.total).toLocaleString()}</p>
-                                        </button>
+                                        </div>
                                     );
                                 })}
                             </div>
@@ -311,17 +388,32 @@ export function OrderList() {
                                 )}
                             </div>
 
-                            <div className="shrink-0 px-5 py-4 border-t border-gray-100 flex justify-between items-center bg-gray-50">
-                                <div>
-                                    <p className="text-xs text-gray-400">{new Date(selectedOrder.created_at).toLocaleString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
-                                    {selectedOrder.payment_method && (
-                                        <div className="flex items-center gap-1 mt-0.5">
-                                            {getPaymentIcon(selectedOrder.payment_method)}
-                                            <span className="text-xs font-bold text-gray-500">{getPaymentLabel(selectedOrder.payment_method)}</span>
-                                        </div>
-                                    )}
+                            <div className="shrink-0 px-5 py-4 border-t border-gray-100 flex flex-col gap-3 bg-gray-50">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <p className="text-xs text-gray-400">{new Date(selectedOrder.created_at).toLocaleString("es-AR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                                        {selectedOrder.payment_method && (
+                                            <div className="flex items-center gap-1 mt-0.5">
+                                                {getPaymentIcon(selectedOrder.payment_method)}
+                                                <span className="text-xs font-bold text-gray-500">{getPaymentLabel(selectedOrder.payment_method)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="text-2xl font-black text-gray-900">${Number(selectedOrder.total).toLocaleString()}</p>
                                 </div>
-                                <p className="text-2xl font-black text-gray-900">${Number(selectedOrder.total).toLocaleString()}</p>
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className={`text-xs font-black uppercase px-2 py-1 rounded-lg ${isOrderPaid(selectedOrder) ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}`}>
+                                        {isOrderPaid(selectedOrder) ? "Pagado" : "Pendiente de cobro"}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        disabled={togglingId === selectedOrder.id}
+                                        onClick={() => void setOrderPaid(selectedOrder.id, !isOrderPaid(selectedOrder))}
+                                        className={`text-xs font-black uppercase px-3 py-2 rounded-xl ${isOrderPaid(selectedOrder) ? "bg-amber-200 text-amber-950" : "bg-emerald-600 text-white"}`}
+                                    >
+                                        {togglingId === selectedOrder.id ? "…" : isOrderPaid(selectedOrder) ? "Marcar impago" : "Marcar pagado"}
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     </div>

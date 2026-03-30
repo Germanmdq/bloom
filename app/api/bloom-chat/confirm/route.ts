@@ -13,6 +13,8 @@ type ConfirmBody = {
   customer_phone: string;
   /** takeaway = para llevar; salon = comer en el local */
   service?: "takeaway" | "salon";
+  /** JWT del usuario logueado para vincular customer_id */
+  access_token?: string;
 };
 
 export async function POST(request: NextRequest) {
@@ -29,6 +31,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Para llevar necesitamos un teléfono de contacto" }, { status: 400 });
     }
 
+    let customerId: string | null = null;
+    if (body.access_token?.trim()) {
+      const authClient = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+        global: { headers: { Authorization: `Bearer ${body.access_token.trim()}` } },
+      });
+      const { data: { user }, error: userErr } = await authClient.auth.getUser();
+      if (!userErr && user?.id) {
+        customerId = user.id;
+      }
+    }
+
     const total = items.reduce((acc, i) => acc + Number(i.price) * Number(i.quantity), 0);
     const itemsJson = items.map((i) => ({
       product_id: i.product_id,
@@ -37,14 +50,15 @@ export async function POST(request: NextRequest) {
       quantity: Number(i.quantity),
     }));
 
-    const supabase = createClient(getSupabaseUrl(), getSupabaseAnonKey());
+    const url = getSupabaseUrl();
+    const anon = getSupabaseAnonKey();
 
     const deliveryInfo =
       service === "salon"
         ? "Pedido mozo virtual — comer en el local"
         : "Pedido mozo virtual — para llevar";
 
-    const { error } = await supabase.from("orders").insert({
+    const insertRow: Record<string, unknown> = {
       table_id: null,
       customer_name: customer_name.trim(),
       customer_phone: phone || "—",
@@ -54,7 +68,21 @@ export async function POST(request: NextRequest) {
       total,
       status: "pending",
       order_type: "takeaway",
-    });
+      paid: false,
+    };
+
+    const db =
+      customerId && body.access_token?.trim()
+        ? createClient(url, anon, {
+            global: { headers: { Authorization: `Bearer ${body.access_token.trim()}` } },
+          })
+        : createClient(url, anon);
+
+    if (customerId) {
+      insertRow.customer_id = customerId;
+    }
+
+    const { error } = await db.from("orders").insert(insertRow);
 
     if (error) {
       console.error("[bloom-chat/confirm]", error);

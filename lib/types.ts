@@ -70,10 +70,19 @@ export type OrderItem = {
 
 export type Order = {
     id: string;
-    table_id: number;
+    table_id: number | null;
     total: number;
-    payment_method: PaymentMethod;
+    payment_method?: PaymentMethod | string | null;
     created_at: string;
     created_by?: string;
     items?: OrderItem[];
+    customer_name?: string | null;
+    customer_phone?: string | null;
+    delivery_type?: string | null;
+    delivery_info?: string | null;
+    order_type?: string | null;
+    status?: string | null;
+    /** Cobrado en caja */
+    paid?: boolean | null;
+    customer_id?: string | null;
 };

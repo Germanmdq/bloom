@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Loader2, Phone, Store } from "lucide-react";
+import Link from "next/link";
+import { MessageCircle, X, Send, Loader2, Phone, Store, User } from "lucide-react";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 import type { BloomChatCartLine, BloomMenuCheckoutBridge } from "@/lib/bloom-chat-types";
 
 type Msg = { role: "assistant" | "user"; content: string };
@@ -14,7 +16,7 @@ function tryParseOrderPayload(text: string): {
   service: "takeaway" | "salon";
   items: Array<{ product_id: string; name: string; price: number; quantity: number }>;
 } | null {
-  const idx = text.lastIndexOf('"order_ready"');
+  const idx = text.lastIndexOf("\"order_ready\"");
   if (idx === -1) return null;
   const start = text.lastIndexOf("{", idx);
   if (start === -1) return null;
@@ -79,12 +81,17 @@ async function streamOpeningMessage(
   }
 }
 
+type OrderPayload = NonNullable<ReturnType<typeof tryParseOrderPayload>>;
+
 export function BloomChat() {
+  const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loadingOpening, setLoadingOpening] = useState(true);
   const [streaming, setStreaming] = useState(false);
+  const [accountGate, setAccountGate] = useState(false);
+  const pendingPayloadRef = useRef<OrderPayload | null>(null);
   const openingStarted = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -208,18 +215,7 @@ export function BloomChat() {
     }
   };
 
-  const onTakeaway = async () => {
-    const last = [...messages].reverse().find((m) => m.role === "assistant");
-    if (!last) return;
-    const payload = tryParseOrderPayload(last.content);
-    if (!payload?.items?.length || !payload.customer_name) {
-      toast.error("Falta el nombre o el pedido no está cerrado.");
-      return;
-    }
-    if (payload.service === "takeaway" && !payload.customer_phone) {
-      toast.error("Para llevar necesitamos un teléfono. Pedile al mozo que lo anote.");
-      return;
-    }
+  const submitConfirm = async (payload: OrderPayload, accessToken?: string) => {
     const res = await fetch("/api/bloom-chat/confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -233,6 +229,7 @@ export function BloomChat() {
         customer_name: payload.customer_name,
         customer_phone: payload.customer_phone,
         service: payload.service,
+        ...(accessToken ? { access_token: accessToken } : {}),
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -240,8 +237,40 @@ export function BloomChat() {
       toast.error((data as { error?: string }).error || "Error al guardar el pedido");
       return;
     }
-    toast.success("Pedido registrado. ¡Gracias!");
+    toast.success(accessToken ? "Pedido registrado en tu cuenta. ¡Gracias!" : "Pedido registrado. ¡Gracias!");
+    setAccountGate(false);
+    pendingPayloadRef.current = null;
     setOpen(false);
+  };
+
+  const onTakeaway = async () => {
+    const last = [...messages].reverse().find((m) => m.role === "assistant");
+    if (!last) return;
+    const payload = tryParseOrderPayload(last.content);
+    if (!payload?.items?.length || !payload.customer_name) {
+      toast.error("Falta el nombre o el pedido no está cerrado.");
+      return;
+    }
+    if (payload.service === "takeaway" && !payload.customer_phone) {
+      toast.error("Para llevar necesitamos un teléfono. Pedile al mozo que lo anote.");
+      return;
+    }
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      pendingPayloadRef.current = payload;
+      setAccountGate(true);
+      return;
+    }
+    await submitConfirm(payload, session.access_token);
+  };
+
+  const onTakeawayGuest = async () => {
+    const payload = pendingPayloadRef.current;
+    if (!payload) return;
+    await submitConfirm(payload);
   };
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
@@ -257,6 +286,42 @@ export function BloomChat() {
       >
         <MessageCircle className="h-7 w-7" strokeWidth={2} />
       </button>
+
+      {accountGate && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="max-w-sm rounded-2xl border border-[#e8e4dc] bg-[#f7f5ef] p-5 shadow-2xl">
+            <p className="font-black text-neutral-900">¿Asociamos el pedido a tu cuenta?</p>
+            <p className="mt-2 text-sm text-neutral-600">
+              Si iniciás sesión, lo vas a ver en <strong>Mi cuenta</strong> con tu historial y beneficios.
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              <Link
+                href="/auth"
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#2d4a3e] px-4 py-3 text-center text-sm font-black uppercase text-white"
+              >
+                <User className="h-4 w-4" /> Iniciar sesión
+              </Link>
+              <button
+                type="button"
+                onClick={() => void onTakeawayGuest()}
+                className="rounded-xl border border-[#d4cfc4] bg-white px-4 py-3 text-sm font-bold text-neutral-800"
+              >
+                Continuar como invitado
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountGate(false);
+                  pendingPayloadRef.current = null;
+                }}
+                className="text-xs font-bold text-neutral-400 hover:text-neutral-600"
+              >
+                Volver
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {open && (
         <div className="fixed bottom-24 right-6 z-[101] flex w-[min(100vw-2rem,400px)] flex-col overflow-hidden rounded-2xl border border-[#e8e4dc] bg-[#f7f5ef] shadow-2xl shadow-black/20">
