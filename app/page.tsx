@@ -71,13 +71,13 @@ const destacados: { name: string; desc: string; img: string; nameHint: string }[
   {
     name: "Arroz con pollo",
     desc: "Un clásico de la cocina, abundante y casero.",
-    img: "/images/categories/platos-diarios.png",
+    img: "/images/products/arroz-con-pollo.png",
     nameHint: "arroz",
   },
   {
     name: "Tostado pan árabe",
     desc: "Crocante, bien dorado, ideal para desayunar o merendar.",
-    img: "/images/categories/desayunos.png",
+    img: "/images/tostado-arabe-home.png",
     nameHint: "tostado",
   },
 ];
