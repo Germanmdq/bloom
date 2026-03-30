@@ -48,24 +48,6 @@ function combineRegisterAddress(line: string, extra: string): string {
   return `${a} - ${b}`;
 }
 
-function customerDestinationAfterAuth(searchParams: URLSearchParams): string {
-  const fromQuery = safeInternalPath(searchParams.get("redirect"));
-  if (fromQuery && (fromQuery === "/menu" || fromQuery.startsWith("/menu?"))) {
-    return fromQuery;
-  }
-  if (typeof document !== "undefined" && document.referrer) {
-    try {
-      const u = new URL(document.referrer);
-      if (u.origin === window.location.origin && u.pathname === "/menu") {
-        return "/menu" + u.search;
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-  return "/cuenta";
-}
-
 export function AuthPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -119,7 +101,8 @@ export function AuthPageClient() {
     if (isAdminEmail(data?.user?.email)) {
       router.replace("/dashboard");
     } else {
-      router.replace(customerDestinationAfterAuth(searchParams));
+      const redirect = safeInternalPath(searchParams.get("redirect")) ?? "/cuenta";
+      router.replace(redirect);
     }
     router.refresh();
   };
@@ -157,7 +140,7 @@ export function AuthPageClient() {
       return;
     }
     setLoading(true);
-    const dest = customerDestinationAfterAuth(searchParams);
+    const redirectAfterAuth = safeInternalPath(searchParams.get("redirect")) ?? "/cuenta";
     const defaultAddress = combineRegisterAddress(addressLine, addressExtra);
     const { data, error: err } = await supabase.auth.signUp({
       email,
@@ -170,7 +153,7 @@ export function AuthPageClient() {
           default_address: defaultAddress,
         },
         emailRedirectTo:
-          typeof window !== "undefined" ? `${window.location.origin}${dest === "/cuenta" ? "/cuenta" : dest}` : undefined,
+          typeof window !== "undefined" ? `${window.location.origin}${redirectAfterAuth}` : undefined,
       },
     });
     setLoading(false);
@@ -180,7 +163,7 @@ export function AuthPageClient() {
       return;
     }
     if (data.session) {
-      router.push(customerDestinationAfterAuth(searchParams));
+      router.replace(redirectAfterAuth);
       router.refresh();
       return;
     }

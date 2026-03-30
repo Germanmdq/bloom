@@ -229,6 +229,52 @@ const UPSELL_FOOTER =
 /** Una sola vez por sesión de navegador: aviso suave para iniciar sesión. */
 const SOFT_AUTH_SESSION_KEY = "bloom_chat_soft_auth_hint";
 
+/** Post-login: restaurar carrito y abrir modal de encargo en /menu. */
+const BLOOM_PENDING_CART_KEY = "bloom_pending_cart";
+const BLOOM_PENDING_CHECKOUT_KEY = "bloom_pending_checkout";
+
+function parsePendingCartLines(raw: string): CartLine[] | null {
+  try {
+    const data = JSON.parse(raw) as unknown;
+    if (!Array.isArray(data)) return null;
+    const out: CartLine[] = [];
+    for (const row of data) {
+      if (row == null || typeof row !== "object") continue;
+      const o = row as Record<string, unknown>;
+      const lineId = typeof o.lineId === "string" ? o.lineId : "";
+      const product_id = typeof o.product_id === "string" ? o.product_id : "";
+      const name = typeof o.name === "string" ? o.name : "";
+      const price = Number(o.price);
+      const quantity = Number(o.quantity);
+      const observations = typeof o.observations === "string" ? o.observations : "";
+      if (!lineId || !product_id || !name || !Number.isFinite(price) || !Number.isFinite(quantity) || quantity < 1) {
+        continue;
+      }
+      let variants: { name: string }[] | undefined;
+      if (Array.isArray(o.variants)) {
+        const v = o.variants.filter(
+          (x): x is { name: string } =>
+            x != null && typeof x === "object" && typeof (x as { name?: unknown }).name === "string"
+        );
+        if (v.length) variants = v.map((x) => ({ name: x.name }));
+      }
+      out.push({
+        lineId,
+        product_id,
+        name,
+        price,
+        quantity,
+        observations,
+        ...(variants?.length ? { variants } : {}),
+        productHadVariants: Boolean(o.productHadVariants),
+      });
+    }
+    return out.length > 0 ? out : null;
+  } catch {
+    return null;
+  }
+}
+
 type ChatContext = {
   displayName: string;
   categoryId: string | null;
@@ -536,6 +582,19 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const deliveryZoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  /** Evita doble restauración (StrictMode / varios eventos de auth). */
+  const pendingRestoreHandledRef = useRef(false);
+
+  const persistCartAndGoToAuthForCheckout = useCallback(() => {
+    try {
+      sessionStorage.setItem(BLOOM_PENDING_CART_KEY, JSON.stringify(cart));
+      sessionStorage.setItem(BLOOM_PENDING_CHECKOUT_KEY, "true");
+    } catch {
+      toast.error("No se pudo guardar el encargo. Intentá de nuevo.");
+      return;
+    }
+    router.push("/auth?redirect=/menu");
+  }, [cart, router]);
 
   const cartCount = useMemo(() => cart.reduce((n, l) => n + l.quantity, 0), [cart]);
   const cartTotal = useMemo(() => cart.reduce((s, l) => s + l.price * l.quantity, 0), [cart]);
@@ -778,6 +837,67 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         setDeliveryCustomAddressMode(true);
         setCheckoutAddressLine("");
         setCheckoutAddressExtra("");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  /** Tras login desde el encargo: restaurar carrito, abrir modal y limpiar sessionStorage. */
+  useEffect(() => {
+    const tryRestorePendingCheckout = async () => {
+      if (pendingRestoreHandledRef.current) return;
+      if (typeof window === "undefined") return;
+      if (sessionStorage.getItem(BLOOM_PENDING_CHECKOUT_KEY) !== "true") return;
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      pendingRestoreHandledRef.current = true;
+      const raw = sessionStorage.getItem(BLOOM_PENDING_CART_KEY);
+      sessionStorage.removeItem(BLOOM_PENDING_CHECKOUT_KEY);
+      sessionStorage.removeItem(BLOOM_PENDING_CART_KEY);
+
+      const lines = raw ? parsePendingCartLines(raw) ?? [] : [];
+      if (lines.length > 0) {
+        setCart(lines);
+        setAddedProductIds(new Set(lines.filter((l) => !l.productHadVariants).map((l) => l.product_id)));
+      }
+
+      const p = prefillCheckoutFromUser(session.user);
+      setCheckoutName(p.name);
+      setCheckoutPhone(p.phone);
+      const saved = p.defaultAddressSaved.trim();
+      setSavedAddressFromProfile(saved);
+      if (saved) {
+        setDeliveryCustomAddressMode(false);
+        setCheckoutAddressLine(p.addressLine);
+        setCheckoutAddressExtra(p.addressExtra);
+      } else {
+        setDeliveryCustomAddressMode(true);
+        setCheckoutAddressLine("");
+        setCheckoutAddressExtra("");
+      }
+      setSaveDefaultAddress(true);
+      setAddressConfirmation("yes");
+      setEncargoCheckoutUnlocked(true);
+      setEncargoLoggedInPrefill(true);
+      setSoftAuthHintVisible(false);
+      setOpen(true);
+      setEncargoOpen(true);
+      setCheckoutSubmitAttempted(false);
+    };
+
+    void tryRestorePendingCheckout();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") &&
+        session?.user
+      ) {
+        void tryRestorePendingCheckout();
       }
     });
     return () => subscription.unsubscribe();
@@ -1232,12 +1352,13 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   <p className="text-sm font-medium leading-relaxed text-neutral-800">
                     Para confirmar tu encargo necesitás iniciar sesión o registrarte.
                   </p>
-                  <Link
-                    href="/auth?redirect=%2Fmenu"
+                  <button
+                    type="button"
+                    onClick={persistCartAndGoToAuthForCheckout}
                     className="inline-flex w-full items-center justify-center rounded-xl bg-[#2d4a3e] px-4 py-3 text-center text-sm font-black text-white shadow hover:bg-[#1f342c] sm:max-w-md sm:mx-auto"
                   >
                     Iniciar sesión o registrarse →
-                  </Link>
+                  </button>
                 </div>
               ) : (
               <div className="mt-6 space-y-3 border-t border-[#e0dcd4] pt-4">
@@ -1559,16 +1680,17 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
               {softAuthHintVisible ? (
                 <div className="max-w-[92%] rounded-2xl border border-amber-100/80 bg-amber-50/90 px-3 py-2.5 text-sm leading-relaxed text-neutral-800 shadow-sm ring-1 ring-amber-200/60">
-                  <p>
+                  <div>
                     💡 Iniciá sesión o registrate para una mejor atención — guardamos tus datos y tu historial de
                     encargos.{" "}
-                    <Link
-                      href="/auth?redirect=%2Fmenu"
+                    <button
+                      type="button"
+                      onClick={persistCartAndGoToAuthForCheckout}
                       className="font-semibold text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
                     >
                       Iniciar sesión →
-                    </Link>
-                  </p>
+                    </button>
+                  </div>
                 </div>
               ) : null}
 
