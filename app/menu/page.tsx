@@ -13,6 +13,8 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
 import { VariantSelector } from "@/components/pos/VariantSelector"; // Reusing logic
 import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
+import { BloomChat } from "@/components/Menu/BloomChat";
+import type { BloomChatCartLine } from "@/lib/bloom-chat-types";
 
 const PEDIDOS_YA_BLOOM_URL =
     "https://www.pedidosya.com.ar/restaurantes/mar-del-plata/bloom-mar-del-plata-5c1357e3-e095-476e-9eee-eeda4620b75e-menu";
@@ -280,26 +282,38 @@ function PublicMenuPage() {
         }
     };
 
-    /** Abre WhatsApp con el pedido (sin botón en UI por ahora; chat Groq u otros pueden llamar `window.__bloomMenuCheckout?.handleWhatsAppCheckout`). */
-    const handleWhatsAppCheckout = useCallback(() => {
-        if (cart.length === 0) return;
-        const itemsList = cart.map((i) => {
-            const vars = i.variants?.length ? ` [${i.variants.map((v: { name: string }) => v.name).join(", ")}]` : "";
-            const obs = i.observations ? ` _(${i.observations})_` : "";
-            return `• ${i.quantity}x ${i.name}${vars}${obs} (${formatCurrency(i.price * i.quantity)})`;
-        }).join("%0A");
+    /** Abre WhatsApp con el pedido. Si pasás `lines`, usa ese carrito (p. ej. asistente Groq); si no, el estado `cart`. */
+    const handleWhatsAppCheckout = useCallback(
+        (overrideCart?: BloomChatCartLine[]) => {
+            const c = overrideCart ?? cart;
+            if (c.length === 0) return;
+            const itemsList = c.map((i) => {
+                const vars = i.variants?.length ? ` [${i.variants.map((v: { name: string }) => v.name).join(", ")}]` : "";
+                const obs = i.observations ? ` _(${i.observations})_` : "";
+                return `• ${i.quantity}x ${i.name}${vars}${obs} (${formatCurrency(i.price * i.quantity)})`;
+            }).join("%0A");
 
-        const cartTotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-        const mesaInfo = tableLabel ? `📍 *${tableLabel}*%0A%0A` : "";
-        const text = `Hola Bloom! 👋 Quiero pedir:%0A%0A${mesaInfo}${itemsList}%0A%0A*Total: ${formatCurrency(cartTotal)}*`;
-        window.open(`https://wa.me/${whatsappNumber}?text=${text}`, "_blank");
-    }, [cart, tableLabel, whatsappNumber]);
+            const cartTotal = c.reduce((acc, item) => acc + item.price * item.quantity, 0);
+            const mesaInfo = tableLabel ? `📍 *${tableLabel}*%0A%0A` : "";
+            const text = `Hola Bloom! 👋 Quiero pedir:%0A%0A${mesaInfo}${itemsList}%0A%0A*Total: ${formatCurrency(cartTotal)}*`;
+            window.open(`https://wa.me/${whatsappNumber}?text=${text}`, "_blank");
+        },
+        [cart, tableLabel, whatsappNumber]
+    );
 
     useEffect(() => {
         const w = window as Window & {
-            __bloomMenuCheckout?: { whatsappNumber: string; handleWhatsAppCheckout: () => void };
+            __bloomMenuCheckout?: {
+                whatsappNumber: string;
+                handleWhatsAppCheckout: () => void;
+                handleWhatsAppCheckoutWithCart: (lines: BloomChatCartLine[]) => void;
+            };
         };
-        w.__bloomMenuCheckout = { whatsappNumber, handleWhatsAppCheckout };
+        w.__bloomMenuCheckout = {
+            whatsappNumber,
+            handleWhatsAppCheckout: () => handleWhatsAppCheckout(),
+            handleWhatsAppCheckoutWithCart: (lines: BloomChatCartLine[]) => handleWhatsAppCheckout(lines),
+        };
         return () => {
             delete w.__bloomMenuCheckout;
         };
@@ -1209,6 +1223,7 @@ function PublicMenuPage() {
                     </>
                 )}
             </AnimatePresence>
+            <BloomChat />
             <SiteFooter />
         </main>
     );
