@@ -86,32 +86,63 @@ const ARS_PRICE_RE = String.raw`\$\s*(?:\d{1,3}(?:\.\d{3})+|\d+)\b`;
 
 type ProductPriceMatch = { start: number; end: number; name: string; price: string };
 
+function pushMatch(
+  raw: ProductPriceMatch[],
+  start: number,
+  end: number,
+  name: string,
+  price: string
+) {
+  const n = name.replace(/\s+/g, " ").trim();
+  const p = price.replace(/\s+/g, " ").trim();
+  if (n.length < 1 || p.length < 1) return;
+  raw.push({ start, end, name: n, price: p });
+}
+
+/**
+ * Todas las apariciones: "Nombre" a|por $…, el "Nombre" por $…, «…», y líneas
+ * `Nombre — $precio — …` (formato del system prompt).
+ */
 function findProductPriceMatches(text: string): ProductPriceMatch[] {
   const raw: ProductPriceMatch[] = [];
   const price = ARS_PRICE_RE;
+  const link = String.raw`(?:a|por)`;
 
-  const patterns: RegExp[] = [
-    new RegExp(String.raw`"([^"]{1,120})"\s+a\s+(${price})`, "gu"),
-    new RegExp(String.raw`«([^»]{1,120})»\s+a\s+(${price})`, "gu"),
-    new RegExp(String.raw`'([^']{1,120})'\s+a\s+(${price})`, "gu"),
+  const quotedPatterns: RegExp[] = [
+    new RegExp(
+      String.raw`(?:\b(?:el|la|los|las|un|una)\s+)?"([^"]{1,120})"\s*${link}\s+(${price})`,
+      "giu"
+    ),
+    new RegExp(
+      String.raw`(?:\b(?:el|la|los|las|un|una)\s+)?«([^»]{1,120})»\s*${link}\s+(${price})`,
+      "giu"
+    ),
+    new RegExp(
+      String.raw`(?:\b(?:el|la|los|las|un|una)\s+)?'([^']{1,120})'\s*${link}\s+(${price})`,
+      "giu"
+    ),
   ];
 
-  for (const re of patterns) {
+  for (const re of quotedPatterns) {
     re.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
-      const name = m[1].replace(/\s+/g, " ").trim();
-      if (name.length < 2) continue;
-      raw.push({
-        start: m.index,
-        end: m.index + m[0].length,
-        name,
-        price: m[2].replace(/\s+/g, " ").trim(),
-      });
+      pushMatch(raw, m.index, m.index + m[0].length, m[1], m[2]);
     }
   }
 
-  raw.sort((a, b) => a.start - b.start || a.end - b.end);
+  // Una línea = un producto: Nombre — $X — descripción…  (o sin tercer tramo)
+  const lineRe = new RegExp(
+    String.raw`^([^\n—\-]{1,120}?)\s*[—\-]\s+(${price})(?:\s*[—\-][^\n]*)?$`,
+    "gmu"
+  );
+  lineRe.lastIndex = 0;
+  let lm: RegExpExecArray | null;
+  while ((lm = lineRe.exec(text)) !== null) {
+    pushMatch(raw, lm.index, lm.index + lm[0].length, lm[1], lm[2]);
+  }
+
+  raw.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
   const merged: ProductPriceMatch[] = [];
   for (const m of raw) {
     if (merged.some((k) => !(m.end <= k.start || m.start >= k.end))) continue;
@@ -122,7 +153,7 @@ function findProductPriceMatches(text: string): ProductPriceMatch[] {
 
 type AssistantSeg =
   | { type: "text"; text: string }
-  | { type: "product"; name: string; price: string };
+  | { type: "product"; name: string; price: string; matchStart: number };
 
 function parseAssistantSegments(text: string): AssistantSeg[] {
   const matches = findProductPriceMatches(text);
@@ -135,7 +166,7 @@ function parseAssistantSegments(text: string): AssistantSeg[] {
       const t = text.slice(cursor, m.start);
       if (t.trim()) out.push({ type: "text", text: t });
     }
-    out.push({ type: "product", name: m.name, price: m.price });
+    out.push({ type: "product", name: m.name, price: m.price, matchStart: m.start });
     cursor = m.end;
   }
   if (cursor < text.length) {
@@ -147,7 +178,7 @@ function parseAssistantSegments(text: string): AssistantSeg[] {
 
 type AssistantRun =
   | { kind: "text"; text: string }
-  | { kind: "cards"; items: { name: string; price: string }[] };
+  | { kind: "cards"; items: { name: string; price: string; matchStart: number }[] };
 
 function groupAssistantRuns(segments: AssistantSeg[]): AssistantRun[] {
   const runs: AssistantRun[] = [];
@@ -159,8 +190,9 @@ function groupAssistantRuns(segments: AssistantSeg[]): AssistantRun[] {
       else runs.push({ kind: "text", text: seg.text });
     } else {
       const last = runs[runs.length - 1];
-      if (last?.kind === "cards") last.items.push({ name: seg.name, price: seg.price });
-      else runs.push({ kind: "cards", items: [{ name: seg.name, price: seg.price }] });
+      if (last?.kind === "cards")
+        last.items.push({ name: seg.name, price: seg.price, matchStart: seg.matchStart });
+      else runs.push({ kind: "cards", items: [{ name: seg.name, price: seg.price, matchStart: seg.matchStart }] });
     }
   }
   return runs;
@@ -203,7 +235,7 @@ function AssistantMessageBody({
           <div key={i} className="flex flex-col gap-2">
             {run.items.map((item, j) => (
               <div
-                key={`${j}-${item.name}-${item.price}`}
+                key={`${item.matchStart}-${j}`}
                 className="rounded-xl border border-[#e0dcd4] bg-[#fbfaf7] p-3 shadow-sm"
               >
                 <p className="font-bold text-neutral-900">{item.name}</p>
