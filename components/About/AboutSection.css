@@ -16,7 +16,7 @@
     font-weight: 900;
     letter-spacing: 0.1em;
     color: var(--color-terracota);
-    font-family: var(--font-display);
+    font-family: var(--font-sans);
     margin-bottom: 0.5rem;
 }
 

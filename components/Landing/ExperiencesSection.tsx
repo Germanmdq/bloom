@@ -33,7 +33,7 @@ export function ExperiencesSection() {
     return (
         <section className="bg-[#EFEBE9] py-32" id="experiencias">
             <div className="container mx-auto px-8 max-w-[1200px]">
-                <h2 className="text-[4rem] text-center mb-20 font-display text-[#3E2723] tracking-widest">
+                <h2 className="text-[4rem] text-center mb-20 font-sans text-[#3E2723] tracking-widest">
                     La Experiencia <span className="font-poppins">Bloom</span>
                 </h2>
 
@@ -53,7 +53,7 @@ export function ExperiencesSection() {
                             </div>
 
                             <div className="p-12 flex flex-col justify-center gap-6">
-                                <h3 className="text-[2.2rem] font-bold text-[#3E2723] font-display">{exp.title}</h3>
+                                <h3 className="text-[2.2rem] font-bold text-[#3E2723] font-sans">{exp.title}</h3>
                                 <p className="text-[1.15rem] leading-[1.7] text-[#6D4C41]">
                                     {exp.description}
                                 </p>

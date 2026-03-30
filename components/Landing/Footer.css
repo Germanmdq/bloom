@@ -21,7 +21,7 @@
 
 .main-footer .footer-brand h3 {
     font-size: 2.5rem;
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-sans);
     color: var(--color-salmon);
     margin-bottom: 0.5rem;
 }

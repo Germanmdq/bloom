@@ -1,26 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Inter, Raleway, Open_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 
-const raleway = Raleway({
-  subsets: ["latin"],
-  variable: "--font-raleway",
-});
-
-const openSans = Open_Sans({
-  subsets: ["latin"],
-  variable: "--font-opensans",
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-display",
-});
-
+/** Single UI stack site-wide (same as homepage `font-sans`). */
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-body",
+  variable: "--font-inter",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -41,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body className={`${raleway.variable} ${openSans.variable} ${playfair.variable} ${inter.variable} antialiased text-neutral-900 bg-[#fffdf8]`} suppressHydrationWarning>
+    <html lang="es" className={inter.variable} suppressHydrationWarning>
+      <body className="antialiased text-neutral-900 bg-[#fffdf8]" suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

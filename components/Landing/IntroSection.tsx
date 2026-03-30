@@ -12,7 +12,7 @@ export function IntroSection() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.8 }}
                 >
-                    <h1 className="text-[6rem] font-black tracking-[0.3em] text-[#3E2723] font-display mb-6">BLOOM</h1>
+                    <h1 className="text-[6rem] font-black tracking-[0.3em] text-[#3E2723] font-sans mb-6">BLOOM</h1>
                     <h2 className="text-[2.5rem] text-[#6D4C41] font-normal mb-16">
                         Mar del Plata <span className="italic text-[#D4AF37]">Argentina</span>
                     </h2>

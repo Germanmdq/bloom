@@ -39,7 +39,7 @@ export function PhilosophySection() {
                         transition={{ duration: 0.8 }}
                     >
                         <p className="text-2xl italic text-[#A1887F] mb-4">Para nosotros,</p>
-                        <h2 className="text-[3.5rem] font-bold leading-[1.2] mb-12 font-display">
+                        <h2 className="text-[3.5rem] font-bold leading-[1.2] mb-12 font-sans">
                             el café es un arte y cada taza es una experiencia única
                         </h2>
                         <p className="text-[1.2rem] leading-[1.8] mb-8 text-[#A1887F]">

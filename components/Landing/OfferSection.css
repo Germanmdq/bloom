@@ -52,7 +52,7 @@
     font-weight: 700;
     line-height: 1.2;
     margin-bottom: 3rem;
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-sans);
 }
 
 .offer-section .offer-text .description {

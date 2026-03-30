@@ -21,7 +21,7 @@
 .contact-section h2 {
     font-size: 2.5rem;
     /* Mobile */
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-sans);
     margin-bottom: 1.5rem;
 }
 

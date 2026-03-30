@@ -48,7 +48,7 @@ export function MenuGrid({ categories, products }: MenuGridProps) {
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-5xl font-black mb-4 font-display text-[#EFEBE9]"
+                        className="text-5xl font-black mb-4 font-sans text-[#EFEBE9]"
                     >
                         Nuestra Selección Premium
                     </motion.h2>
@@ -57,7 +57,7 @@ export function MenuGrid({ categories, products }: MenuGridProps) {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.1 }}
-                        className="text-xl text-[#D4AF37] italic font-display"
+                        className="text-xl text-[#D4AF37] italic font-sans"
                     >
                         Descubre sabores que despiertan los sentidos
                     </motion.p>
@@ -69,7 +69,7 @@ export function MenuGrid({ categories, products }: MenuGridProps) {
                             initial={{ opacity: 0, x: -20 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
-                            className="text-3xl font-bold mb-12 text-[#D4AF37] border-b border-[#D4AF37]/20 pb-4 font-display inline-block"
+                            className="text-3xl font-bold mb-12 text-[#D4AF37] border-b border-[#D4AF37]/20 pb-4 font-sans inline-block"
                         >
                             {formatName(category.name)}
                         </motion.h3>
@@ -100,8 +100,8 @@ export function MenuGrid({ categories, products }: MenuGridProps) {
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex justify-between items-baseline mb-3 border-b border-dashed border-[#EFEBE9]/10 pb-2">
-                                            <h4 className="text-xl font-bold text-[#EFEBE9] font-display group-hover:text-[#D4AF37] transition-colors">{formatName(item.name)}</h4>
-                                            <span className="text-xl font-bold text-[#D4AF37] ml-4 font-display">${item.price}</span>
+                                            <h4 className="text-xl font-bold text-[#EFEBE9] font-sans group-hover:text-[#D4AF37] transition-colors">{formatName(item.name)}</h4>
+                                            <span className="text-xl font-bold text-[#D4AF37] ml-4 font-sans">${item.price}</span>
                                         </div>
                                         <p className="text-[#EFEBE9]/60 text-sm leading-relaxed font-light line-clamp-2 group-hover:text-[#EFEBE9]/90 transition-colors">
                                             {item.description || "Una deliciosa experiencia para tu paladar, preparada con los mejores ingredientes."}
