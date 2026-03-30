@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { MessageCircle, X, Loader2, Check } from "lucide-react";
@@ -12,7 +11,6 @@ type ProductRow = {
   name: string;
   description: string | null;
   price: number;
-  image_url: string | null;
   category_id: string | null;
 };
 
@@ -57,13 +55,6 @@ function genericIntro() {
   return `${t}! Tocá una categoría en el menú para ver productos y armar tu encargo.`;
 }
 
-/** Primer emoji al inicio del nombre de categoría en DB (ej. "☕ Cafés"). */
-function leadingEmojiFromName(name: string | null | undefined): string {
-  if (!name?.trim()) return "☕";
-  const m = name.trim().match(/^\p{Extended_Pictographic}/u);
-  return m ? m[0] : "☕";
-}
-
 type ChatContext = {
   displayName: string;
   categoryId: string | null;
@@ -72,38 +63,26 @@ type ChatContext = {
 
 function ProductCard({
   product,
-  categoryEmoji,
   added,
   onEncargar,
 }: {
   product: ProductRow;
-  categoryEmoji: string;
   added: boolean;
   onEncargar: (observations: string) => void;
 }) {
   const [observation, setObservation] = useState("");
-  const src = product.image_url?.trim();
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#e0dcd4] bg-white shadow-sm ring-1 ring-black/5">
-      <div className="relative aspect-[4/3] w-full bg-neutral-100">
-        {src ? (
-          <Image src={src} alt={product.name} fill className="object-cover" sizes="240px" />
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-1 text-5xl" aria-hidden>
-            <span>{categoryEmoji}</span>
-          </div>
-        )}
-        {added && (
-          <div
-            className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md"
-            aria-label="Agregado"
-          >
-            <Check className="h-5 w-5" strokeWidth={3} />
-          </div>
-        )}
-      </div>
-      <div className="p-3">
+    <div className="relative overflow-hidden rounded-2xl border border-[#e0dcd4] bg-white p-3 shadow-sm ring-1 ring-black/5">
+      {added && (
+        <div
+          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md"
+          aria-label="Agregado"
+        >
+          <Check className="h-5 w-5" strokeWidth={3} />
+        </div>
+      )}
+      <div className="pr-10">
         <p className="font-bold text-neutral-900">{product.name}</p>
         <p className="mt-1 text-sm font-semibold text-[#2d4a3e]">{formatArs(Number(product.price))}</p>
         <label className="mt-2 block text-xs font-bold text-neutral-500">Observaciones (opcional)</label>
@@ -136,7 +115,6 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const [context, setContext] = useState<ChatContext | null>(null);
   const [contextKey, setContextKey] = useState(0);
   const [products, setProducts] = useState<ProductRow[]>([]);
-  const [categoryEmoji, setCategoryEmoji] = useState("☕");
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [introText, setIntroText] = useState("");
 
@@ -182,20 +160,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     (async () => {
       setLoadingProducts(true);
       try {
-        if (context.categoryId) {
-          const { data: catRow } = await supabase
-            .from("categories")
-            .select("name")
-            .eq("id", context.categoryId)
-            .maybeSingle();
-          if (!cancelled) setCategoryEmoji(leadingEmojiFromName(catRow?.name as string | undefined));
-        } else {
-          if (!cancelled) setCategoryEmoji("🍽️");
-        }
-
         let q = supabase
           .from("products")
-          .select("id,name,description,price,image_url,category_id")
+          .select("id,name,description,price,category_id")
           .eq("active", true);
         if (context.productIds?.length) {
           q = q.in("id", context.productIds);
@@ -564,7 +531,6 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     <ProductCard
                       key={`${productListKey}-${p.id}`}
                       product={p}
-                      categoryEmoji={categoryEmoji}
                       added={addedProductIds.has(p.id)}
                       onEncargar={(obs) => addLine(p, obs)}
                     />
