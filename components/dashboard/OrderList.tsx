@@ -6,6 +6,7 @@ import * as XLSX from "xlsx";
 import { Loader2, X, Filter, Download, Bike, Store, Building2, UtensilsCrossed, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
 import { getPaymentIcon, getPaymentLabel } from "@/lib/utils/payment";
 import { motion, AnimatePresence } from "framer-motion";
+import { CHANNEL_BADGE, CHANNEL_LABEL, CHANNEL_LEFT, getOrderChannel } from "@/lib/dashboard/order-channel";
 
 type ViewMode = 'day' | 'week' | 'fortnight' | 'month';
 
@@ -35,37 +36,6 @@ function isOrderPaid(o: Order & { paid?: boolean | null }) {
 function isDeliveryOrder(o: Order & { delivery_type?: string | null }) {
     return String(o.delivery_type ?? "").toLowerCase() === "delivery";
 }
-
-/** Canal visual: delivery > mesa POS > retiro (web local / sucursal). */
-type OrderChannel = "mesa" | "delivery" | "retiro";
-
-function getOrderChannel(order: Order): OrderChannel {
-    const dt = String(order.delivery_type ?? "").toLowerCase();
-    const ot = String(order.order_type ?? "").toLowerCase();
-    if (dt === "delivery") return "delivery";
-    /** Mesa: comanda con mesa (p. ej. POS); pedidos web usan `order_type` web y suelen ir sin mesa. */
-    if (order.table_id != null && ot !== "web") return "mesa";
-    return "retiro";
-}
-
-/** Borde izquierdo grueso + color (el resto del borde viene de paid/unpaid). */
-const CHANNEL_LEFT: Record<OrderChannel, string> = {
-    mesa: "border-l-4 border-l-red-500",
-    delivery: "border-l-4 border-l-green-500",
-    retiro: "border-l-4 border-l-amber-400",
-};
-
-const CHANNEL_BADGE: Record<OrderChannel, string> = {
-    mesa: "bg-red-500 text-white",
-    delivery: "bg-green-600 text-white",
-    retiro: "bg-amber-400 text-gray-900",
-};
-
-const CHANNEL_LABEL: Record<OrderChannel, string> = {
-    mesa: "Mesa",
-    delivery: "Delivery",
-    retiro: "Retiro",
-};
 
 export function OrderList() {
     const [orders, setOrders] = useState<Order[]>([]);

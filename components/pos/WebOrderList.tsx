@@ -8,6 +8,9 @@ interface WebOrder {
     created_at: string;
     total: number;
     table_id: number;
+    customer_name?: string | null;
+    customer_phone?: string | null;
+    order_type?: string | null;
     items: Array<{
         id?: string;
         name: string;
@@ -16,6 +19,17 @@ interface WebOrder {
         is_meta?: boolean;
         details?: Record<string, string>;
     }>;
+}
+
+function webOrderDisplayName(order: WebOrder): string {
+    const saved = order.customer_name?.trim();
+    if (saved) return saved;
+    const clientItem = order.items.find((i) => i.is_meta);
+    if (clientItem?.name?.trim()) {
+        return clientItem.name.replace(/^Cliente:\s*/i, "").trim();
+    }
+    const isWeb = String(order.order_type ?? "").toLowerCase() === "web";
+    return isWeb ? "Cliente Web" : "Cliente";
 }
 
 interface WebOrderListProps {
@@ -61,8 +75,9 @@ export function WebOrderList({ tableId, webOrders, onSelectOrder, onClose }: Web
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-20">
                 {webOrders.map((order) => {
                     const clientItem = order.items.find((i) => i.is_meta);
-                    const clientName = clientItem ? clientItem.name : "Cliente Web";
+                    const displayName = webOrderDisplayName(order);
                     const details = clientItem?.details || {};
+                    const phone = order.customer_phone?.trim() || details.phone || "";
                     const productItems = order.items.filter((i) => !i.is_meta);
 
                     return (
@@ -81,10 +96,10 @@ export function WebOrderList({ tableId, webOrders, onSelectOrder, onClose }: Web
                             </div>
 
                             <h3 className="text-xl font-bold text-gray-800 mb-1">
-                                {clientName.replace('Cliente: ', '')}
+                                {displayName}
                             </h3>
-                            {details.phone && (
-                                <p className="text-xs text-gray-400 font-bold mb-4">{details.phone}</p>
+                            {phone && (
+                                <p className="text-xs text-gray-400 font-bold mb-4">{phone}</p>
                             )}
 
                             <div className="flex-1 space-y-1 mb-6">
