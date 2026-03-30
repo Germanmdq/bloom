@@ -55,6 +55,9 @@ function genericIntro() {
   return `${t}! Tocá una categoría en el menú para ver productos y armar tu encargo.`;
 }
 
+/** Una sola vez por sesión de navegador: aviso suave para iniciar sesión. */
+const SOFT_AUTH_SESSION_KEY = "bloom_chat_soft_auth_hint";
+
 type ChatContext = {
   displayName: string;
   categoryId: string | null;
@@ -91,7 +94,6 @@ function ProductCard({
           value={observation}
           onChange={(e) => setObservation(e.target.value)}
           disabled={added}
-          placeholder="Ej. sin sal, bien cocido…"
           className="mt-1 w-full rounded-lg border border-[#d4cfc4] bg-white px-2 py-1.5 text-sm disabled:bg-neutral-100"
         />
         <button
@@ -134,6 +136,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showHistoryLink, setShowHistoryLink] = useState(false);
+  const [softAuthHintVisible, setSoftAuthHintVisible] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -149,7 +152,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
   useEffect(() => {
     scrollToBottom();
-  }, [cart, products, open, encargoOpen, successMessage]);
+  }, [cart, products, open, encargoOpen, successMessage, softAuthHintVisible]);
 
   useEffect(() => {
     if (!open || !context) return;
@@ -219,6 +222,42 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       document.body.style.overflow = prev;
     };
   }, [open]);
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) setSoftAuthHintVisible(false);
+    });
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      if (cart.length === 0) {
+        if (!cancelled) setSoftAuthHintVisible(false);
+        return;
+      }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (session?.user) {
+        setSoftAuthHintVisible(false);
+        return;
+      }
+      if (typeof window !== "undefined" && sessionStorage.getItem(SOFT_AUTH_SESSION_KEY) === "1") {
+        return;
+      }
+      if (typeof window !== "undefined") sessionStorage.setItem(SOFT_AUTH_SESSION_KEY, "1");
+      setSoftAuthHintVisible(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, cart.length, supabase]);
 
   const resetForContext = useCallback(() => {
     setCart([]);
@@ -651,6 +690,21 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                 ))}
               </div>
 
+              {softAuthHintVisible ? (
+                <div className="max-w-[92%] rounded-2xl border border-amber-100/80 bg-amber-50/90 px-3 py-2.5 text-sm leading-relaxed text-neutral-800 shadow-sm ring-1 ring-amber-200/60">
+                  <p>
+                    💡 Iniciá sesión o registrate para una mejor atención — guardamos tus datos y tu historial de
+                    encargos.{" "}
+                    <Link
+                      href="/auth"
+                      className="font-semibold text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
+                    >
+                      Iniciar sesión →
+                    </Link>
+                  </p>
+                </div>
+              ) : null}
+
               {successMessage && (
                 <div className="space-y-2">
                   <div className="max-w-[92%] rounded-2xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-900 ring-1 ring-emerald-200">
@@ -678,7 +732,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
               )}
 
               {!loadingProducts && products.length > 0 && (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex w-full flex-col gap-3">
                   {products.map((p) => (
                     <ProductCard
                       key={`${productListKey}-${p.id}`}
