@@ -180,10 +180,8 @@ async function geocodeAddressGoogle(
   return { lat: loc.lat, lng: loc.lng };
 }
 
-function prefillCheckoutFromUser(user: {
-  user_metadata?: Record<string, unknown>;
-  phone?: string | null;
-}): {
+/** Solo `user_metadata` de la sesión (sin email ni campos del objeto User). */
+function prefillCheckoutFromUser(user: { user_metadata?: Record<string, unknown> }): {
   name: string;
   phone: string;
   addressLine: string;
@@ -195,15 +193,12 @@ function prefillCheckoutFromUser(user: {
     (typeof meta.full_name === "string" && meta.full_name.trim()) ||
     (typeof meta.name === "string" && meta.name.trim()) ||
     "";
-  const phoneFromProfile =
-    (typeof meta.phone === "string" && meta.phone.trim()) ||
-    (typeof user.phone === "string" && user.phone.trim()) ||
-    "";
+  const phoneFromMeta = typeof meta.phone === "string" ? meta.phone.trim() : "";
   const da = typeof meta.default_address === "string" ? meta.default_address.trim() : "";
   const { line, extra } = splitSavedAddress(da);
   return {
     name: nameFromMeta,
-    phone: phoneFromProfile,
+    phone: phoneFromMeta,
     addressLine: line,
     addressExtra: extra,
     defaultAddressSaved: da,
@@ -506,8 +501,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const [checkoutAddressLine, setCheckoutAddressLine] = useState("");
   /** Piso, dpto, referencia (opcional). */
   const [checkoutAddressExtra, setCheckoutAddressExtra] = useState("");
-  /** Dirección habitual en perfil (para sugerencia "Sí, usar esta"). */
-  const [profileDefaultAddress, setProfileDefaultAddress] = useState("");
+  /** Texto de `user_metadata.default_address` al abrir encargo (solo muestra). */
+  const [savedAddressFromProfile, setSavedAddressFromProfile] = useState("");
+  /** Sin dirección guardada, o el usuario eligió "Usar otra dirección" → mostrar campos. */
+  const [deliveryCustomAddressMode, setDeliveryCustomAddressMode] = useState(true);
   const [saveDefaultAddress, setSaveDefaultAddress] = useState(true);
   const [addressConfirmation, setAddressConfirmation] = useState<"yes" | "no">("yes");
   const [deliveryType, setDeliveryType] = useState<"local" | "delivery">("local");
@@ -711,16 +708,25 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         const p = prefillCheckoutFromUser(user);
         setCheckoutName(p.name);
         setCheckoutPhone(p.phone);
-        setCheckoutAddressLine(p.addressLine);
-        setCheckoutAddressExtra(p.addressExtra);
-        setProfileDefaultAddress(p.defaultAddressSaved);
+        const saved = p.defaultAddressSaved.trim();
+        setSavedAddressFromProfile(saved);
+        if (saved) {
+          setDeliveryCustomAddressMode(false);
+          setCheckoutAddressLine(p.addressLine);
+          setCheckoutAddressExtra(p.addressExtra);
+        } else {
+          setDeliveryCustomAddressMode(true);
+          setCheckoutAddressLine("");
+          setCheckoutAddressExtra("");
+        }
         setSaveDefaultAddress(true);
       } else {
         setEncargoCheckoutUnlocked(false);
         setEncargoLoggedInPrefill(false);
+        setSavedAddressFromProfile("");
+        setDeliveryCustomAddressMode(true);
         setCheckoutAddressLine("");
         setCheckoutAddressExtra("");
-        setProfileDefaultAddress("");
       }
     })();
     return () => {
@@ -749,12 +755,24 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         const p = prefillCheckoutFromUser(user);
         setCheckoutName(p.name);
         setCheckoutPhone(p.phone);
-        setCheckoutAddressLine(p.addressLine);
-        setCheckoutAddressExtra(p.addressExtra);
-        setProfileDefaultAddress(p.defaultAddressSaved);
+        const saved = p.defaultAddressSaved.trim();
+        setSavedAddressFromProfile(saved);
+        if (saved) {
+          setDeliveryCustomAddressMode(false);
+          setCheckoutAddressLine(p.addressLine);
+          setCheckoutAddressExtra(p.addressExtra);
+        } else {
+          setDeliveryCustomAddressMode(true);
+          setCheckoutAddressLine("");
+          setCheckoutAddressExtra("");
+        }
       } else {
         setEncargoCheckoutUnlocked(false);
         setEncargoLoggedInPrefill(false);
+        setSavedAddressFromProfile("");
+        setDeliveryCustomAddressMode(true);
+        setCheckoutAddressLine("");
+        setCheckoutAddressExtra("");
       }
     });
     return () => subscription.unsubscribe();
@@ -798,7 +816,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setCheckoutPhone("");
     setCheckoutAddressLine("");
     setCheckoutAddressExtra("");
-    setProfileDefaultAddress("");
+    setSavedAddressFromProfile("");
+    setDeliveryCustomAddressMode(true);
     setSaveDefaultAddress(true);
     setAddressConfirmation("yes");
     setDeliveryType("local");
@@ -902,7 +921,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           ...(deliveryType === "delivery"
             ? {
                 delivery_address: address,
-                address_confirmed: addressConfirmation === "yes",
+                address_confirmed:
+                  deliveryCustomAddressMode ? addressConfirmation === "yes" : true,
               }
             : {}),
           ...(session?.access_token ? { access_token: session.access_token } : {}),
@@ -1018,6 +1038,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     deliveryZoneStatus,
     deliveryZoneCheckedFor,
     deliveryGeoBlocksConfirm,
+    deliveryCustomAddressMode,
   ]);
 
   const openFabChat = useCallback(() => {
@@ -1292,87 +1313,101 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                 </fieldset>
                 {deliveryType === "delivery" && (
                   <div className="space-y-3">
-                    {profileDefaultAddress.trim() ? (
-                      <div className="rounded-xl border border-[#c4b896]/60 bg-[#faf8f3] px-3 py-2.5 text-sm text-neutral-800">
-                        <p className="font-semibold text-[#2d4a3e]">
-                          ¿Entregar en{" "}
-                          <span className="font-bold text-neutral-900">{profileDefaultAddress}</span>?
+                    {savedAddressFromProfile.trim() && !deliveryCustomAddressMode ? (
+                      <div className="rounded-xl border border-emerald-200/90 bg-emerald-50/90 px-3 py-3 text-sm text-neutral-800">
+                        <p className="flex items-start gap-2 leading-snug">
+                          <Check
+                            className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+                            strokeWidth={2.5}
+                            aria-hidden
+                          />
+                          <span>
+                            <span className="font-semibold text-emerald-900">Tu dirección habitual:</span>{" "}
+                            <span className="font-medium text-neutral-900">{savedAddressFromProfile}</span>
+                          </span>
                         </p>
                         <button
                           type="button"
                           onClick={() => {
-                            const { line, extra } = splitSavedAddress(profileDefaultAddress);
-                            setCheckoutAddressLine(line);
-                            setCheckoutAddressExtra(extra);
+                            setDeliveryCustomAddressMode(true);
+                            setCheckoutAddressLine("");
+                            setCheckoutAddressExtra("");
                             setAddressConfirmation("yes");
+                            setDeliveryZoneStatus(googleMapsKey ? "idle" : "skipped_no_key");
+                            setDeliveryZoneCheckedFor("");
                             if (checkoutSubmitAttempted) setCheckoutSubmitAttempted(false);
                           }}
-                          className="mt-2 w-full rounded-lg bg-[#2d4a3e] px-3 py-2 text-xs font-black uppercase tracking-wide text-white hover:bg-[#1f342c]"
+                          className="mt-2.5 text-xs font-bold text-[#2d4a3e] underline underline-offset-2 hover:text-[#1f342c]"
                         >
-                          Sí, usar esta
+                          Usar otra dirección
                         </button>
                       </div>
-                    ) : null}
-                    <div>
-                      <label className="text-xs font-bold text-neutral-500">Dirección (calle y número)</label>
-                      <input
-                        type="text"
-                        value={checkoutAddressLine}
-                        onChange={(e) => {
-                          setCheckoutAddressLine(e.target.value);
-                          if (checkoutSubmitAttempted) setCheckoutSubmitAttempted(false);
-                        }}
-                        className={`mt-1 w-full rounded-xl border bg-white px-3 py-2 text-sm ${
-                          checkoutSubmitAttempted && !checkoutAddressLine.trim()
-                            ? "border-red-400"
-                            : "border-[#d4cfc4]"
-                        }`}
-                        autoComplete="street-address"
-                        placeholder="Ej. Av. Independencia 1900"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-neutral-500">
-                        Piso / Dpto / Referencia (opcional)
-                      </label>
-                      <input
-                        type="text"
-                        value={checkoutAddressExtra}
-                        onChange={(e) => {
-                          setCheckoutAddressExtra(e.target.value);
-                          if (checkoutSubmitAttempted) setCheckoutSubmitAttempted(false);
-                        }}
-                        className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
-                        autoComplete="off"
-                        placeholder="Ej. Piso 3, Of. 12 · Frente a Tribunales"
-                      />
-                    </div>
-                    <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={saveDefaultAddress}
-                        onChange={(e) => setSaveDefaultAddress(e.target.checked)}
-                        className="accent-[#2d4a3e] mt-0.5"
-                      />
-                      <span className="text-sm font-medium text-neutral-800">Guardar como mi dirección habitual</span>
-                    </label>
-                    <div>
-                      <label htmlFor="address-confirm" className="text-xs font-bold text-neutral-500">
-                        ¿Confirmás la dirección?
-                      </label>
-                      <select
-                        id="address-confirm"
-                        value={addressConfirmation}
-                        onChange={(e) => setAddressConfirmation(e.target.value === "no" ? "no" : "yes")}
-                        className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm font-medium"
-                      >
-                        <option value="yes">Sí</option>
-                        <option value="no">No</option>
-                      </select>
-                      {addressConfirmation === "no" ? (
-                        <p className="mt-1 text-xs text-neutral-600">Editá la dirección arriba si hace falta.</p>
-                      ) : null}
-                    </div>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="text-xs font-bold text-neutral-500">Dirección (calle y número)</label>
+                          <input
+                            type="text"
+                            value={checkoutAddressLine}
+                            onChange={(e) => {
+                              setCheckoutAddressLine(e.target.value);
+                              if (checkoutSubmitAttempted) setCheckoutSubmitAttempted(false);
+                            }}
+                            className={`mt-1 w-full rounded-xl border bg-white px-3 py-2 text-sm ${
+                              checkoutSubmitAttempted && !checkoutAddressLine.trim()
+                                ? "border-red-400"
+                                : "border-[#d4cfc4]"
+                            }`}
+                            autoComplete="street-address"
+                            placeholder="Ej. Av. Independencia 1900"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-neutral-500">
+                            Piso / Dpto / Referencia (opcional)
+                          </label>
+                          <input
+                            type="text"
+                            value={checkoutAddressExtra}
+                            onChange={(e) => {
+                              setCheckoutAddressExtra(e.target.value);
+                              if (checkoutSubmitAttempted) setCheckoutSubmitAttempted(false);
+                            }}
+                            className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
+                            autoComplete="off"
+                            placeholder="Ej. Piso 3, Of. 12 · Frente a Tribunales"
+                          />
+                        </div>
+                        <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2">
+                          <input
+                            type="checkbox"
+                            checked={saveDefaultAddress}
+                            onChange={(e) => setSaveDefaultAddress(e.target.checked)}
+                            className="accent-[#2d4a3e] mt-0.5"
+                          />
+                          <span className="text-sm font-medium text-neutral-800">
+                            Guardar como mi dirección habitual
+                          </span>
+                        </label>
+                        <div>
+                          <label htmlFor="address-confirm" className="text-xs font-bold text-neutral-500">
+                            ¿Confirmás la dirección?
+                          </label>
+                          <select
+                            id="address-confirm"
+                            value={addressConfirmation}
+                            onChange={(e) => setAddressConfirmation(e.target.value === "no" ? "no" : "yes")}
+                            className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm font-medium"
+                          >
+                            <option value="yes">Sí</option>
+                            <option value="no">No</option>
+                          </select>
+                          {addressConfirmation === "no" ? (
+                            <p className="mt-1 text-xs text-neutral-600">Editá la dirección arriba si hace falta.</p>
+                          ) : null}
+                        </div>
+                      </>
+                    )}
                     {googleMapsKey && deliveryAddressCombined.trim().length >= 6 ? (
                       <div className="text-xs text-neutral-600">
                         {deliveryZoneStatus === "checking" ? (

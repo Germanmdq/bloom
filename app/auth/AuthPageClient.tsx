@@ -40,6 +40,15 @@ function safeInternalPath(raw: string | null | undefined): string | null {
   return t;
 }
 
+function combineOptionalAddress(line: string, extra: string): string {
+  const a = line.trim();
+  const b = extra.trim();
+  if (!a && !b) return "";
+  if (!a) return b;
+  if (!b) return a;
+  return `${a} - ${b}`;
+}
+
 function customerDestinationAfterAuth(searchParams: URLSearchParams): string {
   const fromQuery = safeInternalPath(searchParams.get("redirect"));
   if (fromQuery && (fromQuery === "/menu" || fromQuery.startsWith("/menu?"))) {
@@ -80,6 +89,8 @@ export function AuthPageClient() {
 
   const [regName, setRegName] = useState("");
   const [regPhone, setRegPhone] = useState("");
+  const [regAddressLine, setRegAddressLine] = useState("");
+  const [regAddressExtra, setRegAddressExtra] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -138,6 +149,7 @@ export function AuthPageClient() {
     }
     setLoading(true);
     const dest = customerDestinationAfterAuth(searchParams);
+    const defaultAddress = combineOptionalAddress(regAddressLine, regAddressExtra);
     const { data, error: err } = await supabase.auth.signUp({
       email,
       password: regPassword,
@@ -146,6 +158,7 @@ export function AuthPageClient() {
           full_name: name,
           is_customer: true,
           phone,
+          ...(defaultAddress ? { default_address: defaultAddress } : {}),
         },
         emailRedirectTo:
           typeof window !== "undefined" ? `${window.location.origin}${dest === "/cuenta" ? "/cuenta" : dest}` : undefined,
@@ -288,6 +301,44 @@ export function AuthPageClient() {
                   }`}
                 />
                 <p className="mt-1.5 text-xs font-medium text-neutral-500">Requerido — te avisamos cuando tu encargo está listo</p>
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">
+                  Dirección habitual de entrega (opcional)
+                </label>
+                <input
+                  type="text"
+                  autoComplete="street-address"
+                  placeholder="Ej: Av. Independencia 1900"
+                  value={regAddressLine}
+                  onChange={(e) => {
+                    setRegAddressLine(e.target.value);
+                    setError("");
+                    setInfo("");
+                  }}
+                  className={`mt-1 w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
+                    error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
+                  }`}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">
+                  Piso / Dpto / Referencia (opcional)
+                </label>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Ej: Piso 3 Of. 12, frente a Tribunales"
+                  value={regAddressExtra}
+                  onChange={(e) => {
+                    setRegAddressExtra(e.target.value);
+                    setError("");
+                    setInfo("");
+                  }}
+                  className={`mt-1 w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
+                    error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
+                  }`}
+                />
               </div>
               <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Email</label>
               <input
