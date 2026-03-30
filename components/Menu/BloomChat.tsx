@@ -127,7 +127,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const [checkoutAddress, setCheckoutAddress] = useState("");
   const [addressConfirmation, setAddressConfirmation] = useState<"yes" | "no">("yes");
   const [deliveryType, setDeliveryType] = useState<"local" | "delivery">("local");
-  const [paymentMethod, setPaymentMethod] = useState<"cash_on_delivery" | "bank_transfer">("cash_on_delivery");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "cash_on_delivery" | "bank_transfer" | "mercadopago"
+  >("cash_on_delivery");
   const [submittingOrder, setSubmittingOrder] = useState(false);
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -299,9 +301,56 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           ...(session?.access_token ? { access_token: session.access_token } : {}),
         }),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        ok?: boolean;
+        order_id?: string;
+      };
       if (!res.ok) {
-        toast.error((data as { error?: string }).error || "Error al enviar el encargo");
+        toast.error(data.error || "Error al enviar el encargo");
+        return;
+      }
+
+      if (paymentMethod === "mercadopago") {
+        const orderId = data.order_id?.trim();
+        if (!orderId) {
+          toast.error("No se pudo iniciar el pago. Revisá la configuración del servidor.");
+          return;
+        }
+
+        const prefRes = await fetch("/api/payments/create-preference", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order_id: orderId,
+            items: cart.map((c) => ({
+              title: c.name,
+              quantity: c.quantity,
+              unit_price: c.price,
+            })),
+            customer: { name, phone },
+          }),
+        });
+        const prefData = (await prefRes.json().catch(() => ({}))) as {
+          error?: string;
+          init_point?: string;
+        };
+        if (!prefRes.ok || !prefData.init_point) {
+          toast.error(prefData.error || "No se pudo abrir Mercado Pago");
+          return;
+        }
+
+        setEncargoOpen(false);
+        setCart([]);
+        setAddedProductIds(new Set());
+        setCheckoutName("");
+        setCheckoutPhone("");
+        setCheckoutAddress("");
+        setAddressConfirmation("yes");
+        setDeliveryType("local");
+        setPaymentMethod("cash_on_delivery");
+        setContextKey((k) => k + 1);
+        window.location.assign(prefData.init_point);
         return;
       }
 
@@ -523,11 +572,21 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     <input
                       type="radio"
                       name="payment"
+                      checked={paymentMethod === "mercadopago"}
+                      onChange={() => setPaymentMethod("mercadopago")}
+                      className="accent-[#2d4a3e]"
+                    />
+                    <span className="text-sm font-medium">💳 Pagar con MercadoPago</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2">
+                    <input
+                      type="radio"
+                      name="payment"
                       checked={paymentMethod === "cash_on_delivery"}
                       onChange={() => setPaymentMethod("cash_on_delivery")}
                       className="accent-[#2d4a3e]"
                     />
-                    <span className="text-sm font-medium">Pago contra entrega</span>
+                    <span className="text-sm font-medium">💵 Pago contra entrega</span>
                   </label>
                   <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2">
                     <input
@@ -537,7 +596,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                       onChange={() => setPaymentMethod("bank_transfer")}
                       className="accent-[#2d4a3e]"
                     />
-                    <span className="text-sm font-medium">Transferencia bancaria</span>
+                    <span className="text-sm font-medium">🏦 Transferencia bancaria</span>
                   </label>
                 </fieldset>
               </div>

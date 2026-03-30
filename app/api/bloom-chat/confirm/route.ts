@@ -17,8 +17,8 @@ type ConfirmBody = {
   delivery_address?: string;
   /** Cliente confirmó la dirección tal como está (delivery) */
   address_confirmed?: boolean;
-  /** Web encargo: contra entrega → CASH; transferencia → BANK_TRANSFER */
-  payment_method?: "cash_on_delivery" | "bank_transfer";
+  /** Web encargo: contra entrega → CASH; transferencia → BANK_TRANSFER; MP → MERCADO_PAGO + pending_payment */
+  payment_method?: "cash_on_delivery" | "bank_transfer" | "mercadopago";
   access_token?: string;
 };
 
@@ -73,11 +73,22 @@ export async function POST(request: NextRequest) {
     const url = getSupabaseUrl();
     const anon = getSupabaseAnonKey();
 
-    const pay =
-      body.payment_method === "bank_transfer" ? ("bank_transfer" as const) : ("cash_on_delivery" as const);
-    const paymentMethodDb = pay === "bank_transfer" ? "BANK_TRANSFER" : "CASH";
+    const pay: "cash_on_delivery" | "bank_transfer" | "mercadopago" =
+      body.payment_method === "bank_transfer"
+        ? "bank_transfer"
+        : body.payment_method === "mercadopago"
+          ? "mercadopago"
+          : "cash_on_delivery";
+
+    const paymentMethodDb =
+      pay === "bank_transfer" ? "BANK_TRANSFER" : pay === "mercadopago" ? "MERCADO_PAGO" : "CASH";
     const paymentNotes =
-      pay === "bank_transfer" ? "Transferencia bancaria (pedido web)" : null;
+      pay === "bank_transfer"
+        ? "Transferencia bancaria (pedido web)"
+        : pay === "mercadopago"
+          ? "Mercado Pago (pendiente de pago)"
+          : null;
+    const orderStatus = pay === "mercadopago" ? "pending_payment" : "pending";
 
     let deliveryInfo: string;
     if (deliveryType === "delivery") {
@@ -98,32 +109,38 @@ export async function POST(request: NextRequest) {
       delivery_info: deliveryInfo,
       items: itemsJson,
       total,
-      status: "pending",
+      status: orderStatus,
       order_type: "web",
       paid: false,
       payment_method: paymentMethodDb,
       ...(paymentNotes ? { payment_notes: paymentNotes } : { payment_notes: null }),
     };
 
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
     const db =
-      customerId && body.access_token?.trim()
-        ? createClient(url, anon, {
-            global: { headers: { Authorization: `Bearer ${body.access_token.trim()}` } },
-          })
-        : createClient(url, anon);
+      serviceKey
+        ? createClient(url, serviceKey)
+        : customerId && body.access_token?.trim()
+          ? createClient(url, anon, {
+              global: { headers: { Authorization: `Bearer ${body.access_token.trim()}` } },
+            })
+          : createClient(url, anon);
 
     if (customerId) {
       insertRow.customer_id = customerId;
     }
 
-    const { error } = await db.from("orders").insert(insertRow);
+    const { data: inserted, error } = await db.from("orders").insert(insertRow).select("id").maybeSingle();
 
     if (error) {
       console.error("[bloom-chat/confirm]", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      ...(inserted?.id ? { order_id: inserted.id as string } : {}),
+    });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Error";
     return NextResponse.json({ error: message }, { status: 500 });
