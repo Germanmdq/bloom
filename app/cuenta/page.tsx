@@ -49,6 +49,8 @@ export default function CuentaPage() {
   const [sessionPending, setSessionPending] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  /** Solo pedidos pagados — barra de lealtad y contador “Llevás N pedidos”. */
+  const [paidOrderCount, setPaidOrderCount] = useState(0);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -56,13 +58,22 @@ export default function CuentaPage() {
   const loadOrders = useCallback(
     async (uid: string) => {
       setOrdersLoading(true);
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, created_at, total, items, status, paid, customer_name")
-        .eq("customer_id", uid)
-        .order("created_at", { ascending: false });
-      if (error) console.error(error);
-      setOrders((data as OrderRow[]) ?? []);
+      const [listRes, paidCountRes] = await Promise.all([
+        supabase
+          .from("orders")
+          .select("id, created_at, total, items, status, paid, customer_name")
+          .eq("customer_id", uid)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("orders")
+          .select("*", { count: "exact", head: true })
+          .eq("customer_id", uid)
+          .eq("paid", true),
+      ]);
+      if (listRes.error) console.error(listRes.error);
+      if (paidCountRes.error) console.error(paidCountRes.error);
+      setOrders((listRes.data as OrderRow[]) ?? []);
+      setPaidOrderCount(paidCountRes.count ?? 0);
       setOrdersLoading(false);
     },
     [supabase]
@@ -112,7 +123,7 @@ export default function CuentaPage() {
   const phone = user?.phone;
   const email = user?.email;
 
-  const { filled, totalOrders } = loyaltyProgress(orders.length);
+  const { filled, totalOrders } = loyaltyProgress(paidOrderCount);
 
   if (sessionPending || !user) {
     return (
