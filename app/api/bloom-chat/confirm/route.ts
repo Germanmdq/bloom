@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
           ? "mercadopago"
           : "cash_on_delivery";
 
-    const paymentMethodDb =
-      pay === "bank_transfer" ? "BANK_TRANSFER" : pay === "mercadopago" ? "MERCADO_PAGO" : "CASH";
+    /** DB enum suele ser CASH | CARD | MERCADO_PAGO (+ BANK_TRANSFER si corriste la migración). Usamos CASH + notas para transferencia para no fallar si el enum aún no tiene BANK_TRANSFER. */
+    const paymentMethodDb: "CASH" | "MERCADO_PAGO" = pay === "mercadopago" ? "MERCADO_PAGO" : "CASH";
     const paymentNotes =
       pay === "bank_transfer"
         ? "Transferencia bancaria (pedido web)"
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       order_type: "web",
       paid: false,
       payment_method: paymentMethodDb,
-      ...(paymentNotes ? { payment_notes: paymentNotes } : { payment_notes: null }),
+      ...(paymentNotes ? { payment_notes: paymentNotes } : {}),
     };
 
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
@@ -130,7 +130,18 @@ export async function POST(request: NextRequest) {
       insertRow.customer_id = customerId;
     }
 
-    const { data: inserted, error } = await db.from("orders").insert(insertRow).select("id").maybeSingle();
+    let { data: inserted, error } = await db.from("orders").insert(insertRow).select("id").maybeSingle();
+
+    if (error) {
+      const msg = error.message?.toLowerCase() ?? "";
+      if (msg.includes("payment_notes") || msg.includes("column")) {
+        const rest = { ...insertRow };
+        delete rest.payment_notes;
+        const second = await db.from("orders").insert(rest).select("id").maybeSingle();
+        inserted = second.data;
+        error = second.error;
+      }
+    }
 
     if (error) {
       console.error("[bloom-chat/confirm]", error);

@@ -1,5 +1,7 @@
 "use client";
 
+/** Tipografía: Inter desde `app/layout.tsx` (variable `--font-inter`). Esta página no importa `next/font`; el `<main>` usa `font-sans`. */
+
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";

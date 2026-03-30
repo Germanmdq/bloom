@@ -67,6 +67,27 @@ function categoryCardImageUrl(
     return firstByCat.get(c.id) ?? null;
 }
 
+/** Solo dígitos para `wa.me/...` (p. ej. app_settings.whatsapp = "5492231234567"). */
+function whatsappDigits(raw: string): string {
+    return raw.replace(/\D/g, "");
+}
+
+/** Formato lectura: +54 9 223 123-4567 a partir de 5492231234567 */
+function formatWhatsappDisplay(digitsRaw: string): string {
+    const d = digitsRaw.replace(/\D/g, "");
+    if (d.length >= 12 && d.startsWith("54")) {
+        const afterCountry = d.slice(2);
+        if (afterCountry.length >= 10 && afterCountry[0] === "9") {
+            const area = afterCountry.slice(1, 4);
+            const num = afterCountry.slice(4);
+            if (num.length >= 6) {
+                return `+54 9 ${area} ${num.slice(0, 3)}-${num.slice(3)}`;
+            }
+        }
+    }
+    return d || digitsRaw.trim();
+}
+
 // --- MAIN COMPONENT ---
 function PublicMenuPage() {
     const supabase = createClient();
@@ -84,6 +105,9 @@ function PublicMenuPage() {
     /** Número WhatsApp del local (app_settings); usado por checkout WA y Bloom chat */
     const [whatsappNumber, setWhatsappNumber] = useState("5491112345678");
     const [loading, setLoading] = useState(true);
+
+    const whatsappDisplay = useMemo(() => formatWhatsappDisplay(whatsappNumber), [whatsappNumber]);
+    const whatsappHref = useMemo(() => `https://wa.me/${whatsappDigits(whatsappNumber)}`, [whatsappNumber]);
 
     const bloomChatRef = useRef<BloomChatHandle>(null);
 
@@ -371,10 +395,14 @@ function PublicMenuPage() {
                         <span className="hidden sm:inline-flex items-center gap-1.5 opacity-90">
                             <MapPin size={14} className="shrink-0" /> Mar del Plata
                         </span>
-                        <a href="tel:+5492231234567" className="inline-flex items-center gap-1.5 font-bold hover:underline text-xs sm:text-sm">
+                        <a
+                            href={whatsappHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 font-bold hover:underline text-xs sm:text-sm"
+                        >
                             <Phone size={14} className="shrink-0" />
-                            <span className="hidden min-[400px]:inline">+54 9 223</span>
-                            <span className="min-[400px]:hidden">Tel</span>
+                            <span>{whatsappDisplay}</span>
                         </a>
                     </div>
                 </div>
