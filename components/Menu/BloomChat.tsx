@@ -11,6 +11,7 @@ function tryParseOrderPayload(text: string): {
   order_ready: boolean;
   customer_name: string;
   customer_phone: string;
+  service: "takeaway" | "salon";
   items: Array<{ product_id: string; name: string; price: number; quantity: number }>;
 } | null {
   const idx = text.lastIndexOf('"order_ready"');
@@ -36,13 +37,16 @@ function tryParseOrderPayload(text: string): {
       order_ready?: boolean;
       customer_name?: string;
       customer_phone?: string;
+      service?: string;
       items?: Array<{ product_id: string; name: string; price: number; quantity: number }>;
     };
     if (!parsed.order_ready || !parsed.items?.length) return null;
+    const service: "takeaway" | "salon" = parsed.service === "salon" ? "salon" : "takeaway";
     return {
       order_ready: true,
       customer_name: String(parsed.customer_name ?? "").trim(),
       customer_phone: String(parsed.customer_phone ?? "").trim(),
+      service,
       items: parsed.items,
     };
   } catch {
@@ -50,13 +54,38 @@ function tryParseOrderPayload(text: string): {
   }
 }
 
+async function streamOpeningMessage(
+  clientTimeISO: string,
+  onDelta: (full: string) => void
+): Promise<void> {
+  const res = await fetch("/api/bloom-chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode: "opening", clientTimeISO }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error || "Error al abrir el chat");
+  }
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error("Sin respuesta");
+  const decoder = new TextDecoder();
+  let full = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    full += decoder.decode(value, { stream: true });
+    onDelta(full);
+  }
+}
+
 export function BloomChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
-  const [loadingGreeting, setLoadingGreeting] = useState(false);
+  const [loadingOpening, setLoadingOpening] = useState(true);
   const [streaming, setStreaming] = useState(false);
-  const greetingLoaded = useRef(false);
+  const openingStarted = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -65,40 +94,37 @@ export function BloomChat() {
     });
   };
 
-  const loadGreeting = useCallback(async () => {
-    if (greetingLoaded.current) return;
-    setLoadingGreeting(true);
+  const loadOpening = useCallback(async () => {
+    setLoadingOpening(true);
+    setMessages([{ role: "assistant", content: "" }]);
     try {
-      const res = await fetch("/api/bloom-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "greeting", clientTimeISO: new Date().toISOString() }),
+      await streamOpeningMessage(new Date().toISOString(), (full) => {
+        setMessages([{ role: "assistant", content: full }]);
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error || "Error al cargar saludo");
-      }
-      const data = (await res.json()) as { greeting: string };
-      greetingLoaded.current = true;
-      setMessages([{ role: "assistant", content: data.greeting }]);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "No se pudo iniciar el chat");
+      toast.error(e instanceof Error ? e.message : "No se pudo cargar el mozo virtual");
       setMessages([
         {
           role: "assistant",
           content:
-            "¡Hola! Soy el asistente de Bloom. Contame qué querés pedir y te ayudo con el menú y los precios.",
+            "Che, se me trabó el saludo. Probá de nuevo en un ratito — acá en Bloom estamos para lo que necesites.",
         },
       ]);
-      greetingLoaded.current = true;
     } finally {
-      setLoadingGreeting(false);
+      setLoadingOpening(false);
     }
   }, []);
 
   useEffect(() => {
-    if (open && !greetingLoaded.current) void loadGreeting();
-  }, [open, loadGreeting]);
+    if (openingStarted.current) return;
+    openingStarted.current = true;
+    void loadOpening();
+  }, [loadOpening]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setOpen(true), 3000);
+    return () => window.clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -106,7 +132,7 @@ export function BloomChat() {
 
   const sendUserMessage = async () => {
     const trimmed = input.trim();
-    if (!trimmed || streaming) return;
+    if (!trimmed || streaming || loadingOpening) return;
     const clientTimeISO = new Date().toISOString();
     const nextMessages: Msg[] = [...messages, { role: "user", content: trimmed }];
     setMessages(nextMessages);
@@ -117,7 +143,6 @@ export function BloomChat() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        mode: "chat",
         clientTimeISO,
         messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
       }),
@@ -162,7 +187,7 @@ export function BloomChat() {
     if (!last) return;
     const payload = tryParseOrderPayload(last.content);
     if (!payload?.items?.length) {
-      toast.error("No encontré un pedido confirmado en el último mensaje. Pedile al asistente que confirme el pedido.");
+      toast.error("No encontré un pedido confirmado en el último mensaje. Pedile al mozo que cierre el pedido.");
       return;
     }
     const lines: BloomChatCartLine[] = payload.items.map((i) => ({
@@ -187,8 +212,12 @@ export function BloomChat() {
     const last = [...messages].reverse().find((m) => m.role === "assistant");
     if (!last) return;
     const payload = tryParseOrderPayload(last.content);
-    if (!payload?.items?.length || !payload.customer_name || !payload.customer_phone) {
-      toast.error("Falta nombre o teléfono en el pedido confirmado.");
+    if (!payload?.items?.length || !payload.customer_name) {
+      toast.error("Falta el nombre o el pedido no está cerrado.");
+      return;
+    }
+    if (payload.service === "takeaway" && !payload.customer_phone) {
+      toast.error("Para llevar necesitamos un teléfono. Pedile al mozo que lo anote.");
       return;
     }
     const res = await fetch("/api/bloom-chat/confirm", {
@@ -203,6 +232,7 @@ export function BloomChat() {
         })),
         customer_name: payload.customer_name,
         customer_phone: payload.customer_phone,
+        service: payload.service,
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -233,7 +263,7 @@ export function BloomChat() {
           <div className="flex items-center justify-between border-b border-[#e0dcd4] bg-[#2d4a3e] px-4 py-3 text-white">
             <div className="flex items-center gap-2 font-bold tracking-tight">
               <MessageCircle className="h-5 w-5 text-[#c4b896]" />
-              Bloom — pedidos
+              Bloom — tu mozo
             </div>
             <button
               type="button"
@@ -246,9 +276,9 @@ export function BloomChat() {
           </div>
 
           <div ref={scrollRef} className="max-h-[min(60vh,420px)] space-y-3 overflow-y-auto px-3 py-3">
-            {loadingGreeting && messages.length === 0 && (
+            {loadingOpening && messages.length === 1 && messages[0].content === "" && (
               <div className="flex items-center gap-2 text-sm text-neutral-500">
-                <Loader2 className="h-4 w-4 animate-spin" /> Preparando tu saludo…
+                <Loader2 className="h-4 w-4 animate-spin" /> Tu mozo te está saludando…
               </div>
             )}
             {messages.map((m, i) => (
@@ -277,7 +307,7 @@ export function BloomChat() {
 
           {pendingOrder?.order_ready && pendingOrder.items.length > 0 && (
             <div className="border-t border-[#e0dcd4] bg-white/80 px-3 py-2">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#5f5c46]">Pedido detectado</p>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#5f5c46]">Pedido listo</p>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   type="button"
@@ -304,14 +334,14 @@ export function BloomChat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && void sendUserMessage()}
-                placeholder="Escribí tu mensaje…"
-                disabled={streaming || loadingGreeting}
+                placeholder="Escribile a tu mozo..."
+                disabled={streaming || loadingOpening}
                 className="min-w-0 flex-1 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-[#7a765a] focus:outline-none focus:ring-2 focus:ring-[#c4b896]/50"
               />
               <button
                 type="button"
                 onClick={() => void sendUserMessage()}
-                disabled={streaming || loadingGreeting || !input.trim()}
+                disabled={streaming || loadingOpening || !input.trim()}
                 className="shrink-0 rounded-xl bg-[#7a765a] px-3 py-2 text-white hover:bg-[#5f5c46] disabled:opacity-40"
                 aria-label="Enviar"
               >

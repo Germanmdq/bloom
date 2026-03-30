@@ -11,14 +11,22 @@ type ConfirmBody = {
   }>;
   customer_name: string;
   customer_phone: string;
+  /** takeaway = para llevar; salon = comer en el local */
+  service?: "takeaway" | "salon";
 };
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as ConfirmBody;
     const { items, customer_name, customer_phone } = body;
-    if (!items?.length || !customer_name?.trim() || !customer_phone?.trim()) {
+    const service = body.service === "salon" ? "salon" : "takeaway";
+
+    if (!items?.length || !customer_name?.trim()) {
       return NextResponse.json({ error: "Faltan datos del pedido o del cliente" }, { status: 400 });
+    }
+    const phone = (customer_phone ?? "").trim();
+    if (service === "takeaway" && !phone) {
+      return NextResponse.json({ error: "Para llevar necesitamos un teléfono de contacto" }, { status: 400 });
     }
 
     const total = items.reduce((acc, i) => acc + Number(i.price) * Number(i.quantity), 0);
@@ -31,12 +39,17 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(getSupabaseUrl(), getSupabaseAnonKey());
 
+    const deliveryInfo =
+      service === "salon"
+        ? "Pedido mozo virtual — comer en el local"
+        : "Pedido mozo virtual — para llevar";
+
     const { error } = await supabase.from("orders").insert({
       table_id: null,
       customer_name: customer_name.trim(),
-      customer_phone: customer_phone.trim(),
+      customer_phone: phone || "—",
       delivery_type: "local",
-      delivery_info: "Pedido asistente Bloom (chat)",
+      delivery_info: deliveryInfo,
       items: itemsJson,
       total,
       status: "pending",
