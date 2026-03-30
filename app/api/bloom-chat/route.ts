@@ -1,36 +1,37 @@
 import { NextRequest } from "next/server";
-import { GoogleGenerativeAI, type GenerateContentStreamResult } from "@google/generative-ai";
+import Groq, { APIError } from "groq-sdk";
+import type { ChatCompletionChunk } from "groq-sdk/resources/chat/completions";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODEL = "gemini-2.0-flash";
+const MODEL = "llama-3.1-8b-instant";
 
 /** Mensaje mínimo para el primer turno (evitar prompt vacío). */
 const OPENING_USER_PLACEHOLDER = "\u200b";
 
 const LOG = "[bloom-chat]";
 
-function getGenAI(): GoogleGenerativeAI | null {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
+function getGroq(): Groq | null {
+  const apiKey = process.env.GROQ_API_KEY?.trim();
   if (!apiKey) return null;
-  return new GoogleGenerativeAI(apiKey);
+  return new Groq({ apiKey });
 }
 
-/** Convierte mensajes del cliente (user/assistant) al formato Gemini (user/model). El primer turno debe ser user. */
-function messagesToGeminiContents(messages: { role: "user" | "assistant" | "system"; content: string }[]) {
-  const parts = messages
+/** Convierte mensajes del cliente (user/assistant) al formato chat. El primer turno debe ser user. */
+function messagesToGroqTurns(messages: { role: "user" | "assistant" | "system"; content: string }[]) {
+  const turns = messages
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
-      role: m.role === "assistant" ? ("model" as const) : ("user" as const),
-      parts: [{ text: m.content }],
+      role: m.role as "user" | "assistant",
+      content: m.content,
     }));
-  if (parts.length > 0 && parts[0].role === "model") {
-    parts.unshift({ role: "user", parts: [{ text: OPENING_USER_PLACEHOLDER }] });
+  if (turns.length > 0 && turns[0].role === "assistant") {
+    return [{ role: "user" as const, content: OPENING_USER_PLACEHOLDER }, ...turns];
   }
-  return parts;
+  return turns;
 }
 
 function formatArs(n: number) {
@@ -292,23 +293,19 @@ Prices and names must match the menu. If something is missing, ask before emitti
 If the order is not confirmed, do not include order_ready true.${openingAppend}`;
 }
 
-function streamGeminiText(result: GenerateContentStreamResult) {
+function streamGroqText(stream: AsyncIterable<ChatCompletionChunk>) {
   const encoder = new TextEncoder();
   return new ReadableStream({
     async start(controller) {
       try {
-        for await (const chunk of result.stream) {
-          let text = "";
-          try {
-            text = chunk.text();
-          } catch {
-            /* bloqueo de seguridad o candidato vacío */
-          }
+        for await (const chunk of stream) {
+          const raw = chunk.choices[0]?.delta?.content;
+          const text = raw == null ? "" : raw;
           if (text) controller.enqueue(encoder.encode(text));
         }
         controller.close();
       } catch (e) {
-        console.error(`${LOG} streamGeminiText error`, e);
+        console.error(`${LOG} streamGroqText error`, e);
         if (e instanceof Error) console.error(e.stack);
         try {
           controller.error(e);
@@ -321,13 +318,13 @@ function streamGeminiText(result: GenerateContentStreamResult) {
 }
 
 export async function POST(request: NextRequest) {
-  console.error("[bloom-chat] GEMINI_API_KEY present:", !!process.env.GEMINI_API_KEY, "length:", process.env.GEMINI_API_KEY?.length);
+  console.error("[bloom-chat] GROQ_API_KEY present:", !!process.env.GROQ_API_KEY, "length:", process.env.GROQ_API_KEY?.length);
 
   try {
-    const genAI = getGenAI();
-    if (!genAI) {
-      console.error(`${LOG} abort: no Gemini client (missing API key)`);
-      return new Response(JSON.stringify({ error: "GEMINI_API_KEY no configurada" }), {
+    const groq = getGroq();
+    if (!groq) {
+      console.error(`${LOG} abort: no Groq client (missing API key)`);
+      return new Response(JSON.stringify({ error: "GROQ_API_KEY no configurada" }), {
         status: 503,
         headers: { "Content-Type": "application/json" },
       });
@@ -371,19 +368,18 @@ export async function POST(request: NextRequest) {
     const systemContent = buildSystemPrompt(ctx, clientTimeISO, { openingAppend });
 
     if (body.mode === "opening") {
-      console.error(`${LOG} Gemini request`, { mode: "opening", model: MODEL });
-      const model = genAI.getGenerativeModel({
+      console.error(`${LOG} Groq request`, { mode: "opening", model: MODEL });
+      const streamResult = await groq.chat.completions.create({
         model: MODEL,
-        systemInstruction: systemContent,
-        generationConfig: {
-          temperature: 0.85,
-          maxOutputTokens: 400,
-        },
+        messages: [
+          { role: "system", content: systemContent },
+          { role: "user", content: OPENING_USER_PLACEHOLDER },
+        ],
+        temperature: 0.85,
+        max_tokens: 400,
+        stream: true,
       });
-      const streamResult = await model.generateContentStream({
-        contents: [{ role: "user", parts: [{ text: OPENING_USER_PLACEHOLDER }] }],
-      });
-      return new Response(streamGeminiText(streamResult), {
+      return new Response(streamGroqText(streamResult), {
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
           "Cache-Control": "no-store",
@@ -392,25 +388,23 @@ export async function POST(request: NextRequest) {
     }
 
     const messages = body.messages ?? [];
-    console.error(`${LOG} Gemini request`, { mode: "chat", model: MODEL, messageCount: messages.length });
-    const contents = messagesToGeminiContents(messages);
-    if (contents.length === 0) {
+    console.error(`${LOG} Groq request`, { mode: "chat", model: MODEL, messageCount: messages.length });
+    const turns = messagesToGroqTurns(messages);
+    if (turns.length === 0) {
       return new Response(JSON.stringify({ error: "messages vacío" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
-    const model = genAI.getGenerativeModel({
+    const streamResult = await groq.chat.completions.create({
       model: MODEL,
-      systemInstruction: systemContent,
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 1024,
-      },
+      messages: [{ role: "system", content: systemContent }, ...turns],
+      temperature: 0.7,
+      max_tokens: 1024,
+      stream: true,
     });
-    const streamResult = await model.generateContentStream({ contents });
 
-    return new Response(streamGeminiText(streamResult), {
+    return new Response(streamGroqText(streamResult), {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-store",
@@ -422,6 +416,24 @@ export async function POST(request: NextRequest) {
       console.error(`${LOG} name`, err.name, "message", err.message);
       console.error(`${LOG} stack`, err.stack);
     }
+
+    const is429 =
+      (err instanceof APIError && err.status === 429) ||
+      (typeof err === "object" &&
+        err !== null &&
+        "status" in err &&
+        (err as { status?: number }).status === 429);
+
+    if (is429) {
+      return new Response(
+        JSON.stringify({
+          error: "rate_limited",
+          message: "El asistente está descansando un momento, volvé a intentar en unos minutos.",
+        }),
+        { status: 429, headers: { "Content-Type": "application/json; charset=utf-8" } }
+      );
+    }
+
     const message = err instanceof Error ? err.message : String(err);
     const isDev = process.env.NODE_ENV === "development";
     return new Response(
