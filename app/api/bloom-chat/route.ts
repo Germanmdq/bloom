@@ -6,7 +6,7 @@ import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODEL = "gemini-2.5-flash-preview-04-17";
+const MODEL = "gemini-2.0-flash";
 
 /** Mensaje mínimo para el primer turno (evitar prompt vacío). */
 const OPENING_USER_PLACEHOLDER = "\u200b";
@@ -369,11 +369,6 @@ export async function POST(request: NextRequest) {
         : "";
 
     const systemContent = buildSystemPrompt(ctx, clientTimeISO, { openingAppend });
-
-    const models = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(genAI.apiKey)}`
-    ).then((r) => r.json());
-    console.error("[bloom-chat] available models:", JSON.stringify(models));
 
     if (body.mode === "opening") {
       console.error(`${LOG} Gemini request`, { mode: "opening", model: MODEL });
