@@ -15,6 +15,13 @@ export type BloomChatHandle = {
   openChat: () => void;
 };
 
+const BLOOM_CHAT_RATE_LIMIT_MSG =
+  "El asistente está descansando un momento, volvé a intentar en unos minutos.";
+
+function isRateLimitError(e: unknown): boolean {
+  return typeof e === "object" && e !== null && (e as { status?: number }).status === 429;
+}
+
 function categoryContextPrompt(categoryName: string) {
   return `Estoy viendo la categoría «${categoryName}». Mostráme los productos más destacados con precio en pesos argentinos, en forma breve y conversacional.`;
 }
@@ -94,6 +101,9 @@ async function streamOpeningMessage(
   });
   console.log("[BloomChat] POST /api/bloom-chat (opening) status:", res.status, res.statusText);
   if (!res.ok) {
+    if (res.status === 429) {
+      throw Object.assign(new Error("rate_limited"), { status: 429 });
+    }
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { error?: string }).error || "Error al abrir el chat");
   }
@@ -147,11 +157,19 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     try {
       await runStream();
     } catch (e) {
+      if (isRateLimitError(e)) {
+        setMessages([{ role: "assistant", content: BLOOM_CHAT_RATE_LIMIT_MSG }]);
+        return;
+      }
       console.error("[BloomChat] opening failed, retry in 2s", e);
       await new Promise((r) => setTimeout(r, 2000));
       try {
         await runStream();
       } catch (e2) {
+        if (isRateLimitError(e2)) {
+          setMessages([{ role: "assistant", content: BLOOM_CHAT_RATE_LIMIT_MSG }]);
+          return;
+        }
         console.error("[BloomChat] opening failed after retry", e2);
         setMessages([]);
       }
@@ -290,6 +308,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       console.log("[BloomChat] POST /api/bloom-chat (chat) status:", res.status, res.statusText);
 
       if (!res.ok) {
+        if (res.status === 429) {
+          setMessages((prev) => [...prev, { role: "assistant", content: BLOOM_CHAT_RATE_LIMIT_MSG }]);
+          return;
+        }
         toast.error("No se pudo enviar el mensaje");
         return;
       }
