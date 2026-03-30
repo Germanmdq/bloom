@@ -125,6 +125,53 @@ function genericIntro() {
   return `${t}! Tocá una categoría en el menú para ver productos y armar tu encargo.`;
 }
 
+/** Dirección guardada en metadata: calle… y opcionalmente " - piso/dpto". */
+function splitSavedAddress(raw: string): { line: string; extra: string } {
+  const t = raw.trim();
+  if (!t) return { line: "", extra: "" };
+  const idx = t.indexOf(" - ");
+  if (idx === -1) return { line: t, extra: "" };
+  return { line: t.slice(0, idx).trim(), extra: t.slice(idx + 3).trim() };
+}
+
+function combineDeliveryAddress(line: string, extra: string): string {
+  const a = line.trim();
+  const b = extra.trim();
+  if (!a) return b;
+  if (!b) return a;
+  return `${a} - ${b}`;
+}
+
+function prefillCheckoutFromUser(user: {
+  user_metadata?: Record<string, unknown>;
+  phone?: string | null;
+}): {
+  name: string;
+  phone: string;
+  addressLine: string;
+  addressExtra: string;
+  defaultAddressSaved: string;
+} {
+  const meta = user.user_metadata ?? {};
+  const nameFromMeta =
+    (typeof meta.full_name === "string" && meta.full_name.trim()) ||
+    (typeof meta.name === "string" && meta.name.trim()) ||
+    "";
+  const phoneFromProfile =
+    (typeof meta.phone === "string" && meta.phone.trim()) ||
+    (typeof user.phone === "string" && user.phone.trim()) ||
+    "";
+  const da = typeof meta.default_address === "string" ? meta.default_address.trim() : "";
+  const { line, extra } = splitSavedAddress(da);
+  return {
+    name: nameFromMeta,
+    phone: phoneFromProfile,
+    addressLine: line,
+    addressExtra: extra,
+    defaultAddressSaved: da,
+  };
+}
+
 type UpsellVariant = "food" | "drink" | "pastry";
 
 function upsellVariantFromCategoryName(name: string | null | undefined): UpsellVariant {
@@ -417,7 +464,13 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const [encargoOpen, setEncargoOpen] = useState(false);
   const [checkoutName, setCheckoutName] = useState("");
   const [checkoutPhone, setCheckoutPhone] = useState("");
-  const [checkoutAddress, setCheckoutAddress] = useState("");
+  /** Calle y número (delivery). */
+  const [checkoutAddressLine, setCheckoutAddressLine] = useState("");
+  /** Piso, dpto, referencia (opcional). */
+  const [checkoutAddressExtra, setCheckoutAddressExtra] = useState("");
+  /** Dirección habitual en perfil (para sugerencia "Sí, usar esta"). */
+  const [profileDefaultAddress, setProfileDefaultAddress] = useState("");
+  const [saveDefaultAddress, setSaveDefaultAddress] = useState(true);
   const [addressConfirmation, setAddressConfirmation] = useState<"yes" | "no">("yes");
   const [deliveryType, setDeliveryType] = useState<"local" | "delivery">("local");
   const [paymentMethod, setPaymentMethod] = useState<
@@ -440,6 +493,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
   const cartCount = useMemo(() => cart.reduce((n, l) => n + l.quantity, 0), [cart]);
   const cartTotal = useMemo(() => cart.reduce((s, l) => s + l.price * l.quantity, 0), [cart]);
+  const deliveryAddressCombined = useMemo(
+    () => combineDeliveryAddress(checkoutAddressLine, checkoutAddressExtra),
+    [checkoutAddressLine, checkoutAddressExtra]
+  );
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -533,20 +590,19 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       if (user) {
         setEncargoCheckoutUnlocked(true);
         setEncargoLoggedInPrefill(true);
-        const meta = user.user_metadata ?? {};
-        const nameFromMeta =
-          (typeof meta.full_name === "string" && meta.full_name.trim()) ||
-          (typeof meta.name === "string" && meta.name.trim()) ||
-          "";
-        const phoneFromProfile =
-          (typeof meta.phone === "string" && meta.phone.trim()) ||
-          (typeof user.phone === "string" && user.phone.trim()) ||
-          "";
-        setCheckoutName(nameFromMeta);
-        setCheckoutPhone(phoneFromProfile);
+        const p = prefillCheckoutFromUser(user);
+        setCheckoutName(p.name);
+        setCheckoutPhone(p.phone);
+        setCheckoutAddressLine(p.addressLine);
+        setCheckoutAddressExtra(p.addressExtra);
+        setProfileDefaultAddress(p.defaultAddressSaved);
+        setSaveDefaultAddress(true);
       } else {
         setEncargoCheckoutUnlocked(false);
         setEncargoLoggedInPrefill(false);
+        setCheckoutAddressLine("");
+        setCheckoutAddressExtra("");
+        setProfileDefaultAddress("");
       }
     })();
     return () => {
@@ -572,17 +628,12 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         setSoftAuthHintVisible(false);
         setEncargoCheckoutUnlocked(true);
         setEncargoLoggedInPrefill(true);
-        const meta = user.user_metadata ?? {};
-        const nameFromMeta =
-          (typeof meta.full_name === "string" && meta.full_name.trim()) ||
-          (typeof meta.name === "string" && meta.name.trim()) ||
-          "";
-        const phoneFromProfile =
-          (typeof meta.phone === "string" && meta.phone.trim()) ||
-          (typeof user.phone === "string" && user.phone.trim()) ||
-          "";
-        setCheckoutName(nameFromMeta);
-        setCheckoutPhone(phoneFromProfile);
+        const p = prefillCheckoutFromUser(user);
+        setCheckoutName(p.name);
+        setCheckoutPhone(p.phone);
+        setCheckoutAddressLine(p.addressLine);
+        setCheckoutAddressExtra(p.addressExtra);
+        setProfileDefaultAddress(p.defaultAddressSaved);
       } else {
         setEncargoCheckoutUnlocked(false);
         setEncargoLoggedInPrefill(false);
@@ -627,7 +678,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setShowHistoryLink(false);
     setCheckoutName("");
     setCheckoutPhone("");
-    setCheckoutAddress("");
+    setCheckoutAddressLine("");
+    setCheckoutAddressExtra("");
+    setProfileDefaultAddress("");
+    setSaveDefaultAddress(true);
     setAddressConfirmation("yes");
     setDeliveryType("local");
     setPaymentMethod("cash_on_delivery");
@@ -684,13 +738,13 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const submitOrder = useCallback(async () => {
     const name = checkoutName.trim();
     const phone = checkoutPhone.trim();
-    const address = checkoutAddress.trim();
+    const address = deliveryAddressCombined.trim();
     setCheckoutSubmitAttempted(true);
     if (!name || !phone) {
       return;
     }
-    if (deliveryType === "delivery" && !address) {
-      toast.error("Ingresá la dirección de entrega");
+    if (deliveryType === "delivery" && !checkoutAddressLine.trim()) {
+      toast.error("Ingresá la calle y el número de entrega");
       return;
     }
 
@@ -736,6 +790,18 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         return;
       }
 
+      if (
+        session?.user &&
+        saveDefaultAddress &&
+        deliveryType === "delivery" &&
+        address.length > 0
+      ) {
+        const { error: addrErr } = await supabase.auth.updateUser({
+          data: { default_address: address },
+        });
+        if (addrErr) console.error("[BloomChat] updateUser default_address", addrErr);
+      }
+
       if (paymentMethod === "mercadopago") {
         const orderId = data.order_id?.trim();
         if (!orderId) {
@@ -772,7 +838,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         setAddedProductIds(new Set());
         setCheckoutName("");
         setCheckoutPhone("");
-        setCheckoutAddress("");
+        setCheckoutAddressLine("");
+        setCheckoutAddressExtra("");
         setAddressConfirmation("yes");
         setDeliveryType("local");
         setPaymentMethod("cash_on_delivery");
@@ -794,7 +861,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       setAddedProductIds(new Set());
       setCheckoutName("");
       setCheckoutPhone("");
-      setCheckoutAddress("");
+      setCheckoutAddressLine("");
+      setCheckoutAddressExtra("");
       setAddressConfirmation("yes");
       setDeliveryType("local");
       setPaymentMethod("cash_on_delivery");
@@ -810,10 +878,13 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     cart,
     checkoutName,
     checkoutPhone,
-    checkoutAddress,
+    checkoutAddressLine,
+    checkoutAddressExtra,
+    deliveryAddressCombined,
     deliveryType,
     addressConfirmation,
     paymentMethod,
+    saveDefaultAddress,
     supabase,
   ]);
 
@@ -1084,18 +1155,71 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   </label>
                 </fieldset>
                 {deliveryType === "delivery" && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
+                    {profileDefaultAddress.trim() ? (
+                      <div className="rounded-xl border border-[#c4b896]/60 bg-[#faf8f3] px-3 py-2.5 text-sm text-neutral-800">
+                        <p className="font-semibold text-[#2d4a3e]">
+                          ¿Entregar en{" "}
+                          <span className="font-bold text-neutral-900">{profileDefaultAddress}</span>?
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const { line, extra } = splitSavedAddress(profileDefaultAddress);
+                            setCheckoutAddressLine(line);
+                            setCheckoutAddressExtra(extra);
+                            setAddressConfirmation("yes");
+                            if (checkoutSubmitAttempted) setCheckoutSubmitAttempted(false);
+                          }}
+                          className="mt-2 w-full rounded-lg bg-[#2d4a3e] px-3 py-2 text-xs font-black uppercase tracking-wide text-white hover:bg-[#1f342c]"
+                        >
+                          Sí, usar esta
+                        </button>
+                      </div>
+                    ) : null}
                     <div>
-                      <label className="text-xs font-bold text-neutral-500">Dirección</label>
-                      <textarea
-                        value={checkoutAddress}
-                        onChange={(e) => setCheckoutAddress(e.target.value)}
-                        readOnly={addressConfirmation === "yes" && checkoutAddress.trim().length > 0}
-                        rows={2}
-                        className="mt-1 w-full resize-none rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm read-only:bg-neutral-50"
-                        placeholder="Calle, número, piso…"
+                      <label className="text-xs font-bold text-neutral-500">Dirección (calle y número)</label>
+                      <input
+                        type="text"
+                        value={checkoutAddressLine}
+                        onChange={(e) => {
+                          setCheckoutAddressLine(e.target.value);
+                          if (checkoutSubmitAttempted) setCheckoutSubmitAttempted(false);
+                        }}
+                        className={`mt-1 w-full rounded-xl border bg-white px-3 py-2 text-sm ${
+                          checkoutSubmitAttempted && !checkoutAddressLine.trim()
+                            ? "border-red-400"
+                            : "border-[#d4cfc4]"
+                        }`}
+                        autoComplete="street-address"
+                        placeholder="Ej. Av. Independencia 1900"
                       />
                     </div>
+                    <div>
+                      <label className="text-xs font-bold text-neutral-500">
+                        Piso / Dpto / Referencia (opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={checkoutAddressExtra}
+                        onChange={(e) => {
+                          setCheckoutAddressExtra(e.target.value);
+                          if (checkoutSubmitAttempted) setCheckoutSubmitAttempted(false);
+                        }}
+                        className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
+                        autoComplete="off"
+                        placeholder="Ej. Piso 3, Of. 12 · Frente a Tribunales"
+                      />
+                    </div>
+                    <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={saveDefaultAddress}
+                        onChange={(e) => setSaveDefaultAddress(e.target.checked)}
+                        className="accent-[#2d4a3e] mt-0.5"
+                      />
+                      <span className="text-sm font-medium text-neutral-800">Guardar como mi dirección habitual</span>
+                    </label>
                     <div>
                       <label htmlFor="address-confirm" className="text-xs font-bold text-neutral-500">
                         ¿Confirmás la dirección?
