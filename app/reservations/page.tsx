@@ -6,6 +6,7 @@ import { CalendarDays, Clock, Users, User, Phone, MessageSquare, ChevronLeft, Ch
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { SiteFooter } from "@/components/SiteFooter";
+import { PublicAccountNav } from "@/components/PublicAccountNav";
 
 const HORARIOS = [
     "08:00", "08:30", "09:00", "09:30",
@@ -76,13 +77,16 @@ export default function ReservationsPage() {
     return (
         <div className="min-h-screen bg-[#FAF7F2] flex flex-col">
             {/* Header */}
-            <header className="sticky top-0 z-30 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-amber-100/60 px-5 py-4 flex items-center gap-3">
-                <Link href="/" className="flex items-center gap-2 text-gray-400 hover:text-gray-700 transition-colors">
-                    <ChevronLeft size={20} />
-                    <span className="text-sm font-bold">Inicio</span>
-                </Link>
-                <span className="text-gray-200">|</span>
-                <h1 className="text-lg font-black text-gray-900 tracking-tight">Reservar Mesa</h1>
+            <header className="sticky top-0 z-30 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-amber-100/60 px-5 py-4 flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                    <Link href="/" className="flex items-center gap-2 text-gray-400 hover:text-gray-700 transition-colors shrink-0">
+                        <ChevronLeft size={20} />
+                        <span className="text-sm font-bold">Inicio</span>
+                    </Link>
+                    <span className="text-gray-200 shrink-0">|</span>
+                    <h1 className="text-lg font-black text-gray-900 tracking-tight truncate">Reservar Mesa</h1>
+                </div>
+                <PublicAccountNav className="shrink-0" />
             </header>
 
             <main className="flex-1 max-w-lg mx-auto w-full px-5 py-10">

@@ -11,7 +11,6 @@ import {
   Coffee,
   Cookie,
   Leaf,
-  LogIn,
   MapPin,
   Phone,
   ShoppingBag,
@@ -19,13 +18,12 @@ import {
   Truck,
   UtensilsCrossed,
   GlassWater,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
+import { PublicAccountNav } from "@/components/PublicAccountNav";
 
 /** Video de fondo del hero: colocar el archivo en /public/videos/ (p. ej. hero-bloom.mp4). */
 const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
@@ -118,99 +116,7 @@ const FadeIn = ({
   </motion.div>
 );
 
-function LoginModal({ onClose }: { onClose: () => void }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const supabase = createClient();
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-    if (loginError) {
-      setError("Credenciales inválidas. Por favor intenta de nuevo.");
-      setLoading(false);
-    } else {
-      router.push("/dashboard");
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 24, scale: 0.96 }}
-        transition={{ duration: 0.3, ease: [0.21, 0.47, 0.32, 0.98] }}
-        className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-bloom-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="relative bg-bloom-600 px-8 pt-10 pb-8 text-center">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-bloom-gold rounded-full blur-[80px] opacity-25 translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors text-white"
-          >
-            <X size={18} />
-          </button>
-          <h2 className="text-2xl font-black text-white tracking-tight mb-1">
-            BLOOM<span className="text-bloom-gold">.</span>
-          </h2>
-          <p className="text-white/80 text-sm font-semibold">Acceso para empleados</p>
-        </div>
-
-        <form onSubmit={handleLogin} className="px-8 py-8 space-y-5">
-          <div>
-            <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoFocus
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-bloom-600/20 focus:border-bloom-600/40 outline-none transition-all font-medium text-neutral-900"
-              placeholder="nombre@ejemplo.com"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Contraseña</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-bloom-600/20 focus:border-bloom-600/40 outline-none transition-all font-medium text-neutral-900"
-              placeholder="••••••••"
-            />
-          </div>
-          {error && <p className="text-red-600 text-sm font-semibold text-center bg-red-50 py-2 rounded-xl">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-bloom-600 text-white font-bold py-4 rounded-xl hover:bg-bloom-700 active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            <LogIn size={18} />
-            {loading ? "Iniciando sesión..." : "Ingresar"}
-          </button>
-        </form>
-      </motion.div>
-    </motion.div>
-  );
-}
-
 export default function Home() {
-  const [showLogin, setShowLogin] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [heroVideoReady, setHeroVideoReady] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -292,7 +198,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-bloom-page text-neutral-900 font-sans selection:bg-bloom-200 selection:text-neutral-900">
-      <AnimatePresence>{showLogin && <LoginModal onClose={() => setShowLogin(false)} />}</AnimatePresence>
       <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       <div className="bg-english-800 text-bloom-cream text-[11px] sm:text-sm font-semibold border-b border-english-900/60">
@@ -358,14 +263,13 @@ export default function Home() {
               <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
               Pedir ahora
             </Link>
-            <button
-              type="button"
-              onClick={() => setShowLogin(true)}
-              className="p-2 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 transition-colors"
-              aria-label="Acceso staff"
+            <PublicAccountNav />
+            <Link
+              href="/login"
+              className="hidden sm:inline text-[11px] font-bold text-neutral-400 hover:text-neutral-700 whitespace-nowrap"
             >
-              <LogIn size={20} />
-            </button>
+              Equipo
+            </Link>
           </div>
         </div>
       </header>
@@ -882,14 +786,12 @@ export default function Home() {
               © {new Date().getFullYear()} Bloom · Café de especialidad y pastelería en Mar del Plata.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowLogin(true)}
+          <Link
+            href="/login"
             className="mx-auto mt-8 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest text-white/25 hover:text-white/50 transition-colors"
           >
-            <LogIn size={12} />
             Staff
-          </button>
+          </Link>
         </div>
       </footer>
     </main>

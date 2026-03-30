@@ -12,6 +12,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
 import { VariantSelector } from "@/components/pos/VariantSelector"; // Reusing logic
 import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
+import { PublicAccountNav } from "@/components/PublicAccountNav";
 import { BloomChat } from "@/components/Menu/BloomChat";
 import type { BloomChatCartLine } from "@/lib/bloom-chat-types";
 
@@ -525,9 +526,7 @@ function PublicMenuPage() {
                                 {tableLabel}
                             </span>
                         )}
-                        <Link href="/auth" className="text-sm font-bold text-neutral-600 underline-offset-4 hover:underline hover:text-neutral-900">
-                            Iniciar sesión
-                        </Link>
+                        <PublicAccountNav />
                         <button
                             type="button"
                             onClick={() => setIsCartOpen(true)}

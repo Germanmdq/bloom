@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import { PublicAccountNav } from "@/components/PublicAccountNav";
 
 const LINKS = [
   { href: "/", label: "Inicio" },
@@ -70,6 +71,9 @@ export function FoodKingMobileNavPanel({ open, onClose }: { open: boolean; onClo
                 </Link>
               ))}
             </nav>
+            <div className="px-4 pb-3 flex justify-center">
+              <PublicAccountNav className="scale-105" onAfterNavigate={onClose} />
+            </div>
             <div className="p-4 border-t border-bloom-200 bg-white">
               <Link
                 href="/menu"

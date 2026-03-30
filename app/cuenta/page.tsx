@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -45,7 +45,8 @@ function loyaltyProgress(totalOrders: number) {
 export default function CuentaPage() {
   const router = useRouter();
   const supabase = createClient();
-  const [loading, setLoading] = useState(true);
+  const sessionCheckedRef = useRef(false);
+  const [sessionPending, setSessionPending] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
@@ -68,20 +69,24 @@ export default function CuentaPage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+
+    void supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (cancelled) return;
+      sessionCheckedRef.current = true;
+      setSessionPending(false);
       if (!session?.user) {
         router.replace("/auth");
         return;
       }
       setUser(session.user);
-      setLoading(false);
       await loadOrders(session.user.id);
-    })();
+    });
+
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!sessionCheckedRef.current) return;
       if (!session?.user) {
         router.replace("/auth");
+        setUser(null);
         return;
       }
       setUser(session.user);
@@ -108,7 +113,7 @@ export default function CuentaPage() {
 
   const { filled, until, totalOrders } = loyaltyProgress(orders.length);
 
-  if (loading) {
+  if (sessionPending || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#FAF7F2]">
         <Loader2 className="h-10 w-10 animate-spin text-[#7a765a]" />
@@ -189,6 +194,13 @@ export default function CuentaPage() {
             ))}
           </div>
         </div>
+
+        <Link
+          href="/menu"
+          className="flex w-full items-center justify-center rounded-full bg-[#2d4a3e] px-6 py-3 font-black text-white shadow-md transition hover:bg-[#1f352c]"
+        >
+          Ir al menú →
+        </Link>
 
         {/* Historial */}
         <div>

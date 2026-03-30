@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { MapPin, Instagram, ArrowLeft } from "lucide-react";
 import { useFachadaImageUrl } from "@/lib/hooks/useFachadaImageUrl";
+import { PublicAccountNav } from "@/components/PublicAccountNav";
 
 const STORY_P1 =
   "Bloom es una cafetería familiar creada por Bárbara y Agustín como un proyecto lleno de amor, desafío y vocación. Somos un espacio cálido y de encuentro, donde ofrecemos cafés clásicos, sabores tradicionales y comidas caseras, elaboradas con ingredientes de calidad y ese toque hogareño que te hace sentir como en casa.";
@@ -21,7 +22,7 @@ function Navbar() {
           <span className="text-xs font-bold tracking-widest uppercase">Volver al inicio</span>
         </Link>
         <span className="font-sans text-xl font-black tracking-[0.2em] text-white drop-shadow-md">BLOOM</span>
-        <div className="w-24" aria-hidden />
+        <PublicAccountNav tone="onDark" />
       </div>
     </nav>
   );
