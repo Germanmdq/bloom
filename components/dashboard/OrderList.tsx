@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { Order } from "@/lib/types";
 import * as XLSX from "xlsx";
-import { Loader2, X, Filter, Download, Bike, Store, Building2, UtensilsCrossed, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, X, Filter, Download, Bike, Store, Building2, UtensilsCrossed, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
 import { getPaymentIcon, getPaymentLabel } from "@/lib/utils/payment";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -78,14 +78,23 @@ export function OrderList() {
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const [assigningDeliveryId, setAssigningDeliveryId] = useState<string | null>(null);
 
-    useEffect(() => { fetchOrders(); }, []);
-
-    async function fetchOrders() {
-        setLoading(true);
-        setFetchError(null);
+    const fetchOrders = useCallback(async (opts?: { silent?: boolean }) => {
+        const silent = opts?.silent === true;
+        if (!silent) {
+            setLoading(true);
+            setFetchError(null);
+        }
         try {
             const res = await fetch("/api/orders/list", { credentials: "include" });
             const result = await res.json();
+            console.log(
+                "[OrderList] status:",
+                res.status,
+                "orders:",
+                result.data?.length,
+                "error:",
+                result.error
+            );
             if (!res.ok) {
                 const msg =
                     typeof result.error === "string"
@@ -99,14 +108,21 @@ export function OrderList() {
                 return;
             }
             setOrders(Array.isArray(result.data) ? (result.data as Order[]) : []);
+            setFetchError(null);
         } catch (e) {
             console.error(e);
             setOrders([]);
             setFetchError("Error de red al cargar pedidos.");
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
-    }
+    }, []);
+
+    useEffect(() => {
+        void fetchOrders();
+        const interval = setInterval(() => void fetchOrders({ silent: true }), 30000);
+        return () => clearInterval(interval);
+    }, [fetchOrders]);
 
     async function setOrderPaid(orderId: string, paid: boolean) {
         setTogglingId(orderId);
@@ -321,11 +337,20 @@ export function OrderList() {
                         </button>
                     ))}
                 </div>
-                <button onClick={exportToExcel}
-                    className="ml-auto flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-2xl text-sm font-bold shadow transition-all active:scale-95"
-                >
-                    <Download size={16} /> Excel
-                </button>
+                <div className="ml-auto flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => void fetchOrders({ silent: true })}
+                        className="flex items-center gap-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 px-4 py-2.5 rounded-2xl text-sm font-bold shadow-sm transition-all active:scale-95"
+                    >
+                        <RefreshCw size={16} /> Actualizar
+                    </button>
+                    <button onClick={exportToExcel}
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-2xl text-sm font-bold shadow transition-all active:scale-95"
+                    >
+                        <Download size={16} /> Excel
+                    </button>
+                </div>
             </div>
 
             {/* GRID */}
