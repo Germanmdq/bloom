@@ -40,10 +40,9 @@ function safeInternalPath(raw: string | null | undefined): string | null {
   return t;
 }
 
-function combineOptionalAddress(line: string, extra: string): string {
+function combineRegisterAddress(line: string, extra: string): string {
   const a = line.trim();
   const b = extra.trim();
-  if (!a && !b) return "";
   if (!a) return b;
   if (!b) return a;
   return `${a} - ${b}`;
@@ -130,8 +129,23 @@ export function AuthPageClient() {
     setInfo("");
     const name = regName.trim();
     const email = regEmail.trim().toLowerCase();
+    const phone = regPhone.trim();
+    const addressLine = regAddressLine.trim();
+    const addressExtra = regAddressExtra.trim();
     if (!name) {
       setError("Ingresá tu nombre.");
+      return;
+    }
+    if (!phone) {
+      setError("Ingresá tu teléfono.");
+      return;
+    }
+    if (!addressLine) {
+      setError("Ingresá la dirección de entrega (calle y número).");
+      return;
+    }
+    if (!addressExtra) {
+      setError("Ingresá piso, dpto o referencia de entrega.");
       return;
     }
     if (!emailValid(email)) {
@@ -142,14 +156,9 @@ export function AuthPageClient() {
       setError("La contraseña debe tener al menos 6 caracteres.");
       return;
     }
-    const phone = regPhone.trim();
-    if (!phone) {
-      setError("El teléfono es requerido");
-      return;
-    }
     setLoading(true);
     const dest = customerDestinationAfterAuth(searchParams);
-    const defaultAddress = combineOptionalAddress(regAddressLine, regAddressExtra);
+    const defaultAddress = combineRegisterAddress(addressLine, addressExtra);
     const { data, error: err } = await supabase.auth.signUp({
       email,
       password: regPassword,
@@ -158,7 +167,7 @@ export function AuthPageClient() {
           full_name: name,
           is_customer: true,
           phone,
-          ...(defaultAddress ? { default_address: defaultAddress } : {}),
+          default_address: defaultAddress,
         },
         emailRedirectTo:
           typeof window !== "undefined" ? `${window.location.origin}${dest === "/cuenta" ? "/cuenta" : dest}` : undefined,
@@ -281,6 +290,7 @@ export function AuthPageClient() {
                 className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
                   error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
                 }`}
+                required
                 autoFocus
               />
               <div>
@@ -289,7 +299,7 @@ export function AuthPageClient() {
                   type="tel"
                   autoComplete="tel"
                   inputMode="tel"
-                  placeholder="Ej. 11 2345-6789"
+                  placeholder="11 2345-6789"
                   value={regPhone}
                   onChange={(e) => {
                     setRegPhone(e.target.value);
@@ -299,17 +309,17 @@ export function AuthPageClient() {
                   className={`mt-1 w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
                     error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
                   }`}
+                  required
                 />
-                <p className="mt-1.5 text-xs font-medium text-neutral-500">Requerido — te avisamos cuando tu encargo está listo</p>
               </div>
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">
-                  Dirección habitual de entrega (opcional)
+                  Dirección habitual de entrega
                 </label>
                 <input
                   type="text"
                   autoComplete="street-address"
-                  placeholder="Ej: Av. Independencia 1900"
+                  placeholder="Av. Independencia 1900"
                   value={regAddressLine}
                   onChange={(e) => {
                     setRegAddressLine(e.target.value);
@@ -319,16 +329,17 @@ export function AuthPageClient() {
                   className={`mt-1 w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
                     error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
                   }`}
+                  required
                 />
               </div>
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">
-                  Piso / Dpto / Referencia (opcional)
+                  Piso / Dpto / Referencia
                 </label>
                 <input
                   type="text"
                   autoComplete="off"
-                  placeholder="Ej: Piso 3 Of. 12, frente a Tribunales"
+                  placeholder="Piso 3 Of. 12, frente a Tribunales"
                   value={regAddressExtra}
                   onChange={(e) => {
                     setRegAddressExtra(e.target.value);
@@ -338,6 +349,7 @@ export function AuthPageClient() {
                   className={`mt-1 w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
                     error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
                   }`}
+                  required
                 />
               </div>
               <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Email</label>
@@ -355,12 +367,13 @@ export function AuthPageClient() {
                 className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
                   error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
                 }`}
+                required
               />
               <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Contraseña (mín. 6 caracteres)</label>
               <input
                 type="password"
                 autoComplete="new-password"
-                placeholder="••••••••"
+                placeholder="Mínimo 6 caracteres"
                 value={regPassword}
                 onChange={(e) => {
                   setRegPassword(e.target.value);
@@ -371,6 +384,8 @@ export function AuthPageClient() {
                 className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
                   error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
                 }`}
+                required
+                minLength={6}
               />
               {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
               {info ? <p className="text-sm font-medium text-[#2d4a3e]">{info}</p> : null}
