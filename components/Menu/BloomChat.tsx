@@ -9,9 +9,15 @@ import { createClient } from "@/lib/supabase/client";
 type Msg = { role: "assistant" | "user"; content: string };
 
 export type BloomChatHandle = {
-  /** Abre el panel y envía el nombre de categoría como primer mensaje de usuario (tras el saludo). */
+  /** Abre el modal, título = categoría, y envía contexto a Groq tras el saludo. */
   openWithCategoryMessage: (categoryName: string) => void;
+  /** Abre el modal sin mensaje automático (botón flotante). */
+  openChat: () => void;
 };
+
+function categoryContextPrompt(categoryName: string) {
+  return `Estoy viendo la categoría «${categoryName}». Mostráme los productos más destacados con precio en pesos argentinos, en forma breve y conversacional.`;
+}
 
 function tryParseOrderPayload(text: string): {
   order_ready: boolean;
@@ -102,6 +108,7 @@ type OrderPayload = NonNullable<ReturnType<typeof tryParseOrderPayload>>;
 export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, ref) {
   const supabase = createClient();
   const [open, setOpen] = useState(false);
+  const [chatHeaderTitle, setChatHeaderTitle] = useState("Bloom");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loadingOpening, setLoadingOpening] = useState(true);
@@ -147,13 +154,17 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   }, [loadOpening]);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setOpen(true), 3000);
-    return () => window.clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
     scrollToBottom();
   }, [messages, streaming]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
 
   const submitConfirm = useCallback(
     async (payload: OrderPayload, accessToken?: string, opts?: { skipDedupe?: boolean }) => {
@@ -306,14 +317,26 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     [messages, streaming, loadingOpening, runChatCompletion]
   );
 
-  useImperativeHandle(ref, () => ({
-    openWithCategoryMessage: (categoryName: string) => {
-      const t = categoryName.trim();
-      if (!t) return;
-      pendingUserMessageRef.current = t;
-      setOpen(true);
-    },
-  }));
+  const openFabChat = useCallback(() => {
+    setChatHeaderTitle("Bloom");
+    pendingUserMessageRef.current = null;
+    setOpen(true);
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      openWithCategoryMessage: (categoryName: string) => {
+        const t = categoryName.trim();
+        if (!t) return;
+        setChatHeaderTitle(t);
+        pendingUserMessageRef.current = categoryContextPrompt(t);
+        setOpen(true);
+      },
+      openChat: openFabChat,
+    }),
+    [openFabChat]
+  );
 
   useEffect(() => {
     if (!open || loadingOpening || streaming) return;
@@ -336,19 +359,26 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     await submitConfirm(payload, undefined, { skipDedupe: true });
   };
 
+  const closeModal = () => {
+    setOpen(false);
+    setChatHeaderTitle("Bloom");
+  };
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-[#7a765a] text-white shadow-[0_10px_40px_-8px_rgba(45,74,62,0.55)] ring-2 ring-white/30 transition hover:bg-[#5f5c46] hover:scale-105 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#c4b896]"
-        aria-label="Abrir chat Bloom"
-      >
-        <MessageCircle className="h-7 w-7" strokeWidth={2} />
-      </button>
+      {!open && (
+        <button
+          type="button"
+          onClick={openFabChat}
+          className="fixed bottom-6 right-6 z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-[#7a765a] text-white shadow-[0_10px_40px_-8px_rgba(45,74,62,0.55)] ring-2 ring-white/30 transition hover:bg-[#5f5c46] hover:scale-105 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#c4b896]"
+          aria-label="Abrir chat Bloom"
+        >
+          <MessageCircle className="h-7 w-7" strokeWidth={2} />
+        </button>
+      )}
 
       {accountGate && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="max-w-sm rounded-2xl border border-[#e8e4dc] bg-[#f7f5ef] p-5 shadow-2xl">
             <p className="font-black text-neutral-900">¿Asociamos el pedido a tu cuenta?</p>
             <p className="mt-2 text-sm text-neutral-600">
@@ -385,72 +415,81 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       )}
 
       {open && (
-        <div className="fixed bottom-24 right-6 z-[101] flex w-[min(100vw-2rem,400px)] flex-col overflow-hidden rounded-2xl border border-[#e8e4dc] bg-[#f7f5ef] shadow-2xl shadow-black/20">
-          <div className="flex items-center justify-between border-b border-[#e0dcd4] bg-[#2d4a3e] px-4 py-3 text-white">
-            <div className="flex items-center gap-2 font-bold tracking-tight">
-              <MessageCircle className="h-5 w-5 text-[#c4b896]" />
-              Bloom — tu mozo
-            </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="rounded-lg p-1.5 hover:bg-white/10"
-              aria-label="Cerrar"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div ref={scrollRef} className="max-h-[min(60vh,420px)] space-y-3 overflow-y-auto px-3 py-3">
-            {loadingOpening && messages.length === 1 && messages[0].content === "" && (
-              <div className="flex items-center gap-2 text-sm text-neutral-500">
-                <Loader2 className="h-4 w-4 animate-spin" /> Tu mozo te está saludando…
+        <div
+          className="fixed inset-0 z-[190] flex items-stretch justify-center bg-[#f7f5ef] md:items-center md:bg-black/50 md:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bloom-chat-title"
+        >
+          <div className="flex h-full w-full max-w-full flex-col overflow-hidden bg-[#f7f5ef] md:h-[80vh] md:max-h-[80vh] md:max-w-[480px] md:rounded-2xl md:shadow-2xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#e0dcd4] bg-[#2d4a3e] px-4 py-3 text-white">
+              <div className="flex min-w-0 items-center gap-2">
+                <MessageCircle className="h-5 w-5 shrink-0 text-[#c4b896]" aria-hidden />
+                <h2 id="bloom-chat-title" className="truncate font-bold tracking-tight">
+                  {chatHeaderTitle}
+                </h2>
               </div>
-            )}
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`max-w-[92%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                  m.role === "user"
-                    ? "ml-auto bg-[#7a765a] text-white"
-                    : "mr-auto bg-white text-neutral-800 shadow-sm ring-1 ring-black/5"
-                }`}
-              >
-                {(m.role === "assistant" ? assistantDisplayText(m.content) : m.content).split("\n").map((line, li, arr) => (
-                  <span key={li}>
-                    {line}
-                    {li < arr.length - 1 ? <br /> : null}
-                  </span>
-                ))}
-              </div>
-            ))}
-            {streaming && (
-              <div className="flex items-center gap-2 text-xs text-neutral-400">
-                <Loader2 className="h-3 w-3 animate-spin" /> Escribiendo…
-              </div>
-            )}
-          </div>
-
-          <div className="border-t border-[#e0dcd4] p-2">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && void sendUserMessage()}
-                placeholder="Escribile a tu mozo..."
-                disabled={streaming || loadingOpening}
-                className="min-w-0 flex-1 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-[#7a765a] focus:outline-none focus:ring-2 focus:ring-[#c4b896]/50"
-              />
               <button
                 type="button"
-                onClick={() => void sendUserMessage()}
-                disabled={streaming || loadingOpening || !input.trim()}
-                className="shrink-0 rounded-xl bg-[#7a765a] px-3 py-2 text-white hover:bg-[#5f5c46] disabled:opacity-40"
-                aria-label="Enviar"
+                onClick={() => closeModal()}
+                className="shrink-0 rounded-lg p-1.5 hover:bg-white/10"
+                aria-label="Cerrar chat"
               >
-                {streaming ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                <X className="h-5 w-5" />
               </button>
+            </div>
+
+            <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3">
+              {loadingOpening && messages.length === 1 && messages[0].content === "" && (
+                <div className="flex items-center gap-2 text-sm text-neutral-500">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Tu mozo te está saludando…
+                </div>
+              )}
+              {messages.map((m, i) => (
+                <div
+                  key={i}
+                  className={`max-w-[92%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                    m.role === "user"
+                      ? "ml-auto bg-[#7a765a] text-white"
+                      : "mr-auto bg-white text-neutral-800 shadow-sm ring-1 ring-black/5"
+                  }`}
+                >
+                  {(m.role === "assistant" ? assistantDisplayText(m.content) : m.content).split("\n").map((line, li, arr) => (
+                    <span key={li}>
+                      {line}
+                      {li < arr.length - 1 ? <br /> : null}
+                    </span>
+                  ))}
+                </div>
+              ))}
+              {streaming && (
+                <div className="flex items-center gap-2 text-xs text-neutral-400">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Escribiendo…
+                </div>
+              )}
+            </div>
+
+            <div className="shrink-0 border-t border-[#e0dcd4] bg-[#f7f5ef] p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && void sendUserMessage()}
+                  placeholder="Escribile a tu mozo..."
+                  disabled={streaming || loadingOpening}
+                  className="min-w-0 flex-1 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-[#7a765a] focus:outline-none focus:ring-2 focus:ring-[#c4b896]/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => void sendUserMessage()}
+                  disabled={streaming || loadingOpening || !input.trim()}
+                  className="shrink-0 rounded-xl bg-[#7a765a] px-3 py-2 text-white hover:bg-[#5f5c46] disabled:opacity-40"
+                  aria-label="Enviar"
+                >
+                  {streaming ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
           </div>
         </div>

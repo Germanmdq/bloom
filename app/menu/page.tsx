@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, Suspense, useCallback, useRef } from "react";
+import { useState, useEffect, Suspense, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ChevronLeft, Plus, Minus, CreditCard, MapPin, Phone, Truck, X } from "lucide-react";
+import { ShoppingBag, ChevronLeft, Plus, Minus, CreditCard, MapPin, Phone, Truck, X, Star } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
 import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
@@ -48,6 +48,30 @@ function categoryEmoji(c: { icon?: string | null; name: string }) {
 
 function categoryLabel(c: { name: string }) {
     return c.name.replace(/^\p{Extended_Pictographic}\s*/u, "").trim() || c.name;
+}
+
+/** Primera imagen de producto activo por categoría (nombre ascendente), para fallback de tarjeta. */
+function buildFirstProductImageByCategory(
+    products: Array<{ category_id?: string | null; image_url?: string | null; name: string }>
+) {
+    const map = new Map<string, string>();
+    const sorted = [...products]
+        .filter((p) => p.category_id && p.image_url?.trim())
+        .sort((a, b) => a.name.localeCompare(b.name, "es"));
+    for (const p of sorted) {
+        const cid = String(p.category_id);
+        if (!map.has(cid)) map.set(cid, p.image_url!.trim());
+    }
+    return map;
+}
+
+function categoryCardImageUrl(
+    c: { id: string; image_url?: string | null },
+    firstByCat: Map<string, string>
+): string | null {
+    const direct = c.image_url?.trim();
+    if (direct) return direct;
+    return firstByCat.get(c.id) ?? null;
 }
 
 // --- MAIN COMPONENT ---
@@ -93,7 +117,7 @@ function PublicMenuPage() {
     useEffect(() => {
         const fetchMenu = async () => {
             const [{ data: cats }, { data: prods }, { data: settings }] = await Promise.all([
-                supabase.from("categories").select("id, name, sort_order, icon").order("sort_order", { ascending: true }),
+                supabase.from("categories").select("id, name, sort_order, icon, image_url").order("sort_order", { ascending: true }),
                 supabase.from("products").select(MENU_PRODUCT_SELECT).eq("active", true),
                 supabase.from("app_settings").select("whatsapp, plato_del_dia_id").eq("id", 1).single(),
             ]);
@@ -121,6 +145,11 @@ function PublicMenuPage() {
     }, []);
 
     const platoDiaProduct = products.find(p => p.kind === 'plato_del_dia');
+
+    const firstProductImageByCategory = useMemo(
+        () => buildFirstProductImageByCategory(products),
+        [products]
+    );
 
     const openChatWithCategory = useCallback((name: string) => {
         bloomChatRef.current?.openWithCategoryMessage(name);
@@ -419,33 +448,85 @@ function PublicMenuPage() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="grid w-full grid-cols-2 gap-3">
                     {platoDiaProduct && (
                         <button
                             type="button"
                             onClick={() => openChatWithCategory("Plato del Día")}
-                            className="group flex flex-col items-center justify-center gap-3 rounded-3xl border-4 border-amber-400/90 bg-gradient-to-br from-amber-50 via-white to-amber-50/50 p-8 text-center shadow-lg transition hover:shadow-xl min-h-[168px] ring-2 ring-amber-200/60"
+                            className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl text-left shadow-md transition active:scale-[0.98] md:aspect-video"
+                            aria-label="Plato del Día — abrir asistente"
                         >
-                            <span className="text-6xl leading-none" aria-hidden>
-                                ⭐
+                            {platoDiaProduct.image_url?.trim() ? (
+                                <Image
+                                    src={platoDiaProduct.image_url.trim()}
+                                    alt=""
+                                    fill
+                                    className="object-cover transition duration-300 group-hover:scale-105"
+                                    sizes="(max-width: 768px) 50vw, 360px"
+                                />
+                            ) : (
+                                <div
+                                    className="absolute inset-0 bg-gradient-to-br from-amber-800 to-amber-950"
+                                    aria-hidden
+                                />
+                            )}
+                            <div
+                                className="absolute inset-0 bg-gradient-to-t from-amber-950/90 via-amber-600/40 to-amber-300/30"
+                                aria-hidden
+                            />
+                            <span className="absolute right-2 top-2 drop-shadow-md" aria-hidden>
+                                <Star className="h-5 w-5 text-amber-100" fill="currentColor" strokeWidth={0} />
                             </span>
-                            <span className="font-black text-lg text-neutral-900">Plato del Día</span>
-                            <span className="text-sm font-semibold text-amber-900/85">Destacado de hoy</span>
+                            <div className="absolute bottom-0 left-0 right-0 p-3 pt-10">
+                                <span className="text-base font-bold leading-tight text-white drop-shadow-md md:text-lg">
+                                    Plato del Día
+                                </span>
+                            </div>
                         </button>
                     )}
-                    {categories.map((c: { id: string; name: string; icon?: string | null }) => (
-                        <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => openChatWithCategory(categoryLabel(c))}
-                            className="group flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-bloom-200 bg-white p-8 text-center shadow-md transition hover:border-bloom-400 hover:shadow-lg min-h-[140px]"
-                        >
-                            <span className="text-6xl leading-none" aria-hidden>
-                                {categoryEmoji(c)}
-                            </span>
-                            <span className="font-black text-base sm:text-lg text-neutral-900 leading-tight px-2">{categoryLabel(c)}</span>
-                        </button>
-                    ))}
+                    {categories.map((c: { id: string; name: string; icon?: string | null; image_url?: string | null }) => {
+                        const label = categoryLabel(c);
+                        const cardUrl = categoryCardImageUrl(c, firstProductImageByCategory);
+                        return (
+                            <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => openChatWithCategory(label)}
+                                className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl text-left shadow-md transition active:scale-[0.98] md:aspect-video"
+                                aria-label={`${label} — abrir asistente`}
+                            >
+                                {cardUrl ? (
+                                    <Image
+                                        src={cardUrl}
+                                        alt=""
+                                        fill
+                                        className="object-cover transition duration-300 group-hover:scale-105"
+                                        sizes="(max-width: 768px) 50vw, 360px"
+                                    />
+                                ) : (
+                                    <div
+                                        className="absolute inset-0 bg-gradient-to-br from-neutral-700 to-neutral-900"
+                                        aria-hidden
+                                    />
+                                )}
+                                <div
+                                    className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10"
+                                    aria-hidden
+                                />
+                                <span
+                                    className="absolute right-2 top-2 text-base leading-none drop-shadow-md md:text-lg"
+                                    aria-hidden
+                                >
+                                    {categoryEmoji(c)}
+                                </span>
+                                <div className="absolute bottom-0 left-0 right-0 p-3 pt-10">
+                                    <span className="text-base font-bold leading-tight text-white drop-shadow-md md:text-lg">
+                                        {label}
+                                    </span>
+                                </div>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 

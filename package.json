@@ -10,7 +10,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "upload:fachada": "node scripts/upload-fachada-to-supabase.mjs"
+    "upload:fachada": "node scripts/upload-fachada-to-supabase.mjs",
+    "upload:menu-category": "node scripts/upload-menu-category-image.mjs",
+    "upload:menu-categories-batch": "node scripts/upload-category-images-batch.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
