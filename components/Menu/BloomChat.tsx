@@ -155,9 +155,20 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     });
   };
 
+  const scrollChatToTop = (behavior: ScrollBehavior) => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: 0, behavior });
+    });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    scrollChatToTop("auto");
+  }, [open]);
+
   useEffect(() => {
     scrollToBottom();
-  }, [cart, products, open, encargoOpen, successMessage, softAuthHintVisible]);
+  }, [cart, encargoOpen, successMessage, softAuthHintVisible]);
 
   useEffect(() => {
     if (!open || !context) return;
@@ -165,6 +176,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     const hasScope = (context.productIds?.length ?? 0) > 0 || !!context.categoryId;
     if (!hasScope) {
       setProducts([]);
+      scrollChatToTop("smooth");
       return;
     }
 
@@ -191,7 +203,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         }
         setProducts((data ?? []) as ProductRow[]);
       } finally {
-        if (!cancelled) setLoadingProducts(false);
+        if (!cancelled) {
+          setLoadingProducts(false);
+          scrollChatToTop("smooth");
+        }
       }
     })();
 
