@@ -259,7 +259,7 @@ export default function Home() {
           </div>
           <FadeIn className="text-center">
             <Link
-              href="/auth"
+              href="/auth?mode=register"
               className="inline-flex items-center gap-2 rounded-full bg-bloom-cream px-7 py-3.5 text-sm font-black uppercase tracking-wide text-[#2d4a3e] shadow-[0_12px_36px_-8px_rgba(0,0,0,0.4)] transition hover:bg-white hover:shadow-[0_16px_44px_-6px_rgba(0,0,0,0.45)]"
             >
               Quiero ser socio

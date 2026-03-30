@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isAdminEmail } from "@/lib/auth/admin";
@@ -35,9 +34,17 @@ function translateAuthError(err: AuthError): string {
 
 export default function AuthPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [panel, setPanel] = useState<Panel>("login");
+
+  useEffect(() => {
+    const mode = searchParams.get("mode");
+    if (mode === "register") {
+      setPanel("register");
+    }
+  }, [searchParams]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
