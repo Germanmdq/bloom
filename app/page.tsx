@@ -30,6 +30,8 @@ import { BloomChat, type BloomChatHandle } from "@/components/Menu/BloomChat";
 const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
 /** Logo PNG con tipografía marrón bloom-600 y fondo transparente (ver scripts/process-bloom-logo.mjs). */
 const HERO_LOGO_SRC = "/images/bloom-logo.png";
+/** Poster del hero hasta que cargue el video (misma ruta que logo o imagen wide dedicada). */
+const HERO_VIDEO_POSTER_SRC = HERO_LOGO_SRC;
 
 const U = {
   /** Flat lay marca — sección Sobre Bloom en home */
@@ -105,7 +107,10 @@ export default function Home() {
   const [heroVideoReady, setHeroVideoReady] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const bloomChatRef = useRef<BloomChatHandle>(null);
-  const [favoriteProductIdByName, setFavoriteProductIdByName] = useState<Record<string, string | null>>({});
+  /** Por tarjeta: categoría del producto encontrado (lista completa en el chat, sin pre-seleccionar). */
+  const [favoriteCategoryByName, setFavoriteCategoryByName] = useState<
+    Record<string, { categoryId: string; displayName: string } | null>
+  >({});
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -121,18 +126,34 @@ export default function Home() {
   useEffect(() => {
     const supabase = createClient();
     (async () => {
-      const next: Record<string, string | null> = {};
+      const next: Record<string, { categoryId: string; displayName: string } | null> = {};
       for (const d of destacados) {
         const { data } = await supabase
           .from("products")
-          .select("id")
+          .select("id, category_id, categories(name)")
           .eq("active", true)
           .ilike("name", `%${d.nameHint}%`)
           .limit(1)
           .maybeSingle();
-        next[d.name] = data?.id ?? null;
+        if (!data?.category_id) {
+          next[d.name] = null;
+          continue;
+        }
+        const raw = data as { category_id: string; categories?: { name?: string } | { name?: string }[] | null };
+        const c = raw.categories;
+        const categoryLabel = Array.isArray(c)
+          ? typeof c[0]?.name === "string"
+            ? c[0].name
+            : null
+          : typeof c?.name === "string"
+            ? c.name
+            : null;
+        next[d.name] = {
+          categoryId: raw.category_id,
+          displayName: categoryLabel?.trim() || d.name,
+        };
       }
-      setFavoriteProductIdByName(next);
+      setFavoriteCategoryByName(next);
     })();
   }, []);
 
@@ -150,7 +171,8 @@ export default function Home() {
             muted
             loop
             playsInline
-            preload="auto"
+            preload="none"
+            poster={HERO_VIDEO_POSTER_SRC}
             aria-hidden
             onCanPlay={() => setHeroVideoReady(true)}
             onError={() => setHeroVideoReady(true)}
@@ -346,11 +368,14 @@ export default function Home() {
                     </p>
                     <button
                       type="button"
-                      disabled={favoriteProductIdByName[p.name] === undefined}
+                      disabled={favoriteCategoryByName[p.name] === undefined}
                       onClick={() => {
-                        const id = favoriteProductIdByName[p.name];
-                        if (id) {
-                          void bloomChatRef.current?.openWithProductEncargado(id);
+                        const cat = favoriteCategoryByName[p.name];
+                        if (cat?.categoryId) {
+                          bloomChatRef.current?.openWithCategoryMessage({
+                            categoryId: cat.categoryId,
+                            displayName: cat.displayName,
+                          });
                         } else {
                           toast.error("No encontramos este producto ahora. Probá desde el menú.");
                         }
