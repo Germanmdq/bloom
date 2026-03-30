@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-/** Marcar pedido como pagado / impago (dashboard staff; RLS orders_staff_update). */
+/** Marcar pedido como pagado / impago / cuenta corriente (dashboard staff; RLS orders_staff_update). */
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as { orderId?: string; paid?: boolean };
+    const body = (await request.json()) as {
+      orderId?: string;
+      paid?: boolean;
+      cuenta_corriente?: boolean;
+    };
     const orderId = body.orderId?.trim();
     if (!orderId) {
       return NextResponse.json({ error: "orderId requerido" }, { status: 400 });
     }
-    const paid = Boolean(body.paid);
+
+    const patch: Record<string, boolean> = {};
+    if (typeof body.paid === "boolean") patch.paid = body.paid;
+    if (typeof body.cuenta_corriente === "boolean") patch.cuenta_corriente = body.cuenta_corriente;
+    if (Object.keys(patch).length === 0) {
+      return NextResponse.json({ error: "paid o cuenta_corriente requerido" }, { status: 400 });
+    }
 
     const supabase = await createClient();
     const {
@@ -20,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const { error } = await supabase.from("orders").update({ paid }).eq("id", orderId);
+    const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
 
     if (error) {
       console.error("[orders/paid]", error);

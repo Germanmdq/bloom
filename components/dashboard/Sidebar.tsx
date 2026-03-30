@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, QrCode, CalendarDays, X } from "lucide-react";
+import { Home, LayoutGrid, Coffee, ListChecks, Settings, Users, UserCircle, PieChart, Receipt, CookingPot, Package, QrCode, CalendarDays, X } from "lucide-react";
 import { useUserRole } from "@/lib/hooks/use-pos-data";
 
 const links = [
+    { href: "/dashboard", label: "Inicio", icon: Home },
     { href: "/dashboard/tables", label: "Mesas", icon: LayoutGrid },
     { href: "/dashboard/reservations", label: "Reservas", icon: CalendarDays },
     { href: "/dashboard/qr", label: "QR Mesas", icon: QrCode },
     { href: "/dashboard/orders", label: "Historial", icon: ListChecks },
+    { href: "/dashboard/customers", label: "Clientes", icon: UserCircle },
     { href: "/dashboard/products", label: "Menú", icon: Coffee },
     { href: "/dashboard/staff", label: "Personal", icon: Users },
     { href: "/dashboard/reports", label: "Reportes", icon: PieChart },
@@ -72,7 +74,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
                 <nav className="flex-1 space-y-2">
                     {filteredLinks.map((link) => {
-                        const isActive = pathname.startsWith(link.href);
+                        const isActive =
+                            link.href === "/dashboard"
+                                ? pathname === "/dashboard"
+                                : pathname.startsWith(link.href);
                         const Icon = link.icon;
                         return (
                             <Link key={link.href} href={link.href} onClick={onClose}>
