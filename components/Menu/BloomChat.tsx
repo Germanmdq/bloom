@@ -12,6 +12,8 @@ type ProductRow = {
   description: string | null;
   price: number;
   category_id: string | null;
+  /** Nombre de categoría (join) para sugerencias post-encargo */
+  category_name?: string | null;
 };
 
 type CartLine = {
@@ -32,6 +34,8 @@ export type OpenCategoryOpts = {
 export type BloomChatHandle = {
   openWithCategoryMessage: (opts: OpenCategoryOpts) => void;
   openChat: () => void;
+  /** Carga la categoría del producto, abre el chat y lo agrega como si hubiera tocado Encargar. */
+  openWithProductEncargado: (productId: string) => Promise<void>;
 };
 
 function formatArs(n: number) {
@@ -54,6 +58,24 @@ function genericIntro() {
   const t = timeGreeting();
   return `${t}! Tocá una categoría en el menú para ver productos y armar tu encargo.`;
 }
+
+type UpsellVariant = "food" | "drink" | "pastry";
+
+function upsellVariantFromCategoryName(name: string | null | undefined): UpsellVariant {
+  const n = (name ?? "").toLowerCase();
+  if (/(pasteler|factura|medialuna|dulce|torta|panific|desayuno|cookie|masa|brownie)/i.test(n)) return "pastry";
+  if (/(cafeter|bebida|jugo|licuado|café|cafe|té|tea|smoothie|batido|gaseosa|bar\b)/i.test(n)) return "drink";
+  return "food";
+}
+
+const UPSELL_PRIMARY: Record<UpsellVariant, string> = {
+  food: "¿Querés sumar algo para tomar? Tenemos cafés, jugos y licuados 🥤",
+  drink: "¿Querés acompañarlo con una factura o medialunas? 🥐",
+  pastry: "¿Un café para acompañar? ☕",
+};
+
+const UPSELL_FOOTER =
+  "O si querés ver otra categoría, cerrá este panel y elegí otra.";
 
 /** Una sola vez por sesión de navegador: aviso suave para iniciar sesión. */
 const SOFT_AUTH_SESSION_KEY = "bloom_chat_soft_auth_hint";
@@ -144,6 +166,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   /** Sesión detectada al abrir el modal de encargo: mostrar mensaje de confirmación de datos. */
   const [encargoLoggedInPrefill, setEncargoLoggedInPrefill] = useState(false);
   const [checkoutSubmitAttempted, setCheckoutSubmitAttempted] = useState(false);
+  /** Tras Encargar: sugerencia antes de mostrar «Ver encargo». */
+  const [upsellVariant, setUpsellVariant] = useState<UpsellVariant | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -164,7 +188,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
   useEffect(() => {
     scrollToBottom();
-  }, [cart, encargoOpen, successMessage, softAuthHintVisible]);
+  }, [cart, encargoOpen, successMessage, softAuthHintVisible, upsellVariant]);
 
   useEffect(() => {
     if (!open || !context) return;
@@ -182,7 +206,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       try {
         let q = supabase
           .from("products")
-          .select("id,name,description,price,category_id")
+          .select("id,name,description,price,category_id, categories(name)")
           .eq("active", true);
         if (context.productIds?.length) {
           q = q.in("id", context.productIds);
@@ -198,7 +222,24 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           if (scrollRef.current) scrollRef.current.scrollTop = 0;
           return;
         }
-        const rows = (data ?? []) as ProductRow[];
+        const rows = (data ?? []).map((raw: Record<string, unknown>) => {
+          const c = raw.categories as { name?: string } | { name?: string }[] | null | undefined;
+          const categoryName = Array.isArray(c)
+            ? typeof c[0]?.name === "string"
+              ? c[0].name
+              : null
+            : typeof c?.name === "string"
+              ? c.name
+              : null;
+          return {
+            id: raw.id as string,
+            name: raw.name as string,
+            description: (raw.description as string | null) ?? null,
+            price: Number(raw.price),
+            category_id: (raw.category_id as string | null) ?? null,
+            category_name: categoryName,
+          } as ProductRow;
+        });
         setProducts(rows);
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
       } finally {
@@ -321,6 +362,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setEncargoCheckoutUnlocked(false);
     setEncargoLoggedInPrefill(false);
     setCheckoutSubmitAttempted(false);
+    setUpsellVariant(null);
   }, []);
 
   const addLine = useCallback((p: ProductRow, observations: string) => {
@@ -340,6 +382,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       },
     ]);
     setAddedProductIds((prev) => new Set(prev).add(p.id));
+    setUpsellVariant(upsellVariantFromCategoryName(p.category_name ?? null));
   }, []);
 
   const submitOrder = useCallback(async () => {
@@ -427,6 +470,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
         setEncargoOpen(false);
         setEncargoLoggedInPrefill(false);
+        setUpsellVariant(null);
         setCart([]);
         setAddedProductIds(new Set());
         setCheckoutName("");
@@ -442,6 +486,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
       setEncargoOpen(false);
       setEncargoLoggedInPrefill(false);
+      setUpsellVariant(null);
       setSuccessMessage(
         paymentMethod === "bank_transfer"
           ? `Te enviamos los datos de transferencia por WhatsApp al ${phone}.`
@@ -484,6 +529,58 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setOpen(true);
   }, [resetForContext]);
 
+  const resumeChat = useCallback(() => {
+    setOpen(true);
+  }, []);
+
+  const closeChatKeepCart = useCallback(() => {
+    setOpen(false);
+    setUpsellVariant(null);
+  }, []);
+
+  const openWithProductEncargado = useCallback(
+    async (productId: string) => {
+      const { data: row, error } = await supabase
+        .from("products")
+        .select("id,name,description,price,category_id, categories(name)")
+        .eq("id", productId)
+        .eq("active", true)
+        .maybeSingle();
+      if (error || !row) {
+        toast.error("No encontramos ese producto");
+        return;
+      }
+      const raw = row as Record<string, unknown>;
+      const c = raw.categories as { name?: string } | { name?: string }[] | null | undefined;
+      const categoryName = Array.isArray(c)
+        ? typeof c[0]?.name === "string"
+          ? c[0].name
+          : "Menú"
+        : typeof c?.name === "string"
+          ? c.name
+          : "Menú";
+      resetForContext();
+      setContext({
+        displayName: categoryName,
+        categoryId: (raw.category_id as string | null) ?? null,
+        productIds: null,
+      });
+      setIntroText(categoryIntro(categoryName));
+      setContextKey((k) => k + 1);
+      setOpen(true);
+      const productRow: ProductRow = {
+        id: raw.id as string,
+        name: raw.name as string,
+        description: (raw.description as string | null) ?? null,
+        price: Number(raw.price),
+        category_id: (raw.category_id as string | null) ?? null,
+        category_name: categoryName,
+      };
+      addLine(productRow, "");
+    },
+    [addLine, resetForContext, supabase]
+  );
+
   useImperativeHandle(
     ref,
     () => ({
@@ -500,8 +597,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         setOpen(true);
       },
       openChat: openFabChat,
+      openWithProductEncargado,
     }),
-    [openFabChat, resetForContext]
+    [openFabChat, openWithProductEncargado, resetForContext]
   );
 
   const closeModal = () => {
@@ -513,6 +611,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setEncargoCheckoutUnlocked(false);
     setEncargoLoggedInPrefill(false);
     setCheckoutSubmitAttempted(false);
+    setUpsellVariant(null);
   };
 
   const showProductGrid =
@@ -527,7 +626,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       {!open && (
         <button
           type="button"
-          onClick={openFabChat}
+          onClick={() => {
+            if (cart.length > 0 && context) resumeChat();
+            else openFabChat();
+          }}
           className="fixed bottom-6 right-6 z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-[#7a765a] text-white shadow-[0_10px_40px_-8px_rgba(45,74,62,0.55)] ring-2 ring-white/30 transition hover:bg-[#5f5c46] hover:scale-105 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#c4b896]"
           aria-label="Abrir encargo Bloom"
         >
@@ -771,21 +873,32 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           aria-labelledby="bloom-chat-title"
         >
           <div className="flex h-full w-full max-w-full flex-col overflow-hidden bg-[#f7f5ef] md:h-[80vh] md:max-h-[80vh] md:max-w-[480px] md:rounded-2xl md:shadow-2xl">
-            <div className="flex shrink-0 items-center justify-between border-b border-[#e0dcd4] bg-[#2d4a3e] px-4 py-3 text-white">
-              <div className="flex min-w-0 items-center gap-2">
-                <MessageCircle className="h-5 w-5 shrink-0 text-[#c4b896]" aria-hidden />
-                <h2 id="bloom-chat-title" className="truncate font-bold tracking-tight">
-                  {context?.displayName ?? "Bloom"}
-                </h2>
+            <div className="flex shrink-0 flex-col gap-1.5 border-b border-[#e0dcd4] bg-[#2d4a3e] px-3 py-2.5 text-white md:px-4">
+              {context && (!!context.categoryId || (context.productIds?.length ?? 0) > 0) ? (
+                <button
+                  type="button"
+                  onClick={closeChatKeepCart}
+                  className="w-fit text-left text-xs font-bold text-[#c4b896] underline-offset-2 hover:text-white hover:underline"
+                >
+                  ← Ver categorías
+                </button>
+              ) : null}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <MessageCircle className="h-5 w-5 shrink-0 text-[#c4b896]" aria-hidden />
+                  <h2 id="bloom-chat-title" className="truncate font-bold tracking-tight">
+                    {context?.displayName ?? "Bloom"}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => closeModal()}
+                  className="shrink-0 rounded-lg p-1.5 hover:bg-white/10"
+                  aria-label="Cerrar"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => closeModal()}
-                className="shrink-0 rounded-lg p-1.5 hover:bg-white/10"
-                aria-label="Cerrar"
-              >
-                <X className="h-5 w-5" />
-              </button>
             </div>
 
             <div
@@ -854,9 +967,35 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   ))}
                 </div>
               )}
+
+              {upsellVariant ? (
+                <div className="w-full max-w-[92%] rounded-2xl border border-[#c4b896]/50 bg-[#faf8f3] px-3 py-3 text-sm text-neutral-800 shadow-sm ring-1 ring-[#2d4a3e]/10">
+                  <p className="font-semibold leading-snug text-[#2d4a3e]">{UPSELL_PRIMARY[upsellVariant]}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-neutral-600">{UPSELL_FOOTER}</p>
+                  <div className="mt-3 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={closeChatKeepCart}
+                      className="w-full rounded-xl border-2 border-[#d4cfc4] bg-white px-3 py-2.5 text-center text-xs font-bold text-neutral-800 hover:bg-neutral-50"
+                    >
+                      Ver otras categorías
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUpsellVariant(null);
+                        setEncargoOpen(true);
+                      }}
+                      className="w-full rounded-xl bg-[#2d4a3e] px-3 py-2.5 text-center text-xs font-black uppercase tracking-wide text-white shadow hover:bg-[#1f342c]"
+                    >
+                      No, confirmar encargo →
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
-            {cartCount > 0 && (
+            {cartCount > 0 && !upsellVariant ? (
               <div className="sticky bottom-0 z-10 border-t border-[#e0dcd4] bg-[#f7f5ef]/95 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-sm">
                 <button
                   type="button"
@@ -868,7 +1007,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   </span>
                 </button>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}

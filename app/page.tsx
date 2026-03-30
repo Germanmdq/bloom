@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   Bike,
@@ -15,7 +15,6 @@ import {
   Leaf,
   MapPin,
   Phone,
-  ShoppingBag,
   Star,
   Truck,
   UtensilsCrossed,
@@ -23,9 +22,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 import { SiteHeader } from "@/components/SiteHeader";
+import { BloomChat, type BloomChatHandle } from "@/components/Menu/BloomChat";
 
 /** Video de fondo del hero: colocar el archivo en /public/videos/ (p. ej. hero-bloom.mp4). */
 const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
@@ -33,17 +34,9 @@ const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
 const HERO_LOGO_SRC = "/images/bloom-logo.png";
 
 const U = {
-  catPlatos: "/images/categories/platos-diarios.png",
-  catPasteleria: "/images/categories/pasteleria.png",
-  catDesayunos: "/images/categories/desayunos.png",
-  catJugos: "/images/categories/jugos.png",
-  promoPlato: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=900&q=85",
-  /** Fachada real — Bloom Coffee & More (about, Storage, etc.) */
-  fachada: "/images/bloom-fachada.png",
   /** Flat lay marca — sección Sobre Bloom en home */
   sobreBloom: "/images/sobre-bloom-cafe.png",
   delivery: "https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=1200&q=85",
-  combo: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=85",
 };
 
 const CONTACT = {
@@ -62,41 +55,32 @@ const categoryCards: { title: string; hint: string; href: string; Icon: LucideIc
   { title: "Pastelería", hint: "Dulces y panificados", href: "/menu?cat=Pastelería", Icon: Cookie },
 ];
 
-const destacados: { name: string; desc: string; img: string; menuHref: string }[] = [
+const destacados: { name: string; desc: string; img: string; nameHint: string }[] = [
   {
     name: "Los wraps",
     desc: "Recién armados, frescos y para llevar.",
     img: "/images/categories/wraps.png",
-    menuHref: "/menu?cat=wrap",
+    nameHint: "wrap",
   },
   {
     name: "Las ensaladas",
     desc: "Verdes, completas y con aderezos de la casa.",
     img: "/images/categories/ensaladas.png",
-    menuHref: "/menu?cat=ensalada",
+    nameHint: "ensalada",
   },
   {
     name: "Arroz con pollo",
     desc: "Un clásico de la cocina, abundante y casero.",
     img: "/images/categories/platos-diarios.png",
-    menuHref: "/menu?cat=Platos%20Diarios",
+    nameHint: "arroz",
   },
   {
     name: "Tostado pan árabe",
     desc: "Crocante, bien dorado, ideal para desayunar o merendar.",
     img: "/images/categories/desayunos.png",
-    menuHref: "/menu?cat=tostado",
+    nameHint: "tostado",
   },
 ];
-
-const comboOffersFallback = [
-  { t: "Combo desayuno: café + medialunas o tostados", img: U.catDesayunos },
-  { t: "Promo almuerzo: plato del día + bebida", img: U.catPlatos },
-  { t: "Merienda Bloom: café + pastelería seleccionada", img: U.catPasteleria },
-];
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(value);
 
 const FadeIn = ({
   children,
@@ -122,23 +106,8 @@ export default function Home() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [heroVideoReady, setHeroVideoReady] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [platoDiaProduct, setPlatoDiaProduct] = useState<{
-    id: string;
-    name: string;
-    description: string | null;
-    price: number;
-    image_url: string | null;
-  } | null>(null);
-  const [promoProducts, setPromoProducts] = useState<
-    { id: string; name: string; description: string | null; price: number; image_url: string | null }[]
-  >([]);
-
-  const platoDelDiaRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress: platoScroll } = useScroll({
-    target: platoDelDiaRef,
-    offset: ["start end", "end start"],
-  });
-  const platoImageY = useTransform(platoScroll, [0, 1], [16, -16]);
+  const bloomChatRef = useRef<BloomChatHandle>(null);
+  const [favoriteProductIdByName, setFavoriteProductIdByName] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -153,49 +122,20 @@ export default function Home() {
 
   useEffect(() => {
     const supabase = createClient();
-    const load = async () => {
-      const { data: settings } = await supabase.from("app_settings").select("plato_del_dia_id").eq("id", 1).maybeSingle();
-      if (settings?.plato_del_dia_id) {
-        const { data: p } = await supabase
+    (async () => {
+      const next: Record<string, string | null> = {};
+      for (const d of destacados) {
+        const { data } = await supabase
           .from("products")
-          .select("id, name, description, price, image_url")
-          .eq("id", settings.plato_del_dia_id)
+          .select("id")
           .eq("active", true)
+          .ilike("name", `%${d.nameHint}%`)
+          .limit(1)
           .maybeSingle();
-        if (p) {
-          setPlatoDiaProduct({
-            id: p.id,
-            name: p.name,
-            description: p.description,
-            price: Number(p.price) || 0,
-            image_url: p.image_url,
-          });
-        }
+        next[d.name] = data?.id ?? null;
       }
-      const { data: promoCats } = await supabase.from("categories").select("id, name").ilike("name", "%promociones%");
-      const promoCatId = promoCats?.[0]?.id;
-      if (promoCatId) {
-        const { data: promos } = await supabase
-          .from("products")
-          .select("id, name, description, price, image_url")
-          .eq("category_id", promoCatId)
-          .eq("active", true)
-          .order("name")
-          .limit(9);
-        if (promos?.length) {
-          setPromoProducts(
-            promos.map((x) => ({
-              id: x.id,
-              name: x.name,
-              description: x.description,
-              price: Number(x.price) || 0,
-              image_url: x.image_url,
-            }))
-          );
-        }
-      }
-    };
-    load();
+      setFavoriteProductIdByName(next);
+    })();
   }, []);
 
   return (
@@ -397,65 +337,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-10 md:py-14 bg-bloom-page">
-        <div className="container mx-auto px-4">
-          <motion.div
-            ref={platoDelDiaRef}
-            initial={{ opacity: 0, y: 32 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.55, ease: [0.21, 0.47, 0.32, 0.98] }}
-            className="max-w-5xl mx-auto rounded-2xl md:rounded-3xl bg-bloom-600 text-bloom-cream shadow-[0_14px_44px_-10px_rgba(95,92,70,0.45),0_6px_20px_rgba(45,74,62,0.18)] ring-1 ring-bloom-700/40 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:bg-bloom-700 hover:shadow-[0_22px_56px_-10px_rgba(95,92,70,0.52),0_8px_26px_rgba(45,74,62,0.22)] hover:ring-bloom-500/45"
-          >
-            <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12 p-6 sm:p-8 md:p-10 lg:p-12">
-              <div className="flex-1 text-center lg:text-left w-full min-w-0">
-                <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
-                  Plato del día
-                </p>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-4 text-bloom-cream leading-tight [text-shadow:0_4px_24px_rgba(0,0,0,0.28),0_2px_8px_rgba(0,0,0,0.2)]">
-                  {platoDiaProduct ? (
-                    <span className="block sm:inline">{platoDiaProduct.name}</span>
-                  ) : (
-                    <>
-                      PLATO DEL <span className="text-bloom-gold [text-shadow:0_3px_16px_rgba(0,0,0,0.3)]">DÍA</span>
-                    </>
-                  )}
-                </h2>
-                <p className="text-bloom-cream/90 text-base md:text-lg font-medium mb-4 max-w-lg mx-auto lg:mx-0 [text-shadow:0_2px_14px_rgba(0,0,0,0.2)]">
-                  {platoDiaProduct?.description?.trim()
-                    ? platoDiaProduct.description
-                    : "Consultá el menú online para ver el plato del día y el resto de la carta."}
-                </p>
-                {platoDiaProduct && (
-                  <p className="text-bloom-gold font-black text-2xl mb-8 drop-shadow-[0_3px_12px_rgba(0,0,0,0.25)]">
-                    {formatCurrency(platoDiaProduct.price)}
-                  </p>
-                )}
-                <Link
-                  href="/menu?cat=Plato%20del%20Día"
-                  className="inline-flex items-center gap-2 rounded-full bg-bloom-cream text-bloom-900 px-8 py-3.5 font-black text-sm uppercase shadow-[0_8px_28px_-4px_rgba(61,59,47,0.35),0_2px_8px_rgba(61,59,47,0.15)] hover:bg-white hover:scale-[1.02] hover:shadow-[0_12px_36px_-4px_rgba(61,59,47,0.4)] active:scale-[0.98] transition-all"
-                >
-                  Pedir
-                </Link>
-              </div>
-              <div className="flex-1 flex justify-center w-full shrink-0 lg:max-w-[min(100%,420px)]">
-                <div className="relative w-full max-w-[320px] sm:max-w-[380px] lg:max-w-none aspect-square rounded-2xl overflow-hidden bg-bloom-800/30 shadow-[0_24px_56px_-10px_rgba(0,0,0,0.42),0_12px_32px_-6px_rgba(45,74,62,0.28),inset_0_1px_0_0_rgba(255,255,255,0.08)] ring-1 ring-black/15">
-                  <motion.div style={{ y: platoImageY }} className="absolute inset-0 will-change-transform">
-                    <Image
-                      src={platoDiaProduct?.image_url || U.promoPlato}
-                      alt={platoDiaProduct?.name ?? "Plato del día Bloom"}
-                      fill
-                      className="object-cover scale-[1.08]"
-                      sizes="(max-width: 1024px) 85vw, 420px"
-                    />
-                  </motion.div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
       <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-4">
           <FadeIn className="text-center mb-12">
@@ -489,12 +370,21 @@ export default function Home() {
                     <p className="text-neutral-600 text-sm mb-4 min-h-[2.5rem] drop-shadow-[0_1px_1px_rgba(255,255,255,0.6)]">
                       {p.desc}
                     </p>
-                    <Link
-                      href={p.menuHref}
-                      className="block w-full text-center rounded-full border-2 border-bloom-600 text-bloom-600 font-bold py-2.5 hover:bg-bloom-600 hover:text-white transition-colors text-sm uppercase"
+                    <button
+                      type="button"
+                      disabled={favoriteProductIdByName[p.name] === undefined}
+                      onClick={() => {
+                        const id = favoriteProductIdByName[p.name];
+                        if (id) {
+                          void bloomChatRef.current?.openWithProductEncargado(id);
+                        } else {
+                          toast.error("No encontramos este producto ahora. Probá desde el menú.");
+                        }
+                      }}
+                      className="block w-full text-center rounded-full border-2 border-bloom-600 text-bloom-600 font-bold py-2.5 hover:bg-bloom-600 hover:text-white transition-colors text-sm uppercase disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Ver en menú
-                    </Link>
+                      Encargar
+                    </button>
                   </div>
                 </div>
               </FadeIn>
@@ -504,69 +394,6 @@ export default function Home() {
             <Link href="/menu" className="inline-flex items-center gap-2 font-black text-bloom-600 hover:underline uppercase text-sm tracking-wide">
               Ver menú completo
               <ArrowRight size={16} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-[#fff5e6] border-y border-amber-100">
-        <div className="container mx-auto px-4">
-          <FadeIn className="text-center mb-10">
-            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_1px_2px_rgba(122,118,90,0.2)]">
-              Promociones
-            </p>
-            <h2 className="text-2xl md:text-4xl font-black text-neutral-900 drop-shadow-[0_2px_12px_rgba(61,59,47,0.1)]">
-              Combos y ofertas
-            </h2>
-            <p className="text-neutral-600 mt-2 drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)]">
-              Aplican según día y stock — detalle en carta.
-            </p>
-          </FadeIn>
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {promoProducts.length > 0
-              ? promoProducts.map((o) => (
-                  <FadeIn key={o.id}>
-                    <Link
-                      href="/menu?cat=Promociones"
-                      className="block rounded-3xl bg-white p-2 shadow-[0_12px_36px_-8px_rgba(61,59,47,0.16),0_4px_12px_rgba(61,59,47,0.06)] border border-bloom-200 overflow-hidden flex flex-col hover:shadow-[0_20px_48px_-10px_rgba(61,59,47,0.22)] hover:-translate-y-0.5 transition-all duration-300 h-full"
-                    >
-                      <div className="relative aspect-[16/10] w-full bg-bloom-50 ring-1 ring-inset ring-black/[0.04] shadow-[inset_0_2px_8px_rgba(61,59,47,0.06)]">
-                        <Image
-                          src={o.image_url || U.catPlatos}
-                          alt={o.name}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, 33vw"
-                        />
-                      </div>
-                      <div className="p-5 text-center flex flex-col flex-1">
-                        <p className="font-black text-neutral-900 text-lg leading-tight mb-1 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]">
-                          {o.name}
-                        </p>
-                        {o.description?.trim() ? (
-                          <p className="text-neutral-600 text-sm mb-3 line-clamp-2">{o.description}</p>
-                        ) : null}
-                        <p className="text-bloom-600 font-black text-lg mt-auto">{formatCurrency(o.price)}</p>
-                      </div>
-                    </Link>
-                  </FadeIn>
-                ))
-              : comboOffersFallback.map((o) => (
-                  <FadeIn key={o.t}>
-                    <div className="rounded-3xl bg-white p-2 shadow-[0_12px_36px_-8px_rgba(61,59,47,0.14)] border border-bloom-200 overflow-hidden flex flex-col">
-                      <div className="relative aspect-[16/10] w-full ring-1 ring-inset ring-black/[0.05]">
-                        <Image src={o.img} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
-                      </div>
-                      <p className="font-bold text-neutral-800 leading-snug p-5 text-center drop-shadow-[0_1px_1px_rgba(255,255,255,0.85)]">
-                        {o.t}
-                      </p>
-                    </div>
-                  </FadeIn>
-                ))}
-          </div>
-          <div className="text-center mt-10">
-            <Link href="/menu?cat=Promociones" className="text-bloom-600 font-black hover:underline">
-              Ver promociones
             </Link>
           </div>
         </div>
@@ -672,35 +499,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 bg-gradient-to-br from-english-800 via-english-900 to-bloom-900 text-white">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <FadeIn>
-              <p className="text-bloom-gold font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
-                Merienda & café
-              </p>
-              <h2 className="text-3xl md:text-4xl font-black mb-6 [text-shadow:0_4px_24px_rgba(0,0,0,0.25)]">
-                Pedí tu combo favorito
-              </h2>
-              <p className="text-white/85 mb-8 max-w-lg [text-shadow:0_2px_12px_rgba(0,0,0,0.2)]">
-                Pastelería del día, sandwiches calientes y bebidas para acompañar. Ideal para compartir o para darte un gustito a la tarde.
-              </p>
-              <Link
-                href="/menu?cat=Pastelería"
-                className="inline-flex items-center gap-2 rounded-full bg-bloom-gold px-8 py-3.5 font-black text-neutral-900 text-sm uppercase shadow-[0_8px_28px_-4px_rgba(0,0,0,0.35)] hover:bg-bloom-gold-dark hover:shadow-[0_12px_32px_-4px_rgba(0,0,0,0.4)] transition-all"
-              >
-                Ir al menú
-              </Link>
-            </FadeIn>
-            <FadeIn>
-              <div className="relative aspect-[4/3] max-w-lg mx-auto rounded-3xl overflow-hidden shadow-[0_28px_60px_-10px_rgba(0,0,0,0.5),0_12px_32px_-6px_rgba(26,38,32,0.35)] ring-1 ring-white/10">
-                <Image src={U.combo} alt="Comida Bloom" fill className="object-cover" />
-              </div>
-            </FadeIn>
-          </div>
-        </div>
-      </section>
-
       <section className="py-16 md:py-24 bg-bloom-page">
         <div className="container mx-auto px-4 flex flex-col lg:flex-row items-center gap-12">
           <div className="lg:w-1/2 relative w-full">
@@ -788,6 +586,8 @@ export default function Home() {
           </Link>
         </div>
       </footer>
+
+      <BloomChat ref={bloomChatRef} />
     </main>
   );
 }
