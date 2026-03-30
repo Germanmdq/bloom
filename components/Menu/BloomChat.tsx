@@ -1,12 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import Link from "next/link";
 import { MessageCircle, X, Send, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
 type Msg = { role: "assistant" | "user"; content: string };
+
+export type BloomChatHandle = {
+  /** Abre el panel y envía el nombre de categoría como primer mensaje de usuario (tras el saludo). */
+  openWithCategoryMessage: (categoryName: string) => void;
+};
 
 function tryParseOrderPayload(text: string): {
   order_ready: boolean;
@@ -55,7 +60,6 @@ function tryParseOrderPayload(text: string): {
   }
 }
 
-/** Texto visible: sin el bloque JSON del pedido (mismo anclaje que tryParseOrderPayload). */
 function assistantDisplayText(raw: string): string {
   const orderIdx = raw.lastIndexOf("\"order_ready\"");
   if (orderIdx === -1) return raw;
@@ -95,7 +99,7 @@ async function streamOpeningMessage(
 
 type OrderPayload = NonNullable<ReturnType<typeof tryParseOrderPayload>>;
 
-export function BloomChat() {
+export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, ref) {
   const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -104,9 +108,9 @@ export function BloomChat() {
   const [streaming, setStreaming] = useState(false);
   const [accountGate, setAccountGate] = useState(false);
   const pendingPayloadRef = useRef<OrderPayload | null>(null);
+  const pendingUserMessageRef = useRef<string | null>(null);
   const openingStarted = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  /** Evita doble envío automático del mismo payload */
   const autoSubmitSentRef = useRef<string | null>(null);
 
   const scrollToBottom = () => {
@@ -128,7 +132,7 @@ export function BloomChat() {
         {
           role: "assistant",
           content:
-            "Che, se me trabó el saludo. Probá de nuevo en un ratito — acá en Bloom estamos para lo que necesites.",
+            "Se trabó el saludo. Probá de nuevo en un ratito — en Bloom estamos para lo que necesites.",
         },
       ]);
     } finally {
@@ -246,54 +250,84 @@ export function BloomChat() {
     [runAutoSubmit]
   );
 
+  const runChatCompletion = useCallback(
+    async (nextMessages: Msg[]) => {
+      const clientTimeISO = new Date().toISOString();
+      const res = await fetch("/api/bloom-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientTimeISO,
+          messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+        }),
+      });
+
+      if (!res.ok) {
+        toast.error("No se pudo enviar el mensaje");
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) return;
+
+      const decoder = new TextDecoder();
+      let assistant = "";
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        assistant += decoder.decode(value, { stream: true });
+        const display = assistantDisplayText(assistant);
+        setMessages((prev) => {
+          const copy = [...prev];
+          copy[copy.length - 1] = { role: "assistant", content: display };
+          return copy;
+        });
+      }
+
+      await finalizeAssistantMessage(assistant);
+    },
+    [finalizeAssistantMessage]
+  );
+
+  const sendUserMessageWithText = useCallback(
+    async (trimmed: string) => {
+      if (!trimmed || streaming || loadingOpening) return;
+      setStreaming(true);
+      try {
+        const nextMessages: Msg[] = [...messages, { role: "user", content: trimmed }];
+        setMessages(nextMessages);
+        await runChatCompletion(nextMessages);
+      } finally {
+        setStreaming(false);
+      }
+    },
+    [messages, streaming, loadingOpening, runChatCompletion]
+  );
+
+  useImperativeHandle(ref, () => ({
+    openWithCategoryMessage: (categoryName: string) => {
+      const t = categoryName.trim();
+      if (!t) return;
+      pendingUserMessageRef.current = t;
+      setOpen(true);
+    },
+  }));
+
+  useEffect(() => {
+    if (!open || loadingOpening || streaming) return;
+    const msg = pendingUserMessageRef.current;
+    if (!msg) return;
+    pendingUserMessageRef.current = null;
+    void sendUserMessageWithText(msg);
+  }, [open, loadingOpening, streaming, sendUserMessageWithText]);
+
   const sendUserMessage = async () => {
     const trimmed = input.trim();
     if (!trimmed || streaming || loadingOpening) return;
-    const clientTimeISO = new Date().toISOString();
-    const nextMessages: Msg[] = [...messages, { role: "user", content: trimmed }];
-    setMessages(nextMessages);
     setInput("");
-    setStreaming(true);
-
-    const res = await fetch("/api/bloom-chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        clientTimeISO,
-        messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
-      }),
-    });
-
-    if (!res.ok) {
-      setStreaming(false);
-      toast.error("No se pudo enviar el mensaje");
-      return;
-    }
-
-    const reader = res.body?.getReader();
-    if (!reader) {
-      setStreaming(false);
-      return;
-    }
-
-    const decoder = new TextDecoder();
-    let assistant = "";
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      assistant += decoder.decode(value, { stream: true });
-      const display = assistantDisplayText(assistant);
-      setMessages((prev) => {
-        const copy = [...prev];
-        copy[copy.length - 1] = { role: "assistant", content: display };
-        return copy;
-      });
-    }
-    setStreaming(false);
-
-    await finalizeAssistantMessage(assistant);
+    await sendUserMessageWithText(trimmed);
   };
 
   const onTakeawayGuest = async () => {
@@ -423,4 +457,4 @@ export function BloomChat() {
       )}
     </>
   );
-}
+});

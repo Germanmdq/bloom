@@ -38,8 +38,7 @@ function formatMoney(n: number) {
 function loyaltyProgress(totalOrders: number) {
   const pos = totalOrders % COFFEE_GOAL;
   const filled = pos === 0 && totalOrders > 0 ? COFFEE_GOAL : pos;
-  const until = pos === 0 && totalOrders > 0 ? 0 : COFFEE_GOAL - pos;
-  return { filled, until, totalOrders };
+  return { filled, totalOrders };
 }
 
 export default function CuentaPage() {
@@ -111,7 +110,7 @@ export default function CuentaPage() {
   const phone = user?.phone;
   const email = user?.email;
 
-  const { filled, until, totalOrders } = loyaltyProgress(orders.length);
+  const { filled, totalOrders } = loyaltyProgress(orders.length);
 
   if (sessionPending || !user) {
     return (
@@ -173,17 +172,7 @@ export default function CuentaPage() {
             <h2 className="font-black text-neutral-900">Programa de lealtad</h2>
           </div>
           <p className="text-sm leading-relaxed text-neutral-600">
-            Llevás <strong>{filled}</strong> pedidos en este ciclo
-            {until > 0 ? (
-              <>
-                {" "}
-                — te faltan <strong>{until}</strong> para tu próximo café gratis
-              </>
-            ) : totalOrders > 0 ? (
-              <> — ¡cerraste los {COFFEE_GOAL}!</>
-            ) : (
-              <> — empezá a pedir para sumar</>
-            )}
+            Llevás <strong>{totalOrders}</strong> pedidos
           </p>
           <div className="mt-4 flex gap-1">
             {Array.from({ length: COFFEE_GOAL }).map((_, i) => (

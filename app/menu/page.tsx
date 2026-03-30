@@ -1,19 +1,17 @@
 "use client";
 
-import { useState, useEffect, Suspense, useMemo, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect, Suspense, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ChevronLeft, ChevronRight, Plus, Minus, Search, CreditCard, MapPin, Phone, Truck, SlidersHorizontal, X } from "lucide-react";
+import { ShoppingBag, ChevronLeft, Plus, Minus, CreditCard, MapPin, Phone, Truck, X } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
-import { VariantSelector } from "@/components/pos/VariantSelector"; // Reusing logic
 import { FoodKingMobileNavButton, FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 import { PublicAccountNav } from "@/components/PublicAccountNav";
-import { BloomChat } from "@/components/Menu/BloomChat";
+import { BloomChat, type BloomChatHandle } from "@/components/Menu/BloomChat";
 import type { BloomChatCartLine } from "@/lib/bloom-chat-types";
 
 const PEDIDOS_YA_BLOOM_URL =
@@ -33,9 +31,6 @@ const fk = {
     dark: "#2c2a24",
 } as const;
 
-/** Ver todos los productos — vista shop por defecto */
-const ALL_CATEGORIES = { id: "all", name: "Todos los productos", virtual: true, isAll: true };
-
 /** Menos datos por fila que select('*') — acelera la carga del menú. */
 const MENU_PRODUCT_SELECT =
     "id, name, description, price, image_url, category_id, active, options, kind";
@@ -43,6 +38,17 @@ const MENU_PRODUCT_SELECT =
 // --- HELPERS ---
 const formatCurrency = (value: number) =>
     new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value);
+
+function categoryEmoji(c: { icon?: string | null; name: string }) {
+    const i = c.icon?.trim();
+    if (i) return i;
+    const m = c.name.match(/^\p{Extended_Pictographic}/u);
+    return m ? m[0] : "🍽️";
+}
+
+function categoryLabel(c: { name: string }) {
+    return c.name.replace(/^\p{Extended_Pictographic}\s*/u, "").trim() || c.name;
+}
 
 // --- MAIN COMPONENT ---
 function PublicMenuPage() {
@@ -52,7 +58,6 @@ function PublicMenuPage() {
     const tableId = tableParam ? parseInt(tableParam) : null;
     const zona = searchParams.get("zona"); // "barra" | "mesa" | null
     const num = searchParams.get("num");   // display number
-    const catParam = searchParams.get("cat"); // pre-select category from home
     const isBarTable = zona === "barra";
     const tableLabel = tableId !== null
         ? isBarTable ? `Barra ${num ?? tableId}` : `Mesa ${num ?? tableId}`
@@ -63,17 +68,7 @@ function PublicMenuPage() {
     const [whatsappNumber, setWhatsappNumber] = useState("5491112345678");
     const [loading, setLoading] = useState(true);
 
-    // Virtual categories
-    const PLATO_DIA_CAT = { id: 'virtual-plato-dia', name: 'Plato del Día', virtual: true, isPlato: true };
-    const PLATOS_DIARIOS_CAT = { id: 'virtual-platos-diarios', name: 'Platos Diarios', virtual: true, isPlatos: true };
-
-    // Navigation — por defecto "Todos" (vista shop con sidebar)
-    const [selectedCategory, setSelectedCategory] = useState<any>(ALL_CATEGORIES);
-    const [searchQuery, setSearchQuery] = useState("");
-    /** Filtro precio ARS (vacío = sin límite) — como FoodKing shop */
-    const [priceMin, setPriceMin] = useState("");
-    const [priceMax, setPriceMax] = useState("");
-    const [sortBy, setSortBy] = useState<"default" | "price-asc" | "price-desc">("default");
+    const bloomChatRef = useRef<BloomChatHandle>(null);
 
     // Cart & Checkout State
     const [cart, setCart] = useState<any[]>([]);
@@ -92,31 +87,13 @@ function PublicMenuPage() {
     });
     const [checkoutErrors, setCheckoutErrors] = useState<Record<string, string>>({});
 
-    // Variant Selection State
-    const [variantProduct, setVariantProduct] = useState<any>(null);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
-    /** Móvil: categorías + precio en un solo desplegable */
-    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-    const [filtersPortalReady, setFiltersPortalReady] = useState(false);
-
-    useEffect(() => {
-        setFiltersPortalReady(true);
-    }, []);
-
-    useEffect(() => {
-        if (!mobileFiltersOpen) return;
-        const prev = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-        return () => {
-            document.body.style.overflow = prev;
-        };
-    }, [mobileFiltersOpen]);
 
     // FETCH DATA — deps fijas [] (evita warning “dependency array changed size” con HMR/hidratación)
     useEffect(() => {
         const fetchMenu = async () => {
             const [{ data: cats }, { data: prods }, { data: settings }] = await Promise.all([
-                supabase.from("categories").select("id, name, sort_order").order("sort_order", { ascending: true }),
+                supabase.from("categories").select("id, name, sort_order, icon").order("sort_order", { ascending: true }),
                 supabase.from("products").select(MENU_PRODUCT_SELECT).eq("active", true),
                 supabase.from("app_settings").select("whatsapp, plato_del_dia_id").eq("id", 1).single(),
             ]);
@@ -143,82 +120,11 @@ function PublicMenuPage() {
         fetchMenu();
     }, []);
 
-    // Sincronizar categoría con ?cat= — mismo tamaño de deps en cada render
-    useEffect(() => {
-        if (categories.length === 0) return;
-        if (!catParam) {
-            setSelectedCategory(ALL_CATEGORIES);
-            return;
-        }
-        const q = catParam.toLowerCase();
-        if (q.includes("plato del d")) {
-            setSelectedCategory({ id: "virtual-plato-dia", name: "Plato del Día", virtual: true, isPlato: true });
-            return;
-        }
-        if (q.includes("plato") && q.includes("diario")) {
-            setSelectedCategory({ id: "virtual-platos-diarios", name: "Platos Diarios", virtual: true, isPlatos: true });
-            return;
-        }
-        const match = categories.find(
-            (c: any) =>
-                c.name.toLowerCase().includes(q) ||
-                q.includes(c.name.toLowerCase().split(" ")[0])
-        );
-        if (match) setSelectedCategory(match);
-    }, [catParam, categories]);
-
-    // Platos Diarios category id (real)
-    const platosDiariosCat = categories.find(c => c.name.toLowerCase().includes('plato') && c.name.toLowerCase().includes('diario'));
     const platoDiaProduct = products.find(p => p.kind === 'plato_del_dia');
 
-    const priceBounds = useMemo(() => {
-        if (!products.length) return { min: 0, max: 50000 };
-        const prices = products.map((p) => Number(p.price) || 0);
-        return { min: Math.min(...prices), max: Math.max(...prices) };
-    }, [products]);
-
-    const filteredProducts = useMemo(() => {
-        const q = searchQuery.trim().toLowerCase();
-        let list = products.filter((p) => {
-            const price = Number(p.price) || 0;
-            if (priceMin !== "" && !Number.isNaN(Number(priceMin)) && price < Number(priceMin)) return false;
-            if (priceMax !== "" && !Number.isNaN(Number(priceMax)) && price > Number(priceMax)) return false;
-            if (q && !p.name.toLowerCase().includes(q)) return false;
-
-            if (selectedCategory?.isAll) return true;
-            if (selectedCategory?.virtual && selectedCategory?.isPlato) return p.kind === "plato_del_dia";
-            if (selectedCategory?.virtual && selectedCategory?.isPlatos) {
-                return platosDiariosCat ? p.category_id === platosDiariosCat.id : false;
-            }
-            if (selectedCategory?.id && !selectedCategory?.virtual) return p.category_id === selectedCategory.id;
-            return true;
-        });
-
-        if (sortBy === "price-asc") list = [...list].sort((a, b) => Number(a.price) - Number(b.price));
-        else if (sortBy === "price-desc") list = [...list].sort((a, b) => Number(b.price) - Number(a.price));
-
-        return list;
-    }, [products, selectedCategory, searchQuery, priceMin, priceMax, platosDiariosCat, sortBy]);
-
-    // CART OPERATIONS
-    const addToCart = (product: any, variants: any[] = [], observations?: string) => {
-        const variantKey = variants.map(v => v.name).sort().join('|');
-        const obsKey = observations ? `-obs:${observations}` : '';
-        const cartItemId = `${product.id}-${variantKey}${obsKey}`;
-        const extrasPrice = variants.reduce((sum, v) => sum + (v.price || 0), 0);
-        const unitPrice = product.price + extrasPrice;
-
-        setCart(prev => {
-            const existing = prev.find(item => item.cartItemId === cartItemId);
-            if (existing) {
-                return prev.map(item => item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item);
-            }
-            return [...prev, { ...product, cartItemId, price: unitPrice, quantity: 1, variants, observations: observations || '' }];
-        });
-
-        toast.success(`Agregado: ${product.name}`);
-        setVariantProduct(null);
-    };
+    const openChatWithCategory = useCallback((name: string) => {
+        bloomChatRef.current?.openWithCategoryMessage(name);
+    }, []);
 
     const updateQuantity = (cartItemId: string, delta: number) => {
         setCart(prev => prev.map(item => {
@@ -363,21 +269,6 @@ function PublicMenuPage() {
     const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-    const categoryNavItems: { id: string; cat: any; label: string }[] = [
-        { id: "all", cat: ALL_CATEGORIES, label: "Todos" },
-        ...(platoDiaProduct ? [{ id: "v-pd", cat: PLATO_DIA_CAT, label: "Plato del Día" }] : []),
-        ...(platosDiariosCat ? [{ id: "v-pds", cat: PLATOS_DIARIOS_CAT, label: "Platos Diarios" }] : []),
-        ...categories.map((c) => ({ id: String(c.id), cat: c, label: c.name })),
-    ];
-
-    const isSameCategory = (a: any, b: any) => {
-        if (!a || !b) return false;
-        if (a.isAll && b.isAll) return true;
-        if (a.isAll || b.isAll) return false;
-        if (a.virtual && b.virtual) return a.id === b.id;
-        return a.id === b.id;
-    };
-
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ backgroundColor: fk.page }}>
@@ -440,33 +331,9 @@ function PublicMenuPage() {
     // --- RENDER ---
     return (
         <main className="min-h-screen text-neutral-900 font-sans pb-32 selection:bg-bloom-200/60 selection:text-neutral-900" style={{ backgroundColor: fk.page }}>
-            <VariantSelector
-                product={variantProduct}
-                isOpen={!!variantProduct}
-                onClose={() => setVariantProduct(null)}
-                onAddToOrder={(product, variants, observations) => {
-                    addToCart(product, variants, observations);
-                }}
-                // Mesa: sin form de entrega — solo agregar al carrito
-                {...(!tableId && {
-                    onAddAndCheckout: (product: any, variants: any[], observations?: string, ci?: any) => {
-                        if (!ci) return;
-                        const newItem = {
-                            ...product,
-                            cartItemId: `${product.id}-${Date.now()}`,
-                            quantity: 1,
-                            variants,
-                            observations,
-                        };
-                        const fullCart = [...cart, newItem];
-                        setVariantProduct(null);
-                        saveWebOrder(fullCart, ci as typeof checkoutInfo);
-                    }
-                })}
-            />
+
             <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
-            {/* Top bar — FoodKing style */}
             <div className="text-bloom-cream text-xs sm:text-sm font-semibold border-b border-english-900/50" style={{ backgroundColor: fk.englishDeep }}>
                 <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2 py-2">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 min-w-0">
@@ -491,7 +358,6 @@ function PublicMenuPage() {
                 </div>
             </div>
 
-            {/* HEADER */}
             <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-bloom-200/80 transition-all">
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2 sm:gap-4">
                     <Link href="/" className="font-black text-lg sm:text-xl md:text-2xl tracking-tighter text-neutral-900 shrink-0 min-w-0">
@@ -501,9 +367,7 @@ function PublicMenuPage() {
                         <Link href="/" className="hover:opacity-80 transition-opacity" style={{ color: fk.primary }}>
                             Inicio
                         </Link>
-                        <button type="button" onClick={() => { setSelectedCategory(ALL_CATEGORIES); setSearchQuery(""); }} className="hover:opacity-80 transition-opacity">
-                            Menú
-                        </button>
+                        <span className="font-bold" style={{ color: fk.primary }}>Menú</span>
                         <Link href="/about" className="hover:text-neutral-900 transition-colors">
                             Nosotros
                         </Link>
@@ -514,12 +378,12 @@ function PublicMenuPage() {
                     <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                         <FoodKingMobileNavButton onOpen={() => setMobileNavOpen(true)} />
                         <Link
-                            href="#menu-shop"
+                            href="#menu-categories"
                             className="xl:hidden inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-black text-white shadow-md active:scale-[0.98] whitespace-nowrap"
                             style={{ backgroundColor: fk.primary }}
                         >
                             <ShoppingBag size={15} className="shrink-0" strokeWidth={2.5} />
-                            Pedir ahora
+                            Categorías
                         </Link>
                         {tableLabel && (
                             <span className="text-white text-xs sm:text-sm font-black px-3 py-1.5 rounded-full whitespace-nowrap" style={{ backgroundColor: fk.dark }}>
@@ -542,416 +406,46 @@ function PublicMenuPage() {
                         </button>
                     </div>
                 </div>
-
-                <div className="max-w-7xl mx-auto px-4 py-2.5 border-t border-bloom-100 flex flex-wrap items-center gap-2 text-sm bg-bloom-page/90">
-                    <Link href="/" className="text-neutral-500 hover:text-neutral-800 font-semibold">
-                        Inicio
-                    </Link>
-                    <span className="text-neutral-300">/</span>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setSelectedCategory(ALL_CATEGORIES);
-                            setSearchQuery("");
-                        }}
-                        className="font-semibold hover:underline"
-                        style={{ color: fk.primary }}
-                    >
-                        Menú
-                    </button>
-                    <span className="text-neutral-300">/</span>
-                    <span className="font-black text-neutral-800">{selectedCategory?.name ?? "Menú"}</span>
-                </div>
             </header>
 
-            <div id="menu-shop" className="w-full max-w-7xl mx-auto py-6 px-4 sm:px-6 xl:px-8 scroll-mt-28">
-                {/* Vista shop FoodKing: sidebar (categorías + precio) + grilla */}
-                <div className="space-y-6 animate-in fade-in duration-300">
-                    <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 pb-4 border-b border-bloom-200">
-                        <div>
-                            <p className="font-bold uppercase tracking-[0.15em] text-xs mb-1" style={{ color: fk.primary }}>
-                                Shop
-                            </p>
-                            <h1 className="text-2xl sm:text-4xl font-black text-neutral-900 tracking-tight">Menú Bloom</h1>
-                            <p className="text-neutral-600 text-sm mt-2">
-                                Mostrando <strong>{filteredProducts.length}</strong> producto{filteredProducts.length !== 1 ? "s" : ""}
-                                {selectedCategory?.isAll ? "" : ` en ${selectedCategory?.name}`}
-                            </p>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                            <label className="sr-only" htmlFor="menu-sort">
-                                Ordenar por precio
-                            </label>
-                            <select
-                                id="menu-sort"
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                                className="w-full sm:w-auto rounded-full border-2 border-bloom-200 bg-white px-4 py-2.5 text-sm font-bold text-neutral-800 focus:border-bloom-400 focus:outline-none cursor-pointer"
-                            >
-                                <option value="default">Ordenar por: predeterminado</option>
-                                <option value="price-asc">Ordenar por precio: menor a mayor</option>
-                                <option value="price-desc">Ordenar por precio: mayor a menor</option>
-                            </select>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSelectedCategory(ALL_CATEGORIES);
-                                    setSearchQuery("");
-                                    setPriceMin("");
-                                    setPriceMax("");
-                                }}
-                                className="inline-flex items-center justify-center gap-2 text-sm font-black uppercase tracking-wide px-5 py-2.5 rounded-full border-2 hover:bg-bloom-50 transition-colors whitespace-nowrap"
-                                style={{ color: fk.primary, borderColor: `${fk.primary}40` }}
-                            >
-                                <ChevronLeft size={16} strokeWidth={2.5} /> Limpiar filtros
-                            </button>
-                        </div>
-                    </div>
+            <div id="menu-categories" className="w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 xl:px-8 scroll-mt-28">
+                <div className="mb-8">
+                    <p className="font-bold uppercase tracking-[0.15em] text-xs mb-1" style={{ color: fk.primary }}>
+                        Bloom
+                    </p>
+                    <h1 className="text-2xl sm:text-4xl font-black text-neutral-900 tracking-tight">Elegí una categoría</h1>
+                    <p className="text-neutral-600 text-sm mt-2 max-w-xl">
+                        Tocá una tarjeta: el asistente te muestra los productos destacados con precios.
+                    </p>
+                </div>
 
-                    <div className="flex flex-col xl:grid xl:grid-cols-[minmax(0,280px)_1fr] xl:gap-12 items-start">
-                        {/* Sidebar — siempre visible (mobile: arriba) */}
-                        <aside className="hidden xl:block w-full space-y-4 xl:sticky xl:top-28 order-1">
-                            <div className="rounded-2xl bg-white border-2 border-bloom-200 shadow-sm p-4">
-                                <h3 className="font-black text-neutral-900 text-lg mb-3 pb-3 border-b border-bloom-100 flex items-center gap-2">
-                                    <SlidersHorizontal size={18} style={{ color: fk.primary }} />
-                                    Categorías
-                                </h3>
-                                <nav className="space-y-1 max-h-[min(40vh,320px)] xl:max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
-                                    {categoryNavItems.map((item) => (
-                                        <button
-                                            key={item.id}
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedCategory(item.cat);
-                                                setSearchQuery("");
-                                            }}
-                                            className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition-colors ${
-                                                isSameCategory(selectedCategory, item.cat) ? "text-white shadow-md" : "text-neutral-700 hover:bg-bloom-50"
-                                            }`}
-                                            style={isSameCategory(selectedCategory, item.cat) ? { backgroundColor: fk.primary } : undefined}
-                                        >
-                                            {item.label}
-                                        </button>
-                                    ))}
-                                </nav>
-                            </div>
-
-                            <div className="rounded-2xl bg-white border-2 border-bloom-200 shadow-sm p-4">
-                                <h3 className="font-black text-neutral-900 text-lg mb-1 pb-3 border-b border-bloom-100">Filtrar por precio</h3>
-                                <p className="text-xs text-neutral-500 mb-4">
-                                    Rango en carta: {formatCurrency(priceBounds.min)} — {formatCurrency(priceBounds.max)}
-                                </p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-[10px] font-black uppercase tracking-wider text-neutral-500 mb-1">Desde</label>
-                                        <input
-                                            type="number"
-                                            inputMode="numeric"
-                                            min={0}
-                                            placeholder={String(Math.max(0, Math.floor(priceBounds.min)))}
-                                            value={priceMin}
-                                            onChange={(e) => setPriceMin(e.target.value)}
-                                            className="w-full rounded-xl border-2 border-bloom-200 bg-bloom-page px-3 py-2 text-sm font-bold text-neutral-900 focus:border-bloom-400 focus:outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black uppercase tracking-wider text-neutral-500 mb-1">Hasta</label>
-                                        <input
-                                            type="number"
-                                            inputMode="numeric"
-                                            min={0}
-                                            placeholder={String(Math.ceil(priceBounds.max))}
-                                            value={priceMax}
-                                            onChange={(e) => setPriceMax(e.target.value)}
-                                            className="w-full rounded-xl border-2 border-bloom-200 bg-bloom-page px-3 py-2 text-sm font-bold text-neutral-900 focus:border-bloom-400 focus:outline-none"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap gap-2 mt-4">
-                                    {(() => {
-                                        const { min, max } = priceBounds;
-                                        const span = Math.max(max - min, 1);
-                                        const b = Math.round(min + span / 3);
-                                        const c = Math.round(min + (2 * span) / 3);
-                                        const presets: { label: string; min: string; max: string }[] = [
-                                            { label: `Hasta ${formatCurrency(b)}`, min: "", max: String(Math.ceil(b)) },
-                                            { label: `${formatCurrency(b)} – ${formatCurrency(c)}`, min: String(Math.floor(b)), max: String(Math.ceil(c)) },
-                                            { label: `Desde ${formatCurrency(c)}`, min: String(Math.floor(c)), max: "" },
-                                        ];
-                                        return presets.map((p) => (
-                                            <button
-                                                key={p.label}
-                                                type="button"
-                                                onClick={() => {
-                                                    setPriceMin(p.min);
-                                                    setPriceMax(p.max);
-                                                }}
-                                                className="text-xs font-bold px-3 py-1.5 rounded-full border-2 border-bloom-200 bg-bloom-100/80 hover:bg-bloom-100 text-neutral-800 transition-colors"
-                                            >
-                                                {p.label}
-                                            </button>
-                                        ));
-                                    })()}
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setPriceMin("");
-                                        setPriceMax("");
-                                    }}
-                                    className="mt-4 w-full py-2.5 rounded-xl text-sm font-black border-2 border-neutral-200 text-neutral-600 hover:bg-neutral-50 transition-colors"
-                                >
-                                    Quitar filtro de precio
-                                </button>
-                            </div>
-                        </aside>
-
-                        <div className="min-w-0 space-y-5 w-full order-2">
-                            {/* Móvil: abre pantalla completa de filtros (portal → body) */}
-                            <div className="xl:hidden">
-                                <button
-                                    type="button"
-                                    onClick={() => setMobileFiltersOpen(true)}
-                                    className="flex w-full items-center gap-3 rounded-2xl border-2 border-bloom-200 bg-white px-4 py-3.5 text-left shadow-sm active:bg-bloom-50/50"
-                                >
-                                    <SlidersHorizontal className="shrink-0" size={22} style={{ color: fk.primary }} strokeWidth={2.25} />
-                                    <div className="min-w-0 flex-1">
-                                        <span className="block text-[10px] font-black uppercase tracking-wider text-neutral-500">Categoría y precio</span>
-                                        <span className="block font-black text-neutral-900 truncate">{selectedCategory?.name ?? "Menú"}</span>
-                                        <span className="block text-xs text-neutral-500 truncate">
-                                            {priceMin || priceMax
-                                                ? `Precio: ${priceMin || "—"} – ${priceMax || "—"} ARS`
-                                                : `Rango carta ${formatCurrency(priceBounds.min)} – ${formatCurrency(priceBounds.max)}`}
-                                        </span>
-                                    </div>
-                                    <ChevronRight className="shrink-0 text-neutral-400" size={22} strokeWidth={2.25} aria-hidden />
-                                </button>
-                                {filtersPortalReady &&
-                                    createPortal(
-                                        <AnimatePresence>
-                                            {mobileFiltersOpen && (
-                                                <motion.div
-                                                    key="menu-mobile-filters-fullpage"
-                                                    role="dialog"
-                                                    aria-modal="true"
-                                                    aria-label="Filtros del menú"
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{ opacity: 1 }}
-                                                    exit={{ opacity: 0 }}
-                                                    transition={{ duration: 0.2 }}
-                                                    className="fixed inset-0 z-[100] flex flex-col bg-bloom-page xl:hidden"
-                                                    style={{
-                                                        paddingTop: "max(0.5rem, env(safe-area-inset-top))",
-                                                        paddingBottom: "env(safe-area-inset-bottom)",
-                                                    }}
-                                                >
-                                                    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-bloom-200 bg-white px-4 py-3 shadow-sm">
-                                                        <div className="min-w-0">
-                                                            <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Menú Bloom</p>
-                                                            <h2 className="font-black text-lg text-neutral-900">Filtros</h2>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setMobileFiltersOpen(false)}
-                                                            className="shrink-0 rounded-full p-2.5 hover:bg-bloom-50 text-neutral-700"
-                                                            aria-label="Cerrar filtros"
-                                                        >
-                                                            <X size={22} strokeWidth={2.25} />
-                                                        </button>
-                                                    </header>
-                                                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-6">
-                                                        <div className="mx-auto max-w-lg space-y-6">
-                                                            <section>
-                                                                <p className="text-xs font-black uppercase tracking-wide text-neutral-500 mb-2">Categoría</p>
-                                                                <nav className="space-y-1">
-                                                                    {categoryNavItems.map((item) => (
-                                                                        <button
-                                                                            key={`mob-cat-${item.id}`}
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                setSelectedCategory(item.cat);
-                                                                                setSearchQuery("");
-                                                                            }}
-                                                                            className={`w-full text-left px-3 py-3 rounded-xl text-sm font-bold transition-colors ${
-                                                                                isSameCategory(selectedCategory, item.cat)
-                                                                                    ? "text-white shadow-md"
-                                                                                    : "text-neutral-700 hover:bg-bloom-50"
-                                                                            }`}
-                                                                            style={
-                                                                                isSameCategory(selectedCategory, item.cat)
-                                                                                    ? { backgroundColor: fk.primary }
-                                                                                    : undefined
-                                                                            }
-                                                                        >
-                                                                            {item.label}
-                                                                        </button>
-                                                                    ))}
-                                                                </nav>
-                                                            </section>
-                                                            <section className="border-t border-bloom-200 pt-6">
-                                                                <h3 className="font-black text-neutral-900 text-base mb-1">Filtrar por precio</h3>
-                                                                <p className="text-xs text-neutral-500 mb-3">
-                                                                    Rango en carta: {formatCurrency(priceBounds.min)} — {formatCurrency(priceBounds.max)}
-                                                                </p>
-                                                                <div className="grid grid-cols-2 gap-3">
-                                                                    <div>
-                                                                        <label className="block text-[10px] font-black uppercase tracking-wider text-neutral-500 mb-1">Desde</label>
-                                                                        <input
-                                                                            type="number"
-                                                                            inputMode="numeric"
-                                                                            min={0}
-                                                                            placeholder={String(Math.max(0, Math.floor(priceBounds.min)))}
-                                                                            value={priceMin}
-                                                                            onChange={(e) => setPriceMin(e.target.value)}
-                                                                            className="w-full rounded-xl border-2 border-bloom-200 bg-white px-3 py-2.5 text-sm font-bold text-neutral-900 focus:border-bloom-400 focus:outline-none"
-                                                                        />
-                                                                    </div>
-                                                                    <div>
-                                                                        <label className="block text-[10px] font-black uppercase tracking-wider text-neutral-500 mb-1">Hasta</label>
-                                                                        <input
-                                                                            type="number"
-                                                                            inputMode="numeric"
-                                                                            min={0}
-                                                                            placeholder={String(Math.ceil(priceBounds.max))}
-                                                                            value={priceMax}
-                                                                            onChange={(e) => setPriceMax(e.target.value)}
-                                                                            className="w-full rounded-xl border-2 border-bloom-200 bg-white px-3 py-2.5 text-sm font-bold text-neutral-900 focus:border-bloom-400 focus:outline-none"
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex flex-wrap gap-2 mt-3">
-                                                                    {(() => {
-                                                                        const { min, max } = priceBounds;
-                                                                        const span = Math.max(max - min, 1);
-                                                                        const b = Math.round(min + span / 3);
-                                                                        const c = Math.round(min + (2 * span) / 3);
-                                                                        const presets: { label: string; min: string; max: string }[] = [
-                                                                            { label: `Hasta ${formatCurrency(b)}`, min: "", max: String(Math.ceil(b)) },
-                                                                            { label: `${formatCurrency(b)} – ${formatCurrency(c)}`, min: String(Math.floor(b)), max: String(Math.ceil(c)) },
-                                                                            { label: `Desde ${formatCurrency(c)}`, min: String(Math.floor(c)), max: "" },
-                                                                        ];
-                                                                        return presets.map((p) => (
-                                                                            <button
-                                                                                key={`mob-${p.label}`}
-                                                                                type="button"
-                                                                                onClick={() => {
-                                                                                    setPriceMin(p.min);
-                                                                                    setPriceMax(p.max);
-                                                                                }}
-                                                                                className="text-xs font-bold px-3 py-1.5 rounded-full border-2 border-bloom-200 bg-bloom-100/80 hover:bg-bloom-100 text-neutral-800 transition-colors"
-                                                                            >
-                                                                                {p.label}
-                                                                            </button>
-                                                                        ));
-                                                                    })()}
-                                                                </div>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setPriceMin("");
-                                                                        setPriceMax("");
-                                                                    }}
-                                                                    className="mt-3 w-full py-2.5 rounded-xl text-sm font-black border-2 border-neutral-200 text-neutral-600 hover:bg-neutral-50 transition-colors"
-                                                                >
-                                                                    Quitar filtro de precio
-                                                                </button>
-                                                            </section>
-                                                        </div>
-                                                    </div>
-                                                    <div className="shrink-0 border-t border-bloom-200 bg-white px-4 py-4 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.12)]">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setMobileFiltersOpen(false)}
-                                                            className="w-full py-3.5 rounded-xl text-sm font-black text-white shadow-md active:scale-[0.99] transition-transform"
-                                                            style={{ backgroundColor: fk.primary }}
-                                                        >
-                                                            Ver productos
-                                                        </button>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>,
-                                        document.body
-                                    )}
-                            </div>
-
-                            {!selectedCategory?.isPlato && (
-                                <div className="relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                                    <input
-                                        type="text"
-                                        placeholder={
-                                            selectedCategory?.isAll
-                                                ? "Buscar en todo el menú..."
-                                                : `Buscar en ${selectedCategory?.name ?? "menú"}...`
-                                        }
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full bg-white border-2 border-bloom-200 rounded-full py-3.5 pl-12 pr-4 text-neutral-900 placeholder:text-neutral-400 focus:border-bloom-400 focus:ring-2 focus:ring-bloom-200/80 outline-none transition-all shadow-sm"
-                                    />
-                                </div>
-                            )}
-
-                            <div
-                                className={
-                                    selectedCategory?.isPlato ? "flex justify-center" : "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6"
-                                }
-                            >
-                                {filteredProducts.map((product) => (
-                                    <div
-                                        key={product.id}
-                                        className={`group bg-white rounded-3xl overflow-hidden border-2 border-bloom-200/80 shadow-md hover:shadow-xl transition-all flex flex-col ${
-                                            selectedCategory?.isPlato ? "w-full max-w-sm" : ""
-                                        }`}
-                                    >
-                                        <div className="relative w-full aspect-[4/3] bg-bloom-50/40">
-                                            {product.image_url ? (
-                                                <Image src={product.image_url} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-4xl bg-neutral-100">🍽️</div>
-                                            )}
-                                            {selectedCategory?.isPlato && (
-                                                <span
-                                                    className="absolute top-3 left-3 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow"
-                                                    style={{ backgroundColor: fk.primary }}
-                                                >
-                                                    ⭐ Plato del Día
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="p-4 flex flex-col flex-1">
-                                            <h3 className="font-black text-neutral-900 text-base leading-snug mb-1 line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
-                                            <p className="text-neutral-500 text-xs leading-relaxed line-clamp-2 mb-3 flex-1">{product.description}</p>
-                                            <div className="flex flex-col gap-3 mt-auto pt-2 border-t border-bloom-100">
-                                                <span className="font-black text-xl" style={{ color: fk.primary }}>
-                                                    {formatCurrency(product.price)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {filteredProducts.length === 0 && (
-                                <div className="text-center py-16 rounded-3xl border-2 border-dashed border-bloom-200 bg-white/60">
-                                    <p className="text-neutral-500 font-medium">No hay productos con estos filtros.</p>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedCategory(ALL_CATEGORIES);
-                                            setSearchQuery("");
-                                            setPriceMin("");
-                                            setPriceMax("");
-                                        }}
-                                        className="mt-4 text-sm font-black underline"
-                                        style={{ color: fk.primary }}
-                                    >
-                                        Restablecer filtros
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    {platoDiaProduct && (
+                        <button
+                            type="button"
+                            onClick={() => openChatWithCategory("Plato del Día")}
+                            className="group flex flex-col items-center justify-center gap-3 rounded-3xl border-4 border-amber-400/90 bg-gradient-to-br from-amber-50 via-white to-amber-50/50 p-8 text-center shadow-lg transition hover:shadow-xl min-h-[168px] ring-2 ring-amber-200/60"
+                        >
+                            <span className="text-6xl leading-none" aria-hidden>
+                                ⭐
+                            </span>
+                            <span className="font-black text-lg text-neutral-900">Plato del Día</span>
+                            <span className="text-sm font-semibold text-amber-900/85">Destacado de hoy</span>
+                        </button>
+                    )}
+                    {categories.map((c: { id: string; name: string; icon?: string | null }) => (
+                        <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => openChatWithCategory(categoryLabel(c))}
+                            className="group flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-bloom-200 bg-white p-8 text-center shadow-md transition hover:border-bloom-400 hover:shadow-lg min-h-[140px]"
+                        >
+                            <span className="text-6xl leading-none" aria-hidden>
+                                {categoryEmoji(c)}
+                            </span>
+                            <span className="font-black text-base sm:text-lg text-neutral-900 leading-tight px-2">{categoryLabel(c)}</span>
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -1210,7 +704,7 @@ function PublicMenuPage() {
                     </>
                 )}
             </AnimatePresence>
-            <BloomChat />
+            <BloomChat ref={bloomChatRef} />
             <SiteFooter />
         </main>
     );
