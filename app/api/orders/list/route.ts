@@ -28,6 +28,13 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    console.log("[orders/list] total rows fetched:", data?.length);
+    console.log(
+      "[orders/list] order_types:",
+      data?.map((o) => o.order_type)
+    );
+    console.log("[orders/list] statuses:", data?.map((o) => o.status));
+
     return NextResponse.json({ data }, { status: 200 });
   } catch (error) {
     console.error("Server Error:", error);
