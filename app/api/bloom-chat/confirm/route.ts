@@ -8,16 +8,14 @@ type ConfirmBody = {
     name: string;
     price: number;
     quantity: number;
+    observations?: string;
   }>;
   customer_name: string;
   customer_phone: string;
-  /** Retiro en el local vs delivery (con dirección) */
-  fulfillment?: "retiro" | "delivery";
+  /** Retiro en local vs delivery (dashboard) */
+  delivery_type: "local" | "delivery";
   delivery_address?: string;
-  /** JWT del usuario logueado para vincular customer_id */
   access_token?: string;
-  /** @deprecated usar fulfillment */
-  service?: "takeaway" | "salon";
 };
 
 export async function POST(request: NextRequest) {
@@ -34,12 +32,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Necesitamos un teléfono de contacto" }, { status: 400 });
     }
 
-    const fulfillment: "retiro" | "delivery" =
-      body.fulfillment === "delivery" ? "delivery" : "retiro";
+    const deliveryType: "local" | "delivery" =
+      body.delivery_type === "delivery" ? "delivery" : "local";
 
-    if (fulfillment === "delivery") {
-      const addr = (body.delivery_address ?? "").trim();
-      if (!addr) {
+    let deliveryAddress = "";
+    if (deliveryType === "delivery") {
+      deliveryAddress = (body.delivery_address ?? "").trim();
+      if (!deliveryAddress) {
         return NextResponse.json({ error: "Ingresá la dirección de entrega" }, { status: 400 });
       }
     }
@@ -64,26 +63,25 @@ export async function POST(request: NextRequest) {
       name: i.name,
       price: Number(i.price),
       quantity: Number(i.quantity),
+      ...(i.observations?.trim() ? { observations: i.observations.trim() } : {}),
     }));
 
     const url = getSupabaseUrl();
     const anon = getSupabaseAnonKey();
 
     const deliveryInfo =
-      fulfillment === "delivery"
-        ? `Encargo mozo virtual — delivery: ${(body.delivery_address ?? "").trim()}`
-        : "Encargo mozo virtual — retiro en local";
+      deliveryType === "delivery" ? deliveryAddress : "Retiro en local";
 
     const insertRow: Record<string, unknown> = {
       table_id: null,
       customer_name: customer_name.trim(),
       customer_phone: phone,
-      delivery_type: fulfillment,
+      delivery_type: deliveryType,
       delivery_info: deliveryInfo,
       items: itemsJson,
       total,
       status: "pending",
-      order_type: "takeaway",
+      order_type: "web",
       paid: false,
     };
 

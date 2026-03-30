@@ -1,13 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import Link from "next/link";
-import { MessageCircle, X, Send, Loader2, User } from "lucide-react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { MessageCircle, X, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-
-type Msg = { role: "assistant" | "user"; content: string };
 
 type ProductRow = {
   id: string;
@@ -19,16 +17,17 @@ type ProductRow = {
 };
 
 type CartLine = {
+  lineId: string;
   product_id: string;
   name: string;
   price: number;
   quantity: number;
+  observations: string;
 };
 
 export type OpenCategoryOpts = {
   displayName: string;
   categoryId?: string | null;
-  /** Ej. plato del día: cargar solo estos IDs */
   productIds?: string[];
 };
 
@@ -58,9 +57,11 @@ function genericIntro() {
   return `${t}! Tocá una categoría en el menú para ver productos y armar tu encargo.`;
 }
 
-function isListoMessage(text: string): boolean {
-  const t = text.trim().toLowerCase();
-  return t === "listo" || /^listo[!.¡?…\s]*$/i.test(text.trim());
+/** Primer emoji al inicio del nombre de categoría en DB (ej. "☕ Cafés"). */
+function leadingEmojiFromName(name: string | null | undefined): string {
+  if (!name?.trim()) return "☕";
+  const m = name.trim().match(/^\p{Extended_Pictographic}/u);
+  return m ? m[0] : "☕";
 }
 
 type ChatContext = {
@@ -69,25 +70,93 @@ type ChatContext = {
   productIds: string[] | null;
 };
 
+function ProductCard({
+  product,
+  categoryEmoji,
+  added,
+  onEncargar,
+}: {
+  product: ProductRow;
+  categoryEmoji: string;
+  added: boolean;
+  onEncargar: (observations: string) => void;
+}) {
+  const [observation, setObservation] = useState("");
+  const src = product.image_url?.trim();
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#e0dcd4] bg-white shadow-sm ring-1 ring-black/5">
+      <div className="relative aspect-[4/3] w-full bg-neutral-100">
+        {src ? (
+          <Image src={src} alt={product.name} fill className="object-cover" sizes="240px" />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-1 text-5xl" aria-hidden>
+            <span>{categoryEmoji}</span>
+          </div>
+        )}
+        {added && (
+          <div
+            className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md"
+            aria-label="Agregado"
+          >
+            <Check className="h-5 w-5" strokeWidth={3} />
+          </div>
+        )}
+      </div>
+      <div className="p-3">
+        <p className="font-bold text-neutral-900">{product.name}</p>
+        <p className="mt-1 text-sm font-semibold text-[#2d4a3e]">{formatArs(Number(product.price))}</p>
+        <label className="mt-2 block text-xs font-bold text-neutral-500">Observaciones (opcional)</label>
+        <input
+          type="text"
+          value={observation}
+          onChange={(e) => setObservation(e.target.value)}
+          disabled={added}
+          placeholder="Ej. sin sal, bien cocido…"
+          className="mt-1 w-full rounded-lg border border-[#d4cfc4] bg-white px-2 py-1.5 text-sm disabled:bg-neutral-100"
+        />
+        <button
+          type="button"
+          disabled={added}
+          onClick={() => onEncargar(observation.trim())}
+          className={`mt-2 w-full rounded-xl px-3 py-2 text-xs font-black uppercase tracking-wide text-white transition ${
+            added ? "bg-emerald-600" : "bg-[#7a765a] hover:bg-[#5f5c46]"
+          } disabled:cursor-default`}
+        >
+          {added ? "Agregado ✓" : "Encargar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, ref) {
   const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [context, setContext] = useState<ChatContext | null>(null);
+  const [contextKey, setContextKey] = useState(0);
   const [products, setProducts] = useState<ProductRow[]>([]);
+  const [categoryEmoji, setCategoryEmoji] = useState("☕");
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [input, setInput] = useState("");
-  const [streaming, setStreaming] = useState(false);
-  const [cart, setCart] = useState<CartLine[]>([]);
+  const [introText, setIntroText] = useState("");
 
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [cart, setCart] = useState<CartLine[]>([]);
+  const [addedProductIds, setAddedProductIds] = useState<Set<string>>(() => new Set());
+
+  const [encargoOpen, setEncargoOpen] = useState(false);
   const [checkoutName, setCheckoutName] = useState("");
   const [checkoutPhone, setCheckoutPhone] = useState("");
   const [checkoutAddress, setCheckoutAddress] = useState("");
-  const [fulfillment, setFulfillment] = useState<"retiro" | "delivery">("retiro");
+  const [deliveryType, setDeliveryType] = useState<"local" | "delivery">("local");
   const [submittingOrder, setSubmittingOrder] = useState(false);
 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showHistoryLink, setShowHistoryLink] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const cartCount = useMemo(() => cart.reduce((n, l) => n + l.quantity, 0), [cart]);
+  const cartTotal = useMemo(() => cart.reduce((s, l) => s + l.price * l.quantity, 0), [cart]);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -98,7 +167,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, cart, products, open, checkoutOpen]);
+  }, [cart, products, open, encargoOpen, successMessage]);
 
   useEffect(() => {
     if (!open || !context) return;
@@ -113,6 +182,17 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     (async () => {
       setLoadingProducts(true);
       try {
+        if (context.categoryId) {
+          const { data: catRow } = await supabase
+            .from("categories")
+            .select("name")
+            .eq("id", context.categoryId)
+            .maybeSingle();
+          if (!cancelled) setCategoryEmoji(leadingEmojiFromName(catRow?.name as string | undefined));
+        } else {
+          if (!cancelled) setCategoryEmoji("🍽️");
+        }
+
         let q = supabase
           .from("products")
           .select("id,name,description,price,image_url,category_id")
@@ -150,29 +230,36 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     };
   }, [open]);
 
-  const addToCart = useCallback((p: ProductRow) => {
-    setCart((prev) => {
-      const i = prev.findIndex((x) => x.product_id === p.id);
-      if (i >= 0) {
-        const copy = [...prev];
-        copy[i] = { ...copy[i], quantity: copy[i].quantity + 1 };
-        return copy;
-      }
-      return [...prev, { product_id: p.id, name: p.name, price: Number(p.price), quantity: 1 }];
-    });
-    setMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: `Agregué ${p.name} a tu encargo. ¿Algo más?` },
-    ]);
+  const resetForContext = useCallback(() => {
+    setCart([]);
+    setAddedProductIds(new Set());
+    setEncargoOpen(false);
+    setSuccessMessage(null);
+    setShowHistoryLink(false);
+    setCheckoutName("");
+    setCheckoutPhone("");
+    setCheckoutAddress("");
+    setDeliveryType("local");
   }, []);
 
-  const openCheckout = useCallback(() => {
-    if (cart.length === 0) {
-      toast.error("Agregá algo al encargo primero");
-      return;
-    }
-    setCheckoutOpen(true);
-  }, [cart.length]);
+  const addLine = useCallback((p: ProductRow, observations: string) => {
+    const lineId =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `line-${Date.now()}-${Math.random()}`;
+    setCart((prev) => [
+      ...prev,
+      {
+        lineId,
+        product_id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        quantity: 1,
+        observations,
+      },
+    ]);
+    setAddedProductIds((prev) => new Set(prev).add(p.id));
+  }, []);
 
   const submitOrder = useCallback(async () => {
     const name = checkoutName.trim();
@@ -186,7 +273,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       toast.error("Ingresá tu teléfono");
       return;
     }
-    if (fulfillment === "delivery" && !address) {
+    if (deliveryType === "delivery" && !address) {
       toast.error("Ingresá la dirección de entrega");
       return;
     }
@@ -196,6 +283,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       const {
         data: { session },
       } = await supabase.auth.getSession();
+      const loggedIn = !!session?.access_token;
+
       const res = await fetch("/api/bloom-chat/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -205,11 +294,12 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
             name: c.name,
             price: c.price,
             quantity: c.quantity,
+            ...(c.observations ? { observations: c.observations } : {}),
           })),
           customer_name: name,
           customer_phone: phone,
-          fulfillment,
-          ...(fulfillment === "delivery" ? { delivery_address: address } : {}),
+          delivery_type: deliveryType,
+          ...(deliveryType === "delivery" ? { delivery_address: address } : {}),
           ...(session?.access_token ? { access_token: session.access_token } : {}),
         }),
       });
@@ -218,13 +308,17 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         toast.error((data as { error?: string }).error || "Error al enviar el encargo");
         return;
       }
-      setMessages((prev) => [...prev, { role: "assistant", content: "Encargo enviado, te esperamos en Bloom!" }]);
-      setCheckoutOpen(false);
+
+      setEncargoOpen(false);
+      setSuccessMessage("Encargo enviado, te esperamos en Bloom!");
+      setShowHistoryLink(!loggedIn);
       setCart([]);
+      setAddedProductIds(new Set());
       setCheckoutName("");
       setCheckoutPhone("");
       setCheckoutAddress("");
-      setFulfillment("retiro");
+      setDeliveryType("local");
+      setContextKey((k) => k + 1);
       toast.success("Listo");
     } catch (e) {
       console.error(e);
@@ -232,63 +326,51 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     } finally {
       setSubmittingOrder(false);
     }
-  }, [cart, checkoutName, checkoutPhone, checkoutAddress, fulfillment, supabase]);
-
-  const sendUserMessage = useCallback(async () => {
-    const trimmed = input.trim();
-    if (!trimmed || streaming || loadingProducts) return;
-    setInput("");
-    setStreaming(true);
-    try {
-      if (isListoMessage(trimmed)) {
-        setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
-        openCheckout();
-        return;
-      }
-      setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
-    } finally {
-      setStreaming(false);
-    }
-  }, [input, streaming, loadingProducts, openCheckout]);
+  }, [cart, checkoutName, checkoutPhone, checkoutAddress, deliveryType, supabase]);
 
   const openFabChat = useCallback(() => {
+    resetForContext();
     setContext({ displayName: "Bloom", categoryId: null, productIds: null });
-    setCart([]);
+    setIntroText(genericIntro());
     setProducts([]);
-    setMessages([{ role: "assistant", content: genericIntro() }]);
+    setContextKey((k) => k + 1);
     setOpen(true);
-  }, []);
+  }, [resetForContext]);
 
   useImperativeHandle(
     ref,
     () => ({
       openWithCategoryMessage: (opts: OpenCategoryOpts) => {
+        resetForContext();
         const productIds = opts.productIds?.length ? opts.productIds : null;
         setContext({
           displayName: opts.displayName,
           categoryId: opts.categoryId ?? null,
           productIds,
         });
-        setCart([]);
-        setCheckoutOpen(false);
-        setMessages([{ role: "assistant", content: categoryIntro(opts.displayName) }]);
+        setIntroText(categoryIntro(opts.displayName));
+        setContextKey((k) => k + 1);
         setOpen(true);
       },
       openChat: openFabChat,
     }),
-    [openFabChat]
+    [openFabChat, resetForContext]
   );
 
   const closeModal = () => {
     setOpen(false);
     setContext(null);
-    setCheckoutOpen(false);
+    setEncargoOpen(false);
+    setSuccessMessage(null);
+    setShowHistoryLink(false);
   };
 
   const showProductGrid =
     context &&
     ((context.productIds?.length ?? 0) > 0 || !!context.categoryId) &&
     (loadingProducts || products.length > 0);
+
+  const productListKey = `${contextKey}-${context?.categoryId ?? ""}-${context?.productIds?.join(",") ?? ""}`;
 
   return (
     <>
@@ -303,90 +385,112 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         </button>
       )}
 
-      {checkoutOpen && (
-        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      {encargoOpen && (
+        <div className="fixed inset-0 z-[220] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
           <div
-            className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-[#e8e4dc] bg-[#f7f5ef] p-5 shadow-2xl"
+            className="flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-[#e8e4dc] bg-[#f7f5ef] shadow-2xl sm:max-h-[85vh] sm:rounded-2xl"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="bloom-checkout-title"
+            aria-labelledby="bloom-encargo-title"
           >
-            <h2 id="bloom-checkout-title" className="font-black text-neutral-900">
-              Datos para tu encargo
-            </h2>
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="text-xs font-bold uppercase text-neutral-500">Nombre</label>
-                <input
-                  value={checkoutName}
-                  onChange={(e) => setCheckoutName(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
-                  autoComplete="name"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold uppercase text-neutral-500">Teléfono</label>
-                <input
-                  value={checkoutPhone}
-                  onChange={(e) => setCheckoutPhone(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
-                  autoComplete="tel"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setFulfillment("retiro")}
-                  className={`flex-1 rounded-xl px-3 py-2 text-xs font-black uppercase ${
-                    fulfillment === "retiro" ? "bg-[#2d4a3e] text-white" : "bg-white text-neutral-600 ring-1 ring-[#d4cfc4]"
-                  }`}
-                >
-                  Retiro en local
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFulfillment("delivery")}
-                  className={`flex-1 rounded-xl px-3 py-2 text-xs font-black uppercase ${
-                    fulfillment === "delivery" ? "bg-[#2d4a3e] text-white" : "bg-white text-neutral-600 ring-1 ring-[#d4cfc4]"
-                  }`}
-                >
-                  Delivery
-                </button>
-              </div>
-              {fulfillment === "delivery" && (
+            <div className="flex shrink-0 items-center justify-between border-b border-[#e0dcd4] px-4 py-3">
+              <h2 id="bloom-encargo-title" className="font-black text-neutral-900">
+                Tu encargo
+              </h2>
+              <button
+                type="button"
+                onClick={() => setEncargoOpen(false)}
+                className="rounded-lg p-1 text-neutral-500 hover:bg-black/5"
+                aria-label="Cerrar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+              <ul className="space-y-3 text-sm">
+                {cart.map((line) => (
+                  <li key={line.lineId} className="rounded-xl border border-[#d4cfc4] bg-white p-3">
+                    <p className="font-bold text-neutral-900">
+                      {line.quantity}× {line.name}
+                    </p>
+                    {line.observations ? (
+                      <p className="mt-1 text-xs text-neutral-600">Obs.: {line.observations}</p>
+                    ) : null}
+                    <p className="mt-1 font-semibold text-[#2d4a3e]">{formatArs(line.price * line.quantity)}</p>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-4 border-t border-[#e0dcd4] pt-3 text-base font-black text-[#2d4a3e]">
+                Total: {formatArs(cartTotal)}
+              </p>
+
+              <div className="mt-6 space-y-3 border-t border-[#e0dcd4] pt-4">
+                <p className="text-xs font-bold uppercase text-neutral-500">Datos para tu encargo</p>
                 <div>
-                  <label className="text-xs font-bold uppercase text-neutral-500">Dirección</label>
-                  <textarea
-                    value={checkoutAddress}
-                    onChange={(e) => setCheckoutAddress(e.target.value)}
-                    rows={2}
-                    className="mt-1 w-full resize-none rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
-                    placeholder="Calle, número, piso…"
+                  <label className="text-xs font-bold text-neutral-500">Nombre</label>
+                  <input
+                    value={checkoutName}
+                    onChange={(e) => setCheckoutName(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
+                    autoComplete="name"
                   />
                 </div>
-              )}
+                <div>
+                  <label className="text-xs font-bold text-neutral-500">Teléfono</label>
+                  <input
+                    value={checkoutPhone}
+                    onChange={(e) => setCheckoutPhone(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
+                    autoComplete="tel"
+                  />
+                </div>
+                <fieldset className="space-y-2">
+                  <legend className="text-xs font-bold text-neutral-500">Entrega</legend>
+                  <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2">
+                    <input
+                      type="radio"
+                      name="delivery"
+                      checked={deliveryType === "local"}
+                      onChange={() => setDeliveryType("local")}
+                      className="accent-[#2d4a3e]"
+                    />
+                    <span className="text-sm font-medium">Retiro en local</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2">
+                    <input
+                      type="radio"
+                      name="delivery"
+                      checked={deliveryType === "delivery"}
+                      onChange={() => setDeliveryType("delivery")}
+                      className="accent-[#2d4a3e]"
+                    />
+                    <span className="text-sm font-medium">Delivery</span>
+                  </label>
+                </fieldset>
+                {deliveryType === "delivery" && (
+                  <div>
+                    <label className="text-xs font-bold text-neutral-500">Dirección</label>
+                    <textarea
+                      value={checkoutAddress}
+                      onChange={(e) => setCheckoutAddress(e.target.value)}
+                      rows={2}
+                      className="mt-1 w-full resize-none rounded-xl border border-[#d4cfc4] bg-white px-3 py-2 text-sm"
+                      placeholder="Calle, número, piso…"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="mt-5 flex flex-col gap-2">
+
+            <div className="shrink-0 border-t border-[#e0dcd4] bg-[#f7f5ef] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <button
                 type="button"
                 disabled={submittingOrder}
                 onClick={() => void submitOrder()}
-                className="rounded-xl bg-[#7a765a] px-4 py-3 text-sm font-black uppercase text-white hover:bg-[#5f5c46] disabled:opacity-50"
+                className="w-full rounded-xl bg-[#7a765a] px-4 py-3 text-sm font-black uppercase text-white hover:bg-[#5f5c46] disabled:opacity-50"
               >
                 {submittingOrder ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : "Confirmar encargo"}
-              </button>
-              <Link
-                href="/auth"
-                className="flex items-center justify-center gap-2 rounded-xl border border-[#d4cfc4] bg-white px-4 py-2 text-center text-xs font-bold text-neutral-700"
-              >
-                <User className="h-3.5 w-3.5" /> Asociar a mi cuenta
-              </Link>
-              <button
-                type="button"
-                onClick={() => setCheckoutOpen(false)}
-                className="text-xs font-bold text-neutral-400 hover:text-neutral-600"
-              >
-                Volver
               </button>
             </div>
           </div>
@@ -418,24 +522,31 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
               </button>
             </div>
 
-            <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3">
-              {messages.map((m, i) => (
-                <div
-                  key={i}
-                  className={`max-w-[92%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                    m.role === "user"
-                      ? "ml-auto bg-[#7a765a] text-white"
-                      : "mr-auto bg-white text-neutral-800 shadow-sm ring-1 ring-black/5"
-                  }`}
-                >
-                  {m.content.split("\n").map((line, li, arr) => (
-                    <span key={li}>
-                      {line}
-                      {li < arr.length - 1 ? <br /> : null}
-                    </span>
-                  ))}
+            <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3 pb-24">
+              <div className="max-w-[92%] rounded-2xl bg-white px-3 py-2 text-sm leading-relaxed text-neutral-800 shadow-sm ring-1 ring-black/5">
+                {introText.split("\n").map((line, li, arr) => (
+                  <span key={li}>
+                    {line}
+                    {li < arr.length - 1 ? <br /> : null}
+                  </span>
+                ))}
+              </div>
+
+              {successMessage && (
+                <div className="space-y-2">
+                  <div className="max-w-[92%] rounded-2xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-900 ring-1 ring-emerald-200">
+                    {successMessage}
+                  </div>
+                  {showHistoryLink && (
+                    <Link
+                      href="/auth"
+                      className="inline-block text-xs font-semibold text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
+                    >
+                      Creá tu cuenta para ver el historial de tus encargos
+                    </Link>
+                  )}
                 </div>
-              ))}
+              )}
 
               {loadingProducts && showProductGrid && (
                 <div className="flex items-center gap-2 text-sm text-neutral-500">
@@ -449,87 +560,32 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
               {!loadingProducts && products.length > 0 && (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {products.map((p) => {
-                    const src = p.image_url?.trim();
-                    return (
-                      <div
-                        key={p.id}
-                        className="overflow-hidden rounded-2xl border border-[#e0dcd4] bg-white shadow-sm ring-1 ring-black/5"
-                      >
-                        <div className="relative aspect-[4/3] w-full bg-neutral-100">
-                          {src ? (
-                            <Image src={src} alt={p.name} fill className="object-cover" sizes="240px" />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-xs text-neutral-400">Sin foto</div>
-                          )}
-                        </div>
-                        <div className="p-3">
-                          <p className="font-bold text-neutral-900">{p.name}</p>
-                          <p className="mt-1 text-sm font-semibold text-[#2d4a3e]">{formatArs(Number(p.price))}</p>
-                          <button
-                            type="button"
-                            onClick={() => addToCart(p)}
-                            disabled={streaming}
-                            className="mt-2 w-full rounded-xl bg-[#7a765a] px-3 py-2 text-xs font-black uppercase tracking-wide text-white hover:bg-[#5f5c46] disabled:opacity-40"
-                          >
-                            Encargar
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {cart.length > 0 && (
-                <div className="rounded-xl border border-[#d4cfc4] bg-[#fbfaf7] p-3 text-xs text-neutral-700">
-                  <p className="font-black uppercase tracking-wide text-neutral-500">Tu encargo</p>
-                  <ul className="mt-2 space-y-1">
-                    {cart.map((c) => (
-                      <li key={c.product_id}>
-                        {c.quantity}× {c.name} — {formatArs(c.price * c.quantity)}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-2 font-bold text-[#2d4a3e]">
-                    Total: {formatArs(cart.reduce((s, c) => s + c.price * c.quantity, 0))}
-                  </p>
+                  {products.map((p) => (
+                    <ProductCard
+                      key={`${productListKey}-${p.id}`}
+                      product={p}
+                      categoryEmoji={categoryEmoji}
+                      added={addedProductIds.has(p.id)}
+                      onEncargar={(obs) => addLine(p, obs)}
+                    />
+                  ))}
                 </div>
               )}
             </div>
 
-            <div className="shrink-0 space-y-2 border-t border-[#e0dcd4] bg-[#f7f5ef] p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-              {cart.length > 0 && (
+            {cartCount > 0 && (
+              <div className="sticky bottom-0 z-10 border-t border-[#e0dcd4] bg-[#f7f5ef]/95 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-sm">
                 <button
                   type="button"
-                  onClick={openCheckout}
-                  disabled={streaming || loadingProducts}
-                  className="w-full rounded-xl bg-[#2d4a3e] px-3 py-2.5 text-sm font-black uppercase text-white hover:bg-[#1f342c] disabled:opacity-40"
+                  onClick={() => setEncargoOpen(true)}
+                  className="flex w-full items-center justify-between rounded-xl bg-[#2d4a3e] px-4 py-3 text-left text-sm font-bold text-white shadow-lg transition hover:bg-[#1f342c]"
                 >
-                  Confirmar encargo
-                </button>
-              )}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && void sendUserMessage()}
-                  placeholder="Escribí listo para confirmar…"
-                  disabled={streaming || loadingProducts}
-                  className="min-w-0 flex-1 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-[#7a765a] focus:outline-none focus:ring-2 focus:ring-[#c4b896]/50"
-                />
-                <button
-                  type="button"
-                  onClick={() => void sendUserMessage()}
-                  disabled={streaming || loadingProducts || !input.trim()}
-                  className="shrink-0 rounded-xl bg-[#7a765a] px-3 py-2 text-white hover:bg-[#5f5c46] disabled:opacity-40"
-                  aria-label="Enviar"
-                >
-                  {streaming ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                  <span>
+                    {cartCount} {cartCount === 1 ? "producto" : "productos"} — Ver encargo →
+                  </span>
                 </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
