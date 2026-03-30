@@ -3,109 +3,125 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { getCustomerAuthMode } from "@/lib/auth/customer";
-import { Phone, Mail, ArrowRight, ChevronLeft, Loader2 } from "lucide-react";
+import { ChevronLeft, Loader2, Mail } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 
-type Step = "identifier" | "otp";
+type Panel = "login" | "register";
 
-function toE164ArPhone(digits: string): string {
-  const d = digits.replace(/\D/g, "");
-  if (d.startsWith("54")) return `+${d}`;
-  if (d.startsWith("9") && d.length >= 10) return `+54${d}`;
-  return `+54${d}`;
+function translateAuthError(err: AuthError): string {
+  const msg = err.message.toLowerCase();
+  if (msg.includes("invalid login credentials") || msg.includes("invalid_credentials")) {
+    return "Email o contraseña incorrectos.";
+  }
+  if (msg.includes("email not confirmed")) {
+    return "Confirmá tu correo antes de iniciar sesión.";
+  }
+  if (msg.includes("user already registered") || msg.includes("already registered")) {
+    return "Ese email ya está registrado. Iniciá sesión.";
+  }
+  if (msg.includes("password")) {
+    return "La contraseña no cumple los requisitos.";
+  }
+  if (msg.includes("email")) {
+    return "Revisá el formato del email.";
+  }
+  return err.message || "Algo salió mal. Intentá de nuevo.";
 }
 
 export default function AuthPage() {
   const router = useRouter();
   const supabase = createClient();
-  const mode = getCustomerAuthMode();
 
-  const [step, setStep] = useState<Step>("identifier");
-  const [identifier, setIdentifier] = useState("");
-  const [otp, setOtp] = useState("");
+  const [panel, setPanel] = useState<Panel>("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
 
-  const sendOtp = async () => {
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+
+  const emailValid = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim().toLowerCase());
+
+  const login = async () => {
     setError("");
-    if (mode === "phone") {
-      const cleaned = identifier.replace(/\D/g, "");
-      if (cleaned.length < 8) {
-        setError("Ingresá un celular válido (código de área + número).");
-        return;
-      }
-      const phone = toE164ArPhone(cleaned);
-      setLoading(true);
-      const { error: err } = await supabase.auth.signInWithOtp({
-        phone,
-        options: {
-          shouldCreateUser: true,
-          data: { is_customer: true },
-        },
-      });
-      setLoading(false);
-      if (err) {
-        console.error(err);
-        setError(
-          err.message.includes("Phone")
-            ? "No pudimos enviar SMS. Probá con email: configurá NEXT_PUBLIC_CUSTOMER_AUTH_MODE=email o habilitá Phone en Supabase."
-            : err.message
-        );
-        return;
-      }
-      setIdentifier(phone);
-      setStep("otp");
-      return;
-    }
-
-    const email = identifier.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setInfo("");
+    const email = loginEmail.trim().toLowerCase();
+    if (!emailValid(email)) {
       setError("Ingresá un email válido.");
       return;
     }
+    if (!loginPassword) {
+      setError("Ingresá tu contraseña.");
+      return;
+    }
     setLoading(true);
-    const { error: err } = await supabase.auth.signInWithOtp({
+    const { error: err } = await supabase.auth.signInWithPassword({ email, password: loginPassword });
+    setLoading(false);
+    if (err) {
+      console.error(err);
+      setError(translateAuthError(err));
+      return;
+    }
+    router.push("/cuenta");
+    router.refresh();
+  };
+
+  const register = async () => {
+    setError("");
+    setInfo("");
+    const name = regName.trim();
+    const email = regEmail.trim().toLowerCase();
+    if (!name) {
+      setError("Ingresá tu nombre.");
+      return;
+    }
+    if (!emailValid(email)) {
+      setError("Ingresá un email válido.");
+      return;
+    }
+    if (regPassword.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    setLoading(true);
+    const { data, error: err } = await supabase.auth.signUp({
       email,
+      password: regPassword,
       options: {
-        shouldCreateUser: true,
+        data: { full_name: name, is_customer: true },
         emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/cuenta` : undefined,
-        data: { is_customer: true },
       },
     });
     setLoading(false);
     if (err) {
       console.error(err);
-      setError(err.message);
+      setError(translateAuthError(err));
       return;
     }
-    setIdentifier(email);
-    setStep("otp");
+    if (data.session) {
+      router.push("/cuenta");
+      router.refresh();
+      return;
+    }
+    setInfo("Te enviamos un correo para confirmar tu cuenta. Después podés iniciar sesión.");
   };
 
-  const verifyOtp = async () => {
-    const code = otp.replace(/\s/g, "");
-    if (code.length < 4) {
-      setError("Ingresá el código que te llegó.");
-      return;
-    }
+  const switchToLogin = () => {
+    setPanel("login");
     setError("");
-    setLoading(true);
-    const params =
-      mode === "phone"
-        ? { phone: identifier.startsWith("+") ? identifier : toE164ArPhone(identifier), token: code, type: "sms" as const }
-        : { email: identifier, token: code, type: "email" as const };
+    setInfo("");
+  };
 
-    const { error: err } = await supabase.auth.verifyOtp(params);
-    setLoading(false);
-    if (err) {
-      console.error(err);
-      setError("Código incorrecto o vencido. Revisá e intentá de nuevo.");
-      return;
-    }
-    router.push("/cuenta");
-    router.refresh();
+  const switchToRegister = () => {
+    setPanel("register");
+    setError("");
+    setInfo("");
   };
 
   return (
@@ -126,124 +142,145 @@ export default function AuthPage() {
       <main className="mx-auto max-w-md px-5 pb-16 pt-10">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-[#e8e4d4] ring-2 ring-[#c4b896]/40">
-            {mode === "phone" ? (
-              <Phone className="h-9 w-9 text-[#5f5c46]" strokeWidth={2} />
-            ) : (
-              <Mail className="h-9 w-9 text-[#5f5c46]" strokeWidth={2} />
-            )}
+            <Mail className="h-9 w-9 text-[#5f5c46]" strokeWidth={2} />
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-neutral-900">Iniciar sesión</h1>
+          <h1 className="text-3xl font-black tracking-tight text-neutral-900">
+            {panel === "login" ? "Iniciar sesión" : "Crear cuenta"}
+          </h1>
           <p className="mt-2 text-sm text-neutral-500">
-            {step === "identifier"
-              ? mode === "phone"
-                ? "Te mandamos un código por SMS."
-                : "Te mandamos un código a tu correo."
-              : "Revisá tu bandeja y pegá el código acá."}
+            {panel === "login" ? "Ingresá con tu email y contraseña." : "Completá tus datos para registrarte."}
           </p>
         </div>
 
         <div className="rounded-3xl border border-amber-100/80 bg-white p-6 shadow-sm">
-          {step === "identifier" && (
+          {panel === "login" && (
             <div className="space-y-4">
-              <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">
-                {mode === "phone" ? "Celular" : "Email"}
-              </label>
-              {mode === "phone" ? (
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder="Ej: 11 2345 6789"
-                  value={identifier}
-                  onChange={(e) => {
-                    setIdentifier(e.target.value);
-                    setError("");
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && void sendOtp()}
-                  className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
-                    error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
-                  }`}
-                  autoFocus
-                />
-              ) : (
-                <input
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="vos@email.com"
-                  value={identifier}
-                  onChange={(e) => {
-                    setIdentifier(e.target.value);
-                    setError("");
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && void sendOtp()}
-                  className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
-                    error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
-                  }`}
-                  autoFocus
-                />
-              )}
-              {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
-              <button
-                type="button"
-                onClick={() => void sendOtp()}
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a3e] py-4 text-base font-black text-white shadow-lg shadow-[#2d4a3e]/20 transition hover:bg-[#1f352c] active:scale-[0.99] disabled:opacity-50"
-              >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRight className="h-5 w-5" />}
-                Continuar
-              </button>
-            </div>
-          )}
-
-          {step === "otp" && (
-            <div className="space-y-4">
-              <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Código</label>
+              <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Email</label>
               <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="• • • • • •"
-                value={otp}
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="vos@email.com"
+                value={loginEmail}
                 onChange={(e) => {
-                  setOtp(e.target.value.replace(/[^\d]/g, ""));
+                  setLoginEmail(e.target.value);
                   setError("");
+                  setInfo("");
                 }}
-                onKeyDown={(e) => e.key === "Enter" && void verifyOtp()}
-                className={`w-full rounded-2xl border-2 px-4 py-4 text-center text-2xl font-black tracking-[0.3em] outline-none transition-all ${
+                onKeyDown={(e) => e.key === "Enter" && void login()}
+                className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
                   error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
                 }`}
                 autoFocus
-                maxLength={12}
+              />
+              <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Contraseña</label>
+              <input
+                type="password"
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={loginPassword}
+                onChange={(e) => {
+                  setLoginPassword(e.target.value);
+                  setError("");
+                  setInfo("");
+                }}
+                onKeyDown={(e) => e.key === "Enter" && void login()}
+                className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
+                  error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
+                }`}
               />
               {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+              {info ? <p className="text-sm font-medium text-[#2d4a3e]">{info}</p> : null}
               <button
                 type="button"
-                onClick={() => void verifyOtp()}
+                onClick={() => void login()}
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#7a765a] py-4 text-base font-black text-white transition hover:bg-[#5f5c46] active:scale-[0.99] disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a3e] py-4 text-base font-black text-white shadow-lg shadow-[#2d4a3e]/20 transition hover:bg-[#1f352c] active:scale-[0.99] disabled:opacity-50"
               >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRight className="h-5 w-5" />}
-                Verificar e ingresar
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                Iniciar sesión
               </button>
+              <p className="text-center text-sm text-neutral-600">
+                ¿No tenés cuenta?{" "}
+                <button type="button" onClick={switchToRegister} className="font-bold text-[#2d4a3e] underline-offset-2 hover:underline">
+                  Registrate
+                </button>
+              </p>
+            </div>
+          )}
+
+          {panel === "register" && (
+            <div className="space-y-4">
+              <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Nombre</label>
+              <input
+                type="text"
+                autoComplete="name"
+                placeholder="Tu nombre"
+                value={regName}
+                onChange={(e) => {
+                  setRegName(e.target.value);
+                  setError("");
+                  setInfo("");
+                }}
+                className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
+                  error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
+                }`}
+                autoFocus
+              />
+              <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Email</label>
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="vos@email.com"
+                value={regEmail}
+                onChange={(e) => {
+                  setRegEmail(e.target.value);
+                  setError("");
+                  setInfo("");
+                }}
+                className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
+                  error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
+                }`}
+              />
+              <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Contraseña (mín. 6 caracteres)</label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                value={regPassword}
+                onChange={(e) => {
+                  setRegPassword(e.target.value);
+                  setError("");
+                  setInfo("");
+                }}
+                onKeyDown={(e) => e.key === "Enter" && void register()}
+                className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
+                  error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
+                }`}
+              />
+              {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+              {info ? <p className="text-sm font-medium text-[#2d4a3e]">{info}</p> : null}
               <button
                 type="button"
-                onClick={() => {
-                  setStep("identifier");
-                  setOtp("");
-                  setError("");
-                }}
-                className="w-full py-2 text-sm font-bold text-neutral-400 hover:text-neutral-600"
+                onClick={() => void register()}
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a3e] py-4 text-base font-black text-white shadow-lg shadow-[#2d4a3e]/20 transition hover:bg-[#1f352c] active:scale-[0.99] disabled:opacity-50"
               >
-                ← Cambiar {mode === "phone" ? "número" : "email"}
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                Crear cuenta
               </button>
+              <p className="text-center text-sm text-neutral-600">
+                ¿Ya tenés cuenta?{" "}
+                <button type="button" onClick={switchToLogin} className="font-bold text-[#2d4a3e] underline-offset-2 hover:underline">
+                  Iniciá sesión
+                </button>
+              </p>
             </div>
           )}
         </div>
 
-        <p className="mt-8 text-center text-xs text-neutral-400">
-          Al continuar aceptás recibir un código de acceso. Sin contraseña.
-        </p>
+        <p className="mt-8 text-center text-xs text-neutral-400">Tu cuenta es solo para Bloom: pedidos y beneficios.</p>
       </main>
       <SiteFooter />
     </div>

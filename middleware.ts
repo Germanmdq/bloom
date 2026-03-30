@@ -22,7 +22,13 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user && request.nextUrl.pathname.startsWith("/cuenta")) {
+    return NextResponse.redirect(new URL("/auth", request.url));
+  }
 
   return response;
 }

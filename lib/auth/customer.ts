@@ -1,6 +1,8 @@
-/** Modo de login para clientes: `phone` requiere SMS en Supabase; `email` usa magic link / OTP por mail. */
-export function getCustomerAuthMode(): "phone" | "email" {
-  const m = process.env.NEXT_PUBLIC_CUSTOMER_AUTH_MODE?.trim().toLowerCase();
-  if (m === "phone" || m === "sms") return "phone";
-  return "email";
+/** Cliente Bloom: login con email y contraseña (Supabase Auth). Sin OTP ni teléfono. */
+export const CUSTOMER_AUTH_MODE = "email-password" as const;
+
+export type CustomerAuthMode = typeof CUSTOMER_AUTH_MODE;
+
+export function getCustomerAuthMode(): CustomerAuthMode {
+  return CUSTOMER_AUTH_MODE;
 }

@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { MessageCircle, X, Send, Loader2, Phone, Store, User } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import type { BloomChatCartLine, BloomMenuCheckoutBridge } from "@/lib/bloom-chat-types";
 
 type Msg = { role: "assistant" | "user"; content: string };
 
@@ -56,6 +55,19 @@ function tryParseOrderPayload(text: string): {
   }
 }
 
+/** Texto visible: sin el bloque JSON del pedido (mismo anclaje que tryParseOrderPayload). */
+function assistantDisplayText(raw: string): string {
+  const orderIdx = raw.lastIndexOf("\"order_ready\"");
+  if (orderIdx === -1) return raw;
+  const start = raw.lastIndexOf("{", orderIdx);
+  if (start === -1) return raw;
+  return raw.slice(0, start).trim();
+}
+
+function formatArs(n: number) {
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
+}
+
 async function streamOpeningMessage(
   clientTimeISO: string,
   onDelta: (full: string) => void
@@ -94,6 +106,8 @@ export function BloomChat() {
   const pendingPayloadRef = useRef<OrderPayload | null>(null);
   const openingStarted = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  /** Evita doble envío automático del mismo payload */
+  const autoSubmitSentRef = useRef<string | null>(null);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -106,7 +120,7 @@ export function BloomChat() {
     setMessages([{ role: "assistant", content: "" }]);
     try {
       await streamOpeningMessage(new Date().toISOString(), (full) => {
-        setMessages([{ role: "assistant", content: full }]);
+        setMessages([{ role: "assistant", content: assistantDisplayText(full) }]);
       });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "No se pudo cargar el mozo virtual");
@@ -136,6 +150,101 @@ export function BloomChat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, streaming]);
+
+  const submitConfirm = useCallback(
+    async (payload: OrderPayload, accessToken?: string, opts?: { skipDedupe?: boolean }) => {
+      const dedupeKey = JSON.stringify(payload.items.map((i) => i.product_id).sort()) + payload.customer_name;
+      if (!opts?.skipDedupe && autoSubmitSentRef.current === dedupeKey) {
+        return;
+      }
+      autoSubmitSentRef.current = dedupeKey;
+
+      const res = await fetch("/api/bloom-chat/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: payload.items.map((i) => ({
+            product_id: i.product_id,
+            name: i.name,
+            price: i.price,
+            quantity: i.quantity,
+          })),
+          customer_name: payload.customer_name,
+          customer_phone: payload.customer_phone,
+          service: payload.service,
+          ...(accessToken ? { access_token: accessToken } : {}),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        autoSubmitSentRef.current = null;
+        toast.error((data as { error?: string }).error || "Error al guardar el pedido");
+        return;
+      }
+
+      const total = payload.items.reduce((s, i) => s + Number(i.price) * Number(i.quantity), 0);
+      const lines = payload.items.map((i) => `${i.quantity}× ${i.name} (${formatArs(Number(i.price) * i.quantity)})`);
+      const confirmation =
+        "Pedido enviado, te esperamos.\n\n" + lines.join("\n") + `\n\nTotal: ${formatArs(total)}`;
+
+      setMessages((prev) => [...prev, { role: "assistant", content: confirmation }]);
+      toast.success("Pedido registrado");
+      setAccountGate(false);
+      pendingPayloadRef.current = null;
+      setOpen(false);
+    },
+    []
+  );
+
+  const runAutoSubmit = useCallback(
+    async (payload: OrderPayload) => {
+      if (payload.service === "takeaway" && !payload.customer_phone) {
+        toast.error("Para llevar necesitamos un teléfono. Pedile al mozo que lo anote.");
+        autoSubmitSentRef.current = null;
+        return;
+      }
+      if (!payload.customer_name) {
+        toast.error("Falta el nombre en el pedido.");
+        autoSubmitSentRef.current = null;
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        pendingPayloadRef.current = payload;
+        setAccountGate(true);
+        return;
+      }
+      await submitConfirm(payload, session.access_token, { skipDedupe: true });
+    },
+    [submitConfirm, supabase]
+  );
+
+  const finalizeAssistantMessage = useCallback(
+    async (fullRaw: string) => {
+      const payload = tryParseOrderPayload(fullRaw);
+      const visible = assistantDisplayText(fullRaw);
+
+      setMessages((prev) => {
+        const copy = [...prev];
+        const last = copy.length - 1;
+        if (last >= 0 && copy[last].role === "assistant") {
+          copy[last] = { role: "assistant", content: visible };
+        }
+        return copy;
+      });
+
+      if (!payload) return;
+
+      const dedupeKey = JSON.stringify(payload.items.map((i) => i.product_id).sort()) + payload.customer_name;
+      if (autoSubmitSentRef.current === dedupeKey) return;
+
+      await runAutoSubmit(payload);
+    },
+    [runAutoSubmit]
+  );
 
   const sendUserMessage = async () => {
     const trimmed = input.trim();
@@ -175,106 +284,23 @@ export function BloomChat() {
       const { done, value } = await reader.read();
       if (done) break;
       assistant += decoder.decode(value, { stream: true });
+      const display = assistantDisplayText(assistant);
       setMessages((prev) => {
         const copy = [...prev];
-        copy[copy.length - 1] = { role: "assistant", content: assistant };
+        copy[copy.length - 1] = { role: "assistant", content: display };
         return copy;
       });
     }
     setStreaming(false);
-  };
 
-  const bridge = (): BloomMenuCheckoutBridge | undefined =>
-    typeof window !== "undefined"
-      ? (window as unknown as { __bloomMenuCheckout?: BloomMenuCheckoutBridge }).__bloomMenuCheckout
-      : undefined;
-
-  const onWhatsApp = () => {
-    const last = [...messages].reverse().find((m) => m.role === "assistant");
-    if (!last) return;
-    const payload = tryParseOrderPayload(last.content);
-    if (!payload?.items?.length) {
-      toast.error("No encontré un pedido confirmado en el último mensaje. Pedile al mozo que cierre el pedido.");
-      return;
-    }
-    const lines: BloomChatCartLine[] = payload.items.map((i) => ({
-      id: i.product_id,
-      name: i.name,
-      price: Number(i.price),
-      quantity: Number(i.quantity),
-      variants: [],
-      observations: "",
-    }));
-    const b = bridge();
-    if (b?.handleWhatsAppCheckoutWithCart) {
-      b.handleWhatsAppCheckoutWithCart(lines);
-      toast.success("Abrimos WhatsApp con tu pedido");
-      setOpen(false);
-    } else {
-      toast.error("No está disponible el checkout todavía. Recargá la página.");
-    }
-  };
-
-  const submitConfirm = async (payload: OrderPayload, accessToken?: string) => {
-    const res = await fetch("/api/bloom-chat/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: payload.items.map((i) => ({
-          product_id: i.product_id,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
-        })),
-        customer_name: payload.customer_name,
-        customer_phone: payload.customer_phone,
-        service: payload.service,
-        ...(accessToken ? { access_token: accessToken } : {}),
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      toast.error((data as { error?: string }).error || "Error al guardar el pedido");
-      return;
-    }
-    toast.success(accessToken ? "Pedido registrado en tu cuenta. ¡Gracias!" : "Pedido registrado. ¡Gracias!");
-    setAccountGate(false);
-    pendingPayloadRef.current = null;
-    setOpen(false);
-  };
-
-  const onTakeaway = async () => {
-    const last = [...messages].reverse().find((m) => m.role === "assistant");
-    if (!last) return;
-    const payload = tryParseOrderPayload(last.content);
-    if (!payload?.items?.length || !payload.customer_name) {
-      toast.error("Falta el nombre o el pedido no está cerrado.");
-      return;
-    }
-    if (payload.service === "takeaway" && !payload.customer_phone) {
-      toast.error("Para llevar necesitamos un teléfono. Pedile al mozo que lo anote.");
-      return;
-    }
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      pendingPayloadRef.current = payload;
-      setAccountGate(true);
-      return;
-    }
-    await submitConfirm(payload, session.access_token);
+    await finalizeAssistantMessage(assistant);
   };
 
   const onTakeawayGuest = async () => {
     const payload = pendingPayloadRef.current;
     if (!payload) return;
-    await submitConfirm(payload);
+    await submitConfirm(payload, undefined, { skipDedupe: true });
   };
-
-  const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
-  const pendingOrder = lastAssistant ? tryParseOrderPayload(lastAssistant.content) : null;
 
   return (
     <>
@@ -313,6 +339,7 @@ export function BloomChat() {
                 onClick={() => {
                   setAccountGate(false);
                   pendingPayloadRef.current = null;
+                  autoSubmitSentRef.current = null;
                 }}
                 className="text-xs font-bold text-neutral-400 hover:text-neutral-600"
               >
@@ -355,10 +382,10 @@ export function BloomChat() {
                     : "mr-auto bg-white text-neutral-800 shadow-sm ring-1 ring-black/5"
                 }`}
               >
-                {m.content.split("\n").map((line, li) => (
+                {(m.role === "assistant" ? assistantDisplayText(m.content) : m.content).split("\n").map((line, li, arr) => (
                   <span key={li}>
                     {line}
-                    {li < m.content.split("\n").length - 1 ? <br /> : null}
+                    {li < arr.length - 1 ? <br /> : null}
                   </span>
                 ))}
               </div>
@@ -369,28 +396,6 @@ export function BloomChat() {
               </div>
             )}
           </div>
-
-          {pendingOrder?.order_ready && pendingOrder.items.length > 0 && (
-            <div className="border-t border-[#e0dcd4] bg-white/80 px-3 py-2">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#5f5c46]">Pedido listo</p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={onWhatsApp}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-3 py-2.5 text-xs font-black uppercase text-white hover:brightness-105"
-                >
-                  <Phone className="h-4 w-4" /> WhatsApp
-                </button>
-                <button
-                  type="button"
-                  onClick={onTakeaway}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#7a765a] px-3 py-2.5 text-xs font-black uppercase text-white hover:bg-[#5f5c46]"
-                >
-                  <Store className="h-4 w-4" /> Pedido en local
-                </button>
-              </div>
-            </div>
-          )}
 
           <div className="border-t border-[#e0dcd4] p-2">
             <div className="flex gap-2">
