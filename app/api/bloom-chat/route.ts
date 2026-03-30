@@ -6,7 +6,7 @@ import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODEL = "gemini-1.5-flash";
+const MODEL = "gemini-2.0-flash-lite";
 
 /** Mensaje mínimo para el primer turno (evitar prompt vacío). */
 const OPENING_USER_PLACEHOLDER = "\u200b";
