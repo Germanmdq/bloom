@@ -370,6 +370,11 @@ export async function POST(request: NextRequest) {
 
     const systemContent = buildSystemPrompt(ctx, clientTimeISO, { openingAppend });
 
+    const models = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(genAI.apiKey)}`
+    ).then((r) => r.json());
+    console.error("[bloom-chat] available models:", JSON.stringify(models));
+
     if (body.mode === "opening") {
       console.error(`${LOG} Gemini request`, { mode: "opening", model: MODEL });
       const model = genAI.getGenerativeModel({
