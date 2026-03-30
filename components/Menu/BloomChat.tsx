@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { MessageCircle, X, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -95,6 +96,8 @@ export type OpenCategoryOpts = {
   displayName: string;
   categoryId?: string | null;
   productIds?: string[];
+  /** Desde la home (destacado): tarjeta arriba + acceso al menú completo; «Ver categorías» va a /menu. */
+  fromHomeFeatured?: boolean;
 };
 
 export type BloomChatHandle = {
@@ -230,6 +233,7 @@ type ChatContext = {
   displayName: string;
   categoryId: string | null;
   productIds: string[] | null;
+  fromHomeFeatured?: boolean;
 };
 
 function buildChoiceFromGroups(
@@ -483,6 +487,7 @@ function ProductCard({
 }
 
 export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, ref) {
+  const router = useRouter();
   const [supabase] = useState(() => createClient());
   const [open, setOpen] = useState(false);
   const [context, setContext] = useState<ChatContext | null>(null);
@@ -1060,6 +1065,11 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setUpsellVariant(null);
   }, []);
 
+  const closeChatAndGoToMenu = useCallback(() => {
+    closeChatKeepCart();
+    router.push("/menu");
+  }, [closeChatKeepCart, router]);
+
   const openWithProductEncargado = useCallback(
     async (productId: string) => {
       const { data: row, error } = await supabase
@@ -1118,6 +1128,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           displayName: opts.displayName,
           categoryId: opts.categoryId ?? null,
           productIds,
+          fromHomeFeatured: opts.fromHomeFeatured === true,
         });
         setIntroText(categoryIntro(opts.displayName));
         setContextKey((k) => k + 1);
@@ -1507,7 +1518,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
               {context && (!!context.categoryId || (context.productIds?.length ?? 0) > 0) ? (
                 <button
                   type="button"
-                  onClick={closeChatKeepCart}
+                  onClick={context.fromHomeFeatured ? closeChatAndGoToMenu : closeChatKeepCart}
                   className="w-fit text-left text-xs font-bold text-[#c4b896] underline-offset-2 hover:text-white hover:underline"
                 >
                   ← Ver categorías
@@ -1535,14 +1546,16 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
               ref={scrollRef}
               className="min-h-0 w-full flex-1 space-y-3 overflow-y-auto px-3 py-3 pb-24"
             >
-              <div className="max-w-[92%] rounded-2xl bg-white px-3 py-2 text-sm leading-relaxed text-neutral-800 shadow-sm ring-1 ring-black/5">
-                {introText.split("\n").map((line, li, arr) => (
-                  <span key={li}>
-                    {line}
-                    {li < arr.length - 1 ? <br /> : null}
-                  </span>
-                ))}
-              </div>
+              {!context?.fromHomeFeatured ? (
+                <div className="max-w-[92%] rounded-2xl bg-white px-3 py-2 text-sm leading-relaxed text-neutral-800 shadow-sm ring-1 ring-black/5">
+                  {introText.split("\n").map((line, li, arr) => (
+                    <span key={li}>
+                      {line}
+                      {li < arr.length - 1 ? <br /> : null}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
 
               {softAuthHintVisible ? (
                 <div className="max-w-[92%] rounded-2xl border border-amber-100/80 bg-amber-50/90 px-3 py-2.5 text-sm leading-relaxed text-neutral-800 shadow-sm ring-1 ring-amber-200/60">
@@ -1581,21 +1594,41 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                 </div>
               )}
 
-              {!loadingProducts && showProductGrid && products.length === 0 && (
-                <p className="text-sm text-neutral-500">No hay productos activos en esta categoría por ahora.</p>
-              )}
-
-              {!loadingProducts && products.length > 0 && (
-                <div className="flex w-full flex-col gap-3">
-                  {products.map((p) => (
-                    <ProductCard
-                      key={`${productListKey}-${p.id}`}
-                      product={p}
-                      added={!productHasConfigurableOptions(p) && addedProductIds.has(p.id)}
-                      onEncargar={(obs, choice) => addLine(p, obs, choice)}
-                    />
-                  ))}
-                </div>
+              {!loadingProducts && showProductGrid && (
+                <>
+                  {products.length === 0 ? (
+                    <p className="text-sm text-neutral-500">No hay productos activos en esta categoría por ahora.</p>
+                  ) : (
+                    <div className="flex w-full flex-col gap-3">
+                      {products.map((p) => (
+                        <ProductCard
+                          key={`${productListKey}-${p.id}`}
+                          product={p}
+                          added={!productHasConfigurableOptions(p) && addedProductIds.has(p.id)}
+                          onEncargar={(obs, choice) => addLine(p, obs, choice)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {context?.fromHomeFeatured ? (
+                    <>
+                      <div className="relative my-2 flex items-center gap-3 py-1">
+                        <div className="h-px flex-1 bg-[#e0dcd4]" aria-hidden />
+                        <p className="shrink-0 text-center text-xs font-semibold text-neutral-500">
+                          — o explorá el menú completo —
+                        </p>
+                        <div className="h-px flex-1 bg-[#e0dcd4]" aria-hidden />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={closeChatAndGoToMenu}
+                        className="w-full rounded-xl border-2 border-[#2d4a3e] bg-white px-4 py-3 text-center text-sm font-black text-[#2d4a3e] shadow-sm transition hover:bg-[#2d4a3e] hover:text-white"
+                      >
+                        Ver todas las categorías →
+                      </button>
+                    </>
+                  ) : null}
+                </>
               )}
 
               {upsellVariant ? (
@@ -1605,7 +1638,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   <div className="mt-3 flex flex-col gap-2">
                     <button
                       type="button"
-                      onClick={closeChatKeepCart}
+                      onClick={context?.fromHomeFeatured ? closeChatAndGoToMenu : closeChatKeepCart}
                       className="w-full rounded-xl border-2 border-[#d4cfc4] bg-white px-3 py-2.5 text-center text-xs font-bold text-neutral-800 hover:bg-neutral-50"
                     >
                       Ver otras categorías

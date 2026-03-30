@@ -107,9 +107,9 @@ export default function Home() {
   const [heroVideoReady, setHeroVideoReady] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const bloomChatRef = useRef<BloomChatHandle>(null);
-  /** Por tarjeta: categoría del producto encontrado (lista completa en el chat, sin pre-seleccionar). */
+  /** Por tarjeta: producto y categoría encontrados para abrir el chat con una sola tarjeta desde la home. */
   const [favoriteCategoryByName, setFavoriteCategoryByName] = useState<
-    Record<string, { categoryId: string; displayName: string } | null>
+    Record<string, { categoryId: string; displayName: string; productId: string } | null>
   >({});
 
   useEffect(() => {
@@ -126,7 +126,7 @@ export default function Home() {
   useEffect(() => {
     const supabase = createClient();
     (async () => {
-      const next: Record<string, { categoryId: string; displayName: string } | null> = {};
+      const next: Record<string, { categoryId: string; displayName: string; productId: string } | null> = {};
       for (const d of destacados) {
         const { data } = await supabase
           .from("products")
@@ -151,6 +151,7 @@ export default function Home() {
         next[d.name] = {
           categoryId: raw.category_id,
           displayName: categoryLabel?.trim() || d.name,
+          productId: data.id as string,
         };
       }
       setFavoriteCategoryByName(next);
@@ -371,10 +372,12 @@ export default function Home() {
                       disabled={favoriteCategoryByName[p.name] === undefined}
                       onClick={() => {
                         const cat = favoriteCategoryByName[p.name];
-                        if (cat?.categoryId) {
+                        if (cat?.categoryId && cat.productId) {
                           bloomChatRef.current?.openWithCategoryMessage({
                             categoryId: cat.categoryId,
                             displayName: cat.displayName,
+                            productIds: [cat.productId],
+                            fromHomeFeatured: true,
                           });
                         } else {
                           toast.error("No encontramos este producto ahora. Probá desde el menú.");
