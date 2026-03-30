@@ -445,6 +445,7 @@ function PublicMenuPage() {
                     {platoDiaProduct && (
                         <button
                             type="button"
+                            disabled={!platoDiaProduct}
                             onClick={() =>
                                 platoDiaProduct &&
                                 bloomChatRef.current?.openWithCategoryMessage({
@@ -452,7 +453,7 @@ function PublicMenuPage() {
                                     productIds: [platoDiaProduct.id],
                                 })
                             }
-                            className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl text-left shadow-md transition active:scale-[0.98] md:aspect-video"
+                            className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl text-left shadow-md transition active:scale-[0.98] enabled:hover:opacity-[0.98] disabled:opacity-50 md:aspect-video"
                             aria-label="Plato del Día — armar encargo"
                         >
                             {platoDiaProduct.image_url?.trim() ? (
