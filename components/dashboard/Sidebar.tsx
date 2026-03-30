@@ -50,12 +50,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             {/* Sidebar */}
             <div className={`
                 fixed md:relative z-40 top-0 left-0 h-full
-                w-72 flex flex-col p-6 bg-white/80 backdrop-blur-3xl border-r border-white/20
+                w-72 flex min-h-0 flex-col p-6 bg-white/80 backdrop-blur-3xl border-r border-white/20
                 transition-transform duration-300 ease-in-out
                 ${open ? 'translate-x-0' : '-translate-x-full'}
                 md:translate-x-0 md:w-80
             `}>
-                <div className="mb-10 px-4 flex items-start justify-between">
+                <div className="mb-6 shrink-0 px-4 flex items-start justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-gray-900">Bloom OS</h1>
                         <div className="flex items-center gap-2">
@@ -72,7 +72,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                     </button>
                 </div>
 
-                <nav className="flex-1 space-y-2">
+                <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                     {filteredLinks.map((link) => {
                         const isActive =
                             link.href === "/dashboard"
@@ -92,6 +92,26 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         );
                     })}
                 </nav>
+
+                <div
+                    className="mt-4 shrink-0 border-t border-gray-200/90 pt-4 px-4"
+                    aria-label="Referencia de colores de pedidos"
+                >
+                    <ul className="space-y-1.5 text-xs text-gray-500">
+                        <li className="flex items-center gap-2">
+                            <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" aria-hidden />
+                            <span>Mesa</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <span className="h-2 w-2 shrink-0 rounded-full bg-green-600" aria-hidden />
+                            <span>Delivery</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <span className="h-2 w-2 shrink-0 rounded-full bg-amber-400" aria-hidden />
+                            <span>Retiro</span>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </>
     );
