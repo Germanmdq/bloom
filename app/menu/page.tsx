@@ -81,7 +81,7 @@ function PublicMenuPage() {
         : null;
     const [products, setProducts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
-    /** Número WhatsApp del local (app_settings); usado por checkout WA y futuro flujo Groq */
+    /** Número WhatsApp del local (app_settings); usado por checkout WA y Bloom chat */
     const [whatsappNumber, setWhatsappNumber] = useState("5491112345678");
     const [loading, setLoading] = useState(true);
 
@@ -211,7 +211,7 @@ function PublicMenuPage() {
         }
     };
 
-    /** Abre WhatsApp con el pedido. Si pasás `lines`, usa ese carrito (p. ej. asistente Groq); si no, el estado `cart`. */
+    /** Abre WhatsApp con el pedido. Si pasás `lines`, usa ese carrito (p. ej. asistente Bloom); si no, el estado `cart`. */
     const handleWhatsAppCheckout = useCallback(
         (overrideCart?: BloomChatCartLine[]) => {
             const c = overrideCart ?? cart;
