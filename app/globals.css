@@ -133,6 +133,30 @@
       transform: scaleX(1);
     }
   }
+
+  @keyframes registro-step-out-left {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateX(-24px);
+    }
+  }
+
+  @keyframes registro-step-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(28px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
 }
 
 .registro-field-anim {
@@ -156,6 +180,14 @@
 .registro-bar-fill {
   transform-origin: left;
   animation: registro-bar-fill 1.05s cubic-bezier(0.21, 0.47, 0.32, 0.98) 0.35s both;
+}
+
+.registro-step-panel-out {
+  animation: registro-step-out-left 0.28s ease-in forwards;
+}
+
+.registro-step-panel-in {
+  animation: registro-step-in-right 0.42s cubic-bezier(0.21, 0.47, 0.32, 0.98) both;
 }
 
 body {
