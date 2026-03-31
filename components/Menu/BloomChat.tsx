@@ -585,16 +585,26 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   /** Evita doble restauración (StrictMode / varios eventos de auth). */
   const pendingRestoreHandledRef = useRef(false);
 
-  const persistCartAndGoToAuthForCheckout = useCallback(() => {
-    try {
-      sessionStorage.setItem(BLOOM_PENDING_CART_KEY, JSON.stringify(cart));
-      sessionStorage.setItem(BLOOM_PENDING_CHECKOUT_KEY, "true");
-    } catch {
-      toast.error("No se pudo guardar el encargo. Intentá de nuevo.");
-      return;
-    }
-    router.push("/auth?redirect=/menu");
-  }, [cart, router]);
+  const persistCartAndGo = useCallback(
+    (href: string) => {
+      try {
+        sessionStorage.setItem(BLOOM_PENDING_CART_KEY, JSON.stringify(cart));
+        sessionStorage.setItem(BLOOM_PENDING_CHECKOUT_KEY, "true");
+      } catch {
+        toast.error("No se pudo guardar el encargo. Intentá de nuevo.");
+        return;
+      }
+      router.push(href);
+    },
+    [cart, router],
+  );
+
+  const persistCartAndGoToAuthForCheckout = useCallback(
+    () => persistCartAndGo("/auth?redirect=/menu"),
+    [persistCartAndGo],
+  );
+
+  const persistCartAndGoToRegistro = useCallback(() => persistCartAndGo("/registro"), [persistCartAndGo]);
 
   const cartCount = useMemo(() => cart.reduce((n, l) => n + l.quantity, 0), [cart]);
   const cartTotal = useMemo(() => cart.reduce((s, l) => s + l.price * l.quantity, 0), [cart]);
@@ -1348,16 +1358,23 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
               </p>
 
               {!encargoCheckoutUnlocked ? (
-                <div className="mt-6 space-y-4 border-t border-[#e0dcd4] pt-4">
+                <div className="mt-6 space-y-3 border-t border-[#e0dcd4] pt-4">
                   <p className="text-sm font-medium leading-relaxed text-neutral-800">
                     Para confirmar tu encargo necesitás iniciar sesión o registrarte.
                   </p>
                   <button
                     type="button"
-                    onClick={persistCartAndGoToAuthForCheckout}
-                    className="inline-flex w-full items-center justify-center rounded-xl bg-[#2d4a3e] px-4 py-3 text-center text-sm font-black text-white shadow hover:bg-[#1f342c] sm:max-w-md sm:mx-auto"
+                    onClick={persistCartAndGoToRegistro}
+                    className="inline-flex w-full min-h-[48px] items-center justify-center rounded-xl bg-[#2d4a3e] px-4 py-3 text-center text-sm font-black text-white shadow hover:bg-[#1f342c] sm:max-w-md sm:mx-auto"
                   >
-                    Iniciar sesión o registrarse →
+                    Registrate gratis →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={persistCartAndGoToAuthForCheckout}
+                    className="inline-flex w-full min-h-[48px] items-center justify-center rounded-xl border-2 border-[#2d4a3e] bg-white px-4 py-3 text-center text-sm font-black text-[#2d4a3e] shadow-sm hover:bg-[#f8f7f4] sm:max-w-md sm:mx-auto"
+                  >
+                    Ya tengo cuenta · Iniciar sesión
                   </button>
                 </div>
               ) : (
@@ -1685,6 +1702,14 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     encargos.{" "}
                     <button
                       type="button"
+                      onClick={persistCartAndGoToRegistro}
+                      className="font-semibold text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
+                    >
+                      Registrate gratis →
+                    </button>{" "}
+                    <span className="text-neutral-500">·</span>{" "}
+                    <button
+                      type="button"
                       onClick={persistCartAndGoToAuthForCheckout}
                       className="font-semibold text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
                     >
@@ -1701,7 +1726,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   </div>
                   {showHistoryLink && (
                     <Link
-                      href="/auth?redirect=%2Fmenu&mode=register"
+                      href="/registro"
                       className="inline-block text-xs font-semibold text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
                     >
                       Creá tu cuenta para ver el historial de tus encargos

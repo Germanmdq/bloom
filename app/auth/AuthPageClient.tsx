@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
@@ -250,9 +251,9 @@ export function AuthPageClient() {
               </button>
               <p className="text-center text-sm text-neutral-600">
                 ¿No tenés cuenta?{" "}
-                <button type="button" onClick={switchToRegister} className="font-bold text-[#2d4a3e] underline-offset-2 hover:underline">
-                  Registrate
-                </button>
+                <Link href="/registro" className="font-bold text-[#2d4a3e] underline-offset-2 hover:underline">
+                  Registrate gratis →
+                </Link>
               </p>
             </div>
           )}

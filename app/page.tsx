@@ -307,7 +307,7 @@ export default function Home() {
 
           <FadeIn className="mt-12 text-center">
             <Link
-              href="/auth?mode=register"
+              href="/registro"
               className="inline-flex items-center justify-center rounded-full bg-[#c9a84c] px-[48px] py-4 text-base font-black text-[#1a3028] transition-colors hover:bg-[#d8ba63]"
             >
               Quiero ser socio →

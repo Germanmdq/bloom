@@ -72,6 +72,90 @@
       transform: translateY(0);
     }
   }
+
+  /* Registro / Club Bloom landing */
+  @keyframes registro-field-up {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes registro-cta-pulse {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 0 rgba(45, 74, 62, 0.45),
+        0 10px 40px -10px rgba(0, 0, 0, 0.35);
+    }
+
+    50% {
+      box-shadow:
+        0 0 0 14px rgba(45, 74, 62, 0),
+        0 14px 48px -10px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  @keyframes registro-cup-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes registro-cup-glow {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 4px rgba(201, 168, 76, 0.85));
+    }
+
+    50% {
+      filter: drop-shadow(0 0 14px rgba(255, 230, 180, 0.95));
+    }
+  }
+
+  @keyframes registro-bar-fill {
+    from {
+      transform: scaleX(0);
+    }
+
+    to {
+      transform: scaleX(1);
+    }
+  }
+}
+
+.registro-field-anim {
+  animation: registro-field-up 0.58s cubic-bezier(0.21, 0.47, 0.32, 0.98) both;
+}
+
+.registro-cta-pulse {
+  animation: registro-cta-pulse 2.5s ease-in-out infinite;
+}
+
+.registro-cup {
+  animation: registro-cup-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.registro-cup--final {
+  animation:
+    registro-cup-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    registro-cup-glow 2.2s ease-in-out infinite 0.45s;
+}
+
+.registro-bar-fill {
+  transform-origin: left;
+  animation: registro-bar-fill 1.05s cubic-bezier(0.21, 0.47, 0.32, 0.98) 0.35s both;
 }
 
 body {
