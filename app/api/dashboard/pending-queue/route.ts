@@ -54,7 +54,11 @@ export async function GET() {
       return NextResponse.json({ error: tErr.message }, { status: 500 });
     }
 
-    const pendingOrders = (allOrders ?? []).filter((row) => isPendingOrderStatus(row.status));
+    const pendingOrders = (allOrders ?? []).filter((row) => {
+      const paid = Boolean((row as { paid?: boolean }).paid);
+      if (paid) return false;
+      return isPendingOrderStatus(row.status);
+    });
 
     const entries: PendingQueueEntry[] = [];
 

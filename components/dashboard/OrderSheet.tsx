@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Search, Trash2, CreditCard, Check, Loader2, X, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
+import { useQueryClient } from "@tanstack/react-query";
 import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket } from "@/lib/hooks/use-pos-data";
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ReceiptModal } from "@/components/pos/ReceiptModal";
@@ -43,6 +44,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
 
     const { data: categories = [], isLoading: catLoading } = useCategories();
     const { data: products = [], isLoading: prodLoading } = useProducts();
+    const queryClient = useQueryClient();
     const createOrder = useCreateOrder();
     const sendKitchenTicket = useSendKitchenTicket();
 
@@ -61,6 +63,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const [webOrders, setWebOrders] = useState<any[]>([]);
     const [currentWebOrderId, setCurrentWebOrderId] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [mpPosOrderId, setMpPosOrderId] = useState<string | null>(null);
+
+    const onMpOrderReady = useCallback((id: string | null) => {
+        setMpPosOrderId(id);
+    }, []);
 
     const isWebTable = tableId === WEB_ORDER_TABLE_RETIRO || tableId === WEB_ORDER_TABLE_DELIVERY;
 
@@ -265,23 +272,49 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleClose, total, isFinishing, showPaymentModal, showReceiptModal]);
 
-    const finishOrder = async () => {
+    const finishOrder = async (ctx?: { mpOrderId?: string | null }) => {
         if (finalTotal === 0 && discount === 0) return;
+        const mpId = ctx?.mpOrderId ?? mpPosOrderId;
         finishingRef.current = true;
         setIsFinishing(true);
         try {
-            await createOrder.mutateAsync({
-                table_id: tableId,
-                total: finalTotal,
-                payment_method: paymentMethod,
-                waiter_id: selectedWaiter || null,
-                items: cart
-            });
-            await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
-            if (currentWebOrderId) {
-                await fetch(`/api/orders/delete?id=${currentWebOrderId}`, { method: 'DELETE' });
+            if (paymentMethod === "MERCADO_PAGO") {
+                if (!mpId) {
+                    throw new Error(
+                        "Generá el cobro con Point o abrí el QR, o revisá el mensaje de error arriba."
+                    );
+                }
+                const statusRes = await fetch(
+                    `/api/payments/pos-order-status?order_id=${encodeURIComponent(mpId)}`,
+                    { credentials: "include" }
+                );
+                const statusJson = (await statusRes.json()) as { paid?: boolean; error?: string };
+                if (!statusRes.ok || !statusJson.paid) {
+                    throw new Error(
+                        statusJson.error ||
+                            "El pago aún no figura acreditado. Si el cliente ya pagó, esperá unos segundos y volvé a confirmar."
+                    );
+                }
+                await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
+                if (currentWebOrderId) {
+                    await fetch(`/api/orders/delete?id=${currentWebOrderId}`, { method: "DELETE" });
+                }
+                setMpPosOrderId(null);
+                queryClient.invalidateQueries({ queryKey: ["orders"] });
+            } else {
+                await createOrder.mutateAsync({
+                    table_id: tableId,
+                    total: finalTotal,
+                    payment_method: paymentMethod,
+                    waiter_id: selectedWaiter || null,
+                    items: cart,
+                });
+                await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
+                if (currentWebOrderId) {
+                    await fetch(`/api/orders/delete?id=${currentWebOrderId}`, { method: "DELETE" });
+                }
             }
-            setFeedback({ message: "¡Venta registrada!", type: 'success' });
+            setFeedback({ message: "¡Venta registrada!", type: "success" });
             setTimeout(() => {
                 setFeedback(null);
                 clearCart();
@@ -298,7 +331,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         } catch (error: any) {
             finishingRef.current = false;
             setIsFinishing(false);
-            setFeedback({ message: `Error: ${error.message}`, type: 'error' });
+            setFeedback({ message: `Error: ${error.message}`, type: "error" });
             setTimeout(() => setFeedback(null), 3000);
         }
     };
@@ -602,8 +635,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                     setPaymentMethod={setPaymentMethod}
                     cart={cart}
                     isFinishing={isFinishing}
-                    onClose={() => setShowPaymentModal(false)}
+                    onClose={() => {
+                        setShowPaymentModal(false);
+                        setMpPosOrderId(null);
+                    }}
                     onConfirm={finishOrder}
+                    onMpOrderReady={onMpOrderReady}
+                    waiterId={selectedWaiter || null}
                 />
             )}
 

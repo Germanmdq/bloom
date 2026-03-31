@@ -20,11 +20,41 @@ Es la dirección de tu sitio web. Mercado Pago necesita saber a dónde redirigir
 
 ---
 
+## 3. Mercado Pago Point Smart (terminal N950, API Integration)
+
+Para cobrar en el POS con el lector Point:
+
+1. **`MERCADOPAGO_DEVICE_ID`** — ID del terminal en la API de Point. Debe existir en tu cuenta MP.
+2. Obtener los IDs: con sesión de **admin del panel** (`isAdminEmail`), abrí en el navegador o con `curl`:
+
+   `GET /api/payments/point-devices`
+
+   La respuesta incluye `devices[].id` (ej. `PAX_...__...`). Copiá el que corresponda al N950.
+
+3. Agregá en **`.env.local`** y en **Vercel**:
+
+   ```bash
+   MERCADOPAGO_DEVICE_ID=PAX_N950__TUN_ID_AQUI
+   ```
+
+4. **Sandbox Point** (solo pruebas): si MP te indica usar entorno de prueba del terminal:
+
+   ```bash
+   MERCADOPAGO_POINT_SANDBOX=true
+   ```
+
+   En producción no definas esa variable (o ponela en `false`).
+
+El **access token** es el mismo que para Checkout (`MERCADOPAGO_ACCESS_TOKEN` o `MP_ACCESS_TOKEN`).
+
 ## Ejemplo de archivo .env.local
 
 ```bash
 # Credenciales de Mercado Pago
 MP_ACCESS_TOKEN=APP_USR-xxxx-xxxx-xxxx-xxxx
+
+# Terminal Point (POS físico)
+MERCADOPAGO_DEVICE_ID=PAX_N950__XXXXXXXX
 
 # URL de tu sitio (sin barra al final)
 NEXT_PUBLIC_URL=https://bloom-cafe.vercel.app

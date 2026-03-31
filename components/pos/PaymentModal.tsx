@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import QRCode from "react-qr-code";
 import { CartItem } from "@/lib/store/order-store";
 import { PaymentMethod } from "@/lib/types";
+
+const POINT_POLL_MS = 1200;
+const POINT_POLL_MAX = 100;
 
 interface PaymentModalProps {
     tableId: number;
@@ -18,7 +21,10 @@ interface PaymentModalProps {
     cart: CartItem[];
     isFinishing: boolean;
     onClose: () => void;
-    onConfirm: () => void;
+    onConfirm: (ctx?: { mpOrderId?: string | null }) => void;
+    /** UUID de `orders` al generar preferencia QR (webhook marca paid). */
+    onMpOrderReady?: (orderId: string | null) => void;
+    waiterId?: string | null;
 }
 
 export function PaymentModal({
@@ -33,37 +39,181 @@ export function PaymentModal({
     isFinishing,
     onClose,
     onConfirm,
+    onMpOrderReady,
+    waiterId = null,
 }: PaymentModalProps) {
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
     const [isGeneratingQR, setIsGeneratingQR] = useState(false);
+    const [qrError, setQrError] = useState<string | null>(null);
+    const [showQrOption, setShowQrOption] = useState(false);
 
-    const generateQR = async () => {
-        setIsGeneratingQR(true);
-        try {
-            const resp = await fetch('/api/mercadopago/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    items: cart.map(i => ({
-                        title: i.name,
-                        unit_price: i.price,
-                        quantity: i.quantity
-                    })),
-                    orderId: `table-${tableId}-${Date.now()}`
-                })
-            });
-            const data = await resp.json();
-            if (data.init_point) setQrCodeUrl(data.init_point);
-        } catch (err) {
-            console.error("Error generating QR:", err);
-        } finally {
+    const [pointBusy, setPointBusy] = useState(false);
+    const [pointWaiting, setPointWaiting] = useState(false);
+    const [pointError, setPointError] = useState<string | null>(null);
+
+    const onMpOrderReadyRef = useRef(onMpOrderReady);
+    onMpOrderReadyRef.current = onMpOrderReady;
+
+    const cartKey = useMemo(
+        () =>
+            JSON.stringify(
+                cart.map((i) => ({ id: i.id, n: i.name, p: i.price, q: i.quantity }))
+            ),
+        [cart]
+    );
+
+    useEffect(() => {
+        if (paymentMethod !== "MERCADO_PAGO" || !showQrOption) {
+            setQrCodeUrl(null);
+            setQrError(null);
             setIsGeneratingQR(false);
+            onMpOrderReadyRef.current?.(null);
+            return;
         }
-    };
+
+        let cancelled = false;
+        setIsGeneratingQR(true);
+        setQrError(null);
+        setQrCodeUrl(null);
+        onMpOrderReadyRef.current?.(null);
+
+        void (async () => {
+            try {
+                const resp = await fetch("/api/payments/pos-preference", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        table_id: tableId,
+                        items: cart.map((i) => ({
+                            id: i.id,
+                            name: i.name,
+                            price: i.price,
+                            quantity: i.quantity,
+                        })),
+                        subtotal: total,
+                        final_total: finalTotal,
+                        waiter_id: waiterId || null,
+                    }),
+                });
+                const data = (await resp.json()) as {
+                    init_point?: string;
+                    order_id?: string;
+                    error?: string;
+                };
+                if (cancelled) return;
+                if (!resp.ok || !data.init_point) {
+                    setQrError(data.error || "No se pudo generar el cobro con Mercado Pago");
+                    onMpOrderReadyRef.current?.(null);
+                    return;
+                }
+                setQrCodeUrl(data.init_point);
+                onMpOrderReadyRef.current?.(data.order_id ?? null);
+            } catch (err) {
+                if (cancelled) return;
+                console.error("Error generating QR:", err);
+                setQrError("Error de red al crear el cobro");
+                onMpOrderReadyRef.current?.(null);
+            } finally {
+                if (!cancelled) setIsGeneratingQR(false);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [paymentMethod, showQrOption, finalTotal, total, cartKey, tableId, waiterId]);
+
+    useEffect(() => {
+        if (paymentMethod !== "MERCADO_PAGO") {
+            setShowQrOption(false);
+            setPointWaiting(false);
+            setPointBusy(false);
+            setPointError(null);
+        }
+    }, [paymentMethod]);
 
     const handleSelectMercadoPago = () => {
-        setPaymentMethod('MERCADO_PAGO');
-        if (!qrCodeUrl) generateQR();
+        setPaymentMethod("MERCADO_PAGO");
+        setPointError(null);
+        setShowQrOption(false);
+    };
+
+    const pollPointUntilPaid = async (paymentIntentId: string, orderId: string) => {
+        for (let i = 0; i < POINT_POLL_MAX; i++) {
+            await new Promise((r) => setTimeout(r, POINT_POLL_MS));
+            const res = await fetch(
+                `/api/payments/point-intent?payment_intent_id=${encodeURIComponent(paymentIntentId)}`,
+                { credentials: "include" }
+            );
+            const j = (await res.json()) as {
+                paid?: boolean;
+                pending?: boolean;
+                failed?: boolean;
+                error?: string;
+                payment_status?: string;
+            };
+            if (!res.ok) {
+                throw new Error(j.error || "Error consultando el terminal");
+            }
+            if (j.paid) {
+                onMpOrderReadyRef.current?.(orderId);
+                onConfirm({ mpOrderId: orderId });
+                return;
+            }
+            if (j.failed) {
+                throw new Error(
+                    j.payment_status
+                        ? `Pago no aprobado (${j.payment_status})`
+                        : "Operación cancelada o rechazada en el terminal"
+                );
+            }
+        }
+        throw new Error("Tiempo de espera agotado. Revisá el Point o intentá de nuevo.");
+    };
+
+    const handleCobrarConPoint = async () => {
+        setPointError(null);
+        setPointBusy(true);
+        setPointWaiting(false);
+        onMpOrderReadyRef.current?.(null);
+        try {
+            const resp = await fetch("/api/payments/point-intent", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    table_id: tableId,
+                    items: cart.map((i) => ({
+                        id: i.id,
+                        name: i.name,
+                        price: i.price,
+                        quantity: i.quantity,
+                    })),
+                    subtotal: total,
+                    final_total: finalTotal,
+                    waiter_id: waiterId || null,
+                }),
+            });
+            const data = (await resp.json()) as {
+                payment_intent_id?: string;
+                order_id?: string;
+                error?: string;
+            };
+            if (!resp.ok || !data.payment_intent_id || !data.order_id) {
+                throw new Error(data.error || "No se pudo enviar el cobro al Point");
+            }
+            onMpOrderReadyRef.current?.(data.order_id);
+            setPointWaiting(true);
+            await pollPointUntilPaid(data.payment_intent_id, data.order_id);
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : "Error en cobro Point";
+            setPointError(msg);
+            onMpOrderReadyRef.current?.(null);
+        } finally {
+            setPointBusy(false);
+            setPointWaiting(false);
+        }
     };
 
     return (
@@ -88,7 +238,7 @@ export function PaymentModal({
                                 type="number"
                                 min="0"
                                 max="100"
-                                value={discount === 0 ? '' : discount}
+                                value={discount === 0 ? "" : discount}
                                 onChange={(e) => setDiscount(Math.min(100, Math.max(0, Number(e.target.value))))}
                                 placeholder="0"
                                 className="w-full bg-transparent text-2xl font-black outline-none border-b-2 border-black/10 focus:border-black/50 transition-colors py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -110,21 +260,21 @@ export function PaymentModal({
                     <h3 className="text-2xl font-black uppercase tracking-tighter mb-8">Método de Pago</h3>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <button
-                            onClick={() => setPaymentMethod('CASH')}
-                            className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === 'CASH' ? 'border-[#FFD60A] bg-[#FFD60A]/5' : 'border-gray-100'}`}
+                            onClick={() => setPaymentMethod("CASH")}
+                            className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === "CASH" ? "border-[#FFD60A] bg-[#FFD60A]/5" : "border-gray-100"}`}
                         >
                             <p className="font-black text-lg">Efectivo</p>
                         </button>
                         <button
                             onClick={handleSelectMercadoPago}
-                            className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === 'MERCADO_PAGO' ? 'border-sky-500 bg-sky-50' : 'border-gray-100'}`}
+                            className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === "MERCADO_PAGO" ? "border-sky-500 bg-sky-50" : "border-gray-100"}`}
                         >
                             <p className="font-black text-lg">Mercado Pago</p>
                         </button>
                     </div>
 
-                    <div className="flex-1 bg-gray-50 rounded-3xl p-8 flex items-center justify-center border border-gray-100 mb-4">
-                        {paymentMethod === 'CASH' && (
+                    <div className="flex-1 bg-gray-50 rounded-3xl p-8 flex items-center justify-center border border-gray-100 mb-4 overflow-y-auto">
+                        {paymentMethod === "CASH" && (
                             <input
                                 type="number"
                                 placeholder={total.toString()}
@@ -132,18 +282,69 @@ export function PaymentModal({
                                 autoFocus
                             />
                         )}
-                        {paymentMethod === 'MERCADO_PAGO' && (
-                            <div className="text-center w-full">
-                                {isGeneratingQR ? (
-                                    <Loader2 className="animate-spin mx-auto" />
-                                ) : qrCodeUrl ? (
-                                    <div className="flex flex-col items-center gap-6">
-                                        <div className="bg-white p-6 rounded-[2rem] shadow-2xl">
-                                            <QRCodeSVG value={qrCodeUrl} size={180} />
-                                        </div>
+                        {paymentMethod === "MERCADO_PAGO" && (
+                            <div className="text-center w-full max-w-sm space-y-5">
+                                {pointWaiting ? (
+                                    <div className="flex flex-col items-center gap-3">
+                                        <Loader2 className="animate-spin h-10 w-10 text-sky-600" />
+                                        <p className="text-sm font-bold text-gray-800">Procesando en el terminal…</p>
+                                        <p className="text-xs font-medium text-gray-500">
+                                            Pedile al cliente que pague en el Point Smart (N950).
+                                        </p>
                                     </div>
                                 ) : (
-                                    <p className="text-red-500">Error QR</p>
+                                    <>
+                                        <button
+                                            type="button"
+                                            disabled={pointBusy || isFinishing || finalTotal <= 0}
+                                            onClick={() => void handleCobrarConPoint()}
+                                            className="w-full rounded-2xl bg-sky-600 py-4 font-black text-white shadow-lg transition hover:bg-sky-700 disabled:opacity-30"
+                                        >
+                                            {pointBusy ? "Enviando al Point…" : "Cobrar con Point"}
+                                        </button>
+                                        {pointError ? (
+                                            <p className="text-sm font-semibold text-red-600 leading-snug">{pointError}</p>
+                                        ) : (
+                                            <p className="text-xs font-medium text-gray-500">
+                                                Envía el monto al terminal para tarjeta (crédito, 1 cuota).
+                                            </p>
+                                        )}
+
+                                        <div className="border-t border-gray-200 pt-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowQrOption((v) => !v);
+                                                    setQrError(null);
+                                                }}
+                                                className="text-xs font-bold uppercase tracking-wide text-sky-700 underline-offset-2 hover:underline"
+                                            >
+                                                {showQrOption ? "Ocultar QR (celular)" : "Pagar con QR en el celular"}
+                                            </button>
+                                        </div>
+
+                                        {showQrOption && (
+                                            <div className="pt-2">
+                                                {isGeneratingQR ? (
+                                                    <div className="flex flex-col items-center gap-3">
+                                                        <Loader2 className="animate-spin mx-auto h-8 w-8 text-sky-600" />
+                                                        <p className="text-sm font-semibold text-gray-600">Generando QR…</p>
+                                                    </div>
+                                                ) : qrError ? (
+                                                    <p className="text-sm font-semibold text-red-600 leading-snug">{qrError}</p>
+                                                ) : qrCodeUrl ? (
+                                                    <div className="flex flex-col items-center gap-4">
+                                                        <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                                                            Escaneá con la app de Mercado Pago
+                                                        </p>
+                                                        <div className="rounded-[2rem] bg-white p-4 shadow-xl">
+                                                            <QRCode value={qrCodeUrl} size={180} />
+                                                        </div>
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         )}
@@ -157,8 +358,8 @@ export function PaymentModal({
                             Volver
                         </button>
                         <button
-                            disabled={isFinishing}
-                            onClick={onConfirm}
+                            disabled={isFinishing || pointWaiting || pointBusy}
+                            onClick={() => onConfirm()}
                             className="flex-[2] py-6 rounded-[2rem] bg-black text-[#FFD60A] font-black hover:scale-[1.03] disabled:opacity-20 shadow-2xl"
                         >
                             {isFinishing ? "..." : "Confirmar Venta"}

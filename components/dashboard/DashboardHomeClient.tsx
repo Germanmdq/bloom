@@ -98,11 +98,11 @@ export function DashboardHomeClient() {
         <div className="mx-auto max-w-5xl space-y-8">
             <div>
                 <h1 className="text-2xl font-black text-gray-900 md:text-3xl">Bloom OS</h1>
-                <p className="mt-1 text-sm font-medium text-gray-500">Panel principal — pendientes por orden de llegada</p>
+                <p className="mt-1 text-sm font-medium text-gray-500">Pedidos pendientes — un solo listado por orden de llegada</p>
             </div>
 
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h2 className="mb-3 text-xs font-black uppercase tracking-widest text-gray-400">Cola operativa</h2>
+                <h2 className="mb-3 text-xs font-black uppercase tracking-widest text-gray-400">Pedidos pendientes</h2>
                 {pendingError ? (
                     <p className="text-sm font-semibold text-red-600">{pendingError}</p>
                 ) : pendingQueue == null ? (
