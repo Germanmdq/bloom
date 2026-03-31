@@ -1,16 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
+const HERO_VIDEO_POSTER_SRC = "/images/bloom-logo.png";
+
 const GREEN = "#2d4a3e";
 const CREAM = "#FAF7F2";
+const GOLD = "#c9a84c";
 const APPLE_FONT =
   '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
-const STEP_TRANSITION_MS = 280;
+const STEP_TRANSITION_MS = 300;
+
+const MESES: { value: string; label: string }[] = [
+  { value: "01", label: "Enero" },
+  { value: "02", label: "Febrero" },
+  { value: "03", label: "Marzo" },
+  { value: "04", label: "Abril" },
+  { value: "05", label: "Mayo" },
+  { value: "06", label: "Junio" },
+  { value: "07", label: "Julio" },
+  { value: "08", label: "Agosto" },
+  { value: "09", label: "Septiembre" },
+  { value: "10", label: "Octubre" },
+  { value: "11", label: "Noviembre" },
+  { value: "12", label: "Diciembre" },
+];
 
 type FieldKey =
   | "full_name"
@@ -30,7 +50,7 @@ function translateAuthError(err: AuthError): string {
     return "Confirmá tu correo antes de iniciar sesión.";
   }
   if (msg.includes("user already registered") || msg.includes("already registered")) {
-    return "Ese email ya está registrado. Iniciá sesión.";
+    return "Ese email ya está registrado.";
   }
   if (msg.includes("password")) {
     return "La contraseña no cumple los requisitos.";
@@ -73,22 +93,44 @@ function firstNameForGreeting(fullName: string): string {
   return t.split(/\s+/)[0] ?? t;
 }
 
+function isValidCalendarDate(y: number, m: number, d: number): boolean {
+  if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1900) /**/ return false;
+  const dt = new Date(y, m - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
+
+function birthdateISO(day: string, month: string, year: string): string | null {
+  if (!day || !month || !year) return null;
+  const d = parseInt(day, 10);
+  const m = parseInt(month, 10);
+  const y = parseInt(year, 10);
+  if (!isValidCalendarDate(y, m, d)) return null;
+  const dd = String(d).padStart(2, "0");
+  return `${y}-${month}-${dd}`;
+}
+
 const inputClass = (hasError: boolean) =>
   `w-full min-h-[52px] rounded-2xl border-2 px-4 text-[16px] font-semibold leading-snug outline-none transition-all placeholder:font-medium placeholder:text-neutral-400 ${
     hasError ? "border-red-400 bg-red-50/80" : "border-neutral-200/90 bg-white focus:border-[#5f7a6b] focus:ring-1 focus:ring-[#2d4a3e]/20"
   }`;
 
+const selectFieldClass = (hasError: boolean) =>
+  `${inputClass(hasError)} appearance-none bg-white pr-10`;
+
 export default function RegistroPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const [heroVideoReady, setHeroVideoReady] = useState(false);
   const [step, setStep] = useState(1);
   const [panelAnim, setPanelAnim] = useState<"in" | "out">("in");
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [birthdate, setBirthdate] = useState("");
+  const [birthDay, setBirthDay] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthYear, setBirthYear] = useState("");
   const [password, setPassword] = useState("");
   const [addressLine, setAddressLine] = useState("");
   const [addressExtra, setAddressExtra] = useState("");
@@ -97,11 +139,42 @@ export default function RegistroPage() {
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey | "general", string>>>({});
   const [loading, setLoading] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
+  const [redirectSec, setRedirectSec] = useState(3);
+
+  const years = useMemo(() => {
+    const y = new Date().getFullYear();
+    const max = y - 13;
+    const min = y - 100;
+    const list: number[] = [];
+    for (let yy = max; yy >= min; yy--) list.push(yy);
+    return list;
+  }, []);
+
+  const days = useMemo(() => {
+    const md = birthMonth ? parseInt(birthMonth, 10) : 12;
+    const yy = birthYear ? parseInt(birthYear, 10) : 2024;
+    const dim = new Date(yy, md, 0).getDate();
+    return Array.from({ length: dim }, (_, i) => String(i + 1));
+  }, [birthMonth, birthYear]);
+
+  useEffect(() => {
+    if (!birthDay) return;
+    const d = parseInt(birthDay, 10);
+    const dim = days.length;
+    if (d > dim) setBirthDay("");
+  }, [birthDay, days.length]);
 
   useEffect(() => {
     if (!celebrate) return;
-    const t = window.setTimeout(() => router.push("/menu"), 2500);
-    return () => clearTimeout(t);
+    setRedirectSec(3);
+    const t2 = window.setTimeout(() => setRedirectSec(2), 1000);
+    const t1 = window.setTimeout(() => setRedirectSec(1), 2000);
+    const go = window.setTimeout(() => router.push("/menu"), 3000);
+    return () => {
+      clearTimeout(t2);
+      clearTimeout(t1);
+      clearTimeout(go);
+    };
   }, [celebrate, router]);
 
   const emailValid = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim().toLowerCase());
@@ -135,7 +208,10 @@ export default function RegistroPage() {
     const next: Partial<Record<FieldKey, string>> = {};
     if (!phone.trim()) next.phone = "Ingresá tu teléfono.";
     if (!emailValid(email)) next.email = "Ingresá un email válido.";
-    if (!birthdate.trim()) next.birthdate = "Elegí tu fecha de nacimiento.";
+    const iso = birthdateISO(birthDay, birthMonth, birthYear);
+    if (!iso) {
+      next.birthdate = "Elegí una fecha de nacimiento válida.";
+    }
     if (Object.keys(next).length) {
       setFieldErrors(next);
       return false;
@@ -146,9 +222,9 @@ export default function RegistroPage() {
 
   const validarPaso3 = (): boolean => {
     const next: Partial<Record<FieldKey, string>> = {};
-    if (password.length < 6) next.password = "La contraseña debe tener al menos 6 caracteres.";
-    if (!addressLine.trim()) next.address = "Ingresá la dirección de entrega (calle y número).";
-    if (!addressExtra.trim()) next.address_extra = "Ingresá piso, dpto o referencia.";
+    if (password.length < 6) next.password = "Mínimo 6 caracteres.";
+    if (!addressLine.trim()) next.address = "Ingresá calle y número.";
+    if (!addressExtra.trim()) next.address_extra = "Ingresá piso, oficina o referencia.";
     if (Object.keys(next).length) {
       setFieldErrors(next);
       return false;
@@ -174,16 +250,23 @@ export default function RegistroPage() {
       return next;
     });
     if (!validarPaso3()) return;
+    const bd = birthdateISO(birthDay, birthMonth, birthYear);
+    if (!bd) {
+      setFieldErrors({ birthdate: "Fecha de nacimiento inválida." });
+      return;
+    }
     setLoading(true);
     const defaultAddress = combineRegisterAddress(addressLine, addressExtra);
+    const emailNorm = email.trim().toLowerCase();
     const { error: err } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
+      email: emailNorm,
       password,
       options: {
         data: {
           full_name: fullName.trim(),
           phone: phone.trim(),
-          birthdate,
+          email: emailNorm,
+          birthdate: bd,
           default_address: defaultAddress,
           is_customer: true,
         },
@@ -203,133 +286,107 @@ export default function RegistroPage() {
     setCelebrate(true);
   };
 
-  const cupDelays = Array.from({ length: 10 }, (_, i) => `${0.05 + i * 0.085}s`);
-
-  const benefits = [
-    { icon: "☕", title: "Café gratis", body: "A los 10 encargos, el siguiente es nuestro" },
-    {
-      icon: "🎁",
-      title: "Sorpresa de cumpleaños",
-      body: "El día de tu cumple te sorprendemos con algo especial",
-    },
-    { icon: "🏷️", title: "Descuentos exclusivos", body: "Precios especiales solo para socios" },
-  ];
-
   const greetingName = firstNameForGreeting(fullName);
 
-  const stepTitles: Record<number, string> = {
+  const stepHeading: Record<number, string> = {
     1: "¿Cómo te llamás?",
-    2: "¿Cómo te contactamos?",
-    3: "Creá tu contraseña",
+    2: "¿Dónde te encontramos?",
+    3: "Última paso",
   };
 
   return (
     <div className="min-h-[100dvh] text-neutral-900" style={{ fontFamily: APPLE_FONT }}>
       {celebrate ? (
         <div
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 px-6 text-center"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 px-6 text-center"
           style={{ backgroundColor: GREEN }}
           role="alert"
           aria-live="polite"
         >
-          <span className="text-[clamp(4rem,18vw,7rem)] leading-none drop-shadow-lg" aria-hidden>
+          <span
+            className="registro-celebrate-coffee text-[clamp(4.5rem,20vw,8rem)] leading-none drop-shadow-lg"
+            aria-hidden
+          >
             ☕
           </span>
-          <p
-            className="max-w-lg text-[clamp(1.35rem,4.5vw,2.25rem)] font-black leading-tight text-white [text-shadow:0_4px_32px_rgba(0,0,0,0.35)]"
-            style={{ fontFamily: APPLE_FONT }}
-          >
-            {greetingName
-              ? `¡Bienvenido al Club Bloom, ${greetingName}!`
-              : "¡Bienvenido al Club Bloom!"}
+          <p className="max-w-xl text-[clamp(1.25rem,4.5vw,2rem)] font-black leading-snug text-white [text-shadow:0_4px_28px_rgba(0,0,0,0.35)]">
+            ¡Bienvenido al Club Bloom,{" "}
+            <span className="text-[clamp(1.35rem,5vw,2.35rem)]" style={{ color: GOLD }}>
+              {greetingName || "socio"}
+            </span>
+            !
           </p>
-          <p className="max-w-sm text-[16px] font-medium text-white/85">Te llevamos al menú…</p>
+          <p className="max-w-md text-[17px] font-semibold leading-relaxed text-white/88">
+            Ya sos socio. Cada encargo te acerca a tu próximo café gratis.
+          </p>
+          <p className="pt-4 text-[16px] font-bold text-white/75">Entrando al menú en {redirectSec}…</p>
         </div>
       ) : null}
 
-      <div className="flex min-h-[100dvh] flex-col lg:flex-row">
-        <section
-          className="relative flex flex-1 flex-col justify-center overflow-hidden px-6 py-12 sm:px-10 sm:py-16 lg:w-1/2 lg:min-h-[100dvh] lg:py-20"
-          style={{
-            backgroundColor: GREEN,
-            backgroundImage:
-              "radial-gradient(ellipse 90% 60% at 100% 0%, rgba(201, 168, 76, 0.14), transparent 55%), radial-gradient(ellipse 70% 50% at 0% 100%, rgba(255,255,255,0.07), transparent 50%)",
-          }}
-          aria-labelledby="registro-hero-title"
-        >
-          <div className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:repeating-linear-gradient(-45deg,#fff_0,#fff_1px,transparent_1px,transparent_12px)]" />
-
-          <div className="relative mx-auto w-full max-w-xl">
-            <h1
-              id="registro-hero-title"
-              className="text-[clamp(1.65rem,5vw,2.65rem)] font-black leading-[1.12] tracking-tight text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.3)]"
-            >
-              Cada visita te acerca a tu próximo café gratis
-            </h1>
-
-            <div
-              className="my-8 flex flex-wrap items-center gap-x-1 gap-y-2 sm:gap-x-1.5"
-              role="img"
-              aria-label="Progreso de lealtad: nueve visitas y la décima es tu café gratis"
-            >
-              {cupDelays.slice(0, 9).map((delay, i) => (
-                <span
-                  key={i}
-                  className="registro-cup inline-block text-[clamp(1.35rem,4.5vw,1.75rem)] leading-none"
-                  style={{ animationDelay: delay }}
-                >
-                  🟤
-                </span>
-              ))}
-              <span
-                className="registro-cup registro-cup--final inline-block text-[clamp(1.35rem,4.5vw,1.85rem)] leading-none"
-                style={{ animationDelay: cupDelays[9] }}
-              >
-                ☕
-              </span>
+      <div className="relative flex min-h-[100dvh] flex-col">
+        <div className="relative min-h-[min(52vh,520px)] w-full shrink-0 overflow-hidden bg-neutral-950">
+          <video
+            className="absolute inset-0 h-full w-full scale-[1.02] object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="none"
+            poster={HERO_VIDEO_POSTER_SRC}
+            aria-hidden
+            onCanPlay={() => setHeroVideoReady(true)}
+            onError={() => setHeroVideoReady(true)}
+          >
+            <source src={HERO_VIDEO_SRC} type="video/mp4" />
+          </video>
+          {!heroVideoReady ? (
+            <div className="absolute inset-0">
+              <Image
+                src={HERO_VIDEO_POSTER_SRC}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="100vw"
+                priority
+              />
             </div>
-
-            <ul className="space-y-5">
-              {benefits.map((b) => (
-                <li key={b.title} className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 sm:p-5">
-                  <span className="text-3xl sm:text-4xl leading-none" aria-hidden>
-                    {b.icon}
-                  </span>
-                  <div>
-                    <p className="text-[17px] font-black text-white sm:text-lg">{b.title}</p>
-                    <p className="mt-1 text-[15px] font-medium leading-relaxed text-white/85">{b.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          ) : null}
+          <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.55)" }} aria-hidden />
+          <div className="relative z-10 flex min-h-[min(52vh,520px)] flex-col items-center justify-center px-6 py-14 text-center">
+            <p className="text-[clamp(2.25rem,8vw,3.75rem)] font-black leading-none tracking-[-0.04em] text-white drop-shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
+              BLOOM.
+            </p>
+            <p className="mt-4 max-w-md text-[17px] font-semibold leading-snug text-white/95 drop-shadow-[0_4px_16px_rgba(0,0,0,0.35)] sm:text-lg">
+              Café, pastelería y cocina — todo en un solo lugar
+            </p>
+            <p
+              className="mt-6 text-[11px] font-bold uppercase tracking-[0.25em] sm:text-xs"
+              style={{ color: GOLD }}
+            >
+              Programa de socios
+            </p>
           </div>
-        </section>
+        </div>
 
-        <section
-          className="flex flex-1 flex-col justify-center px-5 py-12 sm:px-8 sm:py-16 lg:w-1/2 lg:py-20"
-          style={{ backgroundColor: CREAM }}
-          aria-labelledby="registro-step-heading"
-        >
-          <div className="mx-auto w-full max-w-[440px]">
-            <nav className="mb-8" aria-label="Progreso del registro">
-              <p className="mb-4 text-center text-[15px] font-bold text-neutral-500">
-                {[1, 2, 3].map((n, i) => (
-                  <span key={n}>
-                    {i > 0 ? <span className="text-neutral-300"> · </span> : null}
-                    <span className={n === step ? "text-[#2d4a3e]" : ""}>Paso {n}</span>
-                  </span>
-                ))}
-              </p>
-              <div className="flex items-center justify-center gap-2">
-                {[1, 2, 3].map((n) => (
-                  <span
-                    key={n}
-                    className={`h-2 flex-1 max-w-[100px] rounded-full ${n <= step ? "bg-[#2d4a3e]" : "bg-neutral-300"}`}
-                    aria-hidden
-                  />
-                ))}
-              </div>
-            </nav>
+        <div className="relative z-20 -mt-10 flex flex-1 justify-center px-4 pb-14 sm:-mt-14 sm:px-6">
+          <div
+            className="w-full max-w-[480px] rounded-3xl border border-black/[0.06] p-10 shadow-2xl"
+            style={{ backgroundColor: CREAM }}
+          >
+            <h2 className="text-center text-[clamp(1.5rem,4.5vw,1.9rem)] font-black tracking-tight text-neutral-900">
+              Crear mi cuenta
+            </h2>
+            <p className="mt-2 text-center text-[16px] font-semibold text-neutral-600">30 segundos y ya sos socio</p>
+
+            <div className="mb-8 mt-8 flex items-center justify-center gap-3" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={3} aria-label={`Paso ${step} de 3`}>
+              {[1, 2, 3].map((n) => (
+                <span
+                  key={n}
+                  className={`h-3 w-3 rounded-full transition-colors duration-300 ${step >= n ? "bg-[#2d4a3e]" : "bg-neutral-300"}`}
+                  aria-hidden
+                />
+              ))}
+            </div>
 
             {fieldErrors.general ? (
               <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[15px] font-semibold text-red-700">
@@ -341,14 +398,12 @@ export default function RegistroPage() {
               key={step}
               className={panelAnim === "out" ? "registro-step-panel-out" : "registro-step-panel-in"}
             >
-              <h2 id="registro-step-heading" className="mb-6 text-[clamp(1.35rem,4vw,1.85rem)] font-black tracking-tight text-neutral-900">
-                {stepTitles[step]}
-              </h2>
+              <h3 className="mb-6 text-[1.2rem] font-black text-neutral-900 sm:text-xl">{stepHeading[step]}</h3>
 
               {step === 1 ? (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label htmlFor="reg-nombre" className="block text-[15px] font-bold text-neutral-800">
+                    <label htmlFor="reg-nombre" className="sr-only">
                       Nombre completo
                     </label>
                     <input
@@ -375,7 +430,7 @@ export default function RegistroPage() {
                   <button
                     type="button"
                     onClick={onContinuar1}
-                    className="flex min-h-[52px] w-full items-center justify-center rounded-full bg-[#2d4a3e] text-[16px] font-black text-white shadow-md transition hover:bg-[#243d32]"
+                    className="flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-[#2d4a3e] text-[16px] font-black text-white shadow-md transition hover:bg-[#243d32]"
                   >
                     Continuar →
                   </button>
@@ -386,7 +441,7 @@ export default function RegistroPage() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <label htmlFor="reg-tel" className="block text-[15px] font-bold text-neutral-800">
-                      Teléfono (WhatsApp)
+                      Tu WhatsApp
                     </label>
                     <input
                       id="reg-tel"
@@ -394,7 +449,7 @@ export default function RegistroPage() {
                       type="tel"
                       inputMode="tel"
                       autoComplete="tel"
-                      placeholder="Tu número"
+                      placeholder="223 000-0000"
                       value={phone}
                       onChange={(e) => {
                         setPhone(e.target.value);
@@ -420,7 +475,7 @@ export default function RegistroPage() {
                       type="email"
                       inputMode="email"
                       autoComplete="email"
-                      placeholder="Tu email"
+                      placeholder="tucorreo@email.com"
                       value={email}
                       onChange={(e) => {
                         setEmail(e.target.value);
@@ -436,33 +491,101 @@ export default function RegistroPage() {
                       </p>
                     ) : null}
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="reg-nac" className="block text-[15px] font-bold text-neutral-800">
-                      Para sorprenderte en tu cumpleaños 🎂
-                    </label>
-                    <input
-                      id="reg-nac"
-                      name="birthdate"
-                      type="date"
-                      value={birthdate}
-                      onChange={(e) => {
-                        setBirthdate(e.target.value);
-                        clearFieldError("birthdate");
-                      }}
-                      className={inputClass(!!fieldErrors.birthdate)}
-                      aria-invalid={!!fieldErrors.birthdate}
-                      aria-describedby={fieldErrors.birthdate ? "err-nac" : undefined}
-                    />
+                  <fieldset className="space-y-3 rounded-2xl border border-neutral-200/80 bg-white/60 p-4">
+                    <legend className="px-1 text-[16px] font-bold leading-snug text-neutral-900">
+                      🎂 ¿Cuándo es tu cumpleaños? Te sorprendemos ese día
+                    </legend>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label htmlFor="reg-bd-d" className="mb-1 block text-[12px] font-bold uppercase tracking-wide text-neutral-500">
+                          Día
+                        </label>
+                        <div className="relative">
+                          <select
+                            id="reg-bd-d"
+                            value={birthDay}
+                            onChange={(e) => {
+                              setBirthDay(e.target.value);
+                              clearFieldError("birthdate");
+                            }}
+                            className={selectFieldClass(!!fieldErrors.birthdate)}
+                            aria-label="Día de nacimiento"
+                          >
+                            <option value="">—</option>
+                            {days.map((d) => (
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400" aria-hidden>
+                            ▼
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <label htmlFor="reg-bd-m" className="mb-1 block text-[12px] font-bold uppercase tracking-wide text-neutral-500">
+                          Mes
+                        </label>
+                        <div className="relative">
+                          <select
+                            id="reg-bd-m"
+                            value={birthMonth}
+                            onChange={(e) => {
+                              setBirthMonth(e.target.value);
+                              clearFieldError("birthdate");
+                            }}
+                            className={selectFieldClass(!!fieldErrors.birthdate)}
+                            aria-label="Mes de nacimiento"
+                          >
+                            <option value="">—</option>
+                            {MESES.map((m) => (
+                              <option key={m.value} value={m.value}>
+                                {m.label}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400" aria-hidden>
+                            ▼
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <label htmlFor="reg-bd-y" className="mb-1 block text-[12px] font-bold uppercase tracking-wide text-neutral-500">
+                          Año
+                        </label>
+                        <div className="relative">
+                          <select
+                            id="reg-bd-y"
+                            value={birthYear}
+                            onChange={(e) => {
+                              setBirthYear(e.target.value);
+                              clearFieldError("birthdate");
+                            }}
+                            className={selectFieldClass(!!fieldErrors.birthdate)}
+                            aria-label="Año de nacimiento"
+                          >
+                            <option value="">—</option>
+                            {years.map((y) => (
+                              <option key={y} value={String(y)}>
+                                {y}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-400" aria-hidden>
+                            ▼
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                     {fieldErrors.birthdate ? (
-                      <p id="err-nac" className="text-[15px] font-semibold text-red-600">
-                        {fieldErrors.birthdate}
-                      </p>
+                      <p className="text-[15px] font-semibold text-red-600">{fieldErrors.birthdate}</p>
                     ) : null}
-                  </div>
+                  </fieldset>
                   <button
                     type="button"
                     onClick={onContinuar2}
-                    className="flex min-h-[52px] w-full items-center justify-center rounded-full bg-[#2d4a3e] text-[16px] font-black text-white shadow-md transition hover:bg-[#243d32]"
+                    className="flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-[#2d4a3e] text-[16px] font-black text-white shadow-md transition hover:bg-[#243d32]"
                   >
                     Continuar →
                   </button>
@@ -479,7 +602,7 @@ export default function RegistroPage() {
                 >
                   <div className="space-y-2">
                     <label htmlFor="reg-pass" className="block text-[15px] font-bold text-neutral-800">
-                      Contraseña
+                      Elegí una contraseña (mínimo 6 caracteres)
                     </label>
                     <div className="relative">
                       <input
@@ -487,7 +610,7 @@ export default function RegistroPage() {
                         name="password"
                         type={showPassword ? "text" : "password"}
                         autoComplete="new-password"
-                        placeholder="Mínimo 6 caracteres"
+                        placeholder="••••••••"
                         value={password}
                         onChange={(e) => {
                           setPassword(e.target.value);
@@ -515,7 +638,7 @@ export default function RegistroPage() {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="reg-calle" className="block text-[15px] font-bold text-neutral-800">
-                      Dirección de entrega habitual
+                      ¿Dónde te hacemos delivery?
                     </label>
                     <input
                       id="reg-calle"
@@ -540,14 +663,14 @@ export default function RegistroPage() {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="reg-ref" className="block text-[15px] font-bold text-neutral-800">
-                      Piso / Dpto / Referencia
+                      Piso / Dpto
                     </label>
                     <input
                       id="reg-ref"
                       name="address_extra"
                       type="text"
                       autoComplete="off"
-                      placeholder="Ej: Piso 3, Of. 12"
+                      placeholder="Piso, oficina o referencia"
                       value={addressExtra}
                       onChange={(e) => {
                         setAddressExtra(e.target.value);
@@ -566,16 +689,18 @@ export default function RegistroPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="registro-cta-pulse flex h-[60px] w-full items-center justify-center rounded-full bg-[#2d4a3e] text-[18px] font-black text-white transition hover:bg-[#243d32] disabled:opacity-60"
+                    className="registro-cta-pulse mt-2 flex h-[60px] w-full items-center justify-center rounded-full bg-[#2d4a3e] text-[18px] font-black text-white transition hover:bg-[#243d32] disabled:opacity-60"
                   >
                     {loading ? <Loader2 className="h-6 w-6 animate-spin" aria-hidden /> : "UNIRME AL CLUB BLOOM →"}
                   </button>
-                  <p className="text-center text-[15px] font-medium text-neutral-600">🔒 Tus datos están seguros.</p>
+                  <p className="text-center text-[15px] font-medium text-neutral-600">
+                    🔒 Sin spam. Podés darte de baja cuando quieras.
+                  </p>
                 </form>
               ) : null}
             </div>
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );

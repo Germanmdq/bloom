@@ -157,6 +157,17 @@
       transform: translateX(0);
     }
   }
+
+  @keyframes registro-coffee-bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-14px);
+    }
+  }
 }
 
 .registro-field-anim {
@@ -183,11 +194,15 @@
 }
 
 .registro-step-panel-out {
-  animation: registro-step-out-left 0.28s ease-in forwards;
+  animation: registro-step-out-left 0.3s ease-in forwards;
 }
 
 .registro-step-panel-in {
-  animation: registro-step-in-right 0.42s cubic-bezier(0.21, 0.47, 0.32, 0.98) both;
+  animation: registro-step-in-right 0.3s cubic-bezier(0.21, 0.47, 0.32, 0.98) both;
+}
+
+.registro-celebrate-coffee {
+  animation: registro-coffee-bounce 0.85s ease-in-out infinite;
 }
 
 body {
