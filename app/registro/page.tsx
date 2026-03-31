@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Instagram, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
@@ -16,6 +16,11 @@ const GOLD = "#c9a84c";
 const APPLE_FONT =
   '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
 const STEP_TRANSITION_MS = 300;
+
+const INSTAGRAM_URL =
+  "https://www.instagram.com/bloomcoffee.mdp?igsh=MWttZmRheHhscm5oYw==";
+const INSTAGRAM_BUTTON_GRADIENT =
+  "linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)";
 
 const MESES: { value: string; label: string }[] = [
   { value: "01", label: "Enero" },
@@ -139,7 +144,8 @@ export default function RegistroPage() {
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey | "general", string>>>({});
   const [loading, setLoading] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
-  const [redirectSec, setRedirectSec] = useState(3);
+  const [instagramModal, setInstagramModal] = useState(false);
+  const menuRedirectRef = useRef<number | null>(null);
 
   const years = useMemo(() => {
     const y = new Date().getFullYear();
@@ -164,18 +170,43 @@ export default function RegistroPage() {
     if (d > dim) setBirthDay("");
   }, [birthDay, days.length]);
 
+  const scheduleMenuRedirect = useCallback(() => {
+    if (menuRedirectRef.current) {
+      clearTimeout(menuRedirectRef.current);
+      menuRedirectRef.current = null;
+    }
+    menuRedirectRef.current = window.setTimeout(() => {
+      menuRedirectRef.current = null;
+      void router.push("/menu");
+    }, 1500);
+  }, [router]);
+
   useEffect(() => {
-    if (!celebrate) return;
-    setRedirectSec(3);
-    const t2 = window.setTimeout(() => setRedirectSec(2), 1000);
-    const t1 = window.setTimeout(() => setRedirectSec(1), 2000);
-    const go = window.setTimeout(() => router.push("/menu"), 3000);
+    if (!celebrate) {
+      setInstagramModal(false);
+      return;
+    }
+    setInstagramModal(false);
+    const showModal = window.setTimeout(() => setInstagramModal(true), 1000);
+    return () => clearTimeout(showModal);
+  }, [celebrate]);
+
+  useEffect(() => {
     return () => {
-      clearTimeout(t2);
-      clearTimeout(t1);
-      clearTimeout(go);
+      if (menuRedirectRef.current) clearTimeout(menuRedirectRef.current);
     };
-  }, [celebrate, router]);
+  }, []);
+
+  const onFollowInstagram = () => {
+    window.open(INSTAGRAM_URL, "_blank", "noopener,noreferrer");
+    setInstagramModal(false);
+    scheduleMenuRedirect();
+  };
+
+  const onSkipInstagram = () => {
+    setInstagramModal(false);
+    scheduleMenuRedirect();
+  };
 
   const emailValid = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim().toLowerCase());
 
@@ -297,30 +328,73 @@ export default function RegistroPage() {
   return (
     <div className="min-h-[100dvh] text-neutral-900" style={{ fontFamily: APPLE_FONT }}>
       {celebrate ? (
-        <div
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 px-6 text-center"
-          style={{ backgroundColor: GREEN }}
-          role="alert"
-          aria-live="polite"
-        >
-          <span
-            className="registro-celebrate-coffee text-[clamp(4.5rem,20vw,8rem)] leading-none drop-shadow-lg"
-            aria-hidden
+        <>
+          <div
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 px-6 text-center"
+            style={{ backgroundColor: GREEN }}
+            role="alert"
+            aria-live="polite"
           >
-            ☕
-          </span>
-          <p className="max-w-xl text-[clamp(1.25rem,4.5vw,2rem)] font-black leading-snug text-white [text-shadow:0_4px_28px_rgba(0,0,0,0.35)]">
-            ¡Bienvenido al Club Bloom,{" "}
-            <span className="text-[clamp(1.35rem,5vw,2.35rem)]" style={{ color: GOLD }}>
-              {greetingName || "socio"}
+            <span
+              className="registro-celebrate-coffee text-[clamp(4.5rem,20vw,8rem)] leading-none drop-shadow-lg"
+              aria-hidden
+            >
+              ☕
             </span>
-            !
-          </p>
-          <p className="max-w-md text-[17px] font-semibold leading-relaxed text-white/88">
-            Ya sos socio. Cada encargo te acerca a tu próximo café gratis.
-          </p>
-          <p className="pt-4 text-[16px] font-bold text-white/75">Entrando al menú en {redirectSec}…</p>
-        </div>
+            <p className="max-w-xl text-[clamp(1.25rem,4.5vw,2rem)] font-black leading-snug text-white [text-shadow:0_4px_28px_rgba(0,0,0,0.35)]">
+              ¡Bienvenido al Club Bloom,{" "}
+              <span className="text-[clamp(1.35rem,5vw,2.35rem)]" style={{ color: GOLD }}>
+                {greetingName || "socio"}
+              </span>
+              !
+            </p>
+            <p className="max-w-md text-[17px] font-semibold leading-relaxed text-white/88">
+              Ya sos socio. Cada encargo te acerca a tu próximo café gratis.
+            </p>
+            <p className="pt-4 text-[16px] font-bold text-white/75">Te llevamos al menú en un momento.</p>
+          </div>
+
+          {instagramModal ? (
+            <div
+              className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 px-4 py-6"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="registro-ig-title"
+            >
+              <div className="w-full max-w-[360px] rounded-3xl bg-white p-8 text-center shadow-2xl">
+                <div
+                  className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-md"
+                  style={{ background: INSTAGRAM_BUTTON_GRADIENT }}
+                  aria-hidden
+                >
+                  <Instagram className="h-8 w-8" strokeWidth={2} aria-hidden />
+                </div>
+                <h2 id="registro-ig-title" className="text-[1.35rem] font-black leading-tight text-neutral-900 sm:text-2xl">
+                  ¡Seguinos en Instagram!
+                </h2>
+                <p className="mt-3 text-[15px] font-medium leading-relaxed text-neutral-600 sm:text-base">
+                  Enterate de los platos del día, promociones y novedades de Bloom
+                </p>
+                <p className="mt-5 text-xl font-black text-neutral-900 sm:text-2xl">@bloomcoffee.mdp</p>
+                <button
+                  type="button"
+                  onClick={onFollowInstagram}
+                  className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-[16px] font-black text-white shadow-lg transition hover:opacity-95 active:scale-[0.99]"
+                  style={{ background: INSTAGRAM_BUTTON_GRADIENT }}
+                >
+                  Seguir en Instagram →
+                </button>
+                <button
+                  type="button"
+                  onClick={onSkipInstagram}
+                  className="mt-4 text-[14px] font-semibold text-neutral-500 underline underline-offset-2 transition hover:text-neutral-800"
+                >
+                  Ahora no
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       <div className="relative flex min-h-[100dvh] flex-col">
