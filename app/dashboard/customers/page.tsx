@@ -17,6 +17,25 @@ function fmtDate(iso: string | null): string {
   }
 }
 
+/** Fecha de nacimiento metadata (YYYY-MM-DD) → "15 de marzo" */
+function fmtBirthday(iso: string | null): string {
+  if (!iso) return "—";
+  const m = iso.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return "—";
+  const y = parseInt(m[1], 10);
+  const mo = parseInt(m[2], 10) - 1;
+  const d = parseInt(m[3], 10);
+  if (mo < 0 || mo > 11 || d < 1 || d > 31) return "—";
+  try {
+    return new Intl.DateTimeFormat("es-AR", {
+      day: "numeric",
+      month: "long",
+    }).format(new Date(y, mo, d));
+  } catch {
+    return "—";
+  }
+}
+
 export default function DashboardCustomersPage() {
   const [rows, setRows] = useState<DashboardCustomerRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,12 +93,13 @@ export default function DashboardCustomersPage() {
           <p className="p-6 text-sm text-gray-500">No hay clientes registrados.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[880px] text-left text-sm">
+            <table className="w-full min-w-[1020px] text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 text-xs font-black uppercase tracking-wide text-gray-500">
                   <th className="px-4 py-3">Nombre</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Teléfono</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Cumpleaños</th>
                   <th className="px-4 py-3">Dirección habitual</th>
                   <th className="px-4 py-3 text-center">Pedidos</th>
                   <th className="px-4 py-3">Último pedido</th>
@@ -102,6 +122,7 @@ export default function DashboardCustomersPage() {
                     </td>
                     <td className="max-w-[200px] truncate px-4 py-3 text-gray-700">{r.email}</td>
                     <td className="px-4 py-3 text-gray-700">{r.phone}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-gray-700">{fmtBirthday(r.birthdate)}</td>
                     <td className="max-w-[220px] truncate px-4 py-3 text-gray-600">{r.defaultAddress}</td>
                     <td className="px-4 py-3 text-center tabular-nums font-bold text-gray-900">{r.orderCount}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-gray-700">{fmtDate(r.lastOrderAt)}</td>

@@ -94,6 +94,7 @@ export async function GET() {
           ? dates.reduce((a, b) => (new Date(a) > new Date(b) ? a : b))
           : null;
       const paidCount = agg?.paidCount ?? 0;
+      const birthRaw = metaString(user, "birthdate");
       customers.push({
         id,
         displayName:
@@ -103,6 +104,7 @@ export async function GET() {
           "—",
         email: user.email ?? "—",
         phone: metaString(user, "phone") || (user.phone ?? "").trim() || "—",
+        birthdate: birthRaw || null,
         defaultAddress: metaString(user, "default_address") || "—",
         orderCount: agg?.total ?? 0,
         lastOrderAt: last,
