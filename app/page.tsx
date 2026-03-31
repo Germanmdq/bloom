@@ -253,40 +253,64 @@ export default function Home() {
       </section>
 
       <section
-        className="py-16 md:py-24 text-bloom-cream ring-1 ring-white/10"
+        className="w-full py-20 px-6 text-white"
         style={{ backgroundColor: "#2d4a3e" }}
       >
-        <div className="container mx-auto px-4">
+        <div className="mx-auto w-full max-w-[1100px]">
           <FadeIn className="mx-auto mb-10 max-w-2xl text-center md:mb-12">
-            <h2 className="mb-3 text-3xl font-black tracking-tight text-bloom-cream drop-shadow-[0_4px_24px_rgba(0,0,0,0.25)] md:text-4xl lg:text-5xl">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#c9a84c] sm:text-sm">
+              Programa de lealtad
+            </p>
+            <h2 className="mb-4 font-serif text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.25)] md:text-4xl lg:text-5xl">
               Sumate al Club Bloom
             </h2>
-            <p className="text-base font-medium leading-relaxed text-bloom-cream/90 md:text-lg">
-              Registrate una vez y sumá puntos con cada encargo
+            <p className="text-base font-medium leading-relaxed text-bloom-cream/85 md:text-lg">
+              Registrate una vez y empezá a sumar puntos con cada encargo. Sin complicaciones.
             </p>
           </FadeIn>
-          <div className="mx-auto mb-10 grid max-w-5xl gap-4 sm:grid-cols-2 md:mb-12 md:grid-cols-3 md:gap-6">
-            {[
-              "☕ Cada 10 encargos el siguiente es gratis",
-              "🎁 Regalos en tu cumpleaños",
-              "🏷️ Descuentos exclusivos para socios",
-            ].map((text, i) => (
-              <FadeIn key={text} delay={i * 0.06}>
-                <div className="flex h-full flex-col justify-center rounded-2xl border border-white/15 bg-white/[0.07] p-5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.35)] backdrop-blur-sm ring-1 ring-white/5 md:p-6">
-                  <p className="text-center text-sm font-bold leading-snug text-bloom-cream md:text-base">
-                    {text}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
+            {(
+              [
+                {
+                  icon: "☕",
+                  title: "Café gratis cada 10 encargos",
+                  desc: "Cada vez que llegás a 10 pedidos, el siguiente corre por nuestra cuenta.",
+                },
+                {
+                  icon: "🎁",
+                  title: "Regalos en fechas especiales",
+                  desc: "En tu cumpleaños y en fechas especiales tenemos una sorpresa para vos.",
+                },
+                {
+                  icon: "🏷️",
+                  title: "Descuentos exclusivos",
+                  desc: "Promociones y precios especiales solo para socios del club.",
+                },
+              ] as const
+            ).map((card, i) => (
+              <FadeIn key={card.title} delay={i * 0.06}>
+                <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.07] p-8">
+                  <span className="mb-4 block text-[48px] leading-none" aria-hidden>
+                    {card.icon}
+                  </span>
+                  <h3 className="mb-3 text-lg font-black leading-snug text-white md:text-xl">
+                    {card.title}
+                  </h3>
+                  <p className="text-sm font-medium leading-relaxed text-white/90 md:text-base">
+                    {card.desc}
                   </p>
                 </div>
               </FadeIn>
             ))}
           </div>
-          <FadeIn className="text-center">
+
+          <FadeIn className="mt-12 text-center">
             <Link
               href="/auth?mode=register"
-              className="inline-flex items-center gap-2 rounded-full bg-bloom-cream px-7 py-3.5 text-sm font-black uppercase tracking-wide text-[#2d4a3e] shadow-[0_12px_36px_-8px_rgba(0,0,0,0.4)] transition hover:bg-white hover:shadow-[0_16px_44px_-6px_rgba(0,0,0,0.45)]"
+              className="inline-flex items-center justify-center rounded-full bg-[#c9a84c] px-[48px] py-4 text-base font-black text-[#1a3028] transition-colors hover:bg-[#d8ba63]"
             >
-              Quiero ser socio
-              <ArrowRight size={18} strokeWidth={2.5} />
+              Quiero ser socio →
             </Link>
           </FadeIn>
         </div>
