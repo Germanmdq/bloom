@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import { Camera, Coffee, Loader2, Lock, LogOut, Pencil, ShoppingBag } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Camera, ChevronDown, ChevronUp, CircleUser, Coffee, Home, Loader2, Lock, PieChart, ShoppingBag, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 const COFFEE_GOAL = 10;
@@ -13,7 +14,11 @@ const GREEN = "#2d4a3e";
 const GOLD = "#c9a84c";
 const CREAM = "#FAF7F2";
 const TEXT_DARK = "#1a1a1a";
+const SIDEBAR_ACTIVE_BG = "rgba(255,255,255,0.08)";
 const SIDEBAR_W = 240;
+
+type SectionId = "inicio" | "pedidos" | "cupones" | "perfil" | "estadisticas";
+type OrderFilter = "todos" | "mes" | "ano";
 
 type OrderRow = {
   id: string;
@@ -23,16 +28,36 @@ type OrderRow = {
   status?: string | null;
   paid?: boolean;
   customer_name?: string | null;
+  order_type?: string | null;
+  delivery_type?: string | null;
 };
+
+const COUPON_DEFS = [
+  { id: "desc10", label: "Descuento 10%", unlock: 5, icon: "🏷️" },
+  { id: "cafe", label: "Café gratis", unlock: 10, icon: "☕" },
+  { id: "postre", label: "Postre gratis", unlock: 20, icon: "🍰" },
+  { id: "desayuno", label: "Desayuno gratis", unlock: 30, icon: "🌅" },
+  { id: "almuerzo", label: "Almuerzo gratis", unlock: 50, icon: "🍽️" },
+] as const;
+
+const WEEKDAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
 }
 
-function loyaltyProgress(totalOrders: number) {
-  const pos = totalOrders % COFFEE_GOAL;
-  const filled = pos === 0 && totalOrders > 0 ? COFFEE_GOAL : pos;
-  return { filled, totalOrders };
+function dateKeyLocal(iso: string): string {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function loyaltyProgress(paidOrders: number) {
+  const pos = paidOrders % COFFEE_GOAL;
+  const filled = pos === 0 && paidOrders > 0 ? COFFEE_GOAL : pos;
+  return { filled, pct: (filled / COFFEE_GOAL) * 100 };
 }
 
 function initialsFromName(name: string): string {
@@ -68,6 +93,73 @@ function orderItemsSummary(items: unknown, maxNames = 4): string {
   return `${shown.join(", ")}${more}`;
 }
 
+function orderTypeLabel(o: OrderRow): string {
+  const d = String(o.delivery_type ?? "").toLowerCase();
+  if (d === "delivery" || d === "domicilio") return "Delivery";
+  return "Retiro";
+}
+
+function combineAddress(line: string, floor: string): string {
+  const a = line.trim();
+  const b = floor.trim();
+  if (!a) return b;
+  if (!b) return a;
+  return `${a} - ${b}`;
+}
+
+function splitDefaultAddress(combined: string): { line: string; floor: string } {
+  const t = combined.trim();
+  const idx = t.indexOf(" - ");
+  if (idx === -1) return { line: t, floor: "" };
+  return { line: t.slice(0, idx).trim(), floor: t.slice(idx + 3).trim() };
+}
+
+function averageDaysBetweenOrders(datesIso: string[]): number {
+  if (datesIso.length < 2) return 0;
+  const ts = [...datesIso].map((d) => new Date(d).getTime()).sort((a, b) => a - b);
+  let sum = 0;
+  for (let i = 1; i < ts.length; i++) {
+    sum += (ts[i] - ts[i - 1]) / (1000 * 60 * 60 * 24);
+  }
+  return Math.round((sum / (ts.length - 1)) * 10) / 10;
+}
+
+function orderStreakDays(orders: OrderRow[]): number {
+  if (orders.length === 0) return 0;
+  const keys = new Set(orders.map((o) => dateKeyLocal(o.created_at)));
+  const newest = [...orders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+  let d = new Date(newest.created_at);
+  let streak = 0;
+  for (let i = 0; i < 400; i++) {
+    const k = dateKeyLocal(d.toISOString());
+    if (keys.has(k)) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else break;
+  }
+  return streak;
+}
+
+function modalHour(orders: OrderRow[]): number | null {
+  const buckets = new Map<number, number>();
+  for (const o of orders) {
+    const h = new Date(o.created_at).getHours();
+    buckets.set(h, (buckets.get(h) ?? 0) + 1);
+  }
+  let bestH: number | null = null;
+  let bestC = 0;
+  for (const [h, c] of buckets) {
+    if (c > bestC) {
+      bestC = c;
+      bestH = h;
+    }
+  }
+  return bestH;
+}
+
+const cardCls = "rounded-xl bg-white p-5 shadow-sm";
+const statMiniCls = `${cardCls} flex flex-col`;
+
 export default function CuentaPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -79,13 +171,16 @@ export default function CuentaPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [paidOrderCount, setPaidOrderCount] = useState(0);
   const [ordersLoading, setOrdersLoading] = useState(true);
-  const [profileEditMode, setProfileEditMode] = useState(false);
+  const [section, setSection] = useState<SectionId>("inicio");
+  const [orderFilter, setOrderFilter] = useState<OrderFilter>("todos");
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const [editFullName, setEditFullName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editBirthdate, setEditBirthdate] = useState("");
-  const [editAddress, setEditAddress] = useState("");
+  const [editAddressLine, setEditAddressLine] = useState("");
+  const [editFloor, setEditFloor] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -96,7 +191,7 @@ export default function CuentaPage() {
       const [listRes, paidCountRes] = await Promise.all([
         supabase
           .from("orders")
-          .select("id, created_at, total, items, status, paid, customer_name")
+          .select("id, created_at, total, items, status, paid, customer_name, order_type, delivery_type")
           .eq("customer_id", uid)
           .order("created_at", { ascending: false }),
         supabase
@@ -119,7 +214,17 @@ export default function CuentaPage() {
     setEditPhone(metaStr(u, "phone") || (u.phone ?? "").trim());
     setEditEmail(u.email ?? "");
     setEditBirthdate(metaStr(u, "birthdate"));
-    setEditAddress(metaStr(u, "default_address"));
+    const floorMeta = metaStr(u, "address_floor");
+    const lineMeta = metaStr(u, "address_line");
+    const combined = metaStr(u, "default_address");
+    if (lineMeta || floorMeta) {
+      setEditAddressLine(lineMeta || splitDefaultAddress(combined).line);
+      setEditFloor(floorMeta || splitDefaultAddress(combined).floor);
+    } else {
+      const sp = splitDefaultAddress(combined);
+      setEditAddressLine(sp.line);
+      setEditFloor(sp.floor);
+    }
     setAvatarUrl(metaStr(u, "avatar_url"));
   }, []);
 
@@ -156,19 +261,94 @@ export default function CuentaPage() {
     };
   }, [router, supabase, loadOrders, hydrateProfileFields]);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/menu");
-    router.refresh();
-  };
-
   const displayName = editFullName.trim() || "Cliente Bloom";
-  const { filled: loyaltyFilled, totalOrders: loyaltyPaidTotal } = loyaltyProgress(paidOrderCount);
-  const cupsToGo = loyaltyFilled >= COFFEE_GOAL ? 0 : COFFEE_GOAL - loyaltyFilled;
-  const freeCoffeeUnlocked = paidOrderCount >= COFFEE_GOAL;
-  const birthdayThisMonth = isBirthdayThisMonth(editBirthdate);
+  const { filled: loyaltyFilled, pct: loyaltyPct } = loyaltyProgress(paidOrderCount);
+  const birthdayActive = isBirthdayThisMonth(editBirthdate);
 
-  const orderStats = useMemo(() => {
+  const analytics = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const totals = orders.map((o) => Number(o.total)).filter((n) => !Number.isNaN(n) && n > 0);
+    const totalSpent = totals.reduce((a, b) => a + b, 0);
+    const productCounts = new Map<string, number>();
+    for (const o of orders) {
+      const items = Array.isArray(o.items) ? o.items : [];
+      for (const it of items) {
+        const name = String((it as { name?: string }).name ?? "").trim();
+        if (!name) continue;
+        const q = Number((it as { quantity?: number }).quantity ?? 1);
+        productCounts.set(name, (productCounts.get(name) ?? 0) + q);
+      }
+    }
+    const top5 = [...productCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+
+    const ordersThisMonth = orders.filter((o) => new Date(o.created_at) >= startOfMonth);
+    const ordersThisYear = orders.filter((o) => new Date(o.created_at) >= startOfYear);
+
+    const byWeekday = WEEKDAY_LABELS.map((label, day) => ({ label, count: 0 }));
+    const byHour = Array.from({ length: 24 }, (_, h) => ({ label: `${String(h).padStart(2, "0")}:00`, count: 0 }));
+    for (const o of orders) {
+      const d = new Date(o.created_at);
+      byWeekday[d.getDay()].count += 1;
+      byHour[d.getHours()].count += 1;
+    }
+
+    const monthlySpend: { label: string; gasto: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      const label = d.toLocaleDateString("es-AR", { month: "short", year: "2-digit" });
+      let gasto = 0;
+      for (const o of orders) {
+        const od = new Date(o.created_at);
+        if (od.getFullYear() === y && od.getMonth() === m) {
+          const t = Number(o.total);
+          if (!Number.isNaN(t)) gasto += t;
+        }
+      }
+      monthlySpend.push({ label, gasto });
+    }
+
+    const sortedDates = orders.map((o) => o.created_at).sort();
+    const avgDaysBetween = averageDaysBetweenOrders(sortedDates);
+    const streak = orderStreakDays(orders);
+
+    let maxOrder = 0;
+    let minOrder = Number.POSITIVE_INFINITY;
+    for (const t of totals) {
+      if (t > maxOrder) maxOrder = t;
+      if (t < minOrder) minOrder = t;
+    }
+    if (minOrder === Number.POSITIVE_INFINITY) minOrder = 0;
+
+    const mh = modalHour(orders);
+    const horaFrecuente =
+      mh === null ? "—" : `${String(mh).padStart(2, "0")}:00 – ${String(mh + 1).padStart(2, "0")}:00`;
+
+    return {
+      totalSpent,
+      productCounts,
+      top5,
+      ordersThisMonth: ordersThisMonth.length,
+      ordersThisYear: ordersThisYear.length,
+      avgDaysBetween,
+      byWeekday,
+      byHour,
+      monthlySpend,
+      streak,
+      maxOrder: maxOrder || 0,
+      minOrder: minOrder === Number.POSITIVE_INFINITY ? 0 : minOrder,
+      horaFrecuente,
+      avgTicket: totals.length > 0 ? Math.round(totalSpent / totals.length) : 0,
+    };
+  }, [orders]);
+
+  const overviewStats = useMemo(() => {
     let totalSum = 0;
     let nWithTotal = 0;
     const counts = new Map<string, number>();
@@ -202,16 +382,55 @@ export default function CuentaPage() {
     };
   }, [orders]);
 
+  const filteredOrders = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    if (orderFilter === "todos") return orders;
+    if (orderFilter === "mes") return orders.filter((o) => new Date(o.created_at) >= startOfMonth);
+    return orders.filter((o) => new Date(o.created_at) >= startOfYear);
+  }, [orders, orderFilter]);
+
+  const pedidosListStats = useMemo(() => {
+    const list = filteredOrders;
+    const totals = list.map((o) => Number(o.total)).filter((t) => !Number.isNaN(t));
+    const sum = totals.reduce((a, b) => a + b, 0);
+    const n = totals.length;
+    let maxT = 0;
+    let minT = Number.POSITIVE_INFINITY;
+    for (const t of totals) {
+      if (t > maxT) maxT = t;
+      if (t < minT) minT = t;
+    }
+    if (minT === Number.POSITIVE_INFINITY) minT = 0;
+    const mh = modalHour(list);
+    const hora =
+      mh === null ? "—" : `${String(mh).padStart(2, "0")}:00 – ${String(mh + 1).padStart(2, "0")}:00`;
+    return {
+      totalGastado: sum,
+      cantidad: list.length,
+      promedio: n > 0 ? Math.round(sum / n) : 0,
+      maxPedido: maxT,
+      minPedido: minT,
+      horaFrecuente: hora,
+    };
+  }, [filteredOrders]);
+
+  const last3Orders = useMemo(() => orders.slice(0, 3), [orders]);
+
   const saveProfile = async () => {
     if (!user) return;
     setSavingProfile(true);
     try {
+      const combined = combineAddress(editAddressLine, editFloor);
       const nextMeta = {
         ...(user.user_metadata ?? {}),
         full_name: editFullName.trim(),
         phone: editPhone.trim(),
         birthdate: editBirthdate.trim(),
-        default_address: editAddress.trim(),
+        default_address: combined,
+        address_line: editAddressLine.trim(),
+        address_floor: editFloor.trim(),
         avatar_url: avatarUrl.trim() || "",
       };
       const emailNext = editEmail.trim();
@@ -232,17 +451,11 @@ export default function CuentaPage() {
         hydrateProfileFields(session.user);
       }
       toast.success("Perfil guardado");
-      setProfileEditMode(false);
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "No se pudo guardar el perfil");
     } finally {
       setSavingProfile(false);
     }
-  };
-
-  const cancelProfileEdit = () => {
-    if (user) hydrateProfileFields(user);
-    setProfileEditMode(false);
   };
 
   const onAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -296,8 +509,33 @@ export default function CuentaPage() {
   const inputCls =
     "mt-1.5 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium outline-none transition placeholder:text-neutral-400 focus:border-[#2d4a3e] focus:ring-2 focus:ring-[#2d4a3e]/20";
 
-  const statCardCls = "rounded-xl bg-white p-6 shadow-sm";
-  const panelCardCls = "rounded-xl bg-white p-6 shadow-sm";
+  const navBtn = (id: SectionId, label: string, Icon: ComponentType<{ className?: string; strokeWidth?: number; "aria-hidden"?: boolean }>) => (
+    <button
+      key={id}
+      type="button"
+      onClick={() => setSection(id)}
+      className={`flex w-full items-center gap-3 rounded-r-lg border-l-4 py-3 pl-4 pr-3 text-left text-[15px] font-semibold transition ${
+        section === id ? "border-[#c9a84c] text-white" : "border-transparent text-white/90 hover:bg-white/5"
+      }`}
+      style={section === id ? { backgroundColor: SIDEBAR_ACTIVE_BG } : undefined}
+      aria-current={section === id ? "page" : undefined}
+    >
+      <Icon className="h-5 w-5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+      <span>{label}</span>
+    </button>
+  );
+
+  const mobileNavBtn = (id: SectionId, label: string, Icon: ComponentType<{ className?: string; strokeWidth?: number; "aria-hidden"?: boolean }>) => (
+    <button
+      key={id}
+      type="button"
+      onClick={() => setSection(id)}
+      className={`flex min-w-0 flex-1 flex-col items-center justify-center py-2 ${section === id ? "text-[#c9a84c]" : "text-white/80"}`}
+      aria-label={label}
+    >
+      <Icon className="h-6 w-6 shrink-0" strokeWidth={2} aria-hidden />
+    </button>
+  );
 
   if (sessionPending || !user) {
     return (
@@ -307,393 +545,563 @@ export default function CuentaPage() {
     );
   }
 
-  const emailDisplay = editEmail.trim() || user.email || "—";
+  const memberSince =
+    user.created_at != null
+      ? new Date(user.created_at).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })
+      : "—";
 
-  const SidebarInner = () => (
-    <>
-      <div className="px-5 pt-8">
-        <p className="text-2xl font-black tracking-[-0.06em] text-white">BLOOM.</p>
-      </div>
-      <div className="mt-8 flex flex-col items-center gap-2 px-4 text-center">
-        <div
-          className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white/25"
-          style={{ backgroundColor: "#1f352c" }}
-        >
-          {avatarUrl ? (
-            <Image src={avatarUrl} alt="" fill className="object-cover" sizes="56px" />
-          ) : (
-            <span className="flex h-full w-full items-center justify-center text-lg font-bold text-white">
-              {initialsFromName(displayName)}
-            </span>
-          )}
+  const profileTotalSpent = analytics.totalSpent;
+
+  const SidebarBody = ({ mobile }: { mobile?: boolean }) => {
+    if (mobile) {
+      return (
+        <nav className="flex min-w-0 flex-1 flex-row justify-around px-1">
+          {mobileNavBtn("inicio", "Inicio", Home)}
+          {mobileNavBtn("pedidos", "Mis pedidos", ShoppingBag)}
+          {mobileNavBtn("cupones", "Cupones", Tag)}
+          {mobileNavBtn("perfil", "Mi perfil", CircleUser)}
+          {mobileNavBtn("estadisticas", "Estadísticas", PieChart)}
+        </nav>
+      );
+    }
+    return (
+      <>
+        <div className="px-5 pt-8">
+          <p className="text-2xl font-black tracking-[-0.06em] text-white">BLOOM.</p>
         </div>
-        <p className="line-clamp-2 w-full px-1 text-sm font-semibold leading-tight text-white">{displayName}</p>
-      </div>
-      <div className="min-h-0 flex-1" aria-hidden />
-    </>
-  );
-
-  return (
-    <div className="min-h-screen font-sans antialiased" style={{ backgroundColor: CREAM, color: TEXT_DARK }}>
-      {/* Mobile: compact header + logout (no nav) */}
-      <header
-        className="sticky top-0 z-40 flex items-center gap-3 border-b border-white/10 px-4 py-3 lg:hidden"
-        style={{ backgroundColor: GREEN }}
-      >
-        <p className="shrink-0 text-lg font-black tracking-[-0.06em] text-white">BLOOM.</p>
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-1 ring-white/30">
+        <div className="mt-8 flex flex-col items-center gap-2 px-4 text-center">
+          <div
+            className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white/25"
+            style={{ backgroundColor: "#1f352c" }}
+          >
             {avatarUrl ? (
-              <Image src={avatarUrl} alt="" fill className="object-cover" sizes="36px" />
+              <Image src={avatarUrl} alt="" fill className="object-cover" sizes="56px" />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: "#1f352c" }}>
+              <span className="flex h-full w-full items-center justify-center text-lg font-bold text-white">
                 {initialsFromName(displayName)}
               </span>
             )}
           </div>
-          <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+          <p className="line-clamp-2 w-full px-1 text-sm font-semibold leading-tight text-white">{displayName}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => void handleSignOut()}
-          className="shrink-0 rounded-lg p-2 text-white/90 transition hover:bg-white/10 hover:text-white"
-          aria-label="Cerrar sesión"
-        >
-          <LogOut className="h-5 w-5" strokeWidth={2} />
-        </button>
-      </header>
+        <nav className="mt-8 flex min-h-0 flex-1 flex-col gap-0.5 px-2">
+          {navBtn("inicio", "Inicio", Home)}
+          {navBtn("pedidos", "Mis pedidos", ShoppingBag)}
+          {navBtn("cupones", "Cupones", Tag)}
+          {navBtn("perfil", "Mi perfil", CircleUser)}
+          {navBtn("estadisticas", "Estadísticas", PieChart)}
+        </nav>
+        <div className="min-h-0 flex-1" />
+      </>
+    );
+  };
 
-      {/* Desktop sidebar */}
+  const SectionInicio = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={statMiniCls}>
+          <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Pedidos realizados</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums" style={{ color: TEXT_DARK }}>
+            {overviewStats.totalOrdersCount}
+          </p>
+        </div>
+        <div className={statMiniCls}>
+          <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Ticket promedio</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums" style={{ color: TEXT_DARK }}>
+            {overviewStats.averageOrderValue > 0 ? formatMoney(overviewStats.averageOrderValue) : "—"}
+          </p>
+        </div>
+        <div className={statMiniCls}>
+          <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Producto más pedido</p>
+          <p className="mt-2 text-lg font-bold leading-snug" style={{ color: TEXT_DARK }}>
+            {overviewStats.mostOrderedProduct}
+          </p>
+        </div>
+        <div className={statMiniCls}>
+          <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Pedidos este mes</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums" style={{ color: TEXT_DARK }}>
+            {analytics.ordersThisMonth}
+          </p>
+        </div>
+        <div className={statMiniCls}>
+          <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Pedidos este año</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums" style={{ color: TEXT_DARK }}>
+            {analytics.ordersThisYear}
+          </p>
+        </div>
+        <div className={statMiniCls}>
+          <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Promedio días entre pedidos</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums" style={{ color: TEXT_DARK }}>
+            {orders.length >= 2 ? analytics.avgDaysBetween : "—"}
+          </p>
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <h2 className="flex items-center gap-2 text-base font-bold" style={{ color: TEXT_DARK }}>
+          <Coffee className="h-5 w-5" style={{ color: GREEN }} aria-hidden />
+          Tu progreso — café gratis
+        </h2>
+        <p className="mt-1 text-sm text-neutral-600">
+          {paidOrderCount} pedidos pagos · {loyaltyFilled}/{COFFEE_GOAL} en esta ronda
+        </p>
+        <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-neutral-200">
+          <div className="h-full rounded-full transition-all" style={{ width: `${loyaltyPct}%`, backgroundColor: GREEN }} />
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <h2 className="text-base font-bold" style={{ color: TEXT_DARK }}>
+          Últimos pedidos
+        </h2>
+        {last3Orders.length === 0 ? (
+          <p className="mt-4 text-sm text-neutral-600">Todavía no tenés pedidos.</p>
+        ) : (
+          <ul className="mt-4 divide-y divide-neutral-100">
+            {last3Orders.map((o) => (
+              <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                <span className="text-neutral-700">
+                  {new Date(o.created_at).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}{" "}
+                  <span className="text-neutral-500">{orderItemsSummary(o.items, 3)}</span>
+                </span>
+                <span className="font-semibold tabular-nums">{formatMoney(Number(o.total))}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+
+  const SectionPedidos = () => (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2">
+        {(
+          [
+            ["todos", "Todos"],
+            ["mes", "Este mes"],
+            ["ano", "Este año"],
+          ] as const
+        ).map(([key, lab]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setOrderFilter(key)}
+            className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+              orderFilter === key ? "text-white" : "bg-white text-neutral-700 shadow-sm"
+            }`}
+            style={orderFilter === key ? { backgroundColor: GREEN } : undefined}
+          >
+            {lab}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        {[
+          ["Total gastado", formatMoney(pedidosListStats.totalGastado)],
+          ["Cantidad", String(pedidosListStats.cantidad)],
+          ["Promedio / pedido", pedidosListStats.cantidad > 0 ? formatMoney(pedidosListStats.promedio) : "—"],
+          ["Pedido más caro", pedidosListStats.maxPedido > 0 ? formatMoney(pedidosListStats.maxPedido) : "—"],
+          ["Pedido más barato", pedidosListStats.minPedido > 0 ? formatMoney(pedidosListStats.minPedido) : "—"],
+          ["Hora más frecuente", pedidosListStats.horaFrecuente],
+        ].map(([k, v]) => (
+          <div key={k} className={statMiniCls}>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">{k}</p>
+            <p className="mt-1 break-words text-sm font-bold" style={{ color: TEXT_DARK }}>
+              {v}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className={cardCls + " overflow-hidden p-0"}>
+        {ordersLoading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: GREEN }} />
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <p className="p-8 text-center text-sm text-neutral-600">No hay pedidos en este filtro.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead>
+                <tr className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  <th className="px-4 py-3">Fecha</th>
+                  <th className="px-4 py-3">Ítems</th>
+                  <th className="px-4 py-3">Total</th>
+                  <th className="px-4 py-3">Tipo</th>
+                  <th className="px-4 py-3">Estado</th>
+                  <th className="w-10 px-2 py-3" aria-hidden />
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.map((o, idx) => {
+                  const paid = Boolean(o.paid);
+                  const openQ = expandedOrderId === o.id;
+                  const items = Array.isArray(o.items) ? o.items : [];
+                  const summary = orderItemsSummary(o.items);
+                  return (
+                    <Fragment key={o.id}>
+                      <tr className={idx % 2 === 0 ? "bg-white" : "bg-neutral-50/80"}>
+                        <td className="whitespace-nowrap px-4 py-3 tabular-nums text-neutral-800">
+                          {new Date(o.created_at).toLocaleString("es-AR", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                        <td className="max-w-[200px] px-4 py-3 text-neutral-700">
+                          <span className="line-clamp-2">{summary}</span>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 font-semibold tabular-nums">
+                          {formatMoney(Number(o.total))}
+                        </td>
+                        <td className="px-4 py-3 text-neutral-700">{orderTypeLabel(o)}</td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${paid ? "text-white" : "bg-amber-100 text-amber-900"}`}
+                            style={paid ? { backgroundColor: GREEN } : undefined}
+                          >
+                            {paid ? "Pagado" : "Pendiente"}
+                          </span>
+                        </td>
+                        <td className="px-2 py-3">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedOrderId(openQ ? null : o.id)}
+                            className="flex rounded-lg p-1 text-neutral-500 hover:bg-neutral-100"
+                            aria-expanded={openQ}
+                            aria-label={openQ ? "Cerrar detalle" : "Ver detalle"}
+                          >
+                            {openQ ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                          </button>
+                        </td>
+                      </tr>
+                      {openQ ? (
+                        <tr className={idx % 2 === 0 ? "bg-white" : "bg-neutral-50/80"}>
+                          <td colSpan={6} className="px-4 pb-4 pt-0">
+                            <ul className="mt-2 space-y-1 rounded-lg bg-neutral-100/80 p-3 text-sm">
+                              {items.length === 0 ? (
+                                <li className="text-neutral-500">Sin detalle</li>
+                              ) : (
+                                items.map((it: unknown, i: number) => {
+                                  const row = it as { name?: string; quantity?: number; price?: number };
+                                  return (
+                                    <li key={i} className="flex justify-between gap-2">
+                                      <span>
+                                        {(row.quantity ?? 1) > 1 && <strong>{row.quantity}× </strong>}
+                                        {row.name}
+                                      </span>
+                                      <span className="tabular-nums">
+                                        {formatMoney(Number(row.price ?? 0) * Number(row.quantity ?? 1))}
+                                      </span>
+                                    </li>
+                                  );
+                                })
+                              )}
+                            </ul>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const SectionCupones = () => (
+    <div className="space-y-4">
+      {birthdayActive && (
+        <div
+          className="rounded-xl p-5 shadow-sm"
+          style={{ background: `linear-gradient(135deg, ${GOLD}f0 0%, #e8d48a 100%)` }}
+        >
+          <p className="text-lg font-black" style={{ color: TEXT_DARK }}>
+            🎂 ¡Es tu mes!
+          </p>
+          <p className="mt-1 text-sm font-medium opacity-90" style={{ color: TEXT_DARK }}>
+            Cupón activo: mostrá esta pantalla para tu regalo de cumpleaños.
+          </p>
+        </div>
+      )}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {COUPON_DEFS.map((c) => {
+          const unlocked = paidOrderCount >= c.unlock;
+          const progress = Math.min(paidOrderCount / c.unlock, 1);
+          if (unlocked) {
+            return (
+              <div
+                key={c.id}
+                className="rounded-xl p-5 shadow-sm"
+                style={{ background: `linear-gradient(135deg, ${GOLD}e8 0%, #d4af37 55%, ${GOLD} 100%)` }}
+              >
+                <p className="text-lg font-black" style={{ color: TEXT_DARK }}>
+                  {c.icon} {c.label}
+                </p>
+                <p className="mt-2 text-sm font-semibold" style={{ color: TEXT_DARK }}>
+                  Desbloqueado · Presentá en el local
+                </p>
+              </div>
+            );
+          }
+          return (
+            <div key={c.id} className={`${cardCls} text-neutral-600`}>
+              <div className="flex items-start gap-3">
+                <Lock className="mt-0.5 h-5 w-5 shrink-0 text-neutral-400" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold" style={{ color: TEXT_DARK }}>
+                    {c.icon} {c.label}
+                  </p>
+                  <p className="mt-1 text-sm">
+                    Desbloquea a los {c.unlock} pedidos pagos · Vas {paidOrderCount}/{c.unlock}
+                  </p>
+                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-neutral-200">
+                    <div className="h-full rounded-full bg-neutral-400 transition-all" style={{ width: `${progress * 100}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const SectionPerfil = () => {
+    return (
+      <div className="space-y-6">
+        <div className={cardCls}>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="sr-only"
+            onChange={(e) => void onAvatarFile(e)}
+          />
+          <div className="flex flex-col gap-6 md:flex-row md:items-start">
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={avatarBusy}
+              className="group relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-full shadow-md outline-none ring-2 ring-neutral-200 transition hover:ring-[#c9a84c] disabled:opacity-60"
+              style={{ backgroundColor: GREEN }}
+            >
+              {avatarUrl ? (
+                <Image src={avatarUrl} alt={displayName} fill className="object-cover" sizes="112px" />
+              ) : (
+                <span className="text-3xl font-black text-white">{initialsFromName(displayName)}</span>
+              )}
+              <span className="pointer-events-none absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/50 to-transparent pb-2 opacity-0 transition group-hover:opacity-100">
+                {avatarBusy ? <Loader2 className="h-6 w-6 animate-spin text-white" /> : <Camera className="h-5 w-5 text-white" />}
+              </span>
+            </button>
+            <div className="min-w-0 flex-1 space-y-4">
+              <p className="text-sm text-neutral-500">Tocá la foto para cambiarla</p>
+              <div>
+                <label htmlFor="pf-name" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  Nombre
+                </label>
+                <input id="pf-name" className={inputCls} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} />
+              </div>
+              <div>
+                <label htmlFor="pf-phone" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  Teléfono
+                </label>
+                <input id="pf-phone" className={inputCls} inputMode="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+              </div>
+              <div>
+                <label htmlFor="pf-mail" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  Email
+                </label>
+                <input id="pf-mail" type="email" className={inputCls} value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+              </div>
+              <div>
+                <label htmlFor="pf-bd" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  Fecha de nacimiento
+                </label>
+                <input
+                  id="pf-bd"
+                  type="date"
+                  className={inputCls}
+                  value={editBirthdate.length >= 10 ? editBirthdate.slice(0, 10) : editBirthdate}
+                  onChange={(e) => setEditBirthdate(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="pf-addr" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  Dirección
+                </label>
+                <input id="pf-addr" className={inputCls} value={editAddressLine} onChange={(e) => setEditAddressLine(e.target.value)} />
+              </div>
+              <div>
+                <label htmlFor="pf-floor" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  Piso / Dpto
+                </label>
+                <input id="pf-floor" className={inputCls} value={editFloor} onChange={(e) => setEditFloor(e.target.value)} />
+              </div>
+              <button
+                type="button"
+                onClick={() => void saveProfile()}
+                disabled={savingProfile}
+                className="flex min-h-12 items-center justify-center rounded-full px-8 text-sm font-bold text-white shadow-sm disabled:opacity-60"
+                style={{ backgroundColor: GREEN }}
+              >
+                {savingProfile ? <Loader2 className="h-5 w-5 animate-spin" /> : "Guardar cambios"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className={statMiniCls}>
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Miembro desde</p>
+            <p className="mt-2 font-bold" style={{ color: TEXT_DARK }}>
+              {memberSince}
+            </p>
+          </div>
+          <div className={statMiniCls}>
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Total pedidos</p>
+            <p className="mt-2 text-2xl font-bold tabular-nums" style={{ color: TEXT_DARK }}>
+              {orders.length}
+            </p>
+          </div>
+          <div className={statMiniCls}>
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Total gastado</p>
+            <p className="mt-2 text-2xl font-bold tabular-nums" style={{ color: TEXT_DARK }}>
+              {formatMoney(profileTotalSpent)}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const chartWrap = "h-72 w-full min-w-0";
+
+  const SectionEstadisticas = () => (
+    <div className="space-y-6">
+      <div className={cardCls}>
+        <h3 className="text-sm font-bold" style={{ color: TEXT_DARK }}>
+          Pedidos por día de la semana
+        </h3>
+        <div className={chartWrap}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={analytics.byWeekday} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" className="opacity-40" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={28} />
+              <Tooltip />
+              <Bar dataKey="count" fill={GREEN} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <h3 className="text-sm font-bold" style={{ color: TEXT_DARK }}>
+          Pedidos por hora del día
+        </h3>
+        <div className={chartWrap}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={analytics.byHour} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" className="opacity-40" />
+              <XAxis dataKey="label" tick={{ fontSize: 9 }} interval={2} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={28} />
+              <Tooltip />
+              <Bar dataKey="count" fill={GREEN} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <h3 className="text-sm font-bold" style={{ color: TEXT_DARK }}>
+          Gasto mensual (últimos 6 meses)
+        </h3>
+        <div className={chartWrap}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={analytics.monthlySpend} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" className="opacity-40" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} width={40} tickFormatter={(v) => `${Number(v) / 1000}k`} />
+              <Tooltip formatter={(v) => (v != null ? formatMoney(Number(v)) : "")} />
+              <Bar dataKey="gasto" fill={GOLD} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className={cardCls}>
+        <h3 className="text-sm font-bold" style={{ color: TEXT_DARK }}>
+          Top 5 productos
+        </h3>
+        {analytics.top5.length === 0 ? (
+          <p className="mt-4 text-sm text-neutral-600">Sin datos todavía.</p>
+        ) : (
+          <ol className="mt-4 space-y-2">
+            {analytics.top5.map((p, i) => (
+              <li key={p.name} className="flex justify-between gap-2 text-sm">
+                <span className="text-neutral-700">
+                  {i + 1}. {p.name}
+                </span>
+                <span className="font-bold tabular-nums text-neutral-900">{p.count}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
+      <div className={statMiniCls}>
+        <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Racha actual</p>
+        <p className="mt-2 text-3xl font-bold tabular-nums" style={{ color: TEXT_DARK }}>
+          {analytics.streak} {analytics.streak === 1 ? "día" : "días"} seguidos con pedido
+        </p>
+        <p className="mt-1 text-xs text-neutral-500">Contando desde tu último pedido hacia atrás, días consecutivos calendario.</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen font-sans antialiased" style={{ backgroundColor: CREAM, color: TEXT_DARK }}>
       <aside
         className="fixed left-0 top-0 z-30 hidden h-screen w-[240px] flex-col border-r border-white/10 lg:flex"
         style={{ width: SIDEBAR_W, backgroundColor: GREEN }}
       >
-        <div className="flex min-h-0 flex-1 flex-col">
-          <SidebarInner />
-        </div>
-        <div className="border-t border-white/10 px-2 py-4">
-          <button
-            type="button"
-            onClick={() => void handleSignOut()}
-            className="flex w-full items-center justify-center rounded-lg py-3 text-white/90 transition hover:bg-white/10 hover:text-white"
-            aria-label="Cerrar sesión"
-          >
-            <LogOut className="h-5 w-5" strokeWidth={2} />
-          </button>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <SidebarBody />
         </div>
       </aside>
 
-      <div className="min-h-screen lg:ml-[240px]">
-        <main className="mx-auto max-w-6xl space-y-8 px-4 py-8 lg:px-10 lg:py-10">
-          {/* Stats */}
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {[
-              { label: "Pedidos realizados", value: String(orderStats.totalOrdersCount), kind: "num" as const },
-              {
-                label: "Ticket promedio",
-                value: orderStats.averageOrderValue > 0 ? formatMoney(orderStats.averageOrderValue) : "—",
-                kind: "num" as const,
-              },
-              { label: "Producto más pedido", value: orderStats.mostOrderedProduct, kind: "text" as const },
-            ].map((s) => (
-              <div key={s.label} className={statCardCls}>
-                <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">{s.label}</p>
-                <p
-                  className={`mt-3 font-bold ${s.kind === "text" ? "text-lg leading-snug" : "text-3xl tabular-nums tracking-tight"}`}
-                  style={{ color: TEXT_DARK }}
-                >
-                  {s.value}
-                </p>
-              </div>
-            ))}
-          </section>
-
-          {/* Loyalty + Cupones */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <section>
-              <div className={panelCardCls}>
-                <h2 className="flex items-center gap-2 text-base font-bold" style={{ color: TEXT_DARK }}>
-                  <span aria-hidden>☕</span> Tu progreso
-                </h2>
-                <div className="mt-5 grid w-full grid-cols-10 gap-1 sm:gap-2">
-                  {Array.from({ length: COFFEE_GOAL }).map((_, i) => {
-                    const active = i < loyaltyFilled;
-                    return (
-                      <div
-                        key={i}
-                        className="flex aspect-square min-w-0 max-h-12 items-center justify-center rounded-lg sm:max-h-none"
-                        style={{
-                          backgroundColor: active ? "rgba(45,74,62,0.12)" : "#f0f0f0",
-                          color: active ? GREEN : "#9ca3af",
-                        }}
-                        aria-hidden
-                      >
-                        <Coffee className="h-4 w-4 max-w-[80%] sm:h-5 sm:w-5" strokeWidth={active ? 2.25 : 1.75} />
-                      </div>
-                    );
-                  })}
-                </div>
-                <p className="mt-4 text-sm leading-relaxed text-neutral-600">
-                  {cupsToGo > 0 ? (
-                    <>
-                      Llevás <strong style={{ color: TEXT_DARK }}>{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
-                      <strong style={{ color: TEXT_DARK }}>{cupsToGo}</strong> para tu café gratis.
-                    </>
-                  ) : loyaltyPaidTotal > 0 ? (
-                    <>
-                      Llevás <strong style={{ color: TEXT_DARK }}>{loyaltyPaidTotal}</strong> pedidos — ¡podés canjear tu café gratis!
-                    </>
-                  ) : (
-                    <>
-                      Llevás <strong style={{ color: TEXT_DARK }}>0</strong> pedidos — te faltan{" "}
-                      <strong style={{ color: TEXT_DARK }}>{COFFEE_GOAL}</strong> para tu café gratis.
-                    </>
-                  )}
-                </p>
-              </div>
-            </section>
-
-            <section>
-              <div className={panelCardCls}>
-                <h2 className="flex items-center gap-2 text-base font-bold" style={{ color: TEXT_DARK }}>
-                  <span aria-hidden>🏷️</span> Cupones
-                </h2>
-                <div className="mt-4 space-y-3">
-                  {birthdayThisMonth && (
-                    <div
-                      className="rounded-lg border-l-4 p-4 shadow-sm"
-                      style={{ borderLeftColor: GOLD, backgroundColor: "#fafafa" }}
-                    >
-                      <p className="text-base font-bold" style={{ color: TEXT_DARK }}>
-                        🎂 ¡Es tu mes!
-                      </p>
-                      <p className="mt-1 text-sm text-neutral-600">
-                        Presentá esta pantalla para tu regalo.{" "}
-                        <span className="font-semibold" style={{ color: GOLD }}>
-                          Beneficio activo
-                        </span>
-                      </p>
-                    </div>
-                  )}
-                  {!freeCoffeeUnlocked ? (
-                    <div className="flex items-start gap-3 rounded-lg bg-neutral-100 p-4 text-neutral-600">
-                      <Lock className="mt-0.5 h-5 w-5 shrink-0 text-neutral-400" aria-hidden />
-                      <div>
-                        <p className="font-semibold" style={{ color: TEXT_DARK }}>
-                          <span aria-hidden>☕</span> Café gratis
-                        </p>
-                        <p className="mt-1 text-sm">Desbloqueás a los 10 pedidos.</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border-l-4 bg-white p-4 shadow-sm" style={{ borderLeftColor: GREEN }}>
-                      <p className="font-bold" style={{ color: GREEN }}>
-                        ☕ Café gratis — <span style={{ color: GOLD }}>activo</span>
-                      </p>
-                      <p className="mt-2 text-sm text-neutral-600">Presentá esta pantalla en el local para canjear.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* Orders table */}
-          <section>
-            <div className={panelCardCls + " overflow-hidden p-0"}>
-              <div className="flex items-center gap-2 border-b border-neutral-100 px-6 py-4">
-                <ShoppingBag className="h-5 w-5" style={{ color: GREEN }} aria-hidden />
-                <h2 className="text-base font-bold" style={{ color: TEXT_DARK }}>
-                  Mis pedidos
-                </h2>
-              </div>
-              {ordersLoading ? (
-                <div className="flex justify-center py-16">
-                  <Loader2 className="h-8 w-8 animate-spin" style={{ color: GREEN }} />
-                </div>
-              ) : orders.length === 0 ? (
-                <p className="px-6 py-12 text-center text-sm text-neutral-600">
-                  Todavía no tenés pedidos vinculados a esta cuenta. Pedí desde el menú o el chat Bloom.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[640px] text-left text-sm">
-                    <thead>
-                      <tr className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                        <th className="px-6 py-3 font-bold">Fecha</th>
-                        <th className="px-6 py-3 font-bold">Ítems</th>
-                        <th className="px-6 py-3 font-bold">Total</th>
-                        <th className="px-6 py-3 font-bold">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map((o, idx) => {
-                        const paid = Boolean(o.paid);
-                        const summary = orderItemsSummary(o.items);
-                        const total = Number(o.total);
-                        return (
-                          <tr
-                            key={o.id}
-                            className={idx % 2 === 0 ? "bg-white" : "bg-neutral-50/80"}
-                            style={{ color: TEXT_DARK }}
-                          >
-                            <td className="whitespace-nowrap px-6 py-4 tabular-nums text-neutral-800">
-                              {new Date(o.created_at).toLocaleDateString("es-AR", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                              <span className="ml-2 text-neutral-500">
-                                {new Date(o.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
-                              </span>
-                            </td>
-                            <td className="max-w-[280px] px-6 py-4 text-neutral-700">
-                              <span className="line-clamp-2" title={summary}>
-                                {summary}
-                              </span>
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 font-semibold tabular-nums">{formatMoney(total)}</td>
-                            <td className="px-6 py-4">
-                              <span
-                                className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
-                                  paid ? "text-white" : "bg-amber-100 text-amber-900"
-                                }`}
-                                style={paid ? { backgroundColor: GREEN } : undefined}
-                              >
-                                {paid ? "Pagado" : "Pendiente"}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Mi perfil */}
-          <section>
-            <div className={panelCardCls}>
-              <h2 className="text-lg font-bold" style={{ color: TEXT_DARK }}>
-                Mi perfil
-              </h2>
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                className="sr-only"
-                onChange={(e) => void onAvatarFile(e)}
-              />
-              <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-start">
-                <div className="flex shrink-0 flex-col items-center md:items-start">
-                  <button
-                    type="button"
-                    onClick={() => avatarInputRef.current?.click()}
-                    disabled={avatarBusy}
-                    className="group relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full shadow-md outline-none ring-2 ring-[#2d4a3e]/20 transition hover:ring-[#c9a84c] focus-visible:ring-2 focus-visible:ring-[#c9a84c] disabled:opacity-60"
-                    style={{ backgroundColor: GREEN }}
-                    aria-label="Cambiar foto de perfil"
-                  >
-                    {avatarUrl ? (
-                      <Image src={avatarUrl} alt={displayName} fill className="object-cover" sizes="96px" />
-                    ) : (
-                      <span className="text-2xl font-black text-white">{initialsFromName(displayName)}</span>
-                    )}
-                    <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-end bg-gradient-to-t from-black/50 to-transparent pb-2 opacity-0 transition-opacity group-hover:opacity-100 group-active:opacity-100 group-focus-visible:opacity-100">
-                      {avatarBusy ? (
-                        <Loader2 className="h-6 w-6 animate-spin text-white" />
-                      ) : (
-                        <Camera className="h-5 w-5 text-white" />
-                      )}
-                      <span className="px-1 text-center text-[9px] font-semibold text-white">Cambiar foto</span>
-                    </span>
-                  </button>
-                </div>
-                <div className="min-w-0 flex-1">
-                  {!profileEditMode ? (
-                    <>
-                      <h1 className="text-xl font-bold md:text-2xl" style={{ color: TEXT_DARK }}>
-                        {displayName}
-                      </h1>
-                      <p className="mt-1 text-sm text-neutral-600">{emailDisplay}</p>
-                      <p className="mt-0.5 text-sm text-neutral-600">{editPhone.trim() || "—"}</p>
-                      <button
-                        type="button"
-                        onClick={() => setProfileEditMode(true)}
-                        className="mt-4 inline-flex items-center gap-2 rounded-full border-2 border-[#2d4a3e] bg-white px-4 py-2 text-sm font-bold transition hover:bg-[#2d4a3e]/5"
-                        style={{ color: GREEN }}
-                      >
-                        <Pencil className="h-4 w-4" aria-hidden />
-                        Editar perfil
-                      </button>
-                    </>
-                  ) : (
-                    <div className="space-y-4">
-                      <div>
-                        <label htmlFor="cuenta-nombre" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                          Nombre
-                        </label>
-                        <input id="cuenta-nombre" className={inputCls} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} />
-                      </div>
-                      <div>
-                        <label htmlFor="cuenta-tel" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                          Teléfono
-                        </label>
-                        <input id="cuenta-tel" className={inputCls} inputMode="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
-                      </div>
-                      <div>
-                        <label htmlFor="cuenta-mail" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                          Email
-                        </label>
-                        <input id="cuenta-mail" type="email" className={inputCls} value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
-                      </div>
-                      <div>
-                        <label htmlFor="cuenta-nac" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                          Fecha de nacimiento
-                        </label>
-                        <input
-                          id="cuenta-nac"
-                          type="date"
-                          className={inputCls}
-                          value={editBirthdate.length >= 10 ? editBirthdate.slice(0, 10) : editBirthdate}
-                          onChange={(e) => setEditBirthdate(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="cuenta-dir" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                          Dirección de entrega
-                        </label>
-                        <textarea id="cuenta-dir" rows={3} className={`${inputCls} resize-y`} value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
-                      </div>
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => void saveProfile()}
-                          disabled={savingProfile}
-                          className="inline-flex flex-1 items-center justify-center gap-2 rounded-full py-3 text-sm font-bold text-white shadow-sm transition hover:opacity-95 disabled:opacity-60 sm:flex-none sm:min-w-[140px]"
-                          style={{ backgroundColor: GREEN }}
-                        >
-                          {savingProfile ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-                          Guardar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={cancelProfileEdit}
-                          disabled={savingProfile}
-                          className="inline-flex flex-1 items-center justify-center rounded-full border-2 border-neutral-300 bg-white py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-60 sm:flex-none sm:min-w-[120px]"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
+      <div className="pb-20 lg:ml-[240px] lg:pb-10">
+        <main className="mx-auto max-w-5xl px-4 py-6 lg:px-10 lg:py-10">
+          <h1 className="mb-6 text-xl font-black lg:text-2xl" style={{ color: TEXT_DARK }}>
+            {section === "inicio" && "Inicio"}
+            {section === "pedidos" && "Mis pedidos"}
+            {section === "cupones" && "Cupones"}
+            {section === "perfil" && "Mi perfil"}
+            {section === "estadisticas" && "Estadísticas"}
+          </h1>
+          {section === "inicio" && <SectionInicio />}
+          {section === "pedidos" && <SectionPedidos />}
+          {section === "cupones" && <SectionCupones />}
+          {section === "perfil" && <SectionPerfil />}
+          {section === "estadisticas" && <SectionEstadisticas />}
         </main>
+      </div>
+
+      <div
+        className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-stretch border-t border-white/10 lg:hidden"
+        style={{ backgroundColor: GREEN }}
+      >
+        <SidebarBody mobile />
       </div>
     </div>
   );
