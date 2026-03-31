@@ -370,8 +370,12 @@ export default function RegistroPage() {
 
         <section
           className="relative z-[15] px-4 py-8 sm:px-6 sm:py-10"
+          style={{ backgroundColor: GREEN }}
           aria-label="Beneficios del Club Bloom"
         >
+          <h2 className="mb-8 text-center text-[clamp(1.75rem,5vw,2.5rem)] font-black tracking-tight text-white">
+            Club Bloom
+          </h2>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
             <div className="flex flex-col rounded-2xl border-2 border-[#c9a84c] bg-white p-5 shadow-md sm:p-6">
               <span className="mb-3 text-4xl leading-none sm:text-5xl" aria-hidden>
