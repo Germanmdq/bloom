@@ -599,11 +599,6 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     [cart, router],
   );
 
-  const persistCartAndGoToAuthForCheckout = useCallback(
-    () => persistCartAndGo("/auth?redirect=/menu"),
-    [persistCartAndGo],
-  );
-
   const persistCartAndGoToRegistro = useCallback(() => persistCartAndGo("/registro"), [persistCartAndGo]);
 
   const cartCount = useMemo(() => cart.reduce((n, l) => n + l.quantity, 0), [cart]);
@@ -1360,7 +1355,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
               {!encargoCheckoutUnlocked ? (
                 <div className="mt-6 space-y-3 border-t border-[#e0dcd4] pt-4">
                   <p className="text-sm font-medium leading-relaxed text-neutral-800">
-                    Para confirmar tu encargo necesitás iniciar sesión o registrarte.
+                    Para confirmar tu encargo necesitás una cuenta en el Club Bloom.
                   </p>
                   <button
                     type="button"
@@ -1368,13 +1363,6 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     className="inline-flex w-full min-h-[48px] items-center justify-center rounded-xl bg-[#2d4a3e] px-4 py-3 text-center text-sm font-black text-white shadow hover:bg-[#1f342c] sm:max-w-md sm:mx-auto"
                   >
                     Registrate gratis →
-                  </button>
-                  <button
-                    type="button"
-                    onClick={persistCartAndGoToAuthForCheckout}
-                    className="inline-flex w-full min-h-[48px] items-center justify-center rounded-xl border-2 border-[#2d4a3e] bg-white px-4 py-3 text-center text-sm font-black text-[#2d4a3e] shadow-sm hover:bg-[#f8f7f4] sm:max-w-md sm:mx-auto"
-                  >
-                    Ya tengo cuenta · Iniciar sesión
                   </button>
                 </div>
               ) : (
@@ -1698,8 +1686,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
               {softAuthHintVisible ? (
                 <div className="max-w-[92%] rounded-2xl border border-amber-100/80 bg-amber-50/90 px-3 py-2.5 text-sm leading-relaxed text-neutral-800 shadow-sm ring-1 ring-amber-200/60">
                   <div>
-                    💡 Iniciá sesión o registrate para una mejor atención — guardamos tus datos y tu historial de
-                    encargos.{" "}
+                    💡 Registrate para una mejor atención — guardamos tus datos y tu historial de encargos.{" "}
                     <button
                       type="button"
                       onClick={persistCartAndGoToRegistro}
@@ -1707,14 +1694,6 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     >
                       Registrate gratis →
                     </button>{" "}
-                    <span className="text-neutral-500">·</span>{" "}
-                    <button
-                      type="button"
-                      onClick={persistCartAndGoToAuthForCheckout}
-                      className="font-semibold text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
-                    >
-                      Iniciar sesión →
-                    </button>
                   </div>
                 </div>
               ) : null}

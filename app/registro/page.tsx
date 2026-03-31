@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
@@ -489,13 +488,6 @@ export default function RegistroPage() {
 
             <p className="registro-field-anim mt-4 text-center text-[15px] font-medium text-neutral-600" style={{ animationDelay: "0.61s" }}>
               🔒 Tus datos están seguros. Sin spam, sin sorpresas.
-            </p>
-
-            <p className="registro-field-anim mt-8 text-center text-[16px] font-semibold text-neutral-700" style={{ animationDelay: "0.68s" }}>
-              ¿Ya sos socio?{" "}
-              <Link href="/auth?redirect=/menu" className="font-black text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]">
-                Iniciá sesión
-              </Link>
             </p>
           </div>
         </section>
