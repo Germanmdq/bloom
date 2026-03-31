@@ -1,24 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import {
+  Camera,
   ChevronDown,
   ChevronUp,
   Loader2,
-  User as UserIcon,
-  Phone,
-  Mail,
   LogOut,
   ShoppingBag,
   Gift,
 } from "lucide-react";
-import { SiteFooter } from "@/components/SiteFooter";
-import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
-import { SiteHeader } from "@/components/SiteHeader";
+import { toast } from "sonner";
 
 const COFFEE_GOAL = 10;
 
@@ -42,21 +39,39 @@ function loyaltyProgress(totalOrders: number) {
   return { filled, totalOrders };
 }
 
+function initialsFromName(name: string): string {
+  const p = name.trim().split(/\s+/).filter(Boolean);
+  if (p.length === 0) return "?";
+  if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
+  return (p[0][0] + p[p.length - 1][0]).toUpperCase();
+}
+
+function metaStr(u: User | null, key: string): string {
+  const v = u?.user_metadata?.[key];
+  return typeof v === "string" ? v.trim() : "";
+}
+
 export default function CuentaPage() {
   const router = useRouter();
   const supabase = createClient();
   const sessionCheckedRef = useRef(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
   const [sessionPending, setSessionPending] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  /**
-   * Lealtad: por ahora solo `paid = true`. Más adelante: incluir pedidos con nota
-   * tipo “cuenta corriente” aunque paid sea false.
-   */
   const [paidOrderCount, setPaidOrderCount] = useState(0);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const [editFullName, setEditFullName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editBirthdate, setEditBirthdate] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
 
   const loadOrders = useCallback(
     async (uid: string) => {
@@ -82,6 +97,15 @@ export default function CuentaPage() {
     [supabase]
   );
 
+  const hydrateProfileFields = useCallback((u: User) => {
+    setEditFullName(metaStr(u, "full_name") || metaStr(u, "name") || "");
+    setEditPhone(metaStr(u, "phone") || (u.phone ?? "").trim());
+    setEditEmail(u.email ?? "");
+    setEditBirthdate(metaStr(u, "birthdate"));
+    setEditAddress(metaStr(u, "default_address"));
+    setAvatarUrl(metaStr(u, "avatar_url"));
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -90,28 +114,30 @@ export default function CuentaPage() {
       sessionCheckedRef.current = true;
       setSessionPending(false);
       if (!session?.user) {
-        router.replace("/auth");
+        router.replace("/auth?redirect=/cuenta");
         return;
       }
       setUser(session.user);
+      hydrateProfileFields(session.user);
       await loadOrders(session.user.id);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!sessionCheckedRef.current) return;
       if (!session?.user) {
-        router.replace("/auth");
+        router.replace("/auth?redirect=/cuenta");
         setUser(null);
         return;
       }
       setUser(session.user);
+      hydrateProfileFields(session.user);
       void loadOrders(session.user.id);
     });
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, [router, supabase, loadOrders]);
+  }, [router, supabase, loadOrders, hydrateProfileFields]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -119,14 +145,130 @@ export default function CuentaPage() {
     router.refresh();
   };
 
-  const displayName =
-    (user?.user_metadata?.full_name as string | undefined)?.trim() ||
-    (user?.user_metadata?.name as string | undefined)?.trim() ||
-    "Cliente Bloom";
-  const phone = user?.phone;
-  const email = user?.email;
-
+  const displayName = editFullName.trim() || "Cliente Bloom";
   const { filled, totalOrders } = loyaltyProgress(paidOrderCount);
+
+  const orderStats = useMemo(() => {
+    let totalSum = 0;
+    let nWithTotal = 0;
+    const counts = new Map<string, number>();
+    for (const o of orders) {
+      const t = Number(o.total);
+      if (!Number.isNaN(t) && t > 0) {
+        totalSum += t;
+        nWithTotal += 1;
+      }
+      const items = Array.isArray(o.items) ? o.items : [];
+      for (const it of items) {
+        const row = it as { name?: string; quantity?: number };
+        const name = String(row.name ?? "").trim();
+        if (!name) continue;
+        const q = Number(row.quantity ?? 1);
+        counts.set(name, (counts.get(name) ?? 0) + q);
+      }
+    }
+    let topName = "—";
+    let topN = 0;
+    for (const [k, v] of counts) {
+      if (v > topN) {
+        topN = v;
+        topName = k;
+      }
+    }
+    return {
+      totalOrdersCount: orders.length,
+      averageOrderValue: nWithTotal > 0 ? Math.round(totalSum / nWithTotal) : 0,
+      mostOrderedProduct: topN > 0 ? topName : "—",
+    };
+  }, [orders]);
+
+  const saveProfile = async () => {
+    if (!user) return;
+    setSavingProfile(true);
+    try {
+      const nextMeta = {
+        ...(user.user_metadata ?? {}),
+        full_name: editFullName.trim(),
+        phone: editPhone.trim(),
+        birthdate: editBirthdate.trim(),
+        default_address: editAddress.trim(),
+        avatar_url: avatarUrl.trim() || "",
+      };
+      const emailNext = editEmail.trim();
+      const payload: Parameters<typeof supabase.auth.updateUser>[0] = { data: nextMeta };
+      if (emailNext && emailNext !== user.email) {
+        payload.email = emailNext;
+      }
+      const { error: authErr } = await supabase.auth.updateUser(payload);
+      if (authErr) throw authErr;
+
+      await supabase.from("profiles").update({ full_name: editFullName.trim() }).eq("id", user.id);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        hydrateProfileFields(session.user);
+      }
+      toast.success("Perfil guardado");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "No se pudo guardar el perfil");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const onAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Elegí un archivo de imagen");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("La imagen debe pesar menos de 2 MB");
+      return;
+    }
+    setAvatarBusy(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
+      if (upErr) throw upErr;
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(path);
+      setAvatarUrl(publicUrl);
+      const { error: authErr } = await supabase.auth.updateUser({
+        data: {
+          ...(user.user_metadata ?? {}),
+          avatar_url: publicUrl,
+        },
+      });
+      if (authErr) throw authErr;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        hydrateProfileFields(session.user);
+      }
+      toast.success("Foto actualizada");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "No se pudo subir la foto");
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const inputCls =
+    "mt-1 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 outline-none focus:border-[#2d4a3e] focus:ring-1 focus:ring-[#2d4a3e]/20";
 
   if (sessionPending || !user) {
     return (
@@ -138,29 +280,137 @@ export default function CuentaPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] font-sans text-neutral-900">
-      <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-      <SiteHeader scrolled={false} onMobileNavOpen={() => setMobileNavOpen(true)} activeNav={null} />
+      <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white shadow-sm">
+        <div className="relative mx-auto flex h-14 max-w-4xl items-center justify-center px-4">
+          <span className="text-lg font-black tracking-[-0.03em] text-[#2d4a3e]">BLOOM.</span>
+          <button
+            type="button"
+            onClick={() => void handleSignOut()}
+            className="absolute right-3 inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-black text-neutral-700 shadow-sm transition hover:bg-neutral-50 sm:right-4"
+          >
+            <LogOut className="h-4 w-4" aria-hidden />
+            Salir
+          </button>
+        </div>
+      </header>
 
-      <main className="mx-auto max-w-lg space-y-6 px-5 py-8">
-        {/* Perfil */}
+      <main className="mx-auto max-w-lg space-y-6 px-5 py-8 pb-16">
+        {/* Foto y datos */}
         <div className="rounded-3xl border border-amber-100/80 bg-white p-6 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8e4d4]">
-              <UserIcon className="h-7 w-7 text-[#5f5c46]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-black text-xl text-neutral-900">{displayName}</p>
-              {phone && (
-                <p className="mt-1 flex items-center gap-1.5 text-sm text-neutral-500">
-                  <Phone size={14} /> {phone}
-                </p>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="sr-only"
+            onChange={(e) => void onAvatarFile(e)}
+          />
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={avatarBusy}
+              className="group relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-[#c4b896]/50 bg-[#e8e4d4] text-[#2d4a3e] shadow-inner outline-none transition hover:border-[#2d4a3e] focus-visible:ring-2 focus-visible:ring-[#2d4a3e] disabled:opacity-60"
+              aria-label="Cambiar foto de perfil"
+            >
+              {avatarUrl ? (
+                <Image src={avatarUrl} alt={displayName} fill className="object-cover" sizes="96px" />
+              ) : (
+                <span className="text-2xl font-black">{initialsFromName(displayName)}</span>
               )}
-              {email && (
-                <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-neutral-500">
-                  <Mail size={14} /> {email}
-                </p>
-              )}
+              <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100">
+                {avatarBusy ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-white" />
+                ) : (
+                  <Camera className="h-7 w-7 text-white" />
+                )}
+              </span>
+            </button>
+            <p className="text-center text-xs font-medium text-neutral-500 sm:text-left">Tocá la foto para subir una nueva</p>
+          </div>
+
+          <div className="mt-6 space-y-4">
+            <div>
+              <label htmlFor="cuenta-nombre" className="text-xs font-black uppercase tracking-wide text-neutral-500">
+                Nombre
+              </label>
+              <input id="cuenta-nombre" className={inputCls} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} />
             </div>
+            <div>
+              <label htmlFor="cuenta-tel" className="text-xs font-black uppercase tracking-wide text-neutral-500">
+                Teléfono
+              </label>
+              <input
+                id="cuenta-tel"
+                className={inputCls}
+                inputMode="tel"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="cuenta-mail" className="text-xs font-black uppercase tracking-wide text-neutral-500">
+                Email
+              </label>
+              <input
+                id="cuenta-mail"
+                type="email"
+                className={inputCls}
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="cuenta-nac" className="text-xs font-black uppercase tracking-wide text-neutral-500">
+                Fecha de nacimiento
+              </label>
+              <input
+                id="cuenta-nac"
+                type="date"
+                className={inputCls}
+                value={editBirthdate.length >= 10 ? editBirthdate.slice(0, 10) : editBirthdate}
+                onChange={(e) => setEditBirthdate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="cuenta-dir" className="text-xs font-black uppercase tracking-wide text-neutral-500">
+                Dirección de entrega
+              </label>
+              <textarea
+                id="cuenta-dir"
+                rows={3}
+                className={`${inputCls} resize-y`}
+                value={editAddress}
+                onChange={(e) => setEditAddress(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void saveProfile()}
+            disabled={savingProfile}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#2d4a3e] py-3 text-sm font-black text-white shadow-md transition hover:bg-[#1f352c] disabled:opacity-60"
+          >
+            {savingProfile ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+            Guardar cambios
+          </button>
+        </div>
+
+        {/* Resumen pedidos */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-center shadow-sm">
+            <p className="text-[11px] font-black uppercase tracking-wide text-neutral-500">Pedidos</p>
+            <p className="mt-1 text-2xl font-black tabular-nums text-[#2d4a3e]">{orderStats.totalOrdersCount}</p>
+          </div>
+          <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-center shadow-sm">
+            <p className="text-[11px] font-black uppercase tracking-wide text-neutral-500">Ticket promedio</p>
+            <p className="mt-1 text-lg font-black tabular-nums text-[#2d4a3e]">
+              {orderStats.averageOrderValue > 0 ? formatMoney(orderStats.averageOrderValue) : "—"}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-center shadow-sm sm:col-span-1">
+            <p className="text-[11px] font-black uppercase tracking-wide text-neutral-500">Más pedido</p>
+            <p className="mt-1 line-clamp-2 text-sm font-bold text-neutral-900">{orderStats.mostOrderedProduct}</p>
           </div>
         </div>
 
@@ -183,22 +433,12 @@ export default function CuentaPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Link
-            href="/menu"
-            className="flex w-full flex-1 items-center justify-center rounded-full bg-[#2d4a3e] px-6 py-3 text-center font-black text-white shadow-md transition hover:bg-[#1f352c]"
-          >
-            Ir al menú →
-          </Link>
-          <button
-            type="button"
-            onClick={() => void handleSignOut()}
-            className="flex w-full flex-1 items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-sm font-bold text-neutral-600 transition hover:bg-neutral-50"
-          >
-            <LogOut size={16} />
-            Salir
-          </button>
-        </div>
+        <Link
+          href="/menu"
+          className="flex w-full items-center justify-center rounded-full bg-[#2d4a3e] px-6 py-3.5 text-center text-sm font-black text-white shadow-md transition hover:bg-[#1f352c]"
+        >
+          Ir al menú →
+        </Link>
 
         {/* Historial */}
         <div>
@@ -261,17 +501,22 @@ export default function CuentaPage() {
                           {items.length === 0 ? (
                             <li className="text-neutral-400">Sin detalle de ítems</li>
                           ) : (
-                            items.map((it: any, idx: number) => (
-                              <li key={idx} className="flex justify-between gap-2">
-                                <span className="text-neutral-700">
-                                  {(it.quantity ?? 1) > 1 && <span className="font-bold text-[#7a765a]">{it.quantity}× </span>}
-                                  {it.name}
-                                </span>
-                                <span className="shrink-0 font-bold text-neutral-800">
-                                  {formatMoney(Number(it.price ?? 0) * Number(it.quantity ?? 1))}
-                                </span>
-                              </li>
-                            ))
+                            items.map((it: unknown, idx: number) => {
+                              const row = it as { name?: string; quantity?: number; price?: number };
+                              return (
+                                <li key={idx} className="flex justify-between gap-2">
+                                  <span className="text-neutral-700">
+                                    {(row.quantity ?? 1) > 1 && (
+                                      <span className="font-bold text-[#7a765a]">{row.quantity}× </span>
+                                    )}
+                                    {row.name}
+                                  </span>
+                                  <span className="shrink-0 font-bold text-neutral-800">
+                                    {formatMoney(Number(row.price ?? 0) * Number(row.quantity ?? 1))}
+                                  </span>
+                                </li>
+                              );
+                            })
                           )}
                         </ul>
                       </div>
@@ -283,7 +528,6 @@ export default function CuentaPage() {
           )}
         </div>
       </main>
-      <SiteFooter />
     </div>
   );
 }

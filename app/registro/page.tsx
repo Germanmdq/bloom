@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { Eye, EyeOff, Instagram, Loader2 } from "lucide-react";
@@ -171,7 +172,7 @@ export default function RegistroPage() {
     }
     menuRedirectRef.current = window.setTimeout(() => {
       menuRedirectRef.current = null;
-      void router.push("/menu");
+      void router.push("/cuenta");
     }, 1500);
   }, [router]);
 
@@ -249,7 +250,6 @@ export default function RegistroPage() {
     const next: Partial<Record<FieldKey, string>> = {};
     if (password.length < 6) next.password = "Mínimo 6 caracteres.";
     if (!addressLine.trim()) next.address = "Ingresá calle y número.";
-    if (!addressExtra.trim()) next.address_extra = "Ingresá piso, oficina o referencia.";
     if (Object.keys(next).length) {
       setFieldErrors(next);
       return false;
@@ -295,7 +295,7 @@ export default function RegistroPage() {
           default_address: defaultAddress,
           is_customer: true,
         },
-        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/menu` : undefined,
+        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/cuenta` : undefined,
       },
     });
     setLoading(false);
@@ -729,7 +729,7 @@ export default function RegistroPage() {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="reg-ref" className="block text-[15px] font-bold text-neutral-800">
-                      Piso / Dpto
+                      Piso / Dpto / Referencia (opcional)
                     </label>
                     <input
                       id="reg-ref"
@@ -765,6 +765,16 @@ export default function RegistroPage() {
                 </form>
               ) : null}
             </div>
+
+            <p className="mt-8 text-center text-[15px] font-semibold text-neutral-700">
+              ¿Ya tenés cuenta?{" "}
+              <Link
+                href="/auth?redirect=/cuenta"
+                className="font-black text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
+              >
+                Iniciá sesión
+              </Link>
+            </p>
           </div>
         </section>
       </div>
