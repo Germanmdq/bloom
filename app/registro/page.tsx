@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { Eye, EyeOff, Instagram, Loader2 } from "lucide-react";
@@ -140,7 +139,8 @@ export default function RegistroPage() {
   const [loading, setLoading] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [instagramModal, setInstagramModal] = useState(false);
-  const menuRedirectRef = useRef<number | null>(null);
+  const [accountRedirectSec, setAccountRedirectSec] = useState(3);
+  const cuentaRedirectRef = useRef<number | null>(null);
 
   const years = useMemo(() => {
     const y = new Date().getFullYear();
@@ -165,13 +165,13 @@ export default function RegistroPage() {
     if (d > dim) setBirthDay("");
   }, [birthDay, days.length]);
 
-  const scheduleMenuRedirect = useCallback(() => {
-    if (menuRedirectRef.current) {
-      clearTimeout(menuRedirectRef.current);
-      menuRedirectRef.current = null;
+  const scheduleCuentaRedirect = useCallback(() => {
+    if (cuentaRedirectRef.current) {
+      clearTimeout(cuentaRedirectRef.current);
+      cuentaRedirectRef.current = null;
     }
-    menuRedirectRef.current = window.setTimeout(() => {
-      menuRedirectRef.current = null;
+    cuentaRedirectRef.current = window.setTimeout(() => {
+      cuentaRedirectRef.current = null;
       void router.push("/cuenta");
     }, 1500);
   }, [router]);
@@ -181,26 +181,33 @@ export default function RegistroPage() {
       setInstagramModal(false);
       return;
     }
+    setAccountRedirectSec(3);
+    const t2 = window.setTimeout(() => setAccountRedirectSec(2), 1000);
+    const t1 = window.setTimeout(() => setAccountRedirectSec(1), 2000);
     setInstagramModal(false);
     const showModal = window.setTimeout(() => setInstagramModal(true), 1000);
-    return () => clearTimeout(showModal);
+    return () => {
+      clearTimeout(t2);
+      clearTimeout(t1);
+      clearTimeout(showModal);
+    };
   }, [celebrate]);
 
   useEffect(() => {
     return () => {
-      if (menuRedirectRef.current) clearTimeout(menuRedirectRef.current);
+      if (cuentaRedirectRef.current) clearTimeout(cuentaRedirectRef.current);
     };
   }, []);
 
   const onFollowInstagram = () => {
     window.open(INSTAGRAM_URL, "_blank", "noopener,noreferrer");
     setInstagramModal(false);
-    scheduleMenuRedirect();
+    scheduleCuentaRedirect();
   };
 
   const onSkipInstagram = () => {
     setInstagramModal(false);
-    scheduleMenuRedirect();
+    scheduleCuentaRedirect();
   };
 
   const emailValid = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim().toLowerCase());
@@ -348,7 +355,9 @@ export default function RegistroPage() {
             <p className="max-w-md text-[17px] font-semibold leading-relaxed text-white/88">
               Ya sos socio. Cada encargo te acerca a tu próximo café gratis.
             </p>
-            <p className="pt-4 text-[16px] font-bold text-white/75">Te llevamos al menú en un momento.</p>
+            <p className="pt-4 text-[16px] font-bold text-white/75">
+              Entrando a tu cuenta en {accountRedirectSec}…
+            </p>
           </div>
 
           {instagramModal ? (
@@ -765,16 +774,6 @@ export default function RegistroPage() {
                 </form>
               ) : null}
             </div>
-
-            <p className="mt-8 text-center text-[15px] font-semibold text-neutral-700">
-              ¿Ya tenés cuenta?{" "}
-              <Link
-                href="/auth?redirect=/cuenta"
-                className="font-black text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
-              >
-                Iniciá sesión
-              </Link>
-            </p>
           </div>
         </section>
       </div>
