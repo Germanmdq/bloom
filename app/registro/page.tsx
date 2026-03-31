@@ -368,6 +368,41 @@ export default function RegistroPage() {
           </div>
         </div>
 
+        <section
+          className="relative z-[15] px-4 py-8 sm:px-6 sm:py-10"
+          aria-label="Beneficios del Club Bloom"
+        >
+          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
+            <div className="flex flex-col rounded-2xl border-2 border-[#c9a84c] bg-white p-5 shadow-md sm:p-6">
+              <span className="mb-3 text-4xl leading-none sm:text-5xl" aria-hidden>
+                ☕
+              </span>
+              <h3 className="text-lg font-black text-neutral-900 sm:text-xl">Café gratis cada 10 encargos</h3>
+              <p className="mt-2 text-[15px] font-medium leading-relaxed text-neutral-600 sm:text-base">
+                A los 10 pedidos, el siguiente corre por nuestra cuenta
+              </p>
+            </div>
+            <div className="flex flex-col rounded-2xl border-2 border-[#c9a84c] bg-white p-5 shadow-md sm:p-6">
+              <span className="mb-3 text-4xl leading-none sm:text-5xl" aria-hidden>
+                🎂
+              </span>
+              <h3 className="text-lg font-black text-neutral-900 sm:text-xl">Sorpresa en tu cumpleaños</h3>
+              <p className="mt-2 text-[15px] font-medium leading-relaxed text-neutral-600 sm:text-base">
+                El día de tu cumpleaños te sorprendemos con algo especial en el local
+              </p>
+            </div>
+            <div className="flex flex-col rounded-2xl border-2 border-[#c9a84c] bg-white p-5 shadow-md sm:p-6">
+              <span className="mb-3 text-4xl leading-none sm:text-5xl" aria-hidden>
+                🏷️
+              </span>
+              <h3 className="text-lg font-black text-neutral-900 sm:text-xl">Descuentos de socio</h3>
+              <p className="mt-2 text-[15px] font-medium leading-relaxed text-neutral-600 sm:text-base">
+                Precios especiales y promociones exclusivas para socios del club
+              </p>
+            </div>
+          </div>
+        </section>
+
         <div className="relative z-20 -mt-10 flex flex-1 justify-center px-4 pb-14 sm:-mt-14 sm:px-6">
           <div
             className="w-full max-w-[480px] rounded-3xl border border-black/[0.06] p-10 shadow-2xl"
