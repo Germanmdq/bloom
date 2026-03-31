@@ -320,7 +320,10 @@ export default function RegistroPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] text-neutral-900" style={{ fontFamily: APPLE_FONT }}>
+    <div
+      className="min-h-[100dvh] text-neutral-900"
+      style={{ fontFamily: APPLE_FONT, backgroundColor: GREEN }}
+    >
       {celebrate ? (
         <>
           <div
