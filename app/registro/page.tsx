@@ -394,52 +394,46 @@ export default function RegistroPage() {
 
       <div className="flex min-h-[100dvh] flex-col">
         <section
-          className="px-4 pb-12 pt-14 text-center sm:px-6 sm:pb-14 sm:pt-16"
+          className="px-6 py-16 text-center"
           style={{ backgroundColor: GREEN }}
-          aria-label="Club Bloom — programa de socios"
+          aria-label="Programa de lealtad Club Bloom"
         >
-          <p className="text-[clamp(2.25rem,8vw,3.75rem)] font-black leading-none tracking-[-0.04em] text-white">
-            BLOOM.
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#c9a84c] sm:text-xs">
+            Programa de lealtad
           </p>
-          <p className="mx-auto mt-4 max-w-md text-[17px] font-semibold leading-snug text-white/95 sm:text-lg">
-            Café, pastelería y cocina — todo en un solo lugar
-          </p>
-          <p
-            className="mt-6 text-[11px] font-bold uppercase tracking-[0.25em] sm:text-xs"
-            style={{ color: GOLD }}
-          >
-            Programa de socios
+          <h1 className="mx-auto mt-5 max-w-3xl text-[clamp(1.85rem,5.5vw,3.25rem)] font-black leading-[1.08] tracking-tight text-white">
+            Sumate al Club Bloom
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-[15px] font-medium leading-relaxed text-white/85 sm:text-[17px]">
+            Registrate una vez y empezá a sumar puntos con cada encargo. Sin complicaciones.
           </p>
 
-          <h2 className="mb-8 mt-12 text-center text-[clamp(1.75rem,5vw,2.5rem)] font-black tracking-tight text-white sm:mt-14">
-            Club Bloom
-          </h2>
-          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 text-left md:grid-cols-3 md:gap-5">
-            <div className="flex flex-col rounded-2xl border-2 border-[#c9a84c] bg-white p-5 shadow-md sm:p-6">
+          <div className="mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-4 text-left md:mt-12 md:grid-cols-3 md:gap-6">
+            <div className="flex flex-col rounded-2xl border-t-4 border-[#c9a84c] bg-white p-5 shadow-md sm:p-6">
               <span className="mb-3 text-4xl leading-none sm:text-5xl" aria-hidden>
                 ☕
               </span>
-              <h3 className="text-lg font-black text-neutral-900 sm:text-xl">Café gratis cada 10 encargos</h3>
+              <h2 className="text-lg font-black text-neutral-900 sm:text-xl">Café gratis cada 10 encargos</h2>
               <p className="mt-2 text-[15px] font-medium leading-relaxed text-neutral-600 sm:text-base">
-                A los 10 pedidos, el siguiente corre por nuestra cuenta
+                Cada vez que llegás a 10 pedidos, el siguiente corre por nuestra cuenta.
               </p>
             </div>
-            <div className="flex flex-col rounded-2xl border-2 border-[#c9a84c] bg-white p-5 shadow-md sm:p-6">
+            <div className="flex flex-col rounded-2xl border-t-4 border-[#c9a84c] bg-white p-5 shadow-md sm:p-6">
               <span className="mb-3 text-4xl leading-none sm:text-5xl" aria-hidden>
-                🎂
+                🎁
               </span>
-              <h3 className="text-lg font-black text-neutral-900 sm:text-xl">Sorpresa en tu cumpleaños</h3>
+              <h2 className="text-lg font-black text-neutral-900 sm:text-xl">Regalos en fechas especiales</h2>
               <p className="mt-2 text-[15px] font-medium leading-relaxed text-neutral-600 sm:text-base">
-                El día de tu cumpleaños te sorprendemos con algo especial en el local
+                En tu cumpleaños y en fechas especiales tenemos una sorpresa para vos.
               </p>
             </div>
-            <div className="flex flex-col rounded-2xl border-2 border-[#c9a84c] bg-white p-5 shadow-md sm:p-6">
+            <div className="flex flex-col rounded-2xl border-t-4 border-[#c9a84c] bg-white p-5 shadow-md sm:p-6">
               <span className="mb-3 text-4xl leading-none sm:text-5xl" aria-hidden>
                 🏷️
               </span>
-              <h3 className="text-lg font-black text-neutral-900 sm:text-xl">Descuentos de socio</h3>
+              <h2 className="text-lg font-black text-neutral-900 sm:text-xl">Descuentos exclusivos</h2>
               <p className="mt-2 text-[15px] font-medium leading-relaxed text-neutral-600 sm:text-base">
-                Precios especiales y promociones exclusivas para socios del club
+                Promociones y precios especiales solo para socios del club.
               </p>
             </div>
           </div>
