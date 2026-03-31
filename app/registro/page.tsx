@@ -7,7 +7,6 @@ import { Eye, EyeOff, Instagram, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const GREEN = "#2d4a3e";
-const CREAM = "#FAF7F2";
 const GOLD = "#c9a84c";
 const APPLE_FONT =
   '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
@@ -392,12 +391,8 @@ export default function RegistroPage() {
         </>
       ) : null}
 
-      <div className="flex min-h-[100dvh] flex-col">
-        <section
-          className="px-6 py-16 text-center"
-          style={{ backgroundColor: GREEN }}
-          aria-label="Programa de lealtad Club Bloom"
-        >
+      <div className="flex min-h-[100dvh] flex-col" style={{ backgroundColor: GREEN }}>
+        <section className="px-6 py-16 text-center" aria-label="Programa de lealtad Club Bloom">
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#c9a84c] sm:text-xs">
             Programa de lealtad
           </p>
@@ -439,14 +434,8 @@ export default function RegistroPage() {
           </div>
         </section>
 
-        <section
-          className="flex flex-1 flex-col items-center px-4 py-12 sm:px-6 sm:py-16"
-          style={{ backgroundColor: CREAM }}
-        >
-          <div
-            className="w-full max-w-[480px] rounded-3xl border border-black/[0.06] p-10 shadow-2xl"
-            style={{ backgroundColor: CREAM }}
-          >
+        <section className="flex flex-1 flex-col items-center px-4 py-12 sm:px-6 sm:py-16">
+          <div className="w-full max-w-[480px] rounded-3xl border border-black/[0.08] bg-white p-10 shadow-2xl">
             <h2 className="text-center text-[clamp(1.5rem,4.5vw,1.9rem)] font-black tracking-tight text-neutral-900">
               Crear mi cuenta
             </h2>
