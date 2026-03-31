@@ -1,27 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import {
   Camera,
-  ChevronDown,
-  ChevronUp,
+  CircleUser,
   Coffee,
+  LayoutDashboard,
   Loader2,
   Lock,
   LogOut,
   Pencil,
   ShoppingBag,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 
 const COFFEE_GOAL = 10;
 const GREEN = "#2d4a3e";
 const GOLD = "#c9a84c";
-const CREAM = "#F5EDD8";
+const CREAM = "#FAF7F2";
+const TEXT_DARK = "#1a1a1a";
+const SIDEBAR_W = 240;
+const SIDEBAR_ACTIVE_BG = "rgba(255,255,255,0.08)";
 
 type OrderRow = {
   id: string;
@@ -32,6 +36,8 @@ type OrderRow = {
   paid?: boolean;
   customer_name?: string | null;
 };
+
+type NavId = "inicio" | "pedidos" | "cupones" | "perfil";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
@@ -64,7 +70,7 @@ function isBirthdayThisMonth(birthdate: string): boolean {
   return d.getMonth() === now.getMonth();
 }
 
-function orderItemsSummary(items: unknown, maxNames = 3): string {
+function orderItemsSummary(items: unknown, maxNames = 4): string {
   const arr = Array.isArray(items) ? items : [];
   if (arr.length === 0) return "Sin ítems";
   const names = arr
@@ -87,7 +93,7 @@ export default function CuentaPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [paidOrderCount, setPaidOrderCount] = useState(0);
   const [ordersLoading, setOrdersLoading] = useState(true);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [activeNav, setActiveNav] = useState<NavId>("inicio");
   const [profileEditMode, setProfileEditMode] = useState(false);
 
   const [editFullName, setEditFullName] = useState("");
@@ -98,6 +104,11 @@ export default function CuentaPage() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
+
+  const sectionInicioRef = useRef<HTMLDivElement>(null);
+  const sectionPedidosRef = useRef<HTMLElement>(null);
+  const sectionCuponesRef = useRef<HTMLElement>(null);
+  const sectionPerfilRef = useRef<HTMLElement>(null);
 
   const loadOrders = useCallback(
     async (uid: string) => {
@@ -169,6 +180,19 @@ export default function CuentaPage() {
     await supabase.auth.signOut();
     router.push("/menu");
     router.refresh();
+  };
+
+  const scrollToSection = (id: NavId) => {
+    setActiveNav(id);
+    const map: Record<NavId, RefObject<HTMLElement | null>> = {
+      inicio: sectionInicioRef as RefObject<HTMLElement | null>,
+      pedidos: sectionPedidosRef,
+      cupones: sectionCuponesRef,
+      perfil: sectionPerfilRef,
+    };
+    window.requestAnimationFrame(() => {
+      map[id].current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const displayName = editFullName.trim() || "Cliente Bloom";
@@ -303,410 +327,437 @@ export default function CuentaPage() {
   };
 
   const inputCls =
-    "mt-1.5 w-full rounded-2xl border border-neutral-200/90 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm outline-none transition placeholder:text-neutral-400 focus:border-[#2d4a3e] focus:ring-2 focus:ring-[#2d4a3e]/20";
+    "mt-1.5 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium outline-none transition placeholder:text-neutral-400 focus:border-[#2d4a3e] focus:ring-2 focus:ring-[#2d4a3e]/20";
 
-  const cardCls =
-    "rounded-[1.25rem] border-2 border-[#c9a84c]/45 bg-[#2d4a3e] p-5 text-white shadow-[0_4px_24px_rgba(45,74,62,0.35)]";
+  const statCardCls = "rounded-xl border-l-4 border-l-[#2d4a3e] bg-white p-6 shadow-sm";
+  const panelCardCls = "rounded-xl bg-white p-6 shadow-sm";
+
+  const navLinkClass = (id: NavId) =>
+    `flex w-full items-center gap-3 rounded-r-lg border-l-4 py-3 pl-4 pr-3 text-left text-[15px] font-semibold transition ${
+      activeNav === id
+        ? "border-[#c9a84c] text-white"
+        : "border-transparent text-white/90 hover:bg-white/5"
+    }`;
 
   if (sessionPending || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: CREAM }}>
-        <Loader2 className="h-10 w-10 animate-spin text-[#2d4a3e]" />
+        <Loader2 className="h-10 w-10 animate-spin" style={{ color: GREEN }} />
       </div>
     );
   }
 
   const emailDisplay = editEmail.trim() || user.email || "—";
-  const phoneDisplay = editPhone.trim() || "—";
+
+  const SidebarNav = ({ mobile = false }: { mobile?: boolean }) => {
+    const nav = (
+      <nav
+        className={`flex gap-0.5 ${mobile ? "mt-0 min-w-0 flex-1 flex-row justify-around px-1" : "mt-8 min-h-0 flex-1 flex-col px-2"}`}
+      >
+        {(
+          [
+            ["inicio", "Inicio", LayoutDashboard],
+            ["pedidos", "Mis pedidos", ShoppingBag],
+            ["cupones", "Cupones", Tag],
+            ["perfil", "Mi perfil", CircleUser],
+          ] as const
+        ).map(([id, label, Icon]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => scrollToSection(id)}
+            className={
+              mobile
+                ? `flex min-w-0 flex-1 flex-col items-center justify-center py-2 ${activeNav === id ? "text-[#c9a84c]" : "text-white/80"}`
+                : navLinkClass(id)
+            }
+            style={!mobile && activeNav === id ? { backgroundColor: SIDEBAR_ACTIVE_BG } : undefined}
+            aria-current={activeNav === id ? "page" : undefined}
+          >
+            <Icon className={`shrink-0 ${mobile ? "h-6 w-6" : "h-5 w-5 opacity-90"}`} strokeWidth={2} aria-hidden />
+            {!mobile && <span>{label}</span>}
+            {mobile && <span className="sr-only">{label}</span>}
+          </button>
+        ))}
+      </nav>
+    );
+    if (mobile) return nav;
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="px-5 pt-8">
+          <p className="text-2xl font-black tracking-[-0.06em] text-white">BLOOM.</p>
+        </div>
+        <div className="mt-8 flex flex-col items-center gap-2 px-4 text-center">
+          <div
+            className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white/25"
+            style={{ backgroundColor: "#1f352c" }}
+          >
+            {avatarUrl ? (
+              <Image src={avatarUrl} alt="" fill className="object-cover" sizes="56px" />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center text-lg font-bold text-white">
+                {initialsFromName(displayName)}
+              </span>
+            )}
+          </div>
+          <p className="line-clamp-2 w-full px-1 text-sm font-semibold leading-tight text-white">{displayName}</p>
+        </div>
+        {nav}
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen font-sans text-neutral-900 antialiased" style={{ backgroundColor: CREAM }}>
-      <header className="sticky top-0 z-50 border-b-2 border-[#c9a84c]/35 bg-[#F5EDD8]/95 shadow-sm backdrop-blur-md">
-        <div className="relative mx-auto flex h-14 max-w-2xl items-center justify-center px-4">
-          <span className="text-lg font-black tracking-[-0.04em]" style={{ color: GREEN }}>
-            BLOOM.
-          </span>
+    <div className="min-h-screen font-sans antialiased" style={{ backgroundColor: CREAM, color: TEXT_DARK }}>
+      {/* Desktop sidebar */}
+      <aside
+        className="fixed left-0 top-0 z-40 hidden h-screen w-[240px] flex-col border-r border-white/10 lg:flex"
+        style={{ width: SIDEBAR_W, backgroundColor: GREEN }}
+      >
+        <SidebarNav mobile={false} />
+        <div className="mt-auto border-t border-white/10 px-2 py-4">
           <button
             type="button"
             onClick={() => void handleSignOut()}
-            className="absolute right-3 inline-flex items-center gap-1.5 rounded-full border-2 border-[#c9a84c]/50 bg-white px-3 py-1.5 text-xs font-bold shadow-sm transition hover:bg-[#c9a84c]/15 sm:right-4"
-            style={{ color: GREEN }}
+            className="flex w-full items-center justify-center rounded-lg py-3 text-white/90 transition hover:bg-white/10 hover:text-white"
+            aria-label="Cerrar sesión"
           >
-            <LogOut className="h-3.5 w-3.5" aria-hidden />
-            Salir
+            <LogOut className="h-5 w-5" strokeWidth={2} />
           </button>
         </div>
-      </header>
+      </aside>
 
-      <main className="mx-auto max-w-2xl space-y-5 px-4 py-6 pb-28 sm:px-5 sm:py-8">
-        {/* Header — profile */}
-        <section className={cardCls}>
-          <input
-            ref={avatarInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className="sr-only"
-            onChange={(e) => void onAvatarFile(e)}
-          />
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
-            <div className="flex shrink-0 flex-col items-center sm:items-start">
-              <button
-                type="button"
-                onClick={() => avatarInputRef.current?.click()}
-                disabled={avatarBusy}
-                className="group relative flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-full shadow-md outline-none ring-2 ring-[#c9a84c]/60 ring-offset-2 ring-offset-[#2d4a3e] transition hover:ring-[#c9a84c] focus-visible:ring-2 focus-visible:ring-[#c9a84c] disabled:opacity-60 sm:h-[100px] sm:w-[100px]"
-                style={{ backgroundColor: GREEN }}
-                aria-label="Cambiar foto de perfil"
-              >
-                {avatarUrl ? (
-                  <Image src={avatarUrl} alt={displayName} fill className="object-cover" sizes="100px" />
-                ) : (
-                  <span className="text-2xl font-black tracking-tight text-white sm:text-[1.65rem]">
-                    {initialsFromName(displayName)}
-                  </span>
-                )}
-                <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-end bg-gradient-to-t from-black/55 via-black/20 to-transparent pb-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-active:opacity-100 group-focus-visible:opacity-100">
-                  {avatarBusy ? (
-                    <Loader2 className="mb-1 h-6 w-6 animate-spin text-white" />
-                  ) : (
-                    <Camera className="mb-0.5 h-5 w-5 text-white drop-shadow" />
-                  )}
-                  <span className="px-1 text-center text-[10px] font-semibold leading-tight text-white drop-shadow-sm">
-                    Tocá la foto para cambiar
-                  </span>
-                </span>
-              </button>
-            </div>
-
-            <div className="min-w-0 flex-1">
-              {!profileEditMode ? (
-                <>
-                  <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">{displayName}</h1>
-                  <p className="mt-1 truncate text-sm text-white/75">{emailDisplay}</p>
-                  <p className="mt-0.5 text-sm text-white/75">{phoneDisplay}</p>
-                  <button
-                    type="button"
-                    onClick={() => setProfileEditMode(true)}
-                    className="mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold shadow-md transition hover:opacity-95"
-                    style={{ backgroundColor: GOLD, color: GREEN }}
+      {/* Main */}
+      <div className="min-h-screen pb-20 lg:ml-[240px] lg:pb-10">
+        <main className="mx-auto max-w-6xl space-y-8 px-4 py-8 lg:px-10 lg:py-10">
+          <div ref={sectionInicioRef} id="section-inicio" className="scroll-mt-24 space-y-8 lg:scroll-mt-8">
+            {/* Stats row */}
+            <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {[
+                { label: "Pedidos realizados", value: String(orderStats.totalOrdersCount), kind: "num" as const },
+                {
+                  label: "Ticket promedio",
+                  value: orderStats.averageOrderValue > 0 ? formatMoney(orderStats.averageOrderValue) : "—",
+                  kind: "num" as const,
+                },
+                { label: "Producto más pedido", value: orderStats.mostOrderedProduct, kind: "text" as const },
+              ].map((s) => (
+                <div key={s.label} className={statCardCls}>
+                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">{s.label}</p>
+                  <p
+                    className={`mt-3 font-bold ${s.kind === "text" ? "text-lg leading-snug" : "text-3xl tabular-nums tracking-tight"}`}
+                    style={{ color: TEXT_DARK }}
                   >
-                    <Pencil className="h-4 w-4" aria-hidden />
-                    Editar perfil
-                  </button>
-                </>
+                    {s.value}
+                  </p>
+                </div>
+              ))}
+            </section>
+
+            {/* Loyalty + Cupones */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <section>
+                <div className={panelCardCls}>
+                  <h2 className="flex items-center gap-2 text-base font-bold" style={{ color: TEXT_DARK }}>
+                    <span aria-hidden>☕</span> Tu progreso
+                  </h2>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {Array.from({ length: COFFEE_GOAL }).map((_, i) => {
+                      const active = i < loyaltyFilled;
+                      return (
+                        <span
+                          key={i}
+                          className="flex h-11 w-11 items-center justify-center rounded-lg"
+                          style={{
+                            backgroundColor: active ? "rgba(45,74,62,0.12)" : "#f0f0f0",
+                            color: active ? GREEN : "#9ca3af",
+                          }}
+                          aria-hidden
+                        >
+                          <Coffee className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} />
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-4 text-sm leading-relaxed text-neutral-600">
+                    {cupsToGo > 0 ? (
+                      <>
+                        Llevás <strong style={{ color: TEXT_DARK }}>{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
+                        <strong style={{ color: TEXT_DARK }}>{cupsToGo}</strong> para tu café gratis.
+                      </>
+                    ) : loyaltyPaidTotal > 0 ? (
+                      <>
+                        Llevás <strong style={{ color: TEXT_DARK }}>{loyaltyPaidTotal}</strong> pedidos — ¡podés canjear tu café gratis!
+                      </>
+                    ) : (
+                      <>
+                        Llevás <strong style={{ color: TEXT_DARK }}>0</strong> pedidos — te faltan{" "}
+                        <strong style={{ color: TEXT_DARK }}>{COFFEE_GOAL}</strong> para tu café gratis.
+                      </>
+                    )}
+                  </p>
+                </div>
+              </section>
+
+              <section ref={sectionCuponesRef} id="section-cupones" className="scroll-mt-24 lg:scroll-mt-8">
+                <div className={panelCardCls}>
+                  <h2 className="flex items-center gap-2 text-base font-bold" style={{ color: TEXT_DARK }}>
+                    <span aria-hidden>🏷️</span> Cupones
+                  </h2>
+                  <div className="mt-4 space-y-3">
+                    {birthdayThisMonth && (
+                      <div
+                        className="rounded-lg border-l-4 p-4 shadow-sm"
+                        style={{ borderLeftColor: GOLD, backgroundColor: "#fafafa" }}
+                      >
+                        <p className="text-base font-bold" style={{ color: TEXT_DARK }}>
+                          🎂 ¡Es tu mes!
+                        </p>
+                        <p className="mt-1 text-sm text-neutral-600">
+                          Presentá esta pantalla para tu regalo.{" "}
+                          <span className="font-semibold" style={{ color: GOLD }}>
+                            Beneficio activo
+                          </span>
+                        </p>
+                      </div>
+                    )}
+                    {!freeCoffeeUnlocked ? (
+                      <div className="flex items-start gap-3 rounded-lg bg-neutral-100 p-4 text-neutral-600">
+                        <Lock className="mt-0.5 h-5 w-5 shrink-0 text-neutral-400" aria-hidden />
+                        <div>
+                          <p className="font-semibold" style={{ color: TEXT_DARK }}>
+                            <span aria-hidden>☕</span> Café gratis
+                          </p>
+                          <p className="mt-1 text-sm">Desbloqueás a los 10 pedidos.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border-l-4 bg-white p-4 shadow-sm" style={{ borderLeftColor: GREEN }}>
+                        <p className="font-bold" style={{ color: GREEN }}>
+                          ☕ Café gratis — <span style={{ color: GOLD }}>activo</span>
+                        </p>
+                        <p className="mt-2 text-sm text-neutral-600">Presentá esta pantalla en el local para canjear.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          {/* Orders table */}
+          <section ref={sectionPedidosRef} id="section-pedidos" className="scroll-mt-24 lg:scroll-mt-8">
+            <div className={panelCardCls + " overflow-hidden p-0"}>
+              <div className="flex items-center gap-2 border-b border-neutral-100 px-6 py-4">
+                <ShoppingBag className="h-5 w-5" style={{ color: GREEN }} aria-hidden />
+                <h2 className="text-base font-bold" style={{ color: TEXT_DARK }}>
+                  Mis pedidos
+                </h2>
+              </div>
+              {ordersLoading ? (
+                <div className="flex justify-center py-16">
+                  <Loader2 className="h-8 w-8 animate-spin" style={{ color: GREEN }} />
+                </div>
+              ) : orders.length === 0 ? (
+                <p className="px-6 py-12 text-center text-sm text-neutral-600">
+                  Todavía no tenés pedidos vinculados a esta cuenta. Pedí desde el menú o el chat Bloom.
+                </p>
               ) : (
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="cuenta-nombre" className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">
-                      Nombre
-                    </label>
-                    <input id="cuenta-nombre" className={inputCls} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} />
-                  </div>
-                  <div>
-                    <label htmlFor="cuenta-tel" className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">
-                      Teléfono
-                    </label>
-                    <input
-                      id="cuenta-tel"
-                      className={inputCls}
-                      inputMode="tel"
-                      value={editPhone}
-                      onChange={(e) => setEditPhone(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="cuenta-mail" className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">
-                      Email
-                    </label>
-                    <input
-                      id="cuenta-mail"
-                      type="email"
-                      className={inputCls}
-                      value={editEmail}
-                      onChange={(e) => setEditEmail(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="cuenta-nac" className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">
-                      Fecha de nacimiento
-                    </label>
-                    <input
-                      id="cuenta-nac"
-                      type="date"
-                      className={inputCls}
-                      value={editBirthdate.length >= 10 ? editBirthdate.slice(0, 10) : editBirthdate}
-                      onChange={(e) => setEditBirthdate(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="cuenta-dir" className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">
-                      Dirección de entrega
-                    </label>
-                    <textarea
-                      id="cuenta-dir"
-                      rows={3}
-                      className={`${inputCls} resize-y`}
-                      value={editAddress}
-                      onChange={(e) => setEditAddress(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => void saveProfile()}
-                      disabled={savingProfile}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-full py-3 text-sm font-bold text-white shadow-md transition hover:opacity-95 disabled:opacity-60 sm:flex-none sm:min-w-[140px]"
-                      style={{ backgroundColor: GREEN }}
-                    >
-                      {savingProfile ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-                      Guardar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cancelProfileEdit}
-                      disabled={savingProfile}
-                      className="inline-flex flex-1 items-center justify-center rounded-full border-2 border-[#c9a84c] bg-transparent py-3 text-sm font-bold text-[#c9a84c] transition hover:bg-[#c9a84c]/15 disabled:opacity-60 sm:flex-none sm:min-w-[120px]"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-left text-sm">
+                    <thead>
+                      <tr className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                        <th className="px-6 py-3 font-bold">Fecha</th>
+                        <th className="px-6 py-3 font-bold">Ítems</th>
+                        <th className="px-6 py-3 font-bold">Total</th>
+                        <th className="px-6 py-3 font-bold">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orders.map((o, idx) => {
+                        const paid = Boolean(o.paid);
+                        const summary = orderItemsSummary(o.items);
+                        const total = Number(o.total);
+                        return (
+                          <tr
+                            key={o.id}
+                            className={idx % 2 === 0 ? "bg-white" : "bg-neutral-50/80"}
+                            style={{ color: TEXT_DARK }}
+                          >
+                            <td className="whitespace-nowrap px-6 py-4 tabular-nums text-neutral-800">
+                              {new Date(o.created_at).toLocaleDateString("es-AR", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                              <span className="ml-2 text-neutral-500">
+                                {new Date(o.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </td>
+                            <td className="max-w-[280px] px-6 py-4 text-neutral-700">
+                              <span className="line-clamp-2" title={summary}>
+                                {summary}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 font-semibold tabular-nums">{formatMoney(total)}</td>
+                            <td className="px-6 py-4">
+                              <span
+                                className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
+                                  paid ? "text-white" : "bg-amber-100 text-amber-900"
+                                }`}
+                                style={paid ? { backgroundColor: GREEN } : undefined}
+                              >
+                                {paid ? "Pagado" : "Pendiente"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Stats */}
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {[
-            { label: "Pedidos realizados", value: String(orderStats.totalOrdersCount), sub: null },
-            {
-              label: "Ticket promedio",
-              value: orderStats.averageOrderValue > 0 ? formatMoney(orderStats.averageOrderValue) : "—",
-              sub: null,
-            },
-            {
-              label: "Producto más pedido",
-              value: orderStats.mostOrderedProduct,
-              sub: "name",
-            },
-          ].map((s) => (
-            <div key={s.label} className={cardCls + " px-4 py-4 sm:py-5"}>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">{s.label}</p>
-              <p
-                className={`mt-2 text-white ${s.sub === "name" ? "line-clamp-3 text-base font-semibold leading-snug" : "text-2xl font-bold tabular-nums tracking-tight"}`}
-              >
-                {s.value}
-              </p>
-            </div>
-          ))}
-        </section>
-
-        {/* Loyalty */}
-        <section className={cardCls}>
-          <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-            <span className="text-[1.15rem]" aria-hidden>
-              ☕
-            </span>
-            Tu progreso
-          </h2>
-          <div className="mt-4 flex flex-wrap justify-center gap-1.5 sm:justify-start sm:gap-2">
-            {Array.from({ length: COFFEE_GOAL }).map((_, i) => {
-              const active = i < loyaltyFilled;
-              return (
-                <span
-                  key={i}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl sm:h-11 sm:w-11"
-                  style={{
-                    backgroundColor: active ? "rgba(201,168,76,0.38)" : "rgba(255,255,255,0.12)",
-                    color: active ? GOLD : "rgba(255,255,255,0.38)",
-                  }}
-                  aria-hidden
-                >
-                  <Coffee className="h-5 w-5 sm:h-[1.35rem] sm:w-[1.35rem]" strokeWidth={active ? 2.25 : 1.75} />
-                </span>
-              );
-            })}
-          </div>
-          <p className="mt-4 text-sm leading-relaxed text-white/85">
-            {cupsToGo > 0 ? (
-              <>
-                Llevás <strong className="font-semibold text-white">{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
-                <strong className="font-semibold text-white">{cupsToGo}</strong> para tu café gratis.
-              </>
-            ) : loyaltyPaidTotal > 0 ? (
-              <>
-                Llevás <strong className="font-semibold text-white">{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
-                <strong className="font-semibold text-white">0</strong> para tu café gratis. ¡Podés canjear tu café!
-              </>
-            ) : (
-              <>
-                Llevás <strong className="font-semibold text-white">0</strong> pedidos — te faltan{" "}
-                <strong className="font-semibold text-white">{COFFEE_GOAL}</strong> para tu café gratis.
-              </>
-            )}
-          </p>
-        </section>
-
-        {/* Coupons */}
-        <section className={cardCls}>
-          <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-            <span className="text-[1.1rem]" aria-hidden>
-              🏷️
-            </span>
-            Tus cupones
-          </h2>
-          <div className="mt-4 space-y-3">
-            {birthdayThisMonth && (
-              <div
-                className="relative overflow-hidden rounded-2xl border-2 p-4 shadow-md"
-                style={{ backgroundColor: GOLD, borderColor: `${GREEN}40`, color: GREEN }}
-              >
-                <p className="text-lg font-bold">🎂 ¡Es tu mes!</p>
-                <p className="mt-1 text-sm font-semibold opacity-95">Presentá esta pantalla para tu regalo.</p>
-                <span className="pointer-events-none absolute -right-4 -top-4 text-6xl opacity-25">🎁</span>
-              </div>
-            )}
-
-            {!freeCoffeeUnlocked ? (
-              <div className="relative flex items-start gap-3 rounded-2xl border border-neutral-400/40 bg-neutral-400/35 p-4 text-neutral-700">
-                <Lock className="mt-0.5 h-5 w-5 shrink-0 text-neutral-500" aria-hidden />
-                <div>
-                  <p className="font-semibold text-neutral-800">
-                    <span aria-hidden>☕</span> Café gratis
-                  </p>
-                  <p className="mt-1 text-sm leading-snug text-neutral-600">Desbloqueás a los 10 pedidos.</p>
+          {/* Mi perfil */}
+          <section ref={sectionPerfilRef} id="section-perfil" className="scroll-mt-24 lg:scroll-mt-8">
+            <div className={panelCardCls}>
+              <h2 className="text-lg font-bold" style={{ color: TEXT_DARK }}>
+                Mi perfil
+              </h2>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="sr-only"
+                onChange={(e) => void onAvatarFile(e)}
+              />
+              <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-start">
+                <div className="flex shrink-0 flex-col items-center md:items-start">
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarBusy}
+                    className="group relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full shadow-md outline-none ring-2 ring-[#2d4a3e]/20 transition hover:ring-[#c9a84c] focus-visible:ring-2 focus-visible:ring-[#c9a84c] disabled:opacity-60"
+                    style={{ backgroundColor: GREEN }}
+                    aria-label="Cambiar foto de perfil"
+                  >
+                    {avatarUrl ? (
+                      <Image src={avatarUrl} alt={displayName} fill className="object-cover" sizes="96px" />
+                    ) : (
+                      <span className="text-2xl font-black text-white">{initialsFromName(displayName)}</span>
+                    )}
+                    <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-end bg-gradient-to-t from-black/50 to-transparent pb-2 opacity-0 transition-opacity group-hover:opacity-100 group-active:opacity-100 group-focus-visible:opacity-100">
+                      {avatarBusy ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                      ) : (
+                        <Camera className="h-5 w-5 text-white" />
+                      )}
+                      <span className="px-1 text-center text-[9px] font-semibold text-white">Cambiar foto</span>
+                    </span>
+                  </button>
+                </div>
+                <div className="min-w-0 flex-1">
+                  {!profileEditMode ? (
+                    <>
+                      <h1 className="text-xl font-bold md:text-2xl" style={{ color: TEXT_DARK }}>
+                        {displayName}
+                      </h1>
+                      <p className="mt-1 text-sm text-neutral-600">{emailDisplay}</p>
+                      <p className="mt-0.5 text-sm text-neutral-600">{editPhone.trim() || "—"}</p>
+                      <button
+                        type="button"
+                        onClick={() => setProfileEditMode(true)}
+                        className="mt-4 inline-flex items-center gap-2 rounded-full border-2 border-[#2d4a3e] bg-white px-4 py-2 text-sm font-bold transition hover:bg-[#2d4a3e]/5"
+                        style={{ color: GREEN }}
+                      >
+                        <Pencil className="h-4 w-4" aria-hidden />
+                        Editar perfil
+                      </button>
+                    </>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="cuenta-nombre" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                          Nombre
+                        </label>
+                        <input id="cuenta-nombre" className={inputCls} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} />
+                      </div>
+                      <div>
+                        <label htmlFor="cuenta-tel" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                          Teléfono
+                        </label>
+                        <input id="cuenta-tel" className={inputCls} inputMode="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+                      </div>
+                      <div>
+                        <label htmlFor="cuenta-mail" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                          Email
+                        </label>
+                        <input id="cuenta-mail" type="email" className={inputCls} value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+                      </div>
+                      <div>
+                        <label htmlFor="cuenta-nac" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                          Fecha de nacimiento
+                        </label>
+                        <input
+                          id="cuenta-nac"
+                          type="date"
+                          className={inputCls}
+                          value={editBirthdate.length >= 10 ? editBirthdate.slice(0, 10) : editBirthdate}
+                          onChange={(e) => setEditBirthdate(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="cuenta-dir" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                          Dirección de entrega
+                        </label>
+                        <textarea id="cuenta-dir" rows={3} className={`${inputCls} resize-y`} value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => void saveProfile()}
+                          disabled={savingProfile}
+                          className="inline-flex flex-1 items-center justify-center gap-2 rounded-full py-3 text-sm font-bold text-white shadow-sm transition hover:opacity-95 disabled:opacity-60 sm:flex-none sm:min-w-[140px]"
+                          style={{ backgroundColor: GREEN }}
+                        >
+                          {savingProfile ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                          Guardar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelProfileEdit}
+                          disabled={savingProfile}
+                          className="inline-flex flex-1 items-center justify-center rounded-full border-2 border-neutral-300 bg-white py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-60 sm:flex-none sm:min-w-[120px]"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            ) : (
-              <div
-                className="rounded-2xl border-2 p-4 shadow-md"
-                style={{ backgroundColor: GOLD, borderColor: `${GREEN}50`, color: GREEN }}
-              >
-                <p className="flex items-center gap-2 font-bold">
-                  <span aria-hidden>☕</span> Café gratis — activo
-                </p>
-                <p className="mt-2 text-sm font-medium leading-relaxed opacity-95">
-                  Presentá esta pantalla en el local para canjear.
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Order history */}
-        <section>
-          <div className="mb-3 flex items-center gap-2 px-0.5">
-            <ShoppingBag className="h-5 w-5" style={{ color: GREEN }} aria-hidden />
-            <h2 className="text-lg font-bold" style={{ color: GREEN }}>
-              Historial de pedidos
-            </h2>
-          </div>
-          {ordersLoading ? (
-            <div className="flex justify-center overflow-hidden rounded-[1.25rem] border-l-4 border-[#2d4a3e] bg-white py-14 shadow-md">
-              <Loader2 className="h-8 w-8 animate-spin text-[#2d4a3e]" />
             </div>
-          ) : orders.length === 0 ? (
-            <p className="overflow-hidden rounded-[1.25rem] border-l-4 border-[#2d4a3e] bg-white py-10 text-center text-sm text-neutral-600 shadow-md">
-              Todavía no tenés pedidos vinculados a esta cuenta. Pedí desde el menú o el chat Bloom.
-            </p>
-          ) : (
-            <ul className="space-y-3">
-              {orders.map((o) => {
-                const items = Array.isArray(o.items) ? o.items : [];
-                const total = Number(o.total);
-                const isOpen = expanded === o.id;
-                const paid = Boolean(o.paid);
-                const summary = orderItemsSummary(o.items);
-                return (
-                  <li
-                    key={o.id}
-                    className="overflow-hidden rounded-[1.25rem] border border-neutral-200/80 border-l-[6px] border-l-[#2d4a3e] bg-white shadow-md"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setExpanded(isOpen ? null : o.id)}
-                      className="flex w-full items-start justify-between gap-3 px-4 py-4 text-left transition hover:bg-[#F5EDD8]/40 sm:items-center sm:px-5"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-neutral-900">
-                          {new Date(o.created_at).toLocaleDateString("es-AR", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                          <span className="ml-2 font-normal text-neutral-400">
-                            {new Date(o.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </p>
-                        <p className="mt-1 line-clamp-2 text-sm text-neutral-600">{summary}</p>
-                        <p className="mt-2 text-base font-bold tabular-nums" style={{ color: GREEN }}>
-                          {formatMoney(total)}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
-                            paid ? "bg-[#2d4a3e] text-white" : "bg-amber-100 text-amber-900"
-                          }`}
-                        >
-                          {paid ? "Pagado" : "Pendiente"}
-                        </span>
-                        {isOpen ? (
-                          <ChevronUp size={20} className="text-neutral-400" aria-hidden />
-                        ) : (
-                          <ChevronDown size={20} className="text-neutral-400" aria-hidden />
-                        )}
-                      </div>
-                    </button>
-                    {isOpen && (
-                      <div className="border-t border-neutral-100 px-4 py-4 sm:px-5">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Detalle</p>
-                        <ul className="mt-2 space-y-2 text-sm">
-                          {items.length === 0 ? (
-                            <li className="text-neutral-400">Sin detalle de ítems</li>
-                          ) : (
-                            items.map((it: unknown, idx: number) => {
-                              const row = it as { name?: string; quantity?: number; price?: number };
-                              return (
-                                <li key={idx} className="flex justify-between gap-3">
-                                  <span className="text-neutral-700">
-                                    {(row.quantity ?? 1) > 1 && (
-                                      <span className="font-semibold" style={{ color: GREEN }}>
-                                        {row.quantity}×{" "}
-                                      </span>
-                                    )}
-                                    {row.name}
-                                  </span>
-                                  <span className="shrink-0 font-semibold tabular-nums text-neutral-800">
-                                    {formatMoney(Number(row.price ?? 0) * Number(row.quantity ?? 1))}
-                                  </span>
-                                </li>
-                              );
-                            })
-                          )}
-                        </ul>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
+          </section>
+        </main>
+      </div>
 
-        {/* CTA */}
-        <div className="fixed bottom-0 left-0 right-0 border-t-2 border-[#c9a84c]/40 bg-[#F5EDD8]/95 p-4 backdrop-blur-md sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
-          <button
-            type="button"
-            onClick={() => router.push("/menu")}
-            className="flex w-full items-center justify-center rounded-full py-3.5 text-sm font-bold shadow-lg transition hover:opacity-95 active:scale-[0.99] sm:py-4 sm:text-base sm:shadow-md"
-            style={{ backgroundColor: GOLD, color: GREEN }}
-          >
-            Ir al menú
-          </button>
-        </div>
-      </main>
+      {/* Mobile bottom bar */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-stretch border-t border-white/10 lg:hidden"
+        style={{ backgroundColor: GREEN }}
+      >
+        <SidebarNav mobile />
+        <button
+          type="button"
+          onClick={() => void handleSignOut()}
+          className="flex w-14 shrink-0 items-center justify-center text-white/85 transition hover:text-[#c9a84c]"
+          aria-label="Cerrar sesión"
+        >
+          <LogOut className="h-6 w-6" strokeWidth={2} />
+        </button>
+      </div>
     </div>
   );
 }
