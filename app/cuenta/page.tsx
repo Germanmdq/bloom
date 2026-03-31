@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -10,14 +9,18 @@ import {
   Camera,
   ChevronDown,
   ChevronUp,
+  Coffee,
   Loader2,
+  Lock,
   LogOut,
+  Pencil,
   ShoppingBag,
-  Gift,
 } from "lucide-react";
 import { toast } from "sonner";
 
 const COFFEE_GOAL = 10;
+const GREEN = "#2d4a3e";
+const CREAM = "#FAF7F2";
 
 type OrderRow = {
   id: string;
@@ -51,6 +54,27 @@ function metaStr(u: User | null, key: string): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
+function isBirthdayThisMonth(birthdate: string): boolean {
+  const raw = birthdate.trim();
+  if (raw.length < 7) return false;
+  const d = new Date(raw.length >= 10 ? raw.slice(0, 10) : raw);
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  return d.getMonth() === now.getMonth();
+}
+
+function orderItemsSummary(items: unknown, maxNames = 3): string {
+  const arr = Array.isArray(items) ? items : [];
+  if (arr.length === 0) return "Sin ítems";
+  const names = arr
+    .map((it) => String((it as { name?: string }).name ?? "").trim())
+    .filter(Boolean);
+  if (names.length === 0) return "Pedido";
+  const shown = names.slice(0, maxNames);
+  const more = names.length > maxNames ? ` +${names.length - maxNames}` : "";
+  return `${shown.join(", ")}${more}`;
+}
+
 export default function CuentaPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -63,6 +87,7 @@ export default function CuentaPage() {
   const [paidOrderCount, setPaidOrderCount] = useState(0);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [profileEditMode, setProfileEditMode] = useState(false);
 
   const [editFullName, setEditFullName] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -146,7 +171,10 @@ export default function CuentaPage() {
   };
 
   const displayName = editFullName.trim() || "Cliente Bloom";
-  const { filled, totalOrders } = loyaltyProgress(paidOrderCount);
+  const { filled: loyaltyFilled, totalOrders: loyaltyPaidTotal } = loyaltyProgress(paidOrderCount);
+  const cupsToGo = loyaltyFilled >= COFFEE_GOAL ? 0 : COFFEE_GOAL - loyaltyFilled;
+  const freeCoffeeUnlocked = paidOrderCount >= COFFEE_GOAL;
+  const birthdayThisMonth = isBirthdayThisMonth(editBirthdate);
 
   const orderStats = useMemo(() => {
     let totalSum = 0;
@@ -212,11 +240,17 @@ export default function CuentaPage() {
         hydrateProfileFields(session.user);
       }
       toast.success("Perfil guardado");
+      setProfileEditMode(false);
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "No se pudo guardar el perfil");
     } finally {
       setSavingProfile(false);
     }
+  };
+
+  const cancelProfileEdit = () => {
+    if (user) hydrateProfileFields(user);
+    setProfileEditMode(false);
   };
 
   const onAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,35 +302,43 @@ export default function CuentaPage() {
   };
 
   const inputCls =
-    "mt-1 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm font-semibold text-neutral-900 outline-none focus:border-[#2d4a3e] focus:ring-1 focus:ring-[#2d4a3e]/20";
+    "mt-1.5 w-full rounded-2xl border border-neutral-200/90 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm outline-none transition placeholder:text-neutral-400 focus:border-[#2d4a3e] focus:ring-2 focus:ring-[#2d4a3e]/15";
+
+  const cardCls =
+    "rounded-[1.25rem] border border-neutral-200/60 bg-white p-5 shadow-[0_1px_3px_rgba(45,74,62,0.06),0_8px_24px_rgba(45,74,62,0.04)]";
 
   if (sessionPending || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FAF7F2]">
+      <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: CREAM }}>
         <Loader2 className="h-10 w-10 animate-spin text-[#7a765a]" />
       </div>
     );
   }
 
+  const emailDisplay = editEmail.trim() || user.email || "—";
+  const phoneDisplay = editPhone.trim() || "—";
+
   return (
-    <div className="min-h-screen bg-[#FAF7F2] font-sans text-neutral-900">
-      <header className="sticky top-0 z-50 border-b border-neutral-200 bg-white shadow-sm">
-        <div className="relative mx-auto flex h-14 max-w-4xl items-center justify-center px-4">
-          <span className="text-lg font-black tracking-[-0.03em] text-[#2d4a3e]">BLOOM.</span>
+    <div className="min-h-screen font-sans text-neutral-900 antialiased" style={{ backgroundColor: CREAM }}>
+      <header className="sticky top-0 z-50 border-b border-neutral-200/80 bg-white/90 shadow-sm backdrop-blur-md">
+        <div className="relative mx-auto flex h-14 max-w-2xl items-center justify-center px-4">
+          <span className="text-lg font-black tracking-[-0.04em]" style={{ color: GREEN }}>
+            BLOOM.
+          </span>
           <button
             type="button"
             onClick={() => void handleSignOut()}
-            className="absolute right-3 inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-black text-neutral-700 shadow-sm transition hover:bg-neutral-50 sm:right-4"
+            className="absolute right-3 inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 shadow-sm transition hover:bg-neutral-50 sm:right-4"
           >
-            <LogOut className="h-4 w-4" aria-hidden />
+            <LogOut className="h-3.5 w-3.5" aria-hidden />
             Salir
           </button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-lg space-y-6 px-5 py-8 pb-16">
-        {/* Foto y datos */}
-        <div className="rounded-3xl border border-amber-100/80 bg-white p-6 shadow-sm">
+      <main className="mx-auto max-w-2xl space-y-5 px-4 py-6 pb-28 sm:px-5 sm:py-8">
+        {/* Header — profile */}
+        <section className={cardCls}>
           <input
             ref={avatarInputRef}
             type="file"
@@ -304,154 +346,266 @@ export default function CuentaPage() {
             className="sr-only"
             onChange={(e) => void onAvatarFile(e)}
           />
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-            <button
-              type="button"
-              onClick={() => avatarInputRef.current?.click()}
-              disabled={avatarBusy}
-              className="group relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-[#c4b896]/50 bg-[#e8e4d4] text-[#2d4a3e] shadow-inner outline-none transition hover:border-[#2d4a3e] focus-visible:ring-2 focus-visible:ring-[#2d4a3e] disabled:opacity-60"
-              aria-label="Cambiar foto de perfil"
-            >
-              {avatarUrl ? (
-                <Image src={avatarUrl} alt={displayName} fill className="object-cover" sizes="96px" />
-              ) : (
-                <span className="text-2xl font-black">{initialsFromName(displayName)}</span>
-              )}
-              <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100">
-                {avatarBusy ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-white" />
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
+            <div className="flex shrink-0 flex-col items-center sm:items-start">
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarBusy}
+                className="group relative flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-full shadow-md outline-none ring-2 ring-white ring-offset-2 ring-offset-[#FAF7F2] transition hover:ring-[#2d4a3e]/30 focus-visible:ring-2 focus-visible:ring-[#2d4a3e] disabled:opacity-60 sm:h-[100px] sm:w-[100px]"
+                style={{ backgroundColor: GREEN }}
+                aria-label="Cambiar foto de perfil"
+              >
+                {avatarUrl ? (
+                  <Image src={avatarUrl} alt={displayName} fill className="object-cover" sizes="100px" />
                 ) : (
-                  <Camera className="h-7 w-7 text-white" />
+                  <span className="text-2xl font-black tracking-tight text-white sm:text-[1.65rem]">
+                    {initialsFromName(displayName)}
+                  </span>
                 )}
-              </span>
-            </button>
-            <p className="text-center text-xs font-medium text-neutral-500 sm:text-left">Tocá la foto para subir una nueva</p>
-          </div>
+                <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-end bg-gradient-to-t from-black/55 via-black/20 to-transparent pb-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-active:opacity-100 group-focus-visible:opacity-100">
+                  {avatarBusy ? (
+                    <Loader2 className="mb-1 h-6 w-6 animate-spin text-white" />
+                  ) : (
+                    <Camera className="mb-0.5 h-5 w-5 text-white drop-shadow" />
+                  )}
+                  <span className="px-1 text-center text-[10px] font-semibold leading-tight text-white drop-shadow-sm">
+                    Tocá la foto para cambiar
+                  </span>
+                </span>
+              </button>
+            </div>
 
-          <div className="mt-6 space-y-4">
-            <div>
-              <label htmlFor="cuenta-nombre" className="text-xs font-black uppercase tracking-wide text-neutral-500">
-                Nombre
-              </label>
-              <input id="cuenta-nombre" className={inputCls} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} />
-            </div>
-            <div>
-              <label htmlFor="cuenta-tel" className="text-xs font-black uppercase tracking-wide text-neutral-500">
-                Teléfono
-              </label>
-              <input
-                id="cuenta-tel"
-                className={inputCls}
-                inputMode="tel"
-                value={editPhone}
-                onChange={(e) => setEditPhone(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="cuenta-mail" className="text-xs font-black uppercase tracking-wide text-neutral-500">
-                Email
-              </label>
-              <input
-                id="cuenta-mail"
-                type="email"
-                className={inputCls}
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="cuenta-nac" className="text-xs font-black uppercase tracking-wide text-neutral-500">
-                Fecha de nacimiento
-              </label>
-              <input
-                id="cuenta-nac"
-                type="date"
-                className={inputCls}
-                value={editBirthdate.length >= 10 ? editBirthdate.slice(0, 10) : editBirthdate}
-                onChange={(e) => setEditBirthdate(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="cuenta-dir" className="text-xs font-black uppercase tracking-wide text-neutral-500">
-                Dirección de entrega
-              </label>
-              <textarea
-                id="cuenta-dir"
-                rows={3}
-                className={`${inputCls} resize-y`}
-                value={editAddress}
-                onChange={(e) => setEditAddress(e.target.value)}
-              />
+            <div className="min-w-0 flex-1">
+              {!profileEditMode ? (
+                <>
+                  <h1 className="text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl">{displayName}</h1>
+                  <p className="mt-1 truncate text-sm text-neutral-500">{emailDisplay}</p>
+                  <p className="mt-0.5 text-sm text-neutral-500">{phoneDisplay}</p>
+                  <button
+                    type="button"
+                    onClick={() => setProfileEditMode(true)}
+                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-bold text-neutral-800 transition hover:bg-neutral-100"
+                  >
+                    <Pencil className="h-4 w-4" style={{ color: GREEN }} aria-hidden />
+                    Editar perfil
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="cuenta-nombre" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                      Nombre
+                    </label>
+                    <input id="cuenta-nombre" className={inputCls} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} />
+                  </div>
+                  <div>
+                    <label htmlFor="cuenta-tel" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                      Teléfono
+                    </label>
+                    <input
+                      id="cuenta-tel"
+                      className={inputCls}
+                      inputMode="tel"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="cuenta-mail" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                      Email
+                    </label>
+                    <input
+                      id="cuenta-mail"
+                      type="email"
+                      className={inputCls}
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="cuenta-nac" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                      Fecha de nacimiento
+                    </label>
+                    <input
+                      id="cuenta-nac"
+                      type="date"
+                      className={inputCls}
+                      value={editBirthdate.length >= 10 ? editBirthdate.slice(0, 10) : editBirthdate}
+                      onChange={(e) => setEditBirthdate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="cuenta-dir" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                      Dirección de entrega
+                    </label>
+                    <textarea
+                      id="cuenta-dir"
+                      rows={3}
+                      className={`${inputCls} resize-y`}
+                      value={editAddress}
+                      onChange={(e) => setEditAddress(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => void saveProfile()}
+                      disabled={savingProfile}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-full py-3 text-sm font-bold text-white shadow-md transition hover:opacity-95 disabled:opacity-60 sm:flex-none sm:min-w-[140px]"
+                      style={{ backgroundColor: GREEN }}
+                    >
+                      {savingProfile ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelProfileEdit}
+                      disabled={savingProfile}
+                      className="inline-flex flex-1 items-center justify-center rounded-full border border-neutral-200 bg-white py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-60 sm:flex-none sm:min-w-[120px]"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+        </section>
 
-          <button
-            type="button"
-            onClick={() => void saveProfile()}
-            disabled={savingProfile}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#2d4a3e] py-3 text-sm font-black text-white shadow-md transition hover:bg-[#1f352c] disabled:opacity-60"
-          >
-            {savingProfile ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-            Guardar cambios
-          </button>
-        </div>
+        {/* Stats */}
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {[
+            { label: "Pedidos realizados", value: String(orderStats.totalOrdersCount), sub: null },
+            {
+              label: "Ticket promedio",
+              value: orderStats.averageOrderValue > 0 ? formatMoney(orderStats.averageOrderValue) : "—",
+              sub: null,
+            },
+            {
+              label: "Producto más pedido",
+              value: orderStats.mostOrderedProduct,
+              sub: "name",
+            },
+          ].map((s) => (
+            <div key={s.label} className={cardCls + " px-4 py-4 sm:py-5"}>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">{s.label}</p>
+              <p
+                className={`mt-2 ${s.sub === "name" ? "line-clamp-3 text-base font-semibold leading-snug text-neutral-900" : "text-2xl font-bold tabular-nums tracking-tight"}`}
+                style={s.sub !== "name" ? { color: GREEN } : undefined}
+              >
+                {s.value}
+              </p>
+            </div>
+          ))}
+        </section>
 
-        {/* Resumen pedidos */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-center shadow-sm">
-            <p className="text-[11px] font-black uppercase tracking-wide text-neutral-500">Pedidos</p>
-            <p className="mt-1 text-2xl font-black tabular-nums text-[#2d4a3e]">{orderStats.totalOrdersCount}</p>
+        {/* Loyalty */}
+        <section className={cardCls}>
+          <h2 className="flex items-center gap-2 text-lg font-bold text-neutral-900">
+            <span className="text-[1.15rem]" aria-hidden>
+              ☕
+            </span>
+            Tu progreso
+          </h2>
+          <div className="mt-4 flex flex-wrap justify-center gap-1.5 sm:justify-start sm:gap-2">
+            {Array.from({ length: COFFEE_GOAL }).map((_, i) => {
+              const active = i < loyaltyFilled;
+              return (
+                <span
+                  key={i}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl sm:h-11 sm:w-11"
+                  style={{
+                    backgroundColor: active ? `${GREEN}18` : "#e5e7eb",
+                    color: active ? GREEN : "#9ca3af",
+                  }}
+                  aria-hidden
+                >
+                  <Coffee className="h-5 w-5 sm:h-[1.35rem] sm:w-[1.35rem]" strokeWidth={active ? 2.25 : 1.75} />
+                </span>
+              );
+            })}
           </div>
-          <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-center shadow-sm">
-            <p className="text-[11px] font-black uppercase tracking-wide text-neutral-500">Ticket promedio</p>
-            <p className="mt-1 text-lg font-black tabular-nums text-[#2d4a3e]">
-              {orderStats.averageOrderValue > 0 ? formatMoney(orderStats.averageOrderValue) : "—"}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-4 text-center shadow-sm sm:col-span-1">
-            <p className="text-[11px] font-black uppercase tracking-wide text-neutral-500">Más pedido</p>
-            <p className="mt-1 line-clamp-2 text-sm font-bold text-neutral-900">{orderStats.mostOrderedProduct}</p>
-          </div>
-        </div>
-
-        {/* Lealtad */}
-        <div className="rounded-3xl border border-[#c4b896]/40 bg-gradient-to-br from-[#f0ede4] to-white p-6 shadow-sm">
-          <div className="mb-3 flex items-center gap-2">
-            <Gift className="h-5 w-5 text-[#7a765a]" />
-            <h2 className="font-black text-neutral-900">Programa de lealtad</h2>
-          </div>
-          <p className="text-sm leading-relaxed text-neutral-600">
-            Llevás <strong>{totalOrders}</strong> pedidos
+          <p className="mt-4 text-sm leading-relaxed text-neutral-600">
+            {cupsToGo > 0 ? (
+              <>
+                Llevás <strong className="font-semibold text-neutral-800">{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
+                <strong className="font-semibold text-neutral-800">{cupsToGo}</strong> para tu café gratis.
+              </>
+            ) : loyaltyPaidTotal > 0 ? (
+              <>
+                Llevás <strong className="font-semibold text-neutral-800">{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
+                <strong className="font-semibold text-neutral-800">0</strong> para tu café gratis. ¡Podés canjear tu café!
+              </>
+            ) : (
+              <>
+                Llevás <strong className="font-semibold text-neutral-800">0</strong> pedidos — te faltan{" "}
+                <strong className="font-semibold text-neutral-800">{COFFEE_GOAL}</strong> para tu café gratis.
+              </>
+            )}
           </p>
-          <div className="mt-4 flex gap-1">
-            {Array.from({ length: COFFEE_GOAL }).map((_, i) => (
+        </section>
+
+        {/* Coupons */}
+        <section className={cardCls}>
+          <h2 className="flex items-center gap-2 text-lg font-bold text-neutral-900">
+            <span className="text-[1.1rem]" aria-hidden>
+              🏷️
+            </span>
+            Tus cupones
+          </h2>
+          <div className="mt-4 space-y-3">
+            {birthdayThisMonth && (
               <div
-                key={i}
-                className={`h-2 flex-1 rounded-full transition-colors ${i < filled ? "bg-[#7a765a]" : "bg-neutral-200"}`}
-              />
-            ))}
+                className="relative overflow-hidden rounded-2xl border-2 border-amber-200/80 p-4 shadow-md"
+                style={{
+                  background: "linear-gradient(135deg, #fffbeb 0%, #fde68a 35%, #fcd34d 100%)",
+                }}
+              >
+                <p className="text-lg font-bold text-amber-950">🎂 ¡Es tu mes!</p>
+                <p className="mt-1 text-sm font-semibold text-amber-900/90">Presentá esta pantalla para tu regalo.</p>
+                <span className="pointer-events-none absolute -right-4 -top-4 text-6xl opacity-20">🎁</span>
+              </div>
+            )}
+
+            {!freeCoffeeUnlocked ? (
+              <div className="relative flex items-start gap-3 rounded-2xl border border-neutral-200 bg-neutral-100/80 p-4 text-neutral-500">
+                <Lock className="mt-0.5 h-5 w-5 shrink-0 text-neutral-400" aria-hidden />
+                <div>
+                  <p className="font-semibold text-neutral-600">
+                    <span aria-hidden>☕</span> Café gratis
+                  </p>
+                  <p className="mt-1 text-sm leading-snug">Desbloqueás a los 10 pedidos.</p>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="rounded-2xl border-2 p-4 shadow-sm"
+                style={{ borderColor: `${GREEN}55`, backgroundColor: `${GREEN}0d` }}
+              >
+                <p className="flex items-center gap-2 font-bold" style={{ color: GREEN }}>
+                  <span aria-hidden>☕</span> Café gratis — activo
+                </p>
+                <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-700">
+                  Presentá esta pantalla en el local para canjear.
+                </p>
+              </div>
+            )}
           </div>
-        </div>
+        </section>
 
-        <Link
-          href="/menu"
-          className="flex w-full items-center justify-center rounded-full bg-[#2d4a3e] px-6 py-3.5 text-center text-sm font-black text-white shadow-md transition hover:bg-[#1f352c]"
-        >
-          Ir al menú →
-        </Link>
-
-        {/* Historial */}
-        <div>
-          <div className="mb-3 flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5 text-[#7a765a]" />
-            <h2 className="font-black text-neutral-900">Tus pedidos</h2>
+        {/* Order history */}
+        <section>
+          <div className="mb-3 flex items-center gap-2 px-0.5">
+            <ShoppingBag className="h-5 w-5" style={{ color: GREEN }} aria-hidden />
+            <h2 className="text-lg font-bold text-neutral-900">Historial de pedidos</h2>
           </div>
           {ordersLoading ? (
-            <div className="flex justify-center py-12">
+            <div className={`flex justify-center py-14 ${cardCls}`}>
               <Loader2 className="h-8 w-8 animate-spin text-[#7a765a]" />
             </div>
           ) : orders.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-neutral-200 bg-white/60 py-10 text-center text-sm text-neutral-500">
+            <p className={`${cardCls} py-10 text-center text-sm text-neutral-500`}>
               Todavía no tenés pedidos vinculados a esta cuenta. Pedí desde el menú o el chat Bloom.
             </p>
           ) : (
@@ -461,57 +615,68 @@ export default function CuentaPage() {
                 const total = Number(o.total);
                 const isOpen = expanded === o.id;
                 const paid = Boolean(o.paid);
+                const summary = orderItemsSummary(o.items);
                 return (
                   <li
                     key={o.id}
-                    className="overflow-hidden rounded-2xl border border-amber-100/80 bg-white shadow-sm"
+                    className="overflow-hidden rounded-[1.25rem] border border-neutral-200/60 bg-white shadow-[0_1px_3px_rgba(45,74,62,0.06),0_8px_24px_rgba(45,74,62,0.04)]"
                   >
                     <button
                       type="button"
                       onClick={() => setExpanded(isOpen ? null : o.id)}
-                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                      className="flex w-full items-start justify-between gap-3 px-4 py-4 text-left transition hover:bg-neutral-50/80 sm:items-center sm:px-5"
                     >
-                      <div className="min-w-0">
-                        <p className="font-bold text-neutral-900">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-neutral-900">
                           {new Date(o.created_at).toLocaleDateString("es-AR", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",
-                          })}{" "}
-                          <span className="font-medium text-neutral-400">
+                          })}
+                          <span className="ml-2 font-normal text-neutral-400">
                             {new Date(o.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
                           </span>
                         </p>
-                        <p className="text-sm font-black text-[#2d4a3e]">{formatMoney(total)}</p>
+                        <p className="mt-1 line-clamp-2 text-sm text-neutral-600">{summary}</p>
+                        <p className="mt-2 text-base font-bold tabular-nums" style={{ color: GREEN }}>
+                          {formatMoney(total)}
+                        </p>
                       </div>
-                      <div className="flex shrink-0 items-center gap-2">
+                      <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
                         <span
-                          className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${
+                          className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
                             paid ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"
                           }`}
                         >
                           {paid ? "Pagado" : "Pendiente"}
                         </span>
-                        {isOpen ? <ChevronUp size={18} className="text-neutral-400" /> : <ChevronDown size={18} className="text-neutral-400" />}
+                        {isOpen ? (
+                          <ChevronUp size={20} className="text-neutral-400" aria-hidden />
+                        ) : (
+                          <ChevronDown size={20} className="text-neutral-400" aria-hidden />
+                        )}
                       </div>
                     </button>
                     {isOpen && (
-                      <div className="border-t border-neutral-100 px-4 py-3 text-sm">
-                        <ul className="space-y-2">
+                      <div className="border-t border-neutral-100 px-4 py-4 sm:px-5">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Detalle</p>
+                        <ul className="mt-2 space-y-2 text-sm">
                           {items.length === 0 ? (
                             <li className="text-neutral-400">Sin detalle de ítems</li>
                           ) : (
                             items.map((it: unknown, idx: number) => {
                               const row = it as { name?: string; quantity?: number; price?: number };
                               return (
-                                <li key={idx} className="flex justify-between gap-2">
+                                <li key={idx} className="flex justify-between gap-3">
                                   <span className="text-neutral-700">
                                     {(row.quantity ?? 1) > 1 && (
-                                      <span className="font-bold text-[#7a765a]">{row.quantity}× </span>
+                                      <span className="font-semibold" style={{ color: GREEN }}>
+                                        {row.quantity}×{" "}
+                                      </span>
                                     )}
                                     {row.name}
                                   </span>
-                                  <span className="shrink-0 font-bold text-neutral-800">
+                                  <span className="shrink-0 font-semibold tabular-nums text-neutral-800">
                                     {formatMoney(Number(row.price ?? 0) * Number(row.quantity ?? 1))}
                                   </span>
                                 </li>
@@ -526,6 +691,18 @@ export default function CuentaPage() {
               })}
             </ul>
           )}
+        </section>
+
+        {/* CTA */}
+        <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-200/80 bg-white/95 p-4 backdrop-blur-md sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
+          <button
+            type="button"
+            onClick={() => router.push("/menu")}
+            className="flex w-full items-center justify-center rounded-full py-3.5 text-sm font-bold text-white shadow-lg transition hover:opacity-95 active:scale-[0.99] sm:py-4 sm:text-base sm:shadow-md"
+            style={{ backgroundColor: GREEN }}
+          >
+            Ir al menú
+          </button>
         </div>
       </main>
     </div>
