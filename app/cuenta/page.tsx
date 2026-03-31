@@ -20,7 +20,8 @@ import { toast } from "sonner";
 
 const COFFEE_GOAL = 10;
 const GREEN = "#2d4a3e";
-const CREAM = "#FAF7F2";
+const GOLD = "#c9a84c";
+const CREAM = "#F5EDD8";
 
 type OrderRow = {
   id: string;
@@ -302,15 +303,15 @@ export default function CuentaPage() {
   };
 
   const inputCls =
-    "mt-1.5 w-full rounded-2xl border border-neutral-200/90 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm outline-none transition placeholder:text-neutral-400 focus:border-[#2d4a3e] focus:ring-2 focus:ring-[#2d4a3e]/15";
+    "mt-1.5 w-full rounded-2xl border border-neutral-200/90 bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-sm outline-none transition placeholder:text-neutral-400 focus:border-[#2d4a3e] focus:ring-2 focus:ring-[#2d4a3e]/20";
 
   const cardCls =
-    "rounded-[1.25rem] border border-neutral-200/60 bg-white p-5 shadow-[0_1px_3px_rgba(45,74,62,0.06),0_8px_24px_rgba(45,74,62,0.04)]";
+    "rounded-[1.25rem] border-2 border-[#c9a84c]/45 bg-[#2d4a3e] p-5 text-white shadow-[0_4px_24px_rgba(45,74,62,0.35)]";
 
   if (sessionPending || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: CREAM }}>
-        <Loader2 className="h-10 w-10 animate-spin text-[#7a765a]" />
+        <Loader2 className="h-10 w-10 animate-spin text-[#2d4a3e]" />
       </div>
     );
   }
@@ -320,7 +321,7 @@ export default function CuentaPage() {
 
   return (
     <div className="min-h-screen font-sans text-neutral-900 antialiased" style={{ backgroundColor: CREAM }}>
-      <header className="sticky top-0 z-50 border-b border-neutral-200/80 bg-white/90 shadow-sm backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b-2 border-[#c9a84c]/35 bg-[#F5EDD8]/95 shadow-sm backdrop-blur-md">
         <div className="relative mx-auto flex h-14 max-w-2xl items-center justify-center px-4">
           <span className="text-lg font-black tracking-[-0.04em]" style={{ color: GREEN }}>
             BLOOM.
@@ -328,7 +329,8 @@ export default function CuentaPage() {
           <button
             type="button"
             onClick={() => void handleSignOut()}
-            className="absolute right-3 inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 shadow-sm transition hover:bg-neutral-50 sm:right-4"
+            className="absolute right-3 inline-flex items-center gap-1.5 rounded-full border-2 border-[#c9a84c]/50 bg-white px-3 py-1.5 text-xs font-bold shadow-sm transition hover:bg-[#c9a84c]/15 sm:right-4"
+            style={{ color: GREEN }}
           >
             <LogOut className="h-3.5 w-3.5" aria-hidden />
             Salir
@@ -352,7 +354,7 @@ export default function CuentaPage() {
                 type="button"
                 onClick={() => avatarInputRef.current?.click()}
                 disabled={avatarBusy}
-                className="group relative flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-full shadow-md outline-none ring-2 ring-white ring-offset-2 ring-offset-[#FAF7F2] transition hover:ring-[#2d4a3e]/30 focus-visible:ring-2 focus-visible:ring-[#2d4a3e] disabled:opacity-60 sm:h-[100px] sm:w-[100px]"
+                className="group relative flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-full shadow-md outline-none ring-2 ring-[#c9a84c]/60 ring-offset-2 ring-offset-[#2d4a3e] transition hover:ring-[#c9a84c] focus-visible:ring-2 focus-visible:ring-[#c9a84c] disabled:opacity-60 sm:h-[100px] sm:w-[100px]"
                 style={{ backgroundColor: GREEN }}
                 aria-label="Cambiar foto de perfil"
               >
@@ -379,28 +381,29 @@ export default function CuentaPage() {
             <div className="min-w-0 flex-1">
               {!profileEditMode ? (
                 <>
-                  <h1 className="text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl">{displayName}</h1>
-                  <p className="mt-1 truncate text-sm text-neutral-500">{emailDisplay}</p>
-                  <p className="mt-0.5 text-sm text-neutral-500">{phoneDisplay}</p>
+                  <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">{displayName}</h1>
+                  <p className="mt-1 truncate text-sm text-white/75">{emailDisplay}</p>
+                  <p className="mt-0.5 text-sm text-white/75">{phoneDisplay}</p>
                   <button
                     type="button"
                     onClick={() => setProfileEditMode(true)}
-                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-bold text-neutral-800 transition hover:bg-neutral-100"
+                    className="mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold shadow-md transition hover:opacity-95"
+                    style={{ backgroundColor: GOLD, color: GREEN }}
                   >
-                    <Pencil className="h-4 w-4" style={{ color: GREEN }} aria-hidden />
+                    <Pencil className="h-4 w-4" aria-hidden />
                     Editar perfil
                   </button>
                 </>
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="cuenta-nombre" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                    <label htmlFor="cuenta-nombre" className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">
                       Nombre
                     </label>
                     <input id="cuenta-nombre" className={inputCls} value={editFullName} onChange={(e) => setEditFullName(e.target.value)} />
                   </div>
                   <div>
-                    <label htmlFor="cuenta-tel" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                    <label htmlFor="cuenta-tel" className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">
                       Teléfono
                     </label>
                     <input
@@ -412,7 +415,7 @@ export default function CuentaPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="cuenta-mail" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                    <label htmlFor="cuenta-mail" className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">
                       Email
                     </label>
                     <input
@@ -424,7 +427,7 @@ export default function CuentaPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="cuenta-nac" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                    <label htmlFor="cuenta-nac" className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">
                       Fecha de nacimiento
                     </label>
                     <input
@@ -436,7 +439,7 @@ export default function CuentaPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="cuenta-dir" className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                    <label htmlFor="cuenta-dir" className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">
                       Dirección de entrega
                     </label>
                     <textarea
@@ -462,7 +465,7 @@ export default function CuentaPage() {
                       type="button"
                       onClick={cancelProfileEdit}
                       disabled={savingProfile}
-                      className="inline-flex flex-1 items-center justify-center rounded-full border border-neutral-200 bg-white py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-60 sm:flex-none sm:min-w-[120px]"
+                      className="inline-flex flex-1 items-center justify-center rounded-full border-2 border-[#c9a84c] bg-transparent py-3 text-sm font-bold text-[#c9a84c] transition hover:bg-[#c9a84c]/15 disabled:opacity-60 sm:flex-none sm:min-w-[120px]"
                     >
                       Cancelar
                     </button>
@@ -489,10 +492,9 @@ export default function CuentaPage() {
             },
           ].map((s) => (
             <div key={s.label} className={cardCls + " px-4 py-4 sm:py-5"}>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">{s.label}</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#c9a84c]">{s.label}</p>
               <p
-                className={`mt-2 ${s.sub === "name" ? "line-clamp-3 text-base font-semibold leading-snug text-neutral-900" : "text-2xl font-bold tabular-nums tracking-tight"}`}
-                style={s.sub !== "name" ? { color: GREEN } : undefined}
+                className={`mt-2 text-white ${s.sub === "name" ? "line-clamp-3 text-base font-semibold leading-snug" : "text-2xl font-bold tabular-nums tracking-tight"}`}
               >
                 {s.value}
               </p>
@@ -502,7 +504,7 @@ export default function CuentaPage() {
 
         {/* Loyalty */}
         <section className={cardCls}>
-          <h2 className="flex items-center gap-2 text-lg font-bold text-neutral-900">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-white">
             <span className="text-[1.15rem]" aria-hidden>
               ☕
             </span>
@@ -516,8 +518,8 @@ export default function CuentaPage() {
                   key={i}
                   className="flex h-10 w-10 items-center justify-center rounded-xl sm:h-11 sm:w-11"
                   style={{
-                    backgroundColor: active ? `${GREEN}18` : "#e5e7eb",
-                    color: active ? GREEN : "#9ca3af",
+                    backgroundColor: active ? "rgba(201,168,76,0.38)" : "rgba(255,255,255,0.12)",
+                    color: active ? GOLD : "rgba(255,255,255,0.38)",
                   }}
                   aria-hidden
                 >
@@ -526,21 +528,21 @@ export default function CuentaPage() {
               );
             })}
           </div>
-          <p className="mt-4 text-sm leading-relaxed text-neutral-600">
+          <p className="mt-4 text-sm leading-relaxed text-white/85">
             {cupsToGo > 0 ? (
               <>
-                Llevás <strong className="font-semibold text-neutral-800">{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
-                <strong className="font-semibold text-neutral-800">{cupsToGo}</strong> para tu café gratis.
+                Llevás <strong className="font-semibold text-white">{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
+                <strong className="font-semibold text-white">{cupsToGo}</strong> para tu café gratis.
               </>
             ) : loyaltyPaidTotal > 0 ? (
               <>
-                Llevás <strong className="font-semibold text-neutral-800">{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
-                <strong className="font-semibold text-neutral-800">0</strong> para tu café gratis. ¡Podés canjear tu café!
+                Llevás <strong className="font-semibold text-white">{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
+                <strong className="font-semibold text-white">0</strong> para tu café gratis. ¡Podés canjear tu café!
               </>
             ) : (
               <>
-                Llevás <strong className="font-semibold text-neutral-800">0</strong> pedidos — te faltan{" "}
-                <strong className="font-semibold text-neutral-800">{COFFEE_GOAL}</strong> para tu café gratis.
+                Llevás <strong className="font-semibold text-white">0</strong> pedidos — te faltan{" "}
+                <strong className="font-semibold text-white">{COFFEE_GOAL}</strong> para tu café gratis.
               </>
             )}
           </p>
@@ -548,7 +550,7 @@ export default function CuentaPage() {
 
         {/* Coupons */}
         <section className={cardCls}>
-          <h2 className="flex items-center gap-2 text-lg font-bold text-neutral-900">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-white">
             <span className="text-[1.1rem]" aria-hidden>
               🏷️
             </span>
@@ -557,36 +559,34 @@ export default function CuentaPage() {
           <div className="mt-4 space-y-3">
             {birthdayThisMonth && (
               <div
-                className="relative overflow-hidden rounded-2xl border-2 border-amber-200/80 p-4 shadow-md"
-                style={{
-                  background: "linear-gradient(135deg, #fffbeb 0%, #fde68a 35%, #fcd34d 100%)",
-                }}
+                className="relative overflow-hidden rounded-2xl border-2 p-4 shadow-md"
+                style={{ backgroundColor: GOLD, borderColor: `${GREEN}40`, color: GREEN }}
               >
-                <p className="text-lg font-bold text-amber-950">🎂 ¡Es tu mes!</p>
-                <p className="mt-1 text-sm font-semibold text-amber-900/90">Presentá esta pantalla para tu regalo.</p>
-                <span className="pointer-events-none absolute -right-4 -top-4 text-6xl opacity-20">🎁</span>
+                <p className="text-lg font-bold">🎂 ¡Es tu mes!</p>
+                <p className="mt-1 text-sm font-semibold opacity-95">Presentá esta pantalla para tu regalo.</p>
+                <span className="pointer-events-none absolute -right-4 -top-4 text-6xl opacity-25">🎁</span>
               </div>
             )}
 
             {!freeCoffeeUnlocked ? (
-              <div className="relative flex items-start gap-3 rounded-2xl border border-neutral-200 bg-neutral-100/80 p-4 text-neutral-500">
-                <Lock className="mt-0.5 h-5 w-5 shrink-0 text-neutral-400" aria-hidden />
+              <div className="relative flex items-start gap-3 rounded-2xl border border-neutral-400/40 bg-neutral-400/35 p-4 text-neutral-700">
+                <Lock className="mt-0.5 h-5 w-5 shrink-0 text-neutral-500" aria-hidden />
                 <div>
-                  <p className="font-semibold text-neutral-600">
+                  <p className="font-semibold text-neutral-800">
                     <span aria-hidden>☕</span> Café gratis
                   </p>
-                  <p className="mt-1 text-sm leading-snug">Desbloqueás a los 10 pedidos.</p>
+                  <p className="mt-1 text-sm leading-snug text-neutral-600">Desbloqueás a los 10 pedidos.</p>
                 </div>
               </div>
             ) : (
               <div
-                className="rounded-2xl border-2 p-4 shadow-sm"
-                style={{ borderColor: `${GREEN}55`, backgroundColor: `${GREEN}0d` }}
+                className="rounded-2xl border-2 p-4 shadow-md"
+                style={{ backgroundColor: GOLD, borderColor: `${GREEN}50`, color: GREEN }}
               >
-                <p className="flex items-center gap-2 font-bold" style={{ color: GREEN }}>
+                <p className="flex items-center gap-2 font-bold">
                   <span aria-hidden>☕</span> Café gratis — activo
                 </p>
-                <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-700">
+                <p className="mt-2 text-sm font-medium leading-relaxed opacity-95">
                   Presentá esta pantalla en el local para canjear.
                 </p>
               </div>
@@ -598,14 +598,16 @@ export default function CuentaPage() {
         <section>
           <div className="mb-3 flex items-center gap-2 px-0.5">
             <ShoppingBag className="h-5 w-5" style={{ color: GREEN }} aria-hidden />
-            <h2 className="text-lg font-bold text-neutral-900">Historial de pedidos</h2>
+            <h2 className="text-lg font-bold" style={{ color: GREEN }}>
+              Historial de pedidos
+            </h2>
           </div>
           {ordersLoading ? (
-            <div className={`flex justify-center py-14 ${cardCls}`}>
-              <Loader2 className="h-8 w-8 animate-spin text-[#7a765a]" />
+            <div className="flex justify-center overflow-hidden rounded-[1.25rem] border-l-4 border-[#2d4a3e] bg-white py-14 shadow-md">
+              <Loader2 className="h-8 w-8 animate-spin text-[#2d4a3e]" />
             </div>
           ) : orders.length === 0 ? (
-            <p className={`${cardCls} py-10 text-center text-sm text-neutral-500`}>
+            <p className="overflow-hidden rounded-[1.25rem] border-l-4 border-[#2d4a3e] bg-white py-10 text-center text-sm text-neutral-600 shadow-md">
               Todavía no tenés pedidos vinculados a esta cuenta. Pedí desde el menú o el chat Bloom.
             </p>
           ) : (
@@ -619,12 +621,12 @@ export default function CuentaPage() {
                 return (
                   <li
                     key={o.id}
-                    className="overflow-hidden rounded-[1.25rem] border border-neutral-200/60 bg-white shadow-[0_1px_3px_rgba(45,74,62,0.06),0_8px_24px_rgba(45,74,62,0.04)]"
+                    className="overflow-hidden rounded-[1.25rem] border border-neutral-200/80 border-l-[6px] border-l-[#2d4a3e] bg-white shadow-md"
                   >
                     <button
                       type="button"
                       onClick={() => setExpanded(isOpen ? null : o.id)}
-                      className="flex w-full items-start justify-between gap-3 px-4 py-4 text-left transition hover:bg-neutral-50/80 sm:items-center sm:px-5"
+                      className="flex w-full items-start justify-between gap-3 px-4 py-4 text-left transition hover:bg-[#F5EDD8]/40 sm:items-center sm:px-5"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-neutral-900">
@@ -645,7 +647,7 @@ export default function CuentaPage() {
                       <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
                         <span
                           className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
-                            paid ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"
+                            paid ? "bg-[#2d4a3e] text-white" : "bg-amber-100 text-amber-900"
                           }`}
                         >
                           {paid ? "Pagado" : "Pendiente"}
@@ -694,12 +696,12 @@ export default function CuentaPage() {
         </section>
 
         {/* CTA */}
-        <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-200/80 bg-white/95 p-4 backdrop-blur-md sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
+        <div className="fixed bottom-0 left-0 right-0 border-t-2 border-[#c9a84c]/40 bg-[#F5EDD8]/95 p-4 backdrop-blur-md sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
           <button
             type="button"
             onClick={() => router.push("/menu")}
-            className="flex w-full items-center justify-center rounded-full py-3.5 text-sm font-bold text-white shadow-lg transition hover:opacity-95 active:scale-[0.99] sm:py-4 sm:text-base sm:shadow-md"
-            style={{ backgroundColor: GREEN }}
+            className="flex w-full items-center justify-center rounded-full py-3.5 text-sm font-bold shadow-lg transition hover:opacity-95 active:scale-[0.99] sm:py-4 sm:text-base sm:shadow-md"
+            style={{ backgroundColor: GOLD, color: GREEN }}
           >
             Ir al menú
           </button>

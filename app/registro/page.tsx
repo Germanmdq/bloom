@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 
 const GREEN = "#2d4a3e";
 const GOLD = "#c9a84c";
+const CREAM = "#F5EDD8";
 const APPLE_FONT =
   '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif';
 const STEP_TRANSITION_MS = 300;
@@ -111,7 +112,7 @@ function birthdateISO(day: string, month: string, year: string): string | null {
 
 const inputClass = (hasError: boolean) =>
   `w-full min-h-[52px] rounded-2xl border-2 px-4 text-[16px] font-semibold leading-snug outline-none transition-all placeholder:font-medium placeholder:text-neutral-400 ${
-    hasError ? "border-red-400 bg-red-50/80" : "border-neutral-200/90 bg-white focus:border-[#5f7a6b] focus:ring-1 focus:ring-[#2d4a3e]/20"
+    hasError ? "border-red-400 bg-red-50/80" : "border-neutral-200/90 bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25"
   }`;
 
 const selectFieldClass = (hasError: boolean) =>
@@ -329,7 +330,7 @@ export default function RegistroPage() {
   return (
     <div
       className="min-h-[100dvh] text-neutral-900"
-      style={{ fontFamily: APPLE_FONT, backgroundColor: GREEN }}
+      style={{ fontFamily: APPLE_FONT, backgroundColor: CREAM }}
     >
       {celebrate ? (
         <>
@@ -403,8 +404,12 @@ export default function RegistroPage() {
         </>
       ) : null}
 
-      <div className="flex min-h-[100dvh] flex-col" style={{ backgroundColor: GREEN }}>
-        <section className="px-6 py-16 text-center" aria-label="Programa de lealtad Club Bloom">
+      <div className="flex min-h-[100dvh] flex-col" style={{ backgroundColor: CREAM }}>
+        <section
+          className="px-6 py-16 text-center"
+          style={{ backgroundColor: GREEN }}
+          aria-label="Programa de lealtad Club Bloom"
+        >
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#c9a84c] sm:text-xs">
             Programa de lealtad
           </p>
@@ -457,7 +462,7 @@ export default function RegistroPage() {
               {[1, 2, 3].map((n) => (
                 <span
                   key={n}
-                  className={`h-3 w-3 rounded-full transition-colors duration-300 ${step >= n ? "bg-[#2d4a3e]" : "bg-neutral-300"}`}
+                  className={`h-3 w-3 rounded-full transition-colors duration-300 ${step >= n ? "bg-[#2d4a3e]" : "bg-[#c9a84c]/45"}`}
                   aria-hidden
                 />
               ))}
