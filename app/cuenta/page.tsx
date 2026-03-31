@@ -1,22 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import {
-  Camera,
-  CircleUser,
-  Coffee,
-  LayoutDashboard,
-  Loader2,
-  Lock,
-  LogOut,
-  Pencil,
-  ShoppingBag,
-  Tag,
-} from "lucide-react";
+import { Camera, Coffee, Loader2, Lock, LogOut, Pencil, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
 const COFFEE_GOAL = 10;
@@ -25,7 +14,6 @@ const GOLD = "#c9a84c";
 const CREAM = "#FAF7F2";
 const TEXT_DARK = "#1a1a1a";
 const SIDEBAR_W = 240;
-const SIDEBAR_ACTIVE_BG = "rgba(255,255,255,0.08)";
 
 type OrderRow = {
   id: string;
@@ -36,8 +24,6 @@ type OrderRow = {
   paid?: boolean;
   customer_name?: string | null;
 };
-
-type NavId = "inicio" | "pedidos" | "cupones" | "perfil";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
@@ -93,7 +79,6 @@ export default function CuentaPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [paidOrderCount, setPaidOrderCount] = useState(0);
   const [ordersLoading, setOrdersLoading] = useState(true);
-  const [activeNav, setActiveNav] = useState<NavId>("inicio");
   const [profileEditMode, setProfileEditMode] = useState(false);
 
   const [editFullName, setEditFullName] = useState("");
@@ -104,11 +89,6 @@ export default function CuentaPage() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
-
-  const sectionInicioRef = useRef<HTMLDivElement>(null);
-  const sectionPedidosRef = useRef<HTMLElement>(null);
-  const sectionCuponesRef = useRef<HTMLElement>(null);
-  const sectionPerfilRef = useRef<HTMLElement>(null);
 
   const loadOrders = useCallback(
     async (uid: string) => {
@@ -180,19 +160,6 @@ export default function CuentaPage() {
     await supabase.auth.signOut();
     router.push("/menu");
     router.refresh();
-  };
-
-  const scrollToSection = (id: NavId) => {
-    setActiveNav(id);
-    const map: Record<NavId, RefObject<HTMLElement | null>> = {
-      inicio: sectionInicioRef as RefObject<HTMLElement | null>,
-      pedidos: sectionPedidosRef,
-      cupones: sectionCuponesRef,
-      perfil: sectionPerfilRef,
-    };
-    window.requestAnimationFrame(() => {
-      map[id].current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
   };
 
   const displayName = editFullName.trim() || "Cliente Bloom";
@@ -329,15 +296,8 @@ export default function CuentaPage() {
   const inputCls =
     "mt-1.5 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium outline-none transition placeholder:text-neutral-400 focus:border-[#2d4a3e] focus:ring-2 focus:ring-[#2d4a3e]/20";
 
-  const statCardCls = "rounded-xl border-l-4 border-l-[#2d4a3e] bg-white p-6 shadow-sm";
+  const statCardCls = "rounded-xl bg-white p-6 shadow-sm";
   const panelCardCls = "rounded-xl bg-white p-6 shadow-sm";
-
-  const navLinkClass = (id: NavId) =>
-    `flex w-full items-center gap-3 rounded-r-lg border-l-4 py-3 pl-4 pr-3 text-left text-[15px] font-semibold transition ${
-      activeNav === id
-        ? "border-[#c9a84c] text-white"
-        : "border-transparent text-white/90 hover:bg-white/5"
-    }`;
 
   if (sessionPending || !user) {
     return (
@@ -349,73 +309,69 @@ export default function CuentaPage() {
 
   const emailDisplay = editEmail.trim() || user.email || "—";
 
-  const SidebarNav = ({ mobile = false }: { mobile?: boolean }) => {
-    const nav = (
-      <nav
-        className={`flex gap-0.5 ${mobile ? "mt-0 min-w-0 flex-1 flex-row justify-around px-1" : "mt-8 min-h-0 flex-1 flex-col px-2"}`}
-      >
-        {(
-          [
-            ["inicio", "Inicio", LayoutDashboard],
-            ["pedidos", "Mis pedidos", ShoppingBag],
-            ["cupones", "Cupones", Tag],
-            ["perfil", "Mi perfil", CircleUser],
-          ] as const
-        ).map(([id, label, Icon]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => scrollToSection(id)}
-            className={
-              mobile
-                ? `flex min-w-0 flex-1 flex-col items-center justify-center py-2 ${activeNav === id ? "text-[#c9a84c]" : "text-white/80"}`
-                : navLinkClass(id)
-            }
-            style={!mobile && activeNav === id ? { backgroundColor: SIDEBAR_ACTIVE_BG } : undefined}
-            aria-current={activeNav === id ? "page" : undefined}
-          >
-            <Icon className={`shrink-0 ${mobile ? "h-6 w-6" : "h-5 w-5 opacity-90"}`} strokeWidth={2} aria-hidden />
-            {!mobile && <span>{label}</span>}
-            {mobile && <span className="sr-only">{label}</span>}
-          </button>
-        ))}
-      </nav>
-    );
-    if (mobile) return nav;
-    return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="px-5 pt-8">
-          <p className="text-2xl font-black tracking-[-0.06em] text-white">BLOOM.</p>
+  const SidebarInner = () => (
+    <>
+      <div className="px-5 pt-8">
+        <p className="text-2xl font-black tracking-[-0.06em] text-white">BLOOM.</p>
+      </div>
+      <div className="mt-8 flex flex-col items-center gap-2 px-4 text-center">
+        <div
+          className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white/25"
+          style={{ backgroundColor: "#1f352c" }}
+        >
+          {avatarUrl ? (
+            <Image src={avatarUrl} alt="" fill className="object-cover" sizes="56px" />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-lg font-bold text-white">
+              {initialsFromName(displayName)}
+            </span>
+          )}
         </div>
-        <div className="mt-8 flex flex-col items-center gap-2 px-4 text-center">
-          <div
-            className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white/25"
-            style={{ backgroundColor: "#1f352c" }}
-          >
+        <p className="line-clamp-2 w-full px-1 text-sm font-semibold leading-tight text-white">{displayName}</p>
+      </div>
+      <div className="min-h-0 flex-1" aria-hidden />
+    </>
+  );
+
+  return (
+    <div className="min-h-screen font-sans antialiased" style={{ backgroundColor: CREAM, color: TEXT_DARK }}>
+      {/* Mobile: compact header + logout (no nav) */}
+      <header
+        className="sticky top-0 z-40 flex items-center gap-3 border-b border-white/10 px-4 py-3 lg:hidden"
+        style={{ backgroundColor: GREEN }}
+      >
+        <p className="shrink-0 text-lg font-black tracking-[-0.06em] text-white">BLOOM.</p>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-1 ring-white/30">
             {avatarUrl ? (
-              <Image src={avatarUrl} alt="" fill className="object-cover" sizes="56px" />
+              <Image src={avatarUrl} alt="" fill className="object-cover" sizes="36px" />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-lg font-bold text-white">
+              <span className="flex h-full w-full items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: "#1f352c" }}>
                 {initialsFromName(displayName)}
               </span>
             )}
           </div>
-          <p className="line-clamp-2 w-full px-1 text-sm font-semibold leading-tight text-white">{displayName}</p>
+          <p className="truncate text-sm font-semibold text-white">{displayName}</p>
         </div>
-        {nav}
-      </div>
-    );
-  };
+        <button
+          type="button"
+          onClick={() => void handleSignOut()}
+          className="shrink-0 rounded-lg p-2 text-white/90 transition hover:bg-white/10 hover:text-white"
+          aria-label="Cerrar sesión"
+        >
+          <LogOut className="h-5 w-5" strokeWidth={2} />
+        </button>
+      </header>
 
-  return (
-    <div className="min-h-screen font-sans antialiased" style={{ backgroundColor: CREAM, color: TEXT_DARK }}>
       {/* Desktop sidebar */}
       <aside
-        className="fixed left-0 top-0 z-40 hidden h-screen w-[240px] flex-col border-r border-white/10 lg:flex"
+        className="fixed left-0 top-0 z-30 hidden h-screen w-[240px] flex-col border-r border-white/10 lg:flex"
         style={{ width: SIDEBAR_W, backgroundColor: GREEN }}
       >
-        <SidebarNav mobile={false} />
-        <div className="mt-auto border-t border-white/10 px-2 py-4">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <SidebarInner />
+        </div>
+        <div className="border-t border-white/10 px-2 py-4">
           <button
             type="button"
             onClick={() => void handleSignOut()}
@@ -427,126 +383,123 @@ export default function CuentaPage() {
         </div>
       </aside>
 
-      {/* Main */}
-      <div className="min-h-screen pb-20 lg:ml-[240px] lg:pb-10">
+      <div className="min-h-screen lg:ml-[240px]">
         <main className="mx-auto max-w-6xl space-y-8 px-4 py-8 lg:px-10 lg:py-10">
-          <div ref={sectionInicioRef} id="section-inicio" className="scroll-mt-24 space-y-8 lg:scroll-mt-8">
-            {/* Stats row */}
-            <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {[
-                { label: "Pedidos realizados", value: String(orderStats.totalOrdersCount), kind: "num" as const },
-                {
-                  label: "Ticket promedio",
-                  value: orderStats.averageOrderValue > 0 ? formatMoney(orderStats.averageOrderValue) : "—",
-                  kind: "num" as const,
-                },
-                { label: "Producto más pedido", value: orderStats.mostOrderedProduct, kind: "text" as const },
-              ].map((s) => (
-                <div key={s.label} className={statCardCls}>
-                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">{s.label}</p>
-                  <p
-                    className={`mt-3 font-bold ${s.kind === "text" ? "text-lg leading-snug" : "text-3xl tabular-nums tracking-tight"}`}
-                    style={{ color: TEXT_DARK }}
-                  >
-                    {s.value}
-                  </p>
+          {/* Stats */}
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {[
+              { label: "Pedidos realizados", value: String(orderStats.totalOrdersCount), kind: "num" as const },
+              {
+                label: "Ticket promedio",
+                value: orderStats.averageOrderValue > 0 ? formatMoney(orderStats.averageOrderValue) : "—",
+                kind: "num" as const,
+              },
+              { label: "Producto más pedido", value: orderStats.mostOrderedProduct, kind: "text" as const },
+            ].map((s) => (
+              <div key={s.label} className={statCardCls}>
+                <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">{s.label}</p>
+                <p
+                  className={`mt-3 font-bold ${s.kind === "text" ? "text-lg leading-snug" : "text-3xl tabular-nums tracking-tight"}`}
+                  style={{ color: TEXT_DARK }}
+                >
+                  {s.value}
+                </p>
+              </div>
+            ))}
+          </section>
+
+          {/* Loyalty + Cupones */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <section>
+              <div className={panelCardCls}>
+                <h2 className="flex items-center gap-2 text-base font-bold" style={{ color: TEXT_DARK }}>
+                  <span aria-hidden>☕</span> Tu progreso
+                </h2>
+                <div className="mt-5 grid w-full grid-cols-10 gap-1 sm:gap-2">
+                  {Array.from({ length: COFFEE_GOAL }).map((_, i) => {
+                    const active = i < loyaltyFilled;
+                    return (
+                      <div
+                        key={i}
+                        className="flex aspect-square min-w-0 max-h-12 items-center justify-center rounded-lg sm:max-h-none"
+                        style={{
+                          backgroundColor: active ? "rgba(45,74,62,0.12)" : "#f0f0f0",
+                          color: active ? GREEN : "#9ca3af",
+                        }}
+                        aria-hidden
+                      >
+                        <Coffee className="h-4 w-4 max-w-[80%] sm:h-5 sm:w-5" strokeWidth={active ? 2.25 : 1.75} />
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+                <p className="mt-4 text-sm leading-relaxed text-neutral-600">
+                  {cupsToGo > 0 ? (
+                    <>
+                      Llevás <strong style={{ color: TEXT_DARK }}>{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
+                      <strong style={{ color: TEXT_DARK }}>{cupsToGo}</strong> para tu café gratis.
+                    </>
+                  ) : loyaltyPaidTotal > 0 ? (
+                    <>
+                      Llevás <strong style={{ color: TEXT_DARK }}>{loyaltyPaidTotal}</strong> pedidos — ¡podés canjear tu café gratis!
+                    </>
+                  ) : (
+                    <>
+                      Llevás <strong style={{ color: TEXT_DARK }}>0</strong> pedidos — te faltan{" "}
+                      <strong style={{ color: TEXT_DARK }}>{COFFEE_GOAL}</strong> para tu café gratis.
+                    </>
+                  )}
+                </p>
+              </div>
             </section>
 
-            {/* Loyalty + Cupones */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <section>
-                <div className={panelCardCls}>
-                  <h2 className="flex items-center gap-2 text-base font-bold" style={{ color: TEXT_DARK }}>
-                    <span aria-hidden>☕</span> Tu progreso
-                  </h2>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {Array.from({ length: COFFEE_GOAL }).map((_, i) => {
-                      const active = i < loyaltyFilled;
-                      return (
-                        <span
-                          key={i}
-                          className="flex h-11 w-11 items-center justify-center rounded-lg"
-                          style={{
-                            backgroundColor: active ? "rgba(45,74,62,0.12)" : "#f0f0f0",
-                            color: active ? GREEN : "#9ca3af",
-                          }}
-                          aria-hidden
-                        >
-                          <Coffee className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} />
+            <section>
+              <div className={panelCardCls}>
+                <h2 className="flex items-center gap-2 text-base font-bold" style={{ color: TEXT_DARK }}>
+                  <span aria-hidden>🏷️</span> Cupones
+                </h2>
+                <div className="mt-4 space-y-3">
+                  {birthdayThisMonth && (
+                    <div
+                      className="rounded-lg border-l-4 p-4 shadow-sm"
+                      style={{ borderLeftColor: GOLD, backgroundColor: "#fafafa" }}
+                    >
+                      <p className="text-base font-bold" style={{ color: TEXT_DARK }}>
+                        🎂 ¡Es tu mes!
+                      </p>
+                      <p className="mt-1 text-sm text-neutral-600">
+                        Presentá esta pantalla para tu regalo.{" "}
+                        <span className="font-semibold" style={{ color: GOLD }}>
+                          Beneficio activo
                         </span>
-                      );
-                    })}
-                  </div>
-                  <p className="mt-4 text-sm leading-relaxed text-neutral-600">
-                    {cupsToGo > 0 ? (
-                      <>
-                        Llevás <strong style={{ color: TEXT_DARK }}>{loyaltyPaidTotal}</strong> pedidos — te faltan{" "}
-                        <strong style={{ color: TEXT_DARK }}>{cupsToGo}</strong> para tu café gratis.
-                      </>
-                    ) : loyaltyPaidTotal > 0 ? (
-                      <>
-                        Llevás <strong style={{ color: TEXT_DARK }}>{loyaltyPaidTotal}</strong> pedidos — ¡podés canjear tu café gratis!
-                      </>
-                    ) : (
-                      <>
-                        Llevás <strong style={{ color: TEXT_DARK }}>0</strong> pedidos — te faltan{" "}
-                        <strong style={{ color: TEXT_DARK }}>{COFFEE_GOAL}</strong> para tu café gratis.
-                      </>
-                    )}
-                  </p>
+                      </p>
+                    </div>
+                  )}
+                  {!freeCoffeeUnlocked ? (
+                    <div className="flex items-start gap-3 rounded-lg bg-neutral-100 p-4 text-neutral-600">
+                      <Lock className="mt-0.5 h-5 w-5 shrink-0 text-neutral-400" aria-hidden />
+                      <div>
+                        <p className="font-semibold" style={{ color: TEXT_DARK }}>
+                          <span aria-hidden>☕</span> Café gratis
+                        </p>
+                        <p className="mt-1 text-sm">Desbloqueás a los 10 pedidos.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border-l-4 bg-white p-4 shadow-sm" style={{ borderLeftColor: GREEN }}>
+                      <p className="font-bold" style={{ color: GREEN }}>
+                        ☕ Café gratis — <span style={{ color: GOLD }}>activo</span>
+                      </p>
+                      <p className="mt-2 text-sm text-neutral-600">Presentá esta pantalla en el local para canjear.</p>
+                    </div>
+                  )}
                 </div>
-              </section>
-
-              <section ref={sectionCuponesRef} id="section-cupones" className="scroll-mt-24 lg:scroll-mt-8">
-                <div className={panelCardCls}>
-                  <h2 className="flex items-center gap-2 text-base font-bold" style={{ color: TEXT_DARK }}>
-                    <span aria-hidden>🏷️</span> Cupones
-                  </h2>
-                  <div className="mt-4 space-y-3">
-                    {birthdayThisMonth && (
-                      <div
-                        className="rounded-lg border-l-4 p-4 shadow-sm"
-                        style={{ borderLeftColor: GOLD, backgroundColor: "#fafafa" }}
-                      >
-                        <p className="text-base font-bold" style={{ color: TEXT_DARK }}>
-                          🎂 ¡Es tu mes!
-                        </p>
-                        <p className="mt-1 text-sm text-neutral-600">
-                          Presentá esta pantalla para tu regalo.{" "}
-                          <span className="font-semibold" style={{ color: GOLD }}>
-                            Beneficio activo
-                          </span>
-                        </p>
-                      </div>
-                    )}
-                    {!freeCoffeeUnlocked ? (
-                      <div className="flex items-start gap-3 rounded-lg bg-neutral-100 p-4 text-neutral-600">
-                        <Lock className="mt-0.5 h-5 w-5 shrink-0 text-neutral-400" aria-hidden />
-                        <div>
-                          <p className="font-semibold" style={{ color: TEXT_DARK }}>
-                            <span aria-hidden>☕</span> Café gratis
-                          </p>
-                          <p className="mt-1 text-sm">Desbloqueás a los 10 pedidos.</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border-l-4 bg-white p-4 shadow-sm" style={{ borderLeftColor: GREEN }}>
-                        <p className="font-bold" style={{ color: GREEN }}>
-                          ☕ Café gratis — <span style={{ color: GOLD }}>activo</span>
-                        </p>
-                        <p className="mt-2 text-sm text-neutral-600">Presentá esta pantalla en el local para canjear.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </section>
-            </div>
+              </div>
+            </section>
           </div>
 
           {/* Orders table */}
-          <section ref={sectionPedidosRef} id="section-pedidos" className="scroll-mt-24 lg:scroll-mt-8">
+          <section>
             <div className={panelCardCls + " overflow-hidden p-0"}>
               <div className="flex items-center gap-2 border-b border-neutral-100 px-6 py-4">
                 <ShoppingBag className="h-5 w-5" style={{ color: GREEN }} aria-hidden />
@@ -621,7 +574,7 @@ export default function CuentaPage() {
           </section>
 
           {/* Mi perfil */}
-          <section ref={sectionPerfilRef} id="section-perfil" className="scroll-mt-24 lg:scroll-mt-8">
+          <section>
             <div className={panelCardCls}>
               <h2 className="text-lg font-bold" style={{ color: TEXT_DARK }}>
                 Mi perfil
@@ -741,22 +694,6 @@ export default function CuentaPage() {
             </div>
           </section>
         </main>
-      </div>
-
-      {/* Mobile bottom bar */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-stretch border-t border-white/10 lg:hidden"
-        style={{ backgroundColor: GREEN }}
-      >
-        <SidebarNav mobile />
-        <button
-          type="button"
-          onClick={() => void handleSignOut()}
-          className="flex w-14 shrink-0 items-center justify-center text-white/85 transition hover:text-[#c9a84c]"
-          aria-label="Cerrar sesión"
-        >
-          <LogOut className="h-6 w-6" strokeWidth={2} />
-        </button>
       </div>
     </div>
   );
