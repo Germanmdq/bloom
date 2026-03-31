@@ -1,14 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { Eye, EyeOff, Instagram, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-
-const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
-const HERO_VIDEO_POSTER_SRC = "/images/bloom-logo.png";
 
 const GREEN = "#2d4a3e";
 const CREAM = "#FAF7F2";
@@ -126,7 +122,6 @@ export default function RegistroPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [heroVideoReady, setHeroVideoReady] = useState(false);
   const [step, setStep] = useState(1);
   const [panelAnim, setPanelAnim] = useState<"in" | "out">("in");
 
@@ -397,60 +392,29 @@ export default function RegistroPage() {
         </>
       ) : null}
 
-      <div className="relative flex min-h-[100dvh] flex-col">
-        <div className="relative min-h-[min(52vh,520px)] w-full shrink-0 overflow-hidden bg-neutral-950">
-          <video
-            className="absolute inset-0 h-full w-full scale-[1.02] object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="none"
-            poster={HERO_VIDEO_POSTER_SRC}
-            aria-hidden
-            onCanPlay={() => setHeroVideoReady(true)}
-            onError={() => setHeroVideoReady(true)}
-          >
-            <source src={HERO_VIDEO_SRC} type="video/mp4" />
-          </video>
-          {!heroVideoReady ? (
-            <div className="absolute inset-0">
-              <Image
-                src={HERO_VIDEO_POSTER_SRC}
-                alt=""
-                fill
-                className="object-cover"
-                sizes="100vw"
-                priority
-              />
-            </div>
-          ) : null}
-          <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.55)" }} aria-hidden />
-          <div className="relative z-10 flex min-h-[min(52vh,520px)] flex-col items-center justify-center px-6 py-14 text-center">
-            <p className="text-[clamp(2.25rem,8vw,3.75rem)] font-black leading-none tracking-[-0.04em] text-white drop-shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
-              BLOOM.
-            </p>
-            <p className="mt-4 max-w-md text-[17px] font-semibold leading-snug text-white/95 drop-shadow-[0_4px_16px_rgba(0,0,0,0.35)] sm:text-lg">
-              Café, pastelería y cocina — todo en un solo lugar
-            </p>
-            <p
-              className="mt-6 text-[11px] font-bold uppercase tracking-[0.25em] sm:text-xs"
-              style={{ color: GOLD }}
-            >
-              Programa de socios
-            </p>
-          </div>
-        </div>
-
+      <div className="flex min-h-[100dvh] flex-col">
         <section
-          className="relative z-[15] px-4 py-8 sm:px-6 sm:py-10"
+          className="px-4 pb-12 pt-14 text-center sm:px-6 sm:pb-14 sm:pt-16"
           style={{ backgroundColor: GREEN }}
-          aria-label="Beneficios del Club Bloom"
+          aria-label="Club Bloom — programa de socios"
         >
-          <h2 className="mb-8 text-center text-[clamp(1.75rem,5vw,2.5rem)] font-black tracking-tight text-white">
+          <p className="text-[clamp(2.25rem,8vw,3.75rem)] font-black leading-none tracking-[-0.04em] text-white">
+            BLOOM.
+          </p>
+          <p className="mx-auto mt-4 max-w-md text-[17px] font-semibold leading-snug text-white/95 sm:text-lg">
+            Café, pastelería y cocina — todo en un solo lugar
+          </p>
+          <p
+            className="mt-6 text-[11px] font-bold uppercase tracking-[0.25em] sm:text-xs"
+            style={{ color: GOLD }}
+          >
+            Programa de socios
+          </p>
+
+          <h2 className="mb-8 mt-12 text-center text-[clamp(1.75rem,5vw,2.5rem)] font-black tracking-tight text-white sm:mt-14">
             Club Bloom
           </h2>
-          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
+          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 text-left md:grid-cols-3 md:gap-5">
             <div className="flex flex-col rounded-2xl border-2 border-[#c9a84c] bg-white p-5 shadow-md sm:p-6">
               <span className="mb-3 text-4xl leading-none sm:text-5xl" aria-hidden>
                 ☕
@@ -481,7 +445,10 @@ export default function RegistroPage() {
           </div>
         </section>
 
-        <div className="relative z-20 -mt-10 flex flex-1 justify-center px-4 pb-14 sm:-mt-14 sm:px-6">
+        <section
+          className="flex flex-1 flex-col items-center px-4 py-12 sm:px-6 sm:py-16"
+          style={{ backgroundColor: CREAM }}
+        >
           <div
             className="w-full max-w-[480px] rounded-3xl border border-black/[0.06] p-10 shadow-2xl"
             style={{ backgroundColor: CREAM }}
@@ -813,7 +780,7 @@ export default function RegistroPage() {
               ) : null}
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
