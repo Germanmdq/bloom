@@ -317,9 +317,10 @@ export default function RegistroPage() {
     });
     setLoading(false);
     if (err) {
+      console.error("SIGNUP ERROR FULL:", JSON.stringify(err), "message:", err.message, "status:", (err as { status?: number }).status, "code:", (err as { code?: string }).code);
       const status = (err as { status?: number }).status;
       if (status === 422) {
-        setFieldErrors({ email: "Ese email ya tiene una cuenta. Iniciá sesión en vez de registrarte." });
+        setFieldErrors({ general: "Error 422: " + (err.message || "Email ya registrado o contraseña inválida.") });
         return;
       }
       const field = authErrorField(err);
