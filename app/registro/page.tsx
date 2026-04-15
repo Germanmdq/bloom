@@ -268,7 +268,6 @@ export default function RegistroPage() {
   const validarPaso3 = (): boolean => {
     const next: Partial<Record<FieldKey, string>> = {};
     if (password.length < 6) next.password = "Mínimo 6 caracteres.";
-    if (!addressLine.trim()) next.address = "Ingresá calle y número.";
     if (Object.keys(next).length) {
       setFieldErrors(next);
       return false;
@@ -302,6 +301,7 @@ export default function RegistroPage() {
     setLoading(true);
     const defaultAddress = combineRegisterAddress(addressLine, addressExtra);
     const emailNorm = email.trim().toLowerCase();
+    const customerNumber = String(Math.floor(Math.random() * 900000) + 100000);
     const { error: err } = await supabase.auth.signUp({
       email: emailNorm,
       password,
@@ -312,6 +312,7 @@ export default function RegistroPage() {
           email: emailNorm,
           birthdate: bd,
           default_address: defaultAddress,
+          customer_number: customerNumber,
           is_customer: true,
         },
       },
@@ -748,32 +749,27 @@ export default function RegistroPage() {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="reg-calle" className="block text-[15px] font-bold text-neutral-800">
-                      ¿Dónde te hacemos delivery?
+                      Dirección de entrega{" "}
+                      <span className="font-medium text-neutral-400">(opcional)</span>
                     </label>
                     <input
                       id="reg-calle"
                       name="street_address"
                       type="text"
                       autoComplete="street-address"
-                      placeholder="Calle y número"
+                      placeholder="Calle y número · podés completarlo después"
                       value={addressLine}
                       onChange={(e) => {
                         setAddressLine(e.target.value);
                         clearFieldError("address");
                       }}
-                      className={inputClass(!!fieldErrors.address)}
-                      aria-invalid={!!fieldErrors.address}
-                      aria-describedby={fieldErrors.address ? "err-calle" : undefined}
+                      className={inputClass(false)}
                     />
-                    {fieldErrors.address ? (
-                      <p id="err-calle" className="text-[15px] font-semibold text-red-600">
-                        {fieldErrors.address}
-                      </p>
-                    ) : null}
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="reg-ref" className="block text-[15px] font-bold text-neutral-800">
-                      Piso / Dpto / Referencia (opcional)
+                      Piso / Dpto / Referencia{" "}
+                      <span className="font-medium text-neutral-400">(opcional)</span>
                     </label>
                     <input
                       id="reg-ref"
@@ -782,19 +778,9 @@ export default function RegistroPage() {
                       autoComplete="off"
                       placeholder="Piso, oficina o referencia"
                       value={addressExtra}
-                      onChange={(e) => {
-                        setAddressExtra(e.target.value);
-                        clearFieldError("address_extra");
-                      }}
-                      className={inputClass(!!fieldErrors.address_extra)}
-                      aria-invalid={!!fieldErrors.address_extra}
-                      aria-describedby={fieldErrors.address_extra ? "err-ref" : undefined}
+                      onChange={(e) => setAddressExtra(e.target.value)}
+                      className={inputClass(false)}
                     />
-                    {fieldErrors.address_extra ? (
-                      <p id="err-ref" className="text-[15px] font-semibold text-red-600">
-                        {fieldErrors.address_extra}
-                      </p>
-                    ) : null}
                   </div>
                   <button
                     type="submit"

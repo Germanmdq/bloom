@@ -579,6 +579,9 @@ export default function CuentaPage() {
             )}
           </div>
           <p className="line-clamp-2 w-full px-1 text-sm font-semibold leading-tight text-white">{displayName}</p>
+          {metaStr(user, "customer_number") && (
+            <p className="text-xs font-medium text-white/50">Nº {metaStr(user, "customer_number")}</p>
+          )}
         </div>
         <nav className="mt-8 flex min-h-0 flex-1 flex-col gap-0.5 px-2">
           {navBtn("inicio", "Inicio", Home)}
@@ -1001,7 +1004,15 @@ export default function CuentaPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          {metaStr(user, "customer_number") && (
+            <div className={statMiniCls}>
+              <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Nº de cliente</p>
+              <p className="mt-2 text-2xl font-black tabular-nums" style={{ color: TEXT_DARK }}>
+                {metaStr(user, "customer_number")}
+              </p>
+            </div>
+          )}
           <div className={statMiniCls}>
             <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Miembro desde</p>
             <p className="mt-2 font-bold" style={{ color: TEXT_DARK }}>
