@@ -33,11 +33,7 @@ type OrderRow = {
 };
 
 const COUPON_DEFS = [
-  { id: "desc10", label: "Descuento 10%", unlock: 5, icon: "🏷️" },
   { id: "cafe", label: "Café gratis", unlock: 10, icon: "☕" },
-  { id: "postre", label: "Postre gratis", unlock: 20, icon: "🍰" },
-  { id: "desayuno", label: "Desayuno gratis", unlock: 30, icon: "🌅" },
-  { id: "almuerzo", label: "Almuerzo gratis", unlock: 50, icon: "🍽️" },
 ] as const;
 
 const WEEKDAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
