@@ -317,17 +317,12 @@ export default function RegistroPage() {
     });
     setLoading(false);
     if (err) {
-      console.error("SIGNUP ERROR FULL:", JSON.stringify(err), "message:", err.message, "status:", (err as { status?: number }).status, "code:", (err as { code?: string }).code);
-      const status = (err as { status?: number }).status;
-      if (status === 422) {
-        setFieldErrors({ general: "Error 422: " + (err.message || "Email ya registrado o contraseña inválida.") });
-        return;
-      }
       const field = authErrorField(err);
       if (field === "general") {
         setFieldErrors({ general: translateAuthError(err) });
       } else {
-        setFieldErrors({ [field]: translateAuthError(err) });
+        // Si el error es en el email pero estamos en paso 3, mostrarlo como general
+        setFieldErrors({ general: translateAuthError(err) });
       }
       return;
     }
