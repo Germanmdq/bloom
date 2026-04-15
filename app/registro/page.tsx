@@ -44,14 +44,21 @@ type FieldKey =
 
 function translateAuthError(err: AuthError): string {
   const msg = err.message.toLowerCase();
+  const code = (err as { code?: string }).code ?? "";
+  if (
+    msg.includes("user already registered") ||
+    msg.includes("already registered") ||
+    msg.includes("already been registered") ||
+    code === "user_already_exists" ||
+    code === "email_exists"
+  ) {
+    return "Ese email ya tiene una cuenta. Iniciá sesión en vez de registrarte.";
+  }
   if (msg.includes("invalid login credentials") || msg.includes("invalid_credentials")) {
     return "Email o contraseña incorrectos.";
   }
   if (msg.includes("email not confirmed")) {
     return "Confirmá tu correo antes de iniciar sesión.";
-  }
-  if (msg.includes("user already registered") || msg.includes("already registered")) {
-    return "Ese email ya está registrado.";
   }
   if (msg.includes("password")) {
     return "La contraseña no cumple los requisitos.";
@@ -64,10 +71,13 @@ function translateAuthError(err: AuthError): string {
 
 function authErrorField(err: AuthError): FieldKey | "general" {
   const msg = err.message.toLowerCase();
+  const code = (err as { code?: string }).code ?? "";
   if (
     msg.includes("user already registered") ||
     msg.includes("already been registered") ||
-    msg.includes("already registered")
+    msg.includes("already registered") ||
+    code === "user_already_exists" ||
+    code === "email_exists"
   ) {
     return "email";
   }
@@ -307,6 +317,11 @@ export default function RegistroPage() {
     });
     setLoading(false);
     if (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 422) {
+        setFieldErrors({ email: "Ese email ya tiene una cuenta. Iniciá sesión en vez de registrarte." });
+        return;
+      }
       const field = authErrorField(err);
       if (field === "general") {
         setFieldErrors({ general: translateAuthError(err) });
