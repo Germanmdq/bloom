@@ -145,6 +145,7 @@ export default function RegistroPage() {
   const [addressLine, setAddressLine] = useState("");
   const [addressExtra, setAddressExtra] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
 
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey | "general", string>>>({});
   const [loading, setLoading] = useState(false);
@@ -317,13 +318,19 @@ export default function RegistroPage() {
     });
     setLoading(false);
     if (err) {
-      const field = authErrorField(err);
-      if (field === "general") {
-        setFieldErrors({ general: translateAuthError(err) });
-      } else {
-        // Si el error es en el email pero estamos en paso 3, mostrarlo como general
-        setFieldErrors({ general: translateAuthError(err) });
+      const code = (err as { code?: string }).code ?? "";
+      const msg = err.message.toLowerCase();
+      if (
+        code === "user_already_exists" ||
+        code === "email_exists" ||
+        msg.includes("already registered")
+      ) {
+        setEmailExists(true);
+        return;
       }
+      const field = authErrorField(err);
+      setFieldErrors({ general: translateAuthError(err) });
+      if (field === "password") setFieldErrors({ password: translateAuthError(err) });
       return;
     }
     setCelebrate(true);
@@ -478,7 +485,20 @@ export default function RegistroPage() {
               ))}
             </div>
 
-            {fieldErrors.general ? (
+            {emailExists ? (
+              <div className="mb-4 rounded-2xl border border-[#c9a84c]/40 bg-[#fffbf0] px-5 py-4 text-center">
+                <p className="text-[15px] font-bold text-neutral-800">Ya tenés una cuenta registrada</p>
+                <p className="mt-1 text-[14px] font-medium text-neutral-500">
+                  El email que ingresaste ya está en uso.
+                </p>
+                <a
+                  href="/auth"
+                  className="mt-3 flex min-h-[44px] items-center justify-center rounded-xl bg-[#2d4a3e] px-4 text-[15px] font-black text-white transition hover:bg-[#243d32]"
+                >
+                  Iniciar sesión →
+                </a>
+              </div>
+            ) : fieldErrors.general ? (
               <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[15px] font-semibold text-red-700">
                 {fieldErrors.general}
               </p>
