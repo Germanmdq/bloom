@@ -303,7 +303,6 @@ export default function RegistroPage() {
           default_address: defaultAddress,
           is_customer: true,
         },
-        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/cuenta` : undefined,
       },
     });
     setLoading(false);
