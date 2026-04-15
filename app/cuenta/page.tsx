@@ -558,7 +558,7 @@ export default function CuentaPage() {
         <nav className="flex min-w-0 flex-1 flex-row justify-around px-1">
           {mobileNavBtn("inicio", "Inicio", Home)}
           {mobileNavBtn("pedidos", "Mis pedidos", ShoppingBag)}
-          {mobileNavBtn("cupones", "Cupones", Tag)}
+          {mobileNavBtn("cupones", "Beneficios", Tag)}
           {mobileNavBtn("perfil", "Mi perfil", CircleUser)}
           {mobileNavBtn("estadisticas", "Estadísticas", PieChart)}
         </nav>
@@ -587,7 +587,7 @@ export default function CuentaPage() {
         <nav className="mt-8 flex min-h-0 flex-1 flex-col gap-0.5 px-2">
           {navBtn("inicio", "Inicio", Home)}
           {navBtn("pedidos", "Mis pedidos", ShoppingBag)}
-          {navBtn("cupones", "Cupones", Tag)}
+          {navBtn("cupones", "Beneficios", Tag)}
           {navBtn("perfil", "Mi perfil", CircleUser)}
           {navBtn("estadisticas", "Estadísticas", PieChart)}
         </nav>
@@ -818,21 +818,47 @@ export default function CuentaPage() {
   );
 
   const SectionCupones = () => (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Resumen del programa */}
+      <div
+        className="rounded-2xl p-6 shadow-sm"
+        style={{ background: `linear-gradient(135deg, ${GREEN} 0%, #1f352c 100%)` }}
+      >
+        <p className="text-sm font-semibold text-white/70">Tus beneficios</p>
+        <p className="mt-1 text-3xl font-black text-white tabular-nums">{paidOrderCount} pedidos pagos</p>
+        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/20">
+          <div
+            className="h-full rounded-full bg-white transition-all"
+            style={{ width: `${Math.min((paidOrderCount / COUPON_DEFS[COUPON_DEFS.length - 1].unlock) * 100, 100)}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs text-white/50">
+          {paidOrderCount < COUPON_DEFS[COUPON_DEFS.length - 1].unlock
+            ? `Te faltan ${COUPON_DEFS[COUPON_DEFS.length - 1].unlock - paidOrderCount} pedidos para desbloquear todos los beneficios`
+            : "¡Desbloqueaste todos los beneficios!"}
+        </p>
+      </div>
+
+      {/* Cupón de cumpleaños */}
       {birthdayActive && (
         <div
-          className="rounded-xl p-5 shadow-sm"
+          className="flex items-center gap-4 rounded-2xl p-5 shadow-sm"
           style={{ background: `linear-gradient(135deg, ${GOLD}f0 0%, #e8d48a 100%)` }}
         >
-          <p className="text-lg font-black" style={{ color: TEXT_DARK }}>
-            🎂 ¡Es tu mes!
-          </p>
-          <p className="mt-1 text-sm font-medium opacity-90" style={{ color: TEXT_DARK }}>
-            Cupón activo: mostrá esta pantalla para tu regalo de cumpleaños.
-          </p>
+          <span className="text-4xl">🎂</span>
+          <div>
+            <p className="text-base font-black" style={{ color: TEXT_DARK }}>
+              ¡Es tu mes de cumpleaños!
+            </p>
+            <p className="mt-0.5 text-sm font-medium opacity-80" style={{ color: TEXT_DARK }}>
+              Mostrá esta pantalla en el local para canjear tu regalo
+            </p>
+          </div>
         </div>
       )}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+      {/* Grid de beneficios */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {COUPON_DEFS.map((c) => {
           const unlocked = paidOrderCount >= c.unlock;
           const progress = Math.min(paidOrderCount / c.unlock, 1);
@@ -840,31 +866,50 @@ export default function CuentaPage() {
             return (
               <div
                 key={c.id}
-                className="rounded-xl p-5 shadow-sm"
+                className="rounded-2xl p-5 shadow-sm"
                 style={{ background: `linear-gradient(135deg, ${GOLD}e8 0%, #d4af37 55%, ${GOLD} 100%)` }}
               >
-                <p className="text-lg font-black" style={{ color: TEXT_DARK }}>
-                  {c.icon} {c.label}
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-3xl">{c.icon}</span>
+                  <span
+                    className="rounded-full px-3 py-1 text-xs font-black"
+                    style={{ backgroundColor: "rgba(255,255,255,0.4)", color: TEXT_DARK }}
+                  >
+                    Activo
+                  </span>
+                </div>
+                <p className="mt-3 text-lg font-black" style={{ color: TEXT_DARK }}>
+                  {c.label}
                 </p>
-                <p className="mt-2 text-sm font-semibold" style={{ color: TEXT_DARK }}>
-                  Desbloqueado · Presentá en el local
+                <p className="mt-1 text-xs font-semibold" style={{ color: TEXT_DARK, opacity: 0.7 }}>
+                  Presentá esta pantalla en el local
                 </p>
               </div>
             );
           }
           return (
-            <div key={c.id} className={`${cardCls} text-neutral-600`}>
-              <div className="flex items-start gap-3">
-                <Lock className="mt-0.5 h-5 w-5 shrink-0 text-neutral-400" aria-hidden />
+            <div key={c.id} className={`${cardCls}`}>
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-2xl">
+                  {c.icon}
+                </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold" style={{ color: TEXT_DARK }}>
-                    {c.icon} {c.label}
+                  <p className="font-black" style={{ color: TEXT_DARK }}>
+                    {c.label}
                   </p>
-                  <p className="mt-1 text-sm">
-                    Desbloquea a los {c.unlock} pedidos pagos · Vas {paidOrderCount}/{c.unlock}
+                  <p className="mt-0.5 text-xs text-neutral-500">
+                    Desbloquea a los {c.unlock} pedidos pagos
                   </p>
-                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-neutral-200">
-                    <div className="h-full rounded-full bg-neutral-400 transition-all" style={{ width: `${progress * 100}%` }} />
+                  <div className="mt-3 flex items-center gap-2">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-200">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${progress * 100}%`, backgroundColor: GREEN }}
+                      />
+                    </div>
+                    <span className="text-xs font-bold tabular-nums text-neutral-500">
+                      {paidOrderCount}/{c.unlock}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1085,7 +1130,7 @@ export default function CuentaPage() {
           <h1 className="mb-6 text-xl font-black lg:text-2xl" style={{ color: TEXT_DARK }}>
             {section === "inicio" && "Inicio"}
             {section === "pedidos" && "Mis pedidos"}
-            {section === "cupones" && "Cupones"}
+            {section === "cupones" && "Beneficios"}
             {section === "perfil" && "Mi perfil"}
             {section === "estadisticas" && "Estadísticas"}
           </h1>
