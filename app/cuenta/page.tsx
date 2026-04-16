@@ -605,12 +605,6 @@ export default function CuentaPage() {
           </p>
         </div>
         <div className={statMiniCls}>
-          <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Ticket promedio</p>
-          <p className="mt-2 text-3xl font-bold tabular-nums" style={{ color: TEXT_DARK }}>
-            {overviewStats.averageOrderValue > 0 ? formatMoney(overviewStats.averageOrderValue) : "—"}
-          </p>
-        </div>
-        <div className={statMiniCls}>
           <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Producto más pedido</p>
           <p className="mt-2 text-lg font-bold leading-snug" style={{ color: TEXT_DARK }}>
             {overviewStats.mostOrderedProduct}
@@ -663,7 +657,6 @@ export default function CuentaPage() {
                   {new Date(o.created_at).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}{" "}
                   <span className="text-neutral-500">{orderItemsSummary(o.items, 3)}</span>
                 </span>
-                <span className="font-semibold tabular-nums">{formatMoney(Number(o.total))}</span>
               </li>
             ))}
           </ul>
@@ -696,13 +689,9 @@ export default function CuentaPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-2">
         {[
-          ["Total gastado", formatMoney(pedidosListStats.totalGastado)],
           ["Cantidad", String(pedidosListStats.cantidad)],
-          ["Promedio / pedido", pedidosListStats.cantidad > 0 ? formatMoney(pedidosListStats.promedio) : "—"],
-          ["Pedido más caro", pedidosListStats.maxPedido > 0 ? formatMoney(pedidosListStats.maxPedido) : "—"],
-          ["Pedido más barato", pedidosListStats.minPedido > 0 ? formatMoney(pedidosListStats.minPedido) : "—"],
           ["Hora más frecuente", pedidosListStats.horaFrecuente],
         ].map(([k, v]) => (
           <div key={k} className={statMiniCls}>
@@ -728,7 +717,6 @@ export default function CuentaPage() {
                 <tr className="text-xs font-bold uppercase tracking-wider text-neutral-500">
                   <th className="px-4 py-3">Fecha</th>
                   <th className="px-4 py-3">Ítems</th>
-                  <th className="px-4 py-3">Total</th>
                   <th className="px-4 py-3">Tipo</th>
                   <th className="px-4 py-3">Estado</th>
                   <th className="w-10 px-2 py-3" aria-hidden />
@@ -754,9 +742,6 @@ export default function CuentaPage() {
                         </td>
                         <td className="max-w-[200px] px-4 py-3 text-neutral-700">
                           <span className="line-clamp-2">{summary}</span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 font-semibold tabular-nums">
-                          {formatMoney(Number(o.total))}
                         </td>
                         <td className="px-4 py-3 text-neutral-700">{orderTypeLabel(o)}</td>
                         <td className="px-4 py-3">
@@ -1025,12 +1010,6 @@ export default function CuentaPage() {
               {orders.length}
             </p>
           </div>
-          <div className={statMiniCls}>
-            <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Total gastado</p>
-            <p className="mt-2 text-2xl font-bold tabular-nums" style={{ color: TEXT_DARK }}>
-              {formatMoney(profileTotalSpent)}
-            </p>
-          </div>
         </div>
       </div>
     );
@@ -1069,23 +1048,6 @@ export default function CuentaPage() {
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={28} />
               <Tooltip />
               <Bar dataKey="count" fill={GREEN} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className={cardCls}>
-        <h3 className="text-sm font-bold" style={{ color: TEXT_DARK }}>
-          Gasto mensual (últimos 6 meses)
-        </h3>
-        <div className={chartWrap}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={analytics.monthlySpend} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-40" />
-              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} width={40} tickFormatter={(v) => `${Number(v) / 1000}k`} />
-              <Tooltip formatter={(v) => (v != null ? formatMoney(Number(v)) : "")} />
-              <Bar dataKey="gasto" fill={GOLD} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
