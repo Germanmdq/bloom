@@ -4,7 +4,7 @@ import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 import { supabaseSessionCookieOptions } from "@/lib/supabase/cookie-options";
 import { isAdminEmail } from "@/lib/auth/admin";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
