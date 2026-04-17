@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
 
   if (request.nextUrl.pathname.startsWith("/dashboard")) {
     if (!user || !isAdminEmail(user.email)) {
-      return NextResponse.redirect(new URL("/auth", request.url));
+      return NextResponse.redirect(new URL("/auth?admin=1", request.url));
     }
   }
 
