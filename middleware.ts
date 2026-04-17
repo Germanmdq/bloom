@@ -29,30 +29,11 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-
-  // Rutas permitidas públicamente
-  const allowed =
-    pathname === "/" ||
-    pathname.startsWith("/registro") ||
-    pathname.startsWith("/cuenta") ||
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/menu") ||
-    pathname.startsWith("/about") ||
-    pathname.startsWith("/reservations") ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/api/");
-
-  if (!allowed) {
-    return NextResponse.redirect(new URL("/registro", request.url));
-  }
-
-  if (!user && pathname.startsWith("/cuenta")) {
+  if (!user && request.nextUrl.pathname.startsWith("/cuenta")) {
     return NextResponse.redirect(new URL("/auth", request.url));
   }
 
-  if (pathname.startsWith("/dashboard")) {
+  if (request.nextUrl.pathname.startsWith("/dashboard")) {
     if (!user || !isAdminEmail(user.email)) {
       return NextResponse.redirect(new URL("/auth", request.url));
     }
