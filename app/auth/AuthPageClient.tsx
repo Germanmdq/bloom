@@ -6,10 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isAdminEmail } from "@/lib/auth/admin";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2, Lock, Mail } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 import { SiteHeader } from "@/components/SiteHeader";
+
+const CUSTOMER_LOGIN_ENABLED = false;
 
 type Panel = "login" | "register";
 
@@ -55,11 +57,15 @@ export function AuthPageClient() {
   const supabase = createClient();
 
   const [panel, setPanel] = useState<Panel>("login");
+  const [showAdminForm, setShowAdminForm] = useState(false);
 
   useEffect(() => {
     const mode = searchParams.get("mode");
     if (mode === "register") {
       setPanel("register");
+    }
+    if (searchParams.get("admin") === "1") {
+      setShowAdminForm(true);
     }
   }, [searchParams]);
   const [loading, setLoading] = useState(false);
@@ -101,11 +107,13 @@ export function AuthPageClient() {
     }
     if (isAdminEmail(data?.user?.email)) {
       router.replace("/dashboard");
+      router.refresh();
     } else {
-      const redirect = safeInternalPath(searchParams.get("redirect")) ?? "/cuenta";
-      router.replace(redirect);
+      await supabase.auth.signOut();
+      setInfo("El acceso para clientes estará disponible muy pronto. ¡Gracias por registrarte!");
+      setLoginEmail("");
+      setLoginPassword("");
     }
-    router.refresh();
   };
 
   const register = async () => {
@@ -164,11 +172,9 @@ export function AuthPageClient() {
       return;
     }
     if (data.session) {
-      router.replace(redirectAfterAuth);
-      router.refresh();
-      return;
+      await supabase.auth.signOut();
     }
-    setInfo("Te enviamos un correo para confirmar tu cuenta. Después podés iniciar sesión.");
+    setInfo("¡Te registraste con éxito en Bloom! Pronto habilitaremos el acceso a tu cuenta. Te avisaremos cuando esté listo.");
   };
 
   const switchToLogin = () => {
@@ -194,67 +200,122 @@ export function AuthPageClient() {
             <Mail className="h-9 w-9 text-[#5f5c46]" strokeWidth={2} />
           </div>
           <h1 className="text-3xl font-black tracking-tight text-neutral-900">
-            {panel === "login" ? "Iniciar sesión" : "Crear cuenta"}
+            {panel === "login"
+              ? !CUSTOMER_LOGIN_ENABLED && !showAdminForm
+                ? "Bloom"
+                : "Iniciar sesión"
+              : "Crear cuenta"}
           </h1>
           <p className="mt-2 text-sm text-neutral-500">
-            {panel === "login" ? "Ingresá con tu email y contraseña." : "Completá tus datos para registrarte."}
+            {panel === "login"
+              ? !CUSTOMER_LOGIN_ENABLED && !showAdminForm
+                ? "Registrate y sé de los primeros en acceder."
+                : "Ingresá con tu email y contraseña."
+              : "Completá tus datos para registrarte."}
           </p>
         </div>
 
         <div className="rounded-3xl border border-amber-100/80 bg-white p-6 shadow-sm">
           {panel === "login" && (
             <div className="space-y-4">
-              <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Email</label>
-              <input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="vos@email.com"
-                value={loginEmail}
-                onChange={(e) => {
-                  setLoginEmail(e.target.value);
-                  setError("");
-                  setInfo("");
-                }}
-                onKeyDown={(e) => e.key === "Enter" && void login()}
-                className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
-                  error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
-                }`}
-                autoFocus
-              />
-              <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Contraseña</label>
-              <input
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={loginPassword}
-                onChange={(e) => {
-                  setLoginPassword(e.target.value);
-                  setError("");
-                  setInfo("");
-                }}
-                onKeyDown={(e) => e.key === "Enter" && void login()}
-                className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
-                  error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
-                }`}
-              />
-              {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
-              {info ? <p className="text-sm font-medium text-[#2d4a3e]">{info}</p> : null}
-              <button
-                type="button"
-                onClick={() => void login()}
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a3e] py-4 text-base font-black text-white shadow-lg shadow-[#2d4a3e]/20 transition hover:bg-[#1f352c] active:scale-[0.99] disabled:opacity-50"
-              >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-                Iniciar sesión
-              </button>
-              <p className="text-center text-sm text-neutral-600">
-                ¿No tenés cuenta?{" "}
-                <Link href="/registro" className="font-bold text-[#2d4a3e] underline-offset-2 hover:underline">
-                  Registrate gratis →
-                </Link>
-              </p>
+              {!CUSTOMER_LOGIN_ENABLED && !showAdminForm ? (
+                <div className="space-y-5 text-center">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50">
+                    <Lock className="h-8 w-8 text-[#c9a84c]" strokeWidth={2} />
+                  </div>
+                  <div>
+                    <p className="text-base font-black text-neutral-900">Acceso clientes — Próximamente</p>
+                    <p className="mt-2 text-sm leading-relaxed text-neutral-500">
+                      Estamos terminando los últimos detalles de la plataforma. Pronto podrás iniciar sesión y disfrutar tus beneficios.
+                    </p>
+                  </div>
+                  {info ? <p className="rounded-xl bg-[#2d4a3e]/10 px-4 py-3 text-sm font-medium text-[#2d4a3e]">{info}</p> : null}
+                  <button
+                    type="button"
+                    onClick={switchToRegister}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a3e] py-4 text-base font-black text-white shadow-lg shadow-[#2d4a3e]/20 transition hover:bg-[#1f352c] active:scale-[0.99]"
+                  >
+                    Registrarme gratis →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminForm(true)}
+                    className="w-full text-xs text-neutral-300 hover:text-neutral-400 transition"
+                  >
+                    Acceso administrativo
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {!CUSTOMER_LOGIN_ENABLED && (
+                    <p className="rounded-xl bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-700">
+                      Acceso restringido — solo administradores
+                    </p>
+                  )}
+                  <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Email</label>
+                  <input
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="vos@email.com"
+                    value={loginEmail}
+                    onChange={(e) => {
+                      setLoginEmail(e.target.value);
+                      setError("");
+                      setInfo("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && void login()}
+                    className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
+                      error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
+                    }`}
+                    autoFocus
+                  />
+                  <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Contraseña</label>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={loginPassword}
+                    onChange={(e) => {
+                      setLoginPassword(e.target.value);
+                      setError("");
+                      setInfo("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && void login()}
+                    className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
+                      error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
+                    }`}
+                  />
+                  {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+                  {info ? <p className="text-sm font-medium text-[#2d4a3e]">{info}</p> : null}
+                  <button
+                    type="button"
+                    onClick={() => void login()}
+                    disabled={loading}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a3e] py-4 text-base font-black text-white shadow-lg shadow-[#2d4a3e]/20 transition hover:bg-[#1f352c] active:scale-[0.99] disabled:opacity-50"
+                  >
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                    Iniciar sesión
+                  </button>
+                  {!CUSTOMER_LOGIN_ENABLED && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminForm(false)}
+                      className="w-full text-xs text-neutral-400 hover:text-neutral-500 transition"
+                    >
+                      ← Volver
+                    </button>
+                  )}
+                  {CUSTOMER_LOGIN_ENABLED && (
+                    <p className="text-center text-sm text-neutral-600">
+                      ¿No tenés cuenta?{" "}
+                      <Link href="/registro" className="font-bold text-[#2d4a3e] underline-offset-2 hover:underline">
+                        Registrate gratis →
+                      </Link>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

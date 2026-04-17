@@ -9,6 +9,8 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Camera, ChevronDown, ChevronUp, CircleUser, Coffee, Home, Loader2, Lock, PieChart, ShoppingBag, Tag } from "lucide-react";
 import { toast } from "sonner";
 
+const CUENTA_HABILITADA = false;
+
 const COFFEE_GOAL = 10;
 const GREEN = "#2d4a3e";
 const GOLD = "#c9a84c";
@@ -537,6 +539,32 @@ export default function CuentaPage() {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: CREAM }}>
         <Loader2 className="h-10 w-10 animate-spin" style={{ color: GREEN }} />
+      </div>
+    );
+  }
+
+  if (!CUENTA_HABILITADA) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-5 text-center font-sans" style={{ backgroundColor: CREAM }}>
+        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-[#e8e4d4]">
+          <Lock className="h-9 w-9 text-[#5f5c46]" strokeWidth={2} />
+        </div>
+        <div className="max-w-sm space-y-3">
+          <p className="text-2xl font-black tracking-tight text-neutral-900">Tu espacio está casi listo</p>
+          <p className="text-sm leading-relaxed text-neutral-500">
+            Estamos finalizando los últimos detalles de la plataforma. Pronto podrás ver tus pedidos, beneficios y mucho más.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            await createClient().auth.signOut();
+            router.replace("/registro");
+          }}
+          className="text-sm font-semibold text-neutral-400 underline-offset-2 hover:text-neutral-600 hover:underline transition"
+        >
+          Cerrar sesión
+        </button>
       </div>
     );
   }
