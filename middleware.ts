@@ -33,9 +33,15 @@ export async function middleware(request: NextRequest) {
 
   // Rutas permitidas públicamente
   const allowed =
+    pathname === "/" ||
     pathname.startsWith("/registro") ||
     pathname.startsWith("/cuenta") ||
     pathname.startsWith("/auth") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/menu") ||
+    pathname.startsWith("/about") ||
+    pathname.startsWith("/reservations") ||
+    pathname.startsWith("/login") ||
     pathname.startsWith("/api/");
 
   if (!allowed) {
