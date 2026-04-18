@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, ChevronRight } from "lucide-react";
+import { Loader2, ChevronRight, MessageCircle, Copy, Check } from "lucide-react";
 import type { DashboardCustomerRow } from "@/lib/types/dashboard-customers";
 
 function fmtDate(iso: string | null): string {
@@ -34,6 +34,48 @@ function fmtBirthday(iso: string | null): string {
   } catch {
     return "—";
   }
+}
+
+function WhatsAppLinkButton({ userId, name }: { userId: string; name: string }) {
+  const [state, setState] = useState<"idle" | "loading" | "copied">("idle");
+
+  async function generate() {
+    setState("loading");
+    try {
+      const res = await fetch("/api/auth/generate-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, label: name }),
+      });
+      const json = (await res.json()) as { link?: string; error?: string };
+      if (!res.ok || !json.link) throw new Error(json.error ?? "Error");
+      await navigator.clipboard.writeText(json.link);
+      setState("copied");
+      setTimeout(() => setState("idle"), 2500);
+    } catch {
+      setState("idle");
+      alert("Error al generar el link");
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={generate}
+      disabled={state === "loading"}
+      title="Generar link de acceso directo para WhatsApp"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-2.5 py-1.5 text-xs font-bold text-green-800 hover:bg-green-100 transition-colors disabled:opacity-50"
+    >
+      {state === "loading" ? (
+        <Loader2 size={13} className="animate-spin" />
+      ) : state === "copied" ? (
+        <Check size={13} />
+      ) : (
+        <MessageCircle size={13} />
+      )}
+      {state === "copied" ? "¡Copiado!" : "Link WA"}
+    </button>
+  );
 }
 
 export default function DashboardCustomersPage() {
@@ -104,7 +146,7 @@ export default function DashboardCustomersPage() {
                   <th className="px-4 py-3 text-center">Pedidos</th>
                   <th className="px-4 py-3">Último pedido</th>
                   <th className="px-4 py-3 text-center">Lealtad</th>
-                  <th className="px-4 py-3"> </th>
+                  <th className="px-4 py-3 whitespace-nowrap">Acceso</th>
                 </tr>
               </thead>
               <tbody>
@@ -130,13 +172,16 @@ export default function DashboardCustomersPage() {
                       {r.loyaltyPoints}
                     </td>
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/dashboard/customers/${r.id}`}
-                        className="inline-flex items-center gap-1 font-bold text-gray-900 hover:underline"
-                      >
-                        Detalle
-                        <ChevronRight size={16} />
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <WhatsAppLinkButton userId={r.id} name={r.displayName} />
+                        <Link
+                          href={`/dashboard/customers/${r.id}`}
+                          className="inline-flex items-center gap-1 font-bold text-gray-900 hover:underline"
+                        >
+                          Detalle
+                          <ChevronRight size={16} />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
