@@ -413,29 +413,24 @@ function PublicMenuPage() {
                                     productIds: [platoDiaProduct.id],
                                 })
                             }
-                            className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl text-left shadow-md transition active:scale-[0.98] enabled:hover:opacity-[0.98] disabled:opacity-50 md:aspect-video"
+                            className="group flex flex-col overflow-hidden rounded-2xl border border-black/[0.07] bg-white text-left shadow-sm transition hover:shadow-md active:scale-[0.98] disabled:opacity-50"
                             aria-label="Plato del Día — armar encargo"
                         >
-                            {platoDiaProduct.image_url?.trim() ? (
-                                <Image
-                                    src={platoDiaProduct.image_url.trim()}
-                                    alt=""
-                                    fill
-                                    className="object-cover transition duration-300 group-hover:scale-105"
-                                    sizes="(max-width: 768px) 50vw, 360px"
-                                />
-                            ) : (
-                                <div
-                                    className="absolute inset-0 bg-gradient-to-br from-amber-800 to-amber-950"
-                                    aria-hidden
-                                />
-                            )}
-                            <div
-                                className="absolute inset-0 bg-gradient-to-t from-amber-950/90 via-amber-600/40 to-amber-300/30"
-                                aria-hidden
-                            />
-                            <div className="absolute bottom-0 left-0 right-0 p-3 pt-10">
-                                <span className="text-base font-bold leading-tight text-white drop-shadow-md md:text-lg">
+                            <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
+                                {platoDiaProduct.image_url?.trim() ? (
+                                    <Image
+                                        src={platoDiaProduct.image_url.trim()}
+                                        alt=""
+                                        fill
+                                        className="object-cover transition duration-300 group-hover:scale-105"
+                                        sizes="(max-width: 768px) 50vw, 360px"
+                                    />
+                                ) : (
+                                    <div className="absolute inset-0 bg-gradient-to-br from-amber-800 to-amber-950" />
+                                )}
+                            </div>
+                            <div className="px-3 py-2.5">
+                                <span className="text-sm font-bold leading-tight text-neutral-900 md:text-base">
                                     Plato del Día
                                 </span>
                             </div>
@@ -449,29 +444,24 @@ function PublicMenuPage() {
                                 key={c.id}
                                 type="button"
                                 onClick={() => openChatWithCategory(c.id, label)}
-                                className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl text-left shadow-md transition active:scale-[0.98] md:aspect-video"
+                                className="group flex flex-col overflow-hidden rounded-2xl border border-black/[0.07] bg-white text-left shadow-sm transition hover:shadow-md active:scale-[0.98]"
                                 aria-label={`${label} — armar encargo`}
                             >
-                                {cardUrl ? (
-                                    <Image
-                                        src={cardUrl}
-                                        alt=""
-                                        fill
-                                        className="object-cover transition duration-300 group-hover:scale-105"
-                                        sizes="(max-width: 768px) 50vw, 360px"
-                                    />
-                                ) : (
-                                    <div
-                                        className="absolute inset-0 bg-gradient-to-br from-neutral-700 to-neutral-900"
-                                        aria-hidden
-                                    />
-                                )}
-                                <div
-                                    className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10"
-                                    aria-hidden
-                                />
-                                <div className="absolute bottom-0 left-0 right-0 p-3 pt-10">
-                                    <span className="text-base font-bold leading-tight text-white drop-shadow-md md:text-lg">
+                                <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
+                                    {cardUrl ? (
+                                        <Image
+                                            src={cardUrl}
+                                            alt=""
+                                            fill
+                                            className="object-cover transition duration-300 group-hover:scale-105"
+                                            sizes="(max-width: 768px) 50vw, 360px"
+                                        />
+                                    ) : (
+                                        <div className="absolute inset-0 bg-gradient-to-br from-neutral-700 to-neutral-900" />
+                                    )}
+                                </div>
+                                <div className="px-3 py-2.5">
+                                    <span className="text-sm font-bold leading-tight text-neutral-900 md:text-base">
                                         {label}
                                     </span>
                                 </div>
