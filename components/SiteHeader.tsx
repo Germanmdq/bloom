@@ -127,11 +127,12 @@ export function SiteHeader({
       </div>
 
       <header
-        className={`transition-shadow duration-300 border-b border-english-100/80 ${
-          scrolled ? "bg-white shadow-md" : "bg-white/95 backdrop-blur-md shadow-sm"
+        className={`transition-all duration-[450ms] border-b border-black/[0.08] ${
+          scrolled ? "bg-white/72 shadow-sm" : "bg-white/85"
         }`}
+        style={{ backdropFilter: "saturate(180%) blur(20px)", WebkitBackdropFilter: "saturate(180%) blur(20px)" } as React.CSSProperties}
       >
-        <div className="container mx-auto px-4 flex items-center justify-between gap-2 sm:gap-4 py-3 md:py-4">
+        <div className="mx-auto w-full max-w-[1200px] px-6 flex items-center justify-between gap-4 h-[72px]">
           <Link href="/" className="flex items-center shrink-0 min-w-0">
             <Image
               src={HERO_LOGO_SRC}
@@ -142,30 +143,23 @@ export function SiteHeader({
               priority
             />
           </Link>
-          <nav className="hidden xl:flex items-center gap-8 text-[15px] font-bold text-neutral-700">
+          <nav className="hidden xl:flex items-center gap-10 text-[13px] font-medium text-ink-500">
             {linkHome}
             {linkMenu}
             {linkAbout}
             {linkRes}
           </nav>
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <FoodKingMobileNavButton onOpen={onMobileNavOpen} />
             {menuExtras ?? (
               <>
                 <Link
                   href="/menu"
-                  className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-bloom-600 px-3 py-2 sm:px-5 sm:py-2.5 text-[11px] sm:text-sm font-bold text-white shadow hover:bg-bloom-700 transition-colors whitespace-nowrap"
+                  className="inline-flex items-center gap-2 rounded-full bg-ink-800 px-5 py-2.5 text-[13px] font-medium text-white hover:bg-ink-700 transition-colors whitespace-nowrap"
                 >
-                  <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px] shrink-0" />
-                  Pedir ahora
+                  Pedí ahora
                 </Link>
                 <PublicAccountNav />
-                <Link
-                  href="/login"
-                  className="hidden sm:inline text-[11px] font-bold text-neutral-400 hover:text-neutral-700 whitespace-nowrap"
-                >
-                  Equipo
-                </Link>
               </>
             )}
             {menuExtras != null && showCartButton ? (

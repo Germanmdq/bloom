@@ -223,92 +223,75 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        <div className="relative z-10 h-full flex flex-col justify-end container mx-auto px-4 md:px-6 pb-10 sm:pb-12 md:pb-14 pt-24">
+        <div className="relative z-10 h-full flex flex-col justify-end mx-auto w-full max-w-[1200px] px-6 pb-16 sm:pb-20 pt-24">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
-            animate={
-              heroVideoReady
-                ? { opacity: 1, y: 0 }
-                : { opacity: 0, y: 16 }
-            }
+            animate={heroVideoReady ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
             transition={{ duration: 0.55, ease: [0.21, 0.47, 0.32, 0.98] }}
-            className="w-full max-w-3xl text-white pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+            className="w-full max-w-[860px] text-white pb-[max(0.5rem,env(safe-area-inset-bottom))]"
           >
-            <h1 className="text-[1.85rem] sm:text-4xl md:text-5xl lg:text-6xl font-black leading-[1.08] tracking-tight mb-4 sm:mb-5 [text-shadow:0_4px_36px_rgba(0,0,0,0.55),0_2px_12px_rgba(0,0,0,0.45),0_1px_0_rgba(0,0,0,0.2)]">
-              Mucho más
-              <span className="text-bloom-cream [text-shadow:0_4px_28px_rgba(0,0,0,0.5),0_2px_10px_rgba(61,59,47,0.4)]"> que un café.</span>
-            </h1>
-            <p className="text-white/88 text-sm sm:text-base md:text-lg font-medium leading-relaxed max-w-xl mb-6 sm:mb-8 [text-shadow:0_3px_20px_rgba(0,0,0,0.45),0_1px_4px_rgba(0,0,0,0.35)]">
-              Especialidad, pastelería y cocina: todo en un solo lugar.
+            <p className="text-[11px] sm:text-[12px] font-semibold tracking-[0.2em] uppercase mb-5" style={{ color: "#c4b896" }}>
+              Bloom · Coffee &amp; More
             </p>
-            <Link
-              href="/menu"
-              className="inline-flex items-center gap-2 rounded-full bg-bloom-600 px-6 sm:px-8 py-3 sm:py-3.5 text-white font-black text-xs sm:text-sm uppercase tracking-wide shadow-[0_12px_40px_-8px_rgba(122,118,90,0.55),0_4px_14px_rgba(45,74,62,0.25)] hover:bg-bloom-700 hover:shadow-[0_16px_44px_-6px_rgba(95,92,70,0.5)] transition-all"
-            >
-              Ver menú
-              <ArrowRight size={18} strokeWidth={2.5} />
-            </Link>
+            <h1 className="font-[200] leading-[1.02] tracking-[-0.035em] mb-8 [text-shadow:0_4px_36px_rgba(0,0,0,0.4)]"
+              style={{ fontSize: "clamp(3.5rem,8vw,8rem)" }}>
+              Mucho más<br />
+              <span style={{ color: "#c4b896" }}>que un café.</span>
+            </h1>
+            <p className="text-white/78 leading-relaxed mb-10 max-w-[540px]" style={{ fontSize: "clamp(17px,1.2vw,21px)" }}>
+              Especialidad, pastelería y cocina. Todo en un solo lugar, en Mar del Plata.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link
+                href="/menu"
+                className="inline-flex items-center gap-2 rounded-full bg-white text-black px-8 py-4 text-[15px] font-medium hover:bg-ink-200 transition-colors"
+              >
+                Ver menú →
+              </Link>
+              <Link
+                href="/about"
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 text-white px-8 py-4 text-[15px] font-medium backdrop-blur-md hover:bg-white/10 transition-colors"
+              >
+                Conocé más
+              </Link>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      <section
-        className="w-full py-20 px-6 text-white"
-        style={{ backgroundColor: "#2d4a3e" }}
-      >
-        <div className="mx-auto w-full max-w-[1100px]">
-          <FadeIn className="mx-auto mb-10 max-w-2xl text-center md:mb-12">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#c9a84c] sm:text-sm">
-              Programa de lealtad
-            </p>
-            <h2 className="mb-4 font-serif text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.25)] md:text-4xl lg:text-5xl">
-              Sumate al Club Bloom
+      <section className="py-24 md:py-32" style={{ background: "#1a3028" }}>
+        <div className="mx-auto w-full max-w-[1200px] px-6">
+          <FadeIn className="text-center max-w-[720px] mx-auto mb-20">
+            <p className="text-[12px] font-semibold tracking-[0.14em] uppercase mb-4" style={{ color: "#c4b896" }}>Programa de lealtad</p>
+            <h2 className="font-[200] tracking-[-0.03em] text-white" style={{ fontSize: "clamp(2.5rem,5vw,5rem)", lineHeight: 1.05 }}>
+              Sumate al <span style={{ color: "#c4b896" }}>Club Bloom.</span>
             </h2>
-            <p className="text-base font-medium leading-relaxed text-bloom-cream/85 md:text-lg">
-              Registrate una vez y empezá a sumar puntos con cada encargo. Sin complicaciones.
+            <p className="mt-6 leading-relaxed" style={{ fontSize: 19, color: "rgba(242,240,230,.78)" }}>
+              Registrate una vez. Sumá puntos con cada encargo. Sin complicaciones.
             </p>
           </FadeIn>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
-            {(
-              [
-                {
-                  icon: "☕",
-                  title: "Café gratis cada 10 encargos",
-                  desc: "Cada vez que llegás a 10 pedidos, el siguiente corre por nuestra cuenta.",
-                },
-                {
-                  icon: "🎁",
-                  title: "Regalos en fechas especiales",
-                  desc: "En tu cumpleaños y en fechas especiales tenemos una sorpresa para vos.",
-                },
-                {
-                  icon: "🏷️",
-                  title: "Descuentos exclusivos",
-                  desc: "Promociones y precios especiales solo para socios del club.",
-                },
-              ] as const
-            ).map((card, i) => (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {([
+              { Icon: Coffee,          title: "Café gratis cada 10 encargos", desc: "Cuando llegás a 10 pedidos, el siguiente corre por cuenta de la casa." },
+              { Icon: Star,            title: "Regalos en fechas especiales",  desc: "En tu cumpleaños y fechas clave tenemos una sorpresa para vos." },
+              { Icon: Cookie,          title: "Descuentos exclusivos",         desc: "Promociones y precios especiales sólo para socios del Club." },
+            ] as const).map((card, i) => (
               <FadeIn key={card.title} delay={i * 0.06}>
-                <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.07] p-8">
-                  <span className="mb-4 block text-[48px] leading-none" aria-hidden>
-                    {card.icon}
-                  </span>
-                  <h3 className="mb-3 text-lg font-black leading-snug text-white md:text-xl">
-                    {card.title}
-                  </h3>
-                  <p className="text-sm font-medium leading-relaxed text-white/90 md:text-base">
-                    {card.desc}
-                  </p>
+                <div className="flex flex-col gap-5 rounded-3xl p-10" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <card.Icon size={28} strokeWidth={1.5} style={{ color: "#c4b896" }} aria-hidden />
+                  <h3 className="text-[22px] font-medium tracking-tight text-white leading-snug">{card.title}</h3>
+                  <p className="text-[15px] leading-relaxed" style={{ color: "rgba(242,240,230,.75)" }}>{card.desc}</p>
                 </div>
               </FadeIn>
             ))}
           </div>
 
-          <FadeIn className="mt-12 text-center">
+          <FadeIn className="mt-18 text-center">
             <Link
               href="/registro"
-              className="inline-flex items-center justify-center rounded-full bg-[#c9a84c] px-[48px] py-4 text-base font-black text-[#1a3028] transition-colors hover:bg-[#d8ba63]"
+              className="inline-flex items-center justify-center rounded-full px-10 py-[18px] text-[15px] font-semibold transition-colors"
+              style={{ background: "#c4b896", color: "#1a3028" }}
             >
               Quiero ser socio →
             </Link>
@@ -316,39 +299,28 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 md:py-24 bg-bloom-page">
-        <div className="container mx-auto px-4">
-          <FadeIn className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_1px_2px_rgba(122,118,90,0.25)]">
-              Nuestra carta
-            </p>
-            <h2 className="text-3xl md:text-5xl font-black text-neutral-900 tracking-tight drop-shadow-[0_2px_14px_rgba(61,59,47,0.12),0_1px_2px_rgba(61,59,47,0.08)]">
-              Elegí por categoría
+      <section className="py-24 md:py-32 bg-white">
+        <div className="mx-auto w-full max-w-[1200px] px-6">
+          <FadeIn className="text-center max-w-[640px] mx-auto mb-16">
+            <p className="text-[12px] font-semibold tracking-[0.14em] uppercase text-bloom-600 mb-3">Nuestra carta</p>
+            <h2 className="font-[300] tracking-tight text-ink-800" style={{ fontSize: "clamp(2.5rem,4vw,4.5rem)", lineHeight: 1.05 }}>
+              Elegí por <span className="text-bloom-600">categoría.</span>
             </h2>
           </FadeIn>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {categoryCards.map((c, i) => {
               const Icon = c.Icon;
               return (
               <FadeIn key={c.title} delay={i * 0.05}>
                 <Link
                   href={c.href}
-                  className="group flex aspect-square flex-col rounded-2xl bg-bloom-600 p-4 sm:p-5 text-bloom-cream shadow-[0_14px_44px_-10px_rgba(95,92,70,0.42),0_6px_18px_rgba(45,74,62,0.18)] ring-1 ring-bloom-700/40 transition-all duration-300 hover:-translate-y-1.5 hover:bg-bloom-700 hover:shadow-[0_22px_52px_-8px_rgba(95,92,70,0.55),0_8px_24px_rgba(45,74,62,0.22)] hover:ring-bloom-500/45 outline-none focus-visible:ring-2 focus-visible:ring-bloom-cream focus-visible:ring-offset-2 focus-visible:ring-offset-bloom-page"
+                  className="group flex flex-col rounded-3xl bg-ink-50 border border-black/[0.08] p-8 sm:p-10 transition-all duration-[450ms] hover:-translate-y-1 hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.10)] hover:bg-white"
+                  style={{ aspectRatio: "3/4" }}
                 >
-                  <div className="flex min-h-0 flex-1 w-full items-center justify-center">
-                    <Icon
-                      className="h-14 w-14 sm:h-[4.25rem] sm:w-[4.25rem] text-white transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_4px_16px_rgba(0,0,0,0.35),0_2px_6px_rgba(0,0,0,0.25)]"
-                      strokeWidth={1.35}
-                      aria-hidden
-                    />
-                  </div>
-                  <div className="shrink-0 pt-3 text-center border-t border-bloom-cream/15">
-                    <h3 className="text-bloom-cream text-sm sm:text-base font-black leading-tight tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
-                      {c.title}
-                    </h3>
-                    <p className="text-bloom-cream/80 text-[11px] sm:text-xs font-medium mt-1 leading-snug drop-shadow-[0_1px_6px_rgba(0,0,0,0.2)]">
-                      {c.hint}
-                    </p>
+                  <Icon className="text-bloom-600 transition-transform duration-300 group-hover:scale-105" size={40} strokeWidth={1.25} aria-hidden />
+                  <div className="mt-auto">
+                    <h3 className="text-[20px] sm:text-[22px] font-medium tracking-tight text-ink-800">{c.title}</h3>
+                    <p className="text-[14px] text-ink-500 mt-1.5">{c.hint}</p>
                   </div>
                 </Link>
               </FadeIn>
@@ -358,68 +330,47 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 md:py-24 bg-white">
-        <div className="container mx-auto px-4">
-          <FadeIn className="text-center mb-12">
-            <p className="text-bloom-600 font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-[0_1px_2px_rgba(122,118,90,0.2)]">
-              Bloom
-            </p>
-            <h2 className="text-3xl md:text-5xl font-black text-neutral-900 drop-shadow-[0_2px_14px_rgba(61,59,47,0.1),0_1px_2px_rgba(61,59,47,0.06)]">
-              Favoritos de la casa
+      <section className="py-24 md:py-32 bg-ink-50">
+        <div className="mx-auto w-full max-w-[1200px] px-6">
+          <FadeIn className="text-center max-w-[720px] mx-auto mb-18">
+            <p className="text-[12px] font-semibold tracking-[0.14em] uppercase text-bloom-600 mb-3">Bloom</p>
+            <h2 className="font-[300] tracking-tight text-ink-800" style={{ fontSize: "clamp(2.5rem,4vw,4.5rem)", lineHeight: 1.05 }}>
+              Favoritos <span className="text-bloom-600">de la casa.</span>
             </h2>
-            <p className="text-neutral-600 mt-3 max-w-xl mx-auto drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
-              Precios y disponibilidad en el menú online.
-            </p>
           </FadeIn>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {destacados.map((p, i) => (
               <FadeIn key={p.name + String(i)} delay={(i % 4) * 0.05}>
-                <div className="group rounded-3xl border border-neutral-100/90 bg-bloom-page overflow-hidden shadow-[0_12px_40px_-10px_rgba(61,59,47,0.14),0_4px_14px_rgba(61,59,47,0.06)] hover:shadow-[0_24px_48px_-12px_rgba(61,59,47,0.2),0_8px_20px_rgba(61,59,47,0.08)] hover:-translate-y-1 transition-all duration-300">
-                  <div className="relative aspect-square ring-1 ring-inset ring-black/[0.04] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)]">
-                    <Image
-                      src={p.img}
-                      alt={p.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 640px) 100vw, 25vw"
-                    />
+                <div className="group bg-white rounded-3xl border border-black/[0.08] overflow-hidden transition-all duration-[450ms] hover:-translate-y-1 hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.10)]">
+                  <div className="relative aspect-square">
+                    <Image src={p.img} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 640px) 100vw, 25vw" />
                   </div>
-                  <div className="p-5">
-                    <h3 className="font-black text-neutral-900 text-lg leading-snug mb-2 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)]">
-                      {p.name}
-                    </h3>
-                    <p className="text-neutral-600 text-sm mb-4 min-h-[2.5rem] drop-shadow-[0_1px_1px_rgba(255,255,255,0.6)]">
-                      {p.desc}
-                    </p>
+                  <div className="p-6">
+                    <h3 className="text-[19px] font-medium tracking-tight text-ink-800 leading-snug">{p.name}</h3>
+                    <p className="text-[14px] text-ink-500 mt-1.5 mb-5 min-h-[42px] leading-relaxed">{p.desc}</p>
                     <button
                       type="button"
                       disabled={favoriteCategoryByName[p.name] === undefined}
                       onClick={() => {
                         const cat = favoriteCategoryByName[p.name];
                         if (cat?.categoryId && cat.productId) {
-                          bloomChatRef.current?.openWithCategoryMessage({
-                            categoryId: cat.categoryId,
-                            displayName: cat.displayName,
-                            productIds: [cat.productId],
-                            fromHomeFeatured: true,
-                          });
+                          bloomChatRef.current?.openWithCategoryMessage({ categoryId: cat.categoryId, displayName: cat.displayName, productIds: [cat.productId], fromHomeFeatured: true });
                         } else {
                           toast.error("No encontramos este producto ahora. Probá desde el menú.");
                         }
                       }}
-                      className="block w-full text-center rounded-full border-2 border-bloom-600 text-bloom-600 font-bold py-2.5 hover:bg-bloom-600 hover:text-white transition-colors text-sm uppercase disabled:cursor-not-allowed disabled:opacity-50"
+                      className="w-full rounded-full border border-ink-300 text-ink-800 text-[13px] font-medium py-3 hover:bg-ink-800 hover:text-white hover:border-ink-800 transition-all duration-[180ms] disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      Encargar
+                      Sumar
                     </button>
                   </div>
                 </div>
               </FadeIn>
             ))}
           </div>
-          <div className="text-center mt-12">
-            <Link href="/menu" className="inline-flex items-center gap-2 font-black text-bloom-600 hover:underline uppercase text-sm tracking-wide">
-              Ver menú completo
-              <ArrowRight size={16} />
+          <div className="text-center mt-14">
+            <Link href="/menu" className="inline-flex items-center gap-2 text-[14px] font-medium text-ink-500 hover:text-ink-800 transition-colors">
+              Ver menú completo <ArrowRight size={14} />
             </Link>
           </div>
         </div>
@@ -579,37 +530,36 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="bg-[#0d0d0d] text-neutral-400 py-14 border-t border-white/10">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <Image
-              src={HERO_LOGO_SRC}
-              alt="Bloom Coffee & More"
-              width={160}
-              height={52}
-              className="h-8 sm:h-9 w-auto max-w-[200px] object-contain opacity-95"
-            />
-            <div className="flex flex-wrap justify-center gap-6 text-sm font-semibold">
-              <Link href="/menu" className="hover:text-bloom-gold">
-                Menú
-              </Link>
-              <Link href="/about" className="hover:text-bloom-gold">
-                Nosotros
-              </Link>
-              <Link href="/reservations" className="hover:text-bloom-gold">
-                Reservas
-              </Link>
+      <footer className="bg-ink-50 border-t border-black/[0.08]">
+        <div className="mx-auto w-full max-w-[1200px] px-6 pt-16 pb-8">
+          <div className="grid grid-cols-2 md:grid-cols-[1.4fr_repeat(3,1fr)] gap-12 mb-14">
+            <div className="col-span-2 md:col-span-1">
+              <Image src={HERO_LOGO_SRC} alt="Bloom" width={140} height={46} className="h-9 w-auto object-contain" />
+              <p className="mt-4 text-[13px] leading-relaxed max-w-[280px]" style={{ color: "#86868b" }}>
+                Cafetería de especialidad y pastelería. Café clásico, comidas caseras y experiencia familiar en Mar del Plata.
+              </p>
             </div>
-            <p className="text-xs text-center md:text-right max-w-sm">
-              © {new Date().getFullYear()} Bloom · Café de especialidad y pastelería en Mar del Plata.
-            </p>
+            {([
+              { h: "Bloom",     links: [{ label: "Menú", href: "/menu" }, { label: "Club Bloom", href: "/registro" }, { label: "Reservas", href: "/reservations" }] },
+              { h: "La casa",   links: [{ label: "Nuestra historia", href: "/about" }, { label: "Contacto", href: "/about" }, { label: "Trabajá con nosotros", href: "/about" }] },
+              { h: "Visítanos", links: [{ label: "Almirante Brown 2005", href: "#" }, { label: "Mar del Plata", href: "#" }, { label: "Lun–Dom · 08:00–22:00", href: "#" }] },
+            ]).map(col => (
+              <div key={col.h}>
+                <p className="text-[12px] font-semibold tracking-[0.08em] uppercase mb-4" style={{ color: "#1d1d1f" }}>{col.h}</p>
+                <ul className="flex flex-col gap-2.5">
+                  {col.links.map(l => (
+                    <li key={l.label}>
+                      <Link href={l.href} className="text-[13px] transition-colors hover:text-ink-800" style={{ color: "#86868b" }}>{l.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-          <Link
-            href="/login"
-            className="mx-auto mt-8 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest text-white/25 hover:text-white/50 transition-colors"
-          >
-            Staff
-          </Link>
+          <div className="pt-6 border-t border-black/[0.08] flex flex-col sm:flex-row justify-between items-center gap-3 text-[12px]" style={{ color: "#86868b" }}>
+            <span>© {new Date().getFullYear()} Bloom · Mar del Plata, Argentina.</span>
+            <Link href="/login" className="opacity-40 hover:opacity-70 transition-opacity">Staff</Link>
+          </div>
         </div>
       </footer>
 
