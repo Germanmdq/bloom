@@ -20,14 +20,15 @@ import {
 
 // Rangos de IDs por tipo
 const RANGE = {
-    LOCAL:    { min: 1,   max: 99  },
+    LOCAL:    { min: 1,   max: 41  },
     DELIVERY: { min: 100, max: 200 },
-    RETIRO:   { min: 201, max: 999 },
+    RETIRO:   { min: 201, max: 300 },
 };
 
 function getType(id: number) {
     if (id >= RANGE.RETIRO.min)   return 'Retiro';
     if (id >= RANGE.DELIVERY.min) return 'Delivery';
+    if (id <= RANGE.LOCAL.max)    return 'Local';
     return 'Local';
 }
 
@@ -191,27 +192,69 @@ export default function TablesPage() {
             </div>
 
             {/* HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-100 shrink-0">
-                <div className="flex gap-1 p-1 bg-slate-50 rounded-xl w-full md:w-auto overflow-x-auto no-scrollbar">
-                    <TabButton label="TODAS"    count={counts.todas}    active={activeTab === 'ALL'}      onClick={() => setActiveTab('ALL')}      accent="all" />
-                    <TabButton icon={<Monitor size={13} />}     label="LOCAL"    count={counts.local}    active={activeTab === 'LOCAL'}    onClick={() => setActiveTab('LOCAL')}    accent="local" />
-                    <TabButton icon={<Bike size={13} />}        label="DELIVERY" count={counts.delivery} active={activeTab === 'DELIVERY'} onClick={() => setActiveTab('DELIVERY')} accent="delivery" />
-                    <TabButton icon={<ShoppingBag size={13} />} label="RETIRO"   count={counts.retiro}   active={activeTab === 'RETIRO'}   onClick={() => setActiveTab('RETIRO')}   accent="retiro" />
+            <div className="flex flex-col gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-100 shrink-0">
+                {/* TOP ROW: Abrir Mesa button */}
+                <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-base font-black text-slate-900 tracking-tight">Mesas</h2>
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowNewMenu(v => !v)}
+                            className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2.5 rounded-xl text-sm font-black hover:bg-gray-700 active:scale-95 transition-all shadow-sm"
+                        >
+                            <Plus size={16} strokeWidth={3} className={`transition-transform ${showNewMenu ? 'rotate-45' : ''}`} />
+                            Abrir Mesa
+                        </button>
+                        {showNewMenu && (
+                            <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col z-30 min-w-[200px]">
+                                <button onClick={() => handleNewOrder('LOCAL')} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left">
+                                    <UtensilsCrossed size={18} className="text-red-500" />
+                                    <div>
+                                        <p className="font-bold text-gray-800 text-sm">Mesa Local</p>
+                                        <p className="text-xs text-gray-400">Salón · mesas 1–41</p>
+                                    </div>
+                                </button>
+                                <button onClick={() => handleNewOrder('DELIVERY')} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-50">
+                                    <Bike size={18} className="text-green-500" />
+                                    <div>
+                                        <p className="font-bold text-gray-800 text-sm">Delivery</p>
+                                        <p className="text-xs text-gray-400">Mesas 100–200</p>
+                                    </div>
+                                </button>
+                                <button onClick={() => handleNewOrder('RETIRO')} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-50">
+                                    <ShoppingBag size={18} className="text-amber-500" />
+                                    <div>
+                                        <p className="font-bold text-gray-800 text-sm">Retiro</p>
+                                        <p className="text-xs text-gray-400">Mesas 201–300</p>
+                                    </div>
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                    <div className="relative flex-1 md:w-52">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-                        <input
-                            type="text" placeholder="Buscar n° mesa..."
-                            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-900 border border-slate-200 focus:ring-2 focus:ring-slate-400/30 outline-none transition-all"
-                        />
+                {/* BOTTOM ROW: Tabs + Search + View */}
+                <div className="flex flex-col md:flex-row justify-between items-center gap-3">
+                    <div className="flex gap-1 p-1 bg-slate-50 rounded-xl w-full md:w-auto overflow-x-auto no-scrollbar">
+                        <TabButton label="TODAS"    count={counts.todas}    active={activeTab === 'ALL'}      onClick={() => setActiveTab('ALL')}      accent="all" />
+                        <TabButton icon={<Monitor size={13} />}     label="LOCAL"    count={counts.local}    active={activeTab === 'LOCAL'}    onClick={() => setActiveTab('LOCAL')}    accent="local" />
+                        <TabButton icon={<Bike size={13} />}        label="DELIVERY" count={counts.delivery} active={activeTab === 'DELIVERY'} onClick={() => setActiveTab('DELIVERY')} accent="delivery" />
+                        <TabButton icon={<ShoppingBag size={13} />} label="RETIRO"   count={counts.retiro}   active={activeTab === 'RETIRO'}   onClick={() => setActiveTab('RETIRO')}   accent="retiro" />
                     </div>
-                    <div className="flex gap-0.5 p-1 bg-slate-100 rounded-xl shrink-0">
-                        <ViewBtn icon={<LayoutGrid size={15} />} active={viewMode === 'grid'} onClick={() => setViewMode('grid')} label="Grid" />
-                        <ViewBtn icon={<Map size={15} />}         active={viewMode === 'map'}  onClick={() => setViewMode('map')}  label="Mapa" />
-                        <ViewBtn icon={<List size={15} />}        active={viewMode === 'list'} onClick={() => { setViewMode('list'); setSideTableId(null); }} label="Lista" />
+
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                        <div className="relative flex-1 md:w-52">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                            <input
+                                type="text" placeholder="Buscar n° mesa..."
+                                value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2.5 bg-slate-50 rounded-xl text-sm font-bold text-slate-900 border border-slate-200 focus:ring-2 focus:ring-slate-400/30 outline-none transition-all"
+                            />
+                        </div>
+                        <div className="flex gap-0.5 p-1 bg-slate-100 rounded-xl shrink-0">
+                            <ViewBtn icon={<LayoutGrid size={15} />} active={viewMode === 'grid'} onClick={() => setViewMode('grid')} label="Grid" />
+                            <ViewBtn icon={<Map size={15} />}         active={viewMode === 'map'}  onClick={() => setViewMode('map')}  label="Mapa" />
+                            <ViewBtn icon={<List size={15} />}        active={viewMode === 'list'} onClick={() => { setViewMode('list'); setSideTableId(null); }} label="Lista" />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -234,40 +277,8 @@ export default function TablesPage() {
                 <ListView tables={filteredTables} sideTableId={sideTableId} onTableClick={handleTableClick} onCloseSide={() => setSideTableId(null)} />
             )}
 
-            {/* FAB */}
-            <div className="fixed bottom-20 right-5 md:bottom-8 md:right-8 z-30 flex flex-col items-end gap-2">
-                {showNewMenu && (
-                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col">
-                        <button onClick={() => handleNewOrder('LOCAL')} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left">
-                            <UtensilsCrossed size={18} className="text-red-500" />
-                            <div>
-                                <p className="font-bold text-gray-800 text-sm">Abrir Mesa Local</p>
-                                <p className="text-xs text-gray-400">Salón · mesas 1–99</p>
-                            </div>
-                        </button>
-                        <button onClick={() => handleNewOrder('DELIVERY')} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-50">
-                            <Bike size={18} className="text-blue-500" />
-                            <div>
-                                <p className="font-bold text-gray-800 text-sm">Nuevo Delivery</p>
-                                <p className="text-xs text-gray-400">Mesas 100–200</p>
-                            </div>
-                        </button>
-                        <button onClick={() => handleNewOrder('RETIRO')} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left border-t border-gray-50">
-                            <ShoppingBag size={18} className="text-amber-500" />
-                            <div>
-                                <p className="font-bold text-gray-800 text-sm">Nuevo Retiro</p>
-                                <p className="text-xs text-gray-400">Mesas 201+</p>
-                            </div>
-                        </button>
-                    </div>
-                )}
-                <button
-                    onClick={() => setShowNewMenu(v => !v)}
-                    className="bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 active:scale-95 transition-all"
-                >
-                    <Plus size={22} strokeWidth={3} className={`transition-transform ${showNewMenu ? 'rotate-45' : ''}`} />
-                </button>
-            </div>
+            {/* backdrop to close new menu on outside click */}
+            {showNewMenu && <div className="fixed inset-0 z-20" onClick={() => setShowNewMenu(false)} />}
         </div>
     );
 }
@@ -278,7 +289,7 @@ function LocalTablePicker({ tables, onSelect, onClose }: {
     onSelect: (n: number) => void;
     onClose: () => void;
 }) {
-    const nums = Array.from({ length: 30 }, (_, i) => i + 1);
+    const nums = Array.from({ length: 41 }, (_, i) => i + 1);
     return (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
@@ -374,8 +385,8 @@ function MapView({ tables, onTableClick }: { tables: any[]; onTableClick: (id: n
                 ))}
             </div>
             {deliveryTables.length > 0 && (
-                <div className="rounded-2xl border border-blue-200 bg-blue-50/60 overflow-hidden mb-4">
-                    <div className="px-4 py-2.5 bg-blue-100 text-blue-900"><h3 className="text-xs font-black uppercase tracking-widest">Delivery (100–200)</h3></div>
+                <div className="rounded-2xl border border-green-200 bg-green-50/60 overflow-hidden mb-4">
+                    <div className="px-4 py-2.5 bg-green-100 text-green-900"><h3 className="text-xs font-black uppercase tracking-widest">Delivery (100–200)</h3></div>
                     <div className="p-3 flex flex-wrap gap-2">{deliveryTables.map(t => <MiniTableCard key={t.id} table={t} onClick={onTableClick} />)}</div>
                 </div>
             )}
@@ -455,7 +466,7 @@ function ListView({ tables, sideTableId, onTableClick, onCloseSide }: { tables: 
 
 // ─── TAB BUTTON ───────────────────────────────────────────────────
 function TabButton({ icon, label, count, active, onClick, accent = "all" }: any) {
-    const activeStyle = accent === "local" ? "bg-red-600 text-white shadow-md shadow-red-500/30 scale-105" : accent === "delivery" ? "bg-blue-600 text-white shadow-md shadow-blue-500/30 scale-105" : accent === "retiro" ? "bg-amber-500 text-white shadow-md shadow-amber-500/30 scale-105" : "bg-slate-800 text-white shadow-md scale-105";
+    const activeStyle = accent === "local" ? "bg-red-600 text-white shadow-md shadow-red-500/30 scale-105" : accent === "delivery" ? "bg-green-600 text-white shadow-md shadow-green-500/30 scale-105" : accent === "retiro" ? "bg-amber-500 text-white shadow-md shadow-amber-500/30 scale-105" : "bg-slate-800 text-white shadow-md scale-105";
     return (
         <button onClick={onClick} className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 shrink-0 ${active ? activeStyle : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`}>
             {icon}<span>{label}</span>
