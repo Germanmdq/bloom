@@ -272,7 +272,7 @@ export default function TablesPage() {
 
             {/* VIEWS */}
             {filteredTables.length > 0 && viewMode === 'grid' && <GridView tables={filteredTables} onTableClick={handleTableClick} />}
-            {filteredTables.length > 0 && viewMode === 'map'  && <MapView tables={tables} onTableClick={handleTableClick} />}
+            {filteredTables.length > 0 && viewMode === 'map'  && <MapView tables={filteredTables} onTableClick={handleTableClick} />}
             {filteredTables.length > 0 && viewMode === 'list' && (
                 <ListView tables={filteredTables} sideTableId={sideTableId} onTableClick={handleTableClick} onCloseSide={() => setSideTableId(null)} />
             )}
@@ -362,27 +362,26 @@ function MapView({ tables, onTableClick }: { tables: any[]; onTableClick: (id: n
         { label: "Terraza",  color: "border-red-200 bg-red-50/50",   header: "bg-red-100 text-red-800",   tables: [21,22,23,24,25,26,27,28,29,30] },
     ];
 
-    const deliveryTables = tables.filter(t => t.status === 'OCCUPIED' && t.id >= RANGE.DELIVERY.min && t.id <= RANGE.DELIVERY.max);
-    const retiroTables   = tables.filter(t => t.status === 'OCCUPIED' && t.id >= RANGE.RETIRO.min);
+    const deliveryTables = tables.filter(t => t.id >= RANGE.DELIVERY.min && t.id <= RANGE.DELIVERY.max);
+    const retiroTables   = tables.filter(t => t.id >= RANGE.RETIRO.min);
 
     return (
         <div className="flex-1 overflow-y-auto pb-20">
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
-                {zones.map(zone => (
-                    <div key={zone.label} className={`rounded-2xl border overflow-hidden ${zone.color}`}>
-                        <div className={`px-4 py-2.5 ${zone.header}`}>
-                            <h3 className="text-xs font-black uppercase tracking-widest">{zone.label}</h3>
+                {zones.map(zone => {
+                    const zoneTables = zone.tables.map(id => getTable(id)).filter(Boolean);
+                    if (zoneTables.length === 0) return null;
+                    return (
+                        <div key={zone.label} className={`rounded-2xl border overflow-hidden ${zone.color}`}>
+                            <div className={`px-4 py-2.5 ${zone.header}`}>
+                                <h3 className="text-xs font-black uppercase tracking-widest">{zone.label}</h3>
+                            </div>
+                            <div className="p-3 flex flex-wrap gap-2">
+                                {zoneTables.map((table: any) => <MiniTableCard key={table.id} table={table} onClick={onTableClick} />)}
+                            </div>
                         </div>
-                        <div className="p-3 grid grid-cols-5 gap-2">
-                            {zone.tables.map(id => {
-                                const table = getTable(id);
-                                return table
-                                    ? <MiniTableCard key={id} table={table} onClick={onTableClick} />
-                                    : <div key={id} className="h-14 rounded-xl bg-white/50 border border-dashed border-slate-200 flex items-center justify-center text-slate-300 font-black text-xs">{id}</div>;
-                            })}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
             {deliveryTables.length > 0 && (
                 <div className="rounded-2xl border border-green-200 bg-green-50/60 overflow-hidden mb-4">
