@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     try {
         const genAI = getGenAI();
         if (!genAI) {
-            return NextResponse.json({ suggestions: [], message: 'GEMINI_API_KEY no configurada' }, { status: 503 });
+            return NextResponse.json({ suggestions: [] });
         }
 
         const { currentOrder, availableProducts } = await request.json() as {
