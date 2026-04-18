@@ -31,17 +31,6 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Rutas permitidas públicamente
-  const allowed =
-    pathname.startsWith("/registro") ||
-    pathname.startsWith("/cuenta") ||
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/api/");
-
-  if (!allowed) {
-    return NextResponse.redirect(new URL("/registro", request.url));
-  }
-
   if (!user && pathname.startsWith("/cuenta")) {
     return NextResponse.redirect(new URL("/auth", request.url));
   }
