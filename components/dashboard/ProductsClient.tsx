@@ -1,60 +1,43 @@
 "use client";
-
-import { useState, useEffect, FormEvent } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { AnimatePresence, motion } from "framer-motion";
-import { Search, Plus, ChevronRight } from "lucide-react";
-import { DashboardProduct } from "@/lib/types";
-import { ProductFormModal } from "./ProductFormModal";
-import { CategoryDetailModal } from "./CategoryDetailModal";
-
-interface Category {
-    id: string;
-    name: string;
-}
-
-interface ProductsClientProps {
-    initialProducts: DashboardProduct[];
-    initialCategories: Category[];
-}
-
-const EMPTY_PRODUCT = { id: "", name: "", description: "", price: "", category_id: "", image_url: "" };
+import { AnimatePresence } from "framer-motion";
+import { Search, Plus, Tag, ChevronRight, X, DollarSign } from "lucide-react";
 
 function formatName(name: string): string {
     if (!name) return "";
     return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 }
 
+interface ProductsClientProps {
+    initialProducts: any[];
+    initialCategories: any[];
+}
+
 export default function ProductsClient({ initialProducts, initialCategories }: ProductsClientProps) {
-    const [products, setProducts] = useState<DashboardProduct[]>(initialProducts);
-    const [categories, setCategories] = useState<Category[]>(initialCategories);
+    const [products, setProducts] = useState<any[]>(initialProducts);
+    const [categories, setCategories] = useState<any[]>(initialCategories);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [isEditing, setIsEditing] = useState(false);
+    const [isQuickPricing, setIsQuickPricing] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [currentProduct, setCurrentProduct] = useState(EMPTY_PRODUCT);
+    const [currentProduct, setCurrentProduct] = useState<any>({
+        id: "", name: "", description: "", price: "", category_id: "", image_url: ""
+    });
+    const [isAddingCategory, setIsAddingCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState("");
 
     const supabase = createClient();
 
-    const fetchData = async () => {
+    async function fetchData() {
         const { data: catData } = await supabase.from('categories').select('*');
         const { data: prodData } = await supabase.from('products').select('*, categories(name)');
         if (catData) setCategories(catData);
         if (prodData) setProducts(prodData);
-    };
+    }
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                if (isEditing) setIsEditing(false);
-                if (selectedCategory) setSelectedCategory(null);
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isEditing, selectedCategory]);
-
-    const handleSave = async (e: FormEvent) => {
+    async function handleSave(e: React.FormEvent) {
         e.preventDefault();
         setLoading(true);
         const productData = {
@@ -62,155 +45,200 @@ export default function ProductsClient({ initialProducts, initialCategories }: P
             description: currentProduct.description,
             price: parseFloat(currentProduct.price),
             category_id: currentProduct.category_id,
-            image_url: currentProduct.image_url
         };
-
         if (currentProduct.id) {
-            const { error } = await supabase.from('products').update(productData).eq('id', currentProduct.id);
-            if (error) alert(error.message);
+            await supabase.from('products').update(productData).eq('id', currentProduct.id);
         } else {
-            const { error } = await supabase.from('products').insert([productData]);
-            if (error) alert(error.message);
+            await supabase.from('products').insert([productData]);
         }
-
         setIsEditing(false);
         await fetchData();
         setLoading(false);
-    };
+    }
 
-    const handleAddCategory = async (name: string): Promise<Category | null> => {
-        setLoading(true);
-        const { data, error } = await supabase
-            .from('categories')
-            .insert([{ name }])
-            .select()
-            .single();
-        setLoading(false);
-        if (error) { alert(error.message); return null; }
-        if (data) setCategories(prev => [...prev, data]);
-        return data;
-    };
+    async function handleUpdatePrice(id: string, newPrice: string) {
+        const price = parseFloat(newPrice);
+        if (isNaN(price)) return;
+        setProducts(products.map(p => p.id === id ? { ...p, price } : p));
+        await supabase.from('products').update({ price }).eq('id', id);
+    }
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("¿Seguro que quieres eliminar este producto?")) return;
-        const { error } = await supabase.from('products').delete().eq('id', id);
-        if (error) alert(error.message);
-        await fetchData();
-    };
-
-    const handleEdit = (product: DashboardProduct) => {
-        setCurrentProduct({
-            id: product.id,
-            name: product.name,
-            description: product.description || "",
-            price: String(product.price),
-            category_id: product.category_id || "",
-            image_url: product.image_url || ""
-        });
-        setSelectedCategory(null);
-        setIsEditing(true);
-    };
+    async function handleAddCategory() {
+        if (!newCategoryName.trim()) return;
+        const { data } = await supabase.from('categories').insert([{ name: newCategoryName }]).select().single();
+        if (data) {
+            setCategories([...categories, data]);
+            setIsAddingCategory(false);
+            setNewCategoryName("");
+        }
+    }
 
     const filteredProducts = products.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const productsByCategory = filteredProducts.reduce((acc: Record<string, DashboardProduct[]>, product) => {
+    const productsByCategory = filteredProducts.reduce((acc: any, product) => {
         const catName = product.categories?.name || "Otros";
         if (!acc[catName]) acc[catName] = [];
         acc[catName].push(product);
         return acc;
     }, {});
 
-    const categoryGridItems = categories
-        .map(cat => ({ name: cat.name, count: productsByCategory[cat.name]?.length || 0, id: cat.id }))
-        .filter(c => c.count > 0 || productsByCategory[c.name]);
-
-    if (productsByCategory["Otros"] && !categoryGridItems.find(c => c.name === "Otros")) {
-        categoryGridItems.push({ name: "Otros", count: productsByCategory["Otros"].length, id: "others" });
-    }
+    const categoryGridItems = categories.map(cat => ({
+        name: cat.name,
+        count: productsByCategory[cat.name]?.length || 0,
+        id: cat.id
+    })).filter(c => c.count > 0);
 
     return (
         <div className="pb-20">
-            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-gray-900">Menú</h2>
-                    <p className="text-gray-500 mt-1">Gestiona productos, precios e imágenes</p>
+                    <h2 className="text-4xl font-black tracking-tight text-gray-900">Menú</h2>
+                    <p className="text-gray-500 font-medium">Gestiona productos y precios</p>
                 </div>
                 <div className="flex gap-3">
-                    <div className="relative group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Buscar producto..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="bg-white/70 backdrop-blur-xl pl-10 pr-4 py-3 rounded-2xl border border-white/40 shadow-sm focus:outline-none focus:ring-2 focus:ring-black/5 w-64 transition-all"
-                        />
-                    </div>
+                    <button
+                        onClick={() => setIsAddingCategory(true)}
+                        className="bg-gray-100 px-5 py-3 rounded-2xl font-bold flex items-center gap-2"
+                    >
+                        <Tag size={18} /> Categorías
+                    </button>
                     <button
                         onClick={() => {
-                            setCurrentProduct({ ...EMPTY_PRODUCT, category_id: categories.length > 0 ? categories[0].id : "" });
+                            setCurrentProduct({ id: "", name: "", description: "", price: "", category_id: categories[0]?.id });
                             setIsEditing(true);
                         }}
-                        className="bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:scale-[1.02] transition-all shadow-xl shadow-black/10"
+                        className="bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-xl"
                     >
-                        <Plus size={20} />
-                        <span>Nuevo Producto</span>
+                        <Plus size={20} /> Nuevo Item
                     </button>
                 </div>
             </div>
 
-            {/* Category Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {categoryGridItems.map((category) => (
-                    <motion.div
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {categoryGridItems.map(category => (
+                    <div
                         key={category.id}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
                         onClick={() => setSelectedCategory(category.name)}
-                        className="cursor-pointer group relative bg-white/70 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-white/40 flex justify-between items-center"
+                        className="cursor-pointer bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl transition-all border border-gray-50 flex justify-between items-center"
                     >
                         <div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-2">{formatName(category.name)}</h3>
-                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold uppercase tracking-wider">
-                                {category.count} Productos
-                            </span>
+                            <h3 className="text-2xl font-black">{formatName(category.name)}</h3>
+                            <span className="text-xs text-gray-400 font-bold uppercase">{category.count} Items</span>
                         </div>
-                        <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
-                            <ChevronRight size={24} />
-                        </div>
-                    </motion.div>
+                        <ChevronRight className="text-gray-300" />
+                    </div>
                 ))}
             </div>
 
-            {/* Modals */}
+            {/* Category Modal */}
             <AnimatePresence>
                 {selectedCategory && (
-                    <CategoryDetailModal
-                        categoryName={selectedCategory}
-                        products={productsByCategory[selectedCategory] || []}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                        onClose={() => setSelectedCategory(null)}
-                    />
+                    <div className="fixed inset-0 z-40 flex items-center justify-center p-6 bg-black/10 backdrop-blur-md">
+                        <div className="bg-white p-10 rounded-[3.5rem] shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-y-auto">
+                            <div className="flex justify-between items-center mb-10">
+                                <h3 className="text-4xl font-black">{formatName(selectedCategory)}</h3>
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={() => setIsQuickPricing(!isQuickPricing)}
+                                        className={`px-6 py-3 rounded-2xl font-bold ${isQuickPricing ? 'bg-green-500 text-white' : 'bg-gray-100'}`}
+                                    >
+                                        {isQuickPricing ? "Guardando..." : "Editar Precios"}
+                                    </button>
+                                    <button
+                                        onClick={() => { setSelectedCategory(null); setIsQuickPricing(false); }}
+                                        className="p-3 bg-gray-100 rounded-full"
+                                    >
+                                        <X />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                {productsByCategory[selectedCategory]?.map((product: any) => (
+                                    <div key={product.id} className="bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="font-bold">{formatName(product.name)}</h4>
+                                            {!isQuickPricing ? (
+                                                <span className="font-black text-sm">${product.price}</span>
+                                            ) : (
+                                                <input
+                                                    type="number"
+                                                    defaultValue={product.price}
+                                                    onBlur={(e) => handleUpdatePrice(product.id, e.target.value)}
+                                                    className="w-20 bg-white border rounded-lg px-2 py-1 text-sm font-bold outline-none focus:border-black"
+                                                />
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-400 italic mb-4">{product.description}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 )}
             </AnimatePresence>
 
-            <AnimatePresence>
-                {isEditing && (
-                    <ProductFormModal
-                        product={currentProduct}
-                        categories={categories}
-                        loading={loading}
-                        onChange={setCurrentProduct}
-                        onSave={handleSave}
-                        onAddCategory={handleAddCategory}
-                        onClose={() => setIsEditing(false)}
-                    />
-                )}
-            </AnimatePresence>
+            {/* New Product Modal */}
+            {isEditing && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-md">
+                    <div className="bg-white p-10 rounded-[3rem] w-full max-w-md shadow-2xl">
+                        <h3 className="text-2xl font-black mb-6">Nuevo Producto</h3>
+                        <form onSubmit={handleSave} className="space-y-4">
+                            <input
+                                type="text" required placeholder="Nombre"
+                                value={currentProduct.name}
+                                onChange={e => setCurrentProduct({ ...currentProduct, name: e.target.value })}
+                                className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold"
+                            />
+                            <input
+                                type="text" placeholder="Descripción"
+                                value={currentProduct.description}
+                                onChange={e => setCurrentProduct({ ...currentProduct, description: e.target.value })}
+                                className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold"
+                            />
+                            <input
+                                type="number" required placeholder="Precio"
+                                value={currentProduct.price}
+                                onChange={e => setCurrentProduct({ ...currentProduct, price: e.target.value })}
+                                className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold"
+                            />
+                            <select
+                                value={currentProduct.category_id}
+                                onChange={e => setCurrentProduct({ ...currentProduct, category_id: e.target.value })}
+                                className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold"
+                            >
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                            <div className="flex gap-3">
+                                <button type="button" onClick={() => setIsEditing(false)} className="flex-1 py-4 bg-gray-100 rounded-2xl font-bold">Cancelar</button>
+                                <button type="submit" disabled={loading} className="flex-1 py-4 bg-black text-white rounded-2xl font-black">
+                                    {loading ? "Guardando..." : "Guardar"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Category Modal */}
+            {isAddingCategory && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-md">
+                    <div className="bg-white p-10 rounded-[3rem] w-full max-w-sm shadow-2xl">
+                        <h3 className="text-2xl font-black mb-6">Nueva Categoría</h3>
+                        <input
+                            type="text" placeholder="Nombre de categoría"
+                            value={newCategoryName}
+                            onChange={e => setNewCategoryName(e.target.value)}
+                            className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold mb-4"
+                        />
+                        <div className="flex gap-3">
+                            <button onClick={() => setIsAddingCategory(false)} className="flex-1 py-4 bg-gray-100 rounded-2xl font-bold">Cancelar</button>
+                            <button onClick={handleAddCategory} className="flex-1 py-4 bg-black text-white rounded-2xl font-black">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

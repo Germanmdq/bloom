@@ -2,24 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, Coffee, ListChecks, Settings, Users, UserCircle, PieChart, Receipt, CookingPot, Package, QrCode, CalendarDays, X } from "lucide-react";
+import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, MessageCircle, Briefcase, X } from "lucide-react";
 import { useUserRole } from "@/lib/hooks/use-pos-data";
 
 const links = [
-    { href: "/dashboard", label: "Inicio", icon: Home },
-    { href: "/dashboard/tables", label: "Mesas", icon: LayoutGrid },
-    { href: "/dashboard/reservations", label: "Reservas", icon: CalendarDays },
-    { href: "/dashboard/qr", label: "QR Mesas", icon: QrCode },
-    { href: "/dashboard/orders", label: "Historial", icon: ListChecks },
-    { href: "/dashboard/customers", label: "Clientes", icon: UserCircle },
-    { href: "/dashboard/products", label: "Menú", icon: Coffee },
-    { href: "/dashboard/staff", label: "Personal", icon: Users },
-    { href: "/dashboard/reports", label: "Reportes", icon: PieChart },
-    { href: "/dashboard/expenses", label: "Gastos", icon: Receipt },
-    { href: "/dashboard/kitchen", label: "Cocina", icon: CookingPot },
-    { href: "/dashboard/stock", label: "Stock", icon: Package },
-    { href: "/dashboard/settings", label: "Ajustes", icon: Settings },
+    { href: "/dashboard/tables",   label: "Mesas",     icon: LayoutGrid },
+    { href: "/dashboard/orders",   label: "Historial", icon: ListChecks },
+    { href: "/dashboard/products", label: "Menú",      icon: Coffee },
+    { href: "/dashboard/clientes", label: "Clientes",  icon: Users },
+    { href: "/dashboard/personal", label: "Personal",  icon: Briefcase },
+    { href: "/dashboard/reports",  label: "Reportes",  icon: PieChart },
+    { href: "/dashboard/expenses", label: "Gastos",    icon: Receipt },
+    { href: "/dashboard/kitchen",  label: "Cocina",    icon: CookingPot },
+    { href: "/dashboard/whatsapp", label: "WhatsApp",  icon: MessageCircle },
+    { href: "/dashboard/stock",    label: "Stock",     icon: Package },
+    { href: "/dashboard/settings", label: "Ajustes",   icon: Settings },
 ];
+
+const HIDDEN_SECTIONS = ["Cocina", "WhatsApp"];
 
 interface SidebarProps {
     open: boolean;
@@ -31,9 +31,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     const { data: role = 'WAITER' } = useUserRole();
 
     const filteredLinks = links.filter(link => {
-        if (link.label === "Reportes" || link.label === "Gastos") {
-            return role === 'ADMIN';
-        }
+        if (HIDDEN_SECTIONS.includes(link.label)) return false;
+        if (link.label === "Reportes" || link.label === "Gastos") return role === 'ADMIN';
         return true;
     });
 
@@ -75,9 +74,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                     {filteredLinks.map((link) => {
                         const isActive =
-                            link.href === "/dashboard"
-                                ? pathname === "/dashboard"
-                                : pathname.startsWith(link.href);
+                            pathname.startsWith(link.href);
                         const Icon = link.icon;
                         return (
                             <Link key={link.href} href={link.href} onClick={onClose}>
