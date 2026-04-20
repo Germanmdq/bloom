@@ -205,13 +205,23 @@ function PublicMenuPage() {
             row.customer_id = session.user.id;
         }
 
+        // Buscar próximo slot libre en el rango correspondiente
+        const minId = ci.type === "delivery" ? 40 : 100;
+        const maxId = ci.type === "delivery" ? 99 : 997;
+        const { data: existingSlots } = await supabase.from('salon_tables').select('id').gte('id', minId).lte('id', maxId);
+        const usedIds = new Set((existingSlots ?? []).map((r: { id: number }) => r.id));
+        let slotId = minId;
+        while (usedIds.has(slotId) && slotId <= maxId) slotId++;
+        if (slotId > maxId) slotId = ci.type === "delivery" ? WEB_ORDER_TABLE_DELIVERY : WEB_ORDER_TABLE_RETIRO;
+
+        row.table_id = slotId;
+
         const { error } = await supabase.from('orders').insert(row);
         if (error) console.error('Error guardando pedido:', error.message, error.details);
 
-        // Upsertear salon_tables para que el pedido aparezca en el dashboard
-        const virtualTableId = ci.type === "delivery" ? WEB_ORDER_TABLE_DELIVERY : WEB_ORDER_TABLE_RETIRO;
+        // Crear slot individual en salon_tables para que aparezca en el dashboard
         await supabase.from('salon_tables').upsert(
-            { id: virtualTableId, status: 'OCCUPIED', updated_at: new Date().toISOString() },
+            { id: slotId, status: 'OCCUPIED', items, total, order_type: ci.type === "delivery" ? "DELIVERY" : "RETIRO", updated_at: new Date().toISOString() },
             { onConflict: 'id' }
         );
         // Guardamos el checkoutInfo para mostrarlo en la confirmación

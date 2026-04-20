@@ -104,8 +104,31 @@ export async function POST(request: NextRequest) {
       deliveryInfo = "Retiro en local";
     }
 
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+    const db =
+      serviceKey
+        ? createClient(url, serviceKey)
+        : customerId && body.access_token?.trim()
+          ? createClient(url, anon, {
+              global: { headers: { Authorization: `Bearer ${body.access_token.trim()}` } },
+            })
+          : createClient(url, anon);
+
+    // Buscar el próximo slot libre en el rango correspondiente
+    const minId = deliveryType === "delivery" ? 40 : 100;
+    const maxId = deliveryType === "delivery" ? 99 : 997;
+    const { data: existingSlots } = await db
+      .from("salon_tables")
+      .select("id")
+      .gte("id", minId)
+      .lte("id", maxId);
+    const usedIds = new Set((existingSlots ?? []).map((r: { id: number }) => r.id));
+    let slotId = minId;
+    while (usedIds.has(slotId) && slotId <= maxId) slotId++;
+    if (slotId > maxId) slotId = deliveryType === "delivery" ? WEB_ORDER_TABLE_DELIVERY : WEB_ORDER_TABLE_RETIRO;
+
     const insertRow: Record<string, unknown> = {
-      table_id: deliveryType === "delivery" ? WEB_ORDER_TABLE_DELIVERY : WEB_ORDER_TABLE_RETIRO,
+      table_id: slotId,
       customer_name: customer_name.trim(),
       customer_phone: phone,
       delivery_type: deliveryType,
@@ -118,16 +141,6 @@ export async function POST(request: NextRequest) {
       payment_method: paymentMethodDb,
       ...(paymentNotes ? { payment_notes: paymentNotes } : {}),
     };
-
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-    const db =
-      serviceKey
-        ? createClient(url, serviceKey)
-        : customerId && body.access_token?.trim()
-          ? createClient(url, anon, {
-              global: { headers: { Authorization: `Bearer ${body.access_token.trim()}` } },
-            })
-          : createClient(url, anon);
 
     if (customerId) {
       insertRow.customer_id = customerId;
@@ -151,10 +164,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Upsertear salon_tables para que el pedido aparezca en el dashboard
-    const virtualTableId = deliveryType === "delivery" ? WEB_ORDER_TABLE_DELIVERY : WEB_ORDER_TABLE_RETIRO;
+    // Crear slot individual en salon_tables para que el pedido aparezca en el dashboard
     await db.from("salon_tables").upsert(
-      { id: virtualTableId, status: "OCCUPIED", updated_at: new Date().toISOString() },
+      {
+        id: slotId,
+        status: "OCCUPIED",
+        items: itemsJson,
+        total,
+        order_type: deliveryType === "delivery" ? "DELIVERY" : "RETIRO",
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: "id" }
     );
 
