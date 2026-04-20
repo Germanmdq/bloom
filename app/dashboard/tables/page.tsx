@@ -491,6 +491,7 @@ export default function TablesPage() {
                             <OrderSheet
                                 tableId={selectedWebOrder.delivery_type === 'delivery' ? 999 : 998}
                                 webOrderId={selectedWebOrder.id}
+                                webOrderData={selectedWebOrder}
                                 onClose={() => { setSelectedWebOrder(null); fetchWebOrders(); }}
                                 onOrderComplete={() => { setSelectedWebOrder(null); fetchWebOrders(); fetchTables(); }}
                             />

@@ -31,9 +31,11 @@ type OrderSheetProps = {
     onClose: () => void;
     onOrderComplete?: () => void;
     webOrderId?: string;
+    /** Pass the full order object to skip the fetch and load the cart instantly */
+    webOrderData?: any;
 };
 
-export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: OrderSheetProps) {
+export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webOrderData }: OrderSheetProps) {
     const {
         cart, addToCart, removeFromCart, clearCart,
         paymentMethod, setPaymentMethod, notes, setNotes,
@@ -174,21 +176,28 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
 
     useEffect(() => {
         const init = async () => {
-            const { data: waiterData } = await supabase
-                .from('profiles')
-                .select('id, full_name')
-                .eq('role', 'WAITER');
-            if (waiterData) {
-                setWaiters(waiterData);
-                if (waiterData.length > 0) setSelectedWaiter(waiterData[0].id);
-            }
+            // Load waiters in parallel, don't block UI
+            supabase.from('profiles').select('id, full_name').eq('role', 'WAITER').then(({ data: waiterData }) => {
+                if (waiterData) {
+                    setWaiters(waiterData);
+                    if (waiterData.length > 0) setSelectedWaiter(waiterData[0].id);
+                }
+            });
 
-            if (webOrderId) {
-                const resp = await fetch("/api/orders/list", { credentials: "include" });
-                const res = await resp.json();
-                if (resp.ok && Array.isArray(res.data)) {
-                    const order = res.data.find((o: any) => o.id === webOrderId);
-                    if (order) handleSelectWebOrder(order);
+            if (webOrderData) {
+                // ✅ Data already in memory — load instantly, no fetch needed
+                handleSelectWebOrder(webOrderData);
+            } else if (webOrderId) {
+                // Fallback: fetch by ID if data wasn't passed as prop
+                try {
+                    const resp = await fetch("/api/orders/list", { credentials: "include" });
+                    const res = await resp.json();
+                    if (resp.ok && Array.isArray(res.data)) {
+                        const order = res.data.find((o: any) => o.id === webOrderId);
+                        if (order) handleSelectWebOrder(order);
+                    }
+                } catch (e) {
+                    console.error('[OrderSheet] fetch order by id failed', e);
                 }
             } else {
                 await refreshData();
