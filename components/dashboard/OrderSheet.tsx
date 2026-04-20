@@ -279,8 +279,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     const handleFreeTable = async () => {
         if (!confirm('¿Liberar esta mesa? Se perderán los items sin cobrar.')) return;
+        
+        // Detect ID from multiple sources to ensure success
+        const idToCancel = webOrderId || currentWebOrderId;
+
+        if (idToCancel) {
+            await supabase.from('orders').update({ status: 'cancelled' }).eq('id', idToCancel);
+        }
+
         clearCart();
+        // Also clear salon_tables entry if it exists for this virtual table
         await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
+        
+        if (onOrderComplete) onOrderComplete();
         onClose();
     };
 
@@ -336,8 +347,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     );
                 }
                 await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
-                if (currentWebOrderId) {
-                    await fetch(`/api/orders/delete?id=${currentWebOrderId}`, { method: "DELETE" });
+                
+                if (webOrderId || currentWebOrderId) {
+                    const idToComplete = webOrderId || currentWebOrderId;
+                    await supabase.from('orders').update({ status: 'completed', paid: true }).eq('id', idToComplete);
                 }
                 setMpPosOrderId(null);
                 queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -349,10 +362,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     waiter_id: selectedWaiter || null,
                     items: cart,
                 });
-                await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
-                if (currentWebOrderId) {
-                    await fetch(`/api/orders/delete?id=${currentWebOrderId}`, { method: "DELETE" });
+                
+                // If it's a web order, we mark it as completed and paid
+                if (webOrderId || currentWebOrderId) {
+                    const idToComplete = webOrderId || currentWebOrderId;
+                    await supabase.from('orders').update({ status: 'completed', paid: true }).eq('id', idToComplete);
                 }
+
+                await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
             }
             setFeedback({ message: "¡Venta registrada!", type: "success" });
             setTimeout(() => {
@@ -360,14 +377,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 clearCart();
                 finishingRef.current = false;
                 setIsFinishing(false);
-                if (isWebTable) {
-                    setCurrentWebOrderId(null);
-                    refreshData();
-                } else {
-                    if (onOrderComplete) onOrderComplete();
-                    onClose();
-                }
-            }, 2000);
+                
+                // Always close and go back to tables grid
+                if (onOrderComplete) onOrderComplete();
+                onClose();
+            }, 1000); // 1s is enough for the feedback to be seen
         } catch (error: any) {
             finishingRef.current = false;
             setIsFinishing(false);

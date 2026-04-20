@@ -22,14 +22,18 @@ export function useOrderNotification() {
                     const newOrder = payload.new;
                     const total = Number(newOrder.total ?? 0);
                     const customer = newOrder.customer_name || `Pedido #${newOrder.id?.slice(0, 4)}`;
+                    const isWeb = newOrder.order_type === 'web';
                     
                     toast.success(`Nuevo pedido: ${customer}`, {
                         description: `Total: $${total.toLocaleString()}`,
                         duration: 8000,
                     });
 
-                    const audio = new Audio(NOTIFICATION_SOUND_URL);
-                    audio.play().catch(e => console.log('Audio play failed', e));
+                    // Only play sound for remote/web orders to avoid self-sound during POS checkout
+                    if (isWeb) {
+                        const audio = new Audio(NOTIFICATION_SOUND_URL);
+                        audio.play().catch(e => console.log('Audio play failed', e));
+                    }
                 }
             )
             .on(
@@ -48,7 +52,7 @@ export function useOrderNotification() {
                         duration: 5000,
                     });
 
-                    // Sound for kitchen ticket might be different or same
+                    // Sound for kitchen ticket
                     const audio = new Audio(NOTIFICATION_SOUND_URL);
                     audio.play().catch(e => console.log('Audio play failed', e));
                 }
