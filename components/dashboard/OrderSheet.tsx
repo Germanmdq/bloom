@@ -59,7 +59,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const [extraTotal] = useState(0);
     const [productSearch, setProductSearch] = useState("");
     const [waiters, setWaiters] = useState<Array<{ id: string; full_name: string }>>([]);
-    const [, setOrderType] = useState<'LOCAL' | 'DELIVERY'>('LOCAL');
+    const [orderType, setOrderType] = useState<'LOCAL' | 'DELIVERY' | 'TAKEAWAY'>('LOCAL');
     const [webOrders, setWebOrders] = useState<any[]>([]);
     const [currentWebOrderId, setCurrentWebOrderId] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
