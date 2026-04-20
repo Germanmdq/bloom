@@ -7,6 +7,7 @@ export async function GET() {
         .from("profiles")
         .select("id, full_name, email, role")
         .in("role", ["ADMIN", "WAITER", "KITCHEN", "MANAGER"])
+        .eq("is_customer", false)
         .order("full_name");
     if (error) return NextResponse.json([], { status: 500 });
     return NextResponse.json(data ?? []);
