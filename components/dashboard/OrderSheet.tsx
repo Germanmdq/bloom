@@ -350,7 +350,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 notes: notes
             });
             setFeedback({ message: "Enviado a cocina", type: 'success' });
-            setTimeout(() => setFeedback(null), 2000);
+            setTimeout(() => {
+                setFeedback(null);
+                onClose();
+            }, 1500);
         } catch (error: any) {
             setFeedback({ message: `Error: ${error.message}`, type: 'error' });
             setTimeout(() => setFeedback(null), 3000);
