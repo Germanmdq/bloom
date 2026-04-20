@@ -39,6 +39,11 @@ export default function TablesPage() {
     useEffect(() => {
         fetchTables();
         fetchWebOrders();
+        
+        // Anti-ghost cleanup for legacy virtual tables
+        supabase.from('salon_tables').delete().in('id', [998, 999]).then(() => {
+            console.log('Legacy 998/999 purged.');
+        });
 
         // Listen to salon_tables changes (POS tables)
         const tableChannel = supabase

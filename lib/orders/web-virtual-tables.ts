@@ -1,6 +1,6 @@
 /** Mesas virtuales POS para pedidos web (OrderSheet / WebOrderList). */
-export const WEB_ORDER_TABLE_RETIRO = 998;
-export const WEB_ORDER_TABLE_DELIVERY = 999;
+export const WEB_ORDER_TABLE_RETIRO = 5000;
+export const WEB_ORDER_TABLE_DELIVERY = 5001;
 
 function normTableId(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
