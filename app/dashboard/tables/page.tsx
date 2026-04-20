@@ -208,8 +208,8 @@ export default function TablesPage() {
                 subTextColor: 'text-red-100',
             };
         }
-        // Retiro range or Web Retiro (998) → GREEN intense
-        else if ((table.id >= 200 && table.id < 300) || table.id === 998) {
+        // Retiro range → GREEN intense
+        else if ((table.id >= 200 && table.id < 300)) {
             return {
                 bg: 'bg-green-500 border-green-600 shadow-[0_10px_30px_rgba(34,197,94,0.5)]',
                 dot: 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]',
@@ -507,7 +507,7 @@ export default function TablesPage() {
                     >
                         <div className="bg-white/90 backdrop-blur-2xl w-full h-full rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50 overflow-hidden flex flex-col">
                             <OrderSheet
-                                tableId={selectedWebOrder.delivery_type === 'delivery' ? 999 : 998}
+                        tableId={selectedWebOrder.delivery_type === 'delivery' ? 5001 : 5000}
                                 webOrderId={selectedWebOrder.id}
                                 webOrderData={selectedWebOrder}
                                 onClose={() => { setSelectedWebOrder(null); fetchWebOrders(); }}
