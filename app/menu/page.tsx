@@ -192,6 +192,13 @@ function PublicMenuPage() {
 
         const { error } = await supabase.from('orders').insert(row);
         if (error) console.error('Error guardando pedido:', error.message, error.details);
+
+        // Upsertear salon_tables para que el pedido aparezca en el dashboard
+        const virtualTableId = ci.type === "delivery" ? WEB_ORDER_TABLE_DELIVERY : WEB_ORDER_TABLE_RETIRO;
+        await supabase.from('salon_tables').upsert(
+            { id: virtualTableId, status: 'OCCUPIED', updated_at: new Date().toISOString() },
+            { onConflict: 'id' }
+        );
         // Guardamos el checkoutInfo para mostrarlo en la confirmación
         setCheckoutInfo(ci);
         setOrderSent(true);

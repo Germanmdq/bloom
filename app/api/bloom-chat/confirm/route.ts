@@ -151,6 +151,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Upsertear salon_tables para que el pedido aparezca en el dashboard
+    const virtualTableId = deliveryType === "delivery" ? WEB_ORDER_TABLE_DELIVERY : WEB_ORDER_TABLE_RETIRO;
+    await db.from("salon_tables").upsert(
+      { id: virtualTableId, status: "OCCUPIED", updated_at: new Date().toISOString() },
+      { onConflict: "id" }
+    );
+
     return NextResponse.json({
       ok: true,
       ...(inserted?.id ? { order_id: inserted.id as string } : {}),

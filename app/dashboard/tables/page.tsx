@@ -9,6 +9,7 @@ import {
     Search, Monitor, Bike, ShoppingBag, Plus,
     LayoutGrid, Map, List, TrendingUp, Clock, ChevronRight
 } from "lucide-react";
+import { WEB_ORDER_TABLE_DELIVERY, WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -85,10 +86,10 @@ export default function TablesPage() {
         if (activeTab === 'LOCAL') {
             occupied = occupied.filter(t => t.id >= 1 && t.id <= 36);
         } else if (activeTab === 'DELIVERY') {
-            occupied = occupied.filter(t => t.id >= 40 && t.id <= 99);
+            occupied = occupied.filter(t => (t.id >= 40 && t.id <= 99) || t.id === WEB_ORDER_TABLE_DELIVERY);
             freeLocal = [];
         } else if (activeTab === 'RETIRO') {
-            occupied = occupied.filter(t => t.id >= 100);
+            occupied = occupied.filter(t => t.id >= 100 && t.id !== WEB_ORDER_TABLE_DELIVERY);
             freeLocal = [];
         }
 
@@ -105,8 +106,8 @@ export default function TablesPage() {
     const counts = useMemo(() => {
         const occLocal    = tables.filter(t => t.status === 'OCCUPIED' && t.id >= 1 && t.id <= 36).length;
         const freeLocal   = tables.filter(t => t.status !== 'OCCUPIED' && t.id >= 1 && t.id <= 36).length;
-        const occDelivery = tables.filter(t => t.status === 'OCCUPIED' && t.id >= 40 && t.id <= 99).length;
-        const occRetiro   = tables.filter(t => t.status === 'OCCUPIED' && t.id >= 100).length;
+        const occDelivery = tables.filter(t => t.status === 'OCCUPIED' && ((t.id >= 40 && t.id <= 99) || t.id === WEB_ORDER_TABLE_DELIVERY)).length;
+        const occRetiro   = tables.filter(t => t.status === 'OCCUPIED' && t.id >= 100 && t.id !== WEB_ORDER_TABLE_DELIVERY).length;
         return { todas: occLocal + freeLocal + occDelivery + occRetiro, local: occLocal + freeLocal, delivery: occDelivery, retiro: occRetiro };
     }, [tables]);
 
@@ -137,8 +138,8 @@ export default function TablesPage() {
             return;
         }
 
-        const isDelivery = table.id >= 40 && table.id <= 99;
-        const isRetiro = table.id >= 100;
+        const isDelivery = (table.id >= 40 && table.id <= 99) || table.id === WEB_ORDER_TABLE_DELIVERY;
+        const isRetiro = table.id >= 100 && table.id !== WEB_ORDER_TABLE_DELIVERY;
         if (isDelivery || isRetiro) {
             setSelectedTable(table);
             setIsModalOpen(true);
@@ -166,7 +167,7 @@ export default function TablesPage() {
     const handleNewOrder = async (type: 'DELIVERY' | 'RETIRO') => {
         setShowNewMenu(false);
         const minId = type === 'DELIVERY' ? 40 : 100;
-        const maxId = type === 'DELIVERY' ? 99 : 999;
+        const maxId = type === 'DELIVERY' ? 99 : 997; // 998/999 reservados para pedidos web
 
         const usedIds = tables.filter(t => t.id >= minId && t.id <= maxId).map(t => t.id);
         let nextId = minId;
