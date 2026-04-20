@@ -85,6 +85,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     const isWebTable = tableId === WEB_ORDER_TABLE_RETIRO || tableId === WEB_ORDER_TABLE_DELIVERY;
 
+    /** Sincronizar ID de pedido web si viene por prop */
+    useEffect(() => {
+        if (webOrderId) {
+            setCurrentWebOrderId(webOrderId);
+        }
+    }, [webOrderId]);
+
     /** Al cambiar de mesa, vaciar el store ya (evita mezclar pedidos entre mesas). */
     useLayoutEffect(() => {
         useOrderStore.getState().clearCart();
