@@ -1,13 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { UserPlus, Loader2 } from "lucide-react";
+import { Loader2, UserPlus } from "lucide-react";
+import Link from "next/link";
 
 export default function PersonalPage() {
     const [staff, setStaff] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isAdding, setIsAdding] = useState(false);
-    const [newName, setNewName] = useState("");
-    const [newRole, setNewRole] = useState("WAITER");
 
     useEffect(() => { fetchStaff(); }, []);
 
@@ -15,73 +13,59 @@ export default function PersonalPage() {
         setLoading(true);
         const res = await fetch("/api/personal");
         const data = await res.json();
-        setStaff(data);
+        setStaff(Array.isArray(data) ? data : []);
         setLoading(false);
     }
 
-    async function handleAdd(e: React.FormEvent) {
-        e.preventDefault();
-        await fetch("/api/personal", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ full_name: newName, role: newRole })
-        });
-        setIsAdding(false);
-        setNewName("");
-        fetchStaff();
-    }
+    const roleLabel: Record<string, string> = {
+        ADMIN: "Administrador",
+        WAITER: "Mesero",
+        KITCHEN: "Cocina",
+        MANAGER: "Encargado",
+    };
+
+    const roleEmoji: Record<string, string> = {
+        ADMIN: "🛡️",
+        WAITER: "🤵",
+        KITCHEN: "👨‍🍳",
+        MANAGER: "🔑",
+    };
 
     return (
         <div className="min-h-full">
             <div className="flex justify-between items-center mb-10">
-                <h2 className="text-4xl font-black tracking-tight text-gray-900">Personal</h2>
-                <button
-                    onClick={() => setIsAdding(true)}
-                    className="bg-black text-white px-6 py-3.5 rounded-[1.5rem] font-bold flex items-center gap-2 shadow-xl"
+                <div>
+                    <h2 className="text-4xl font-black tracking-tight text-gray-900">Personal</h2>
+                    <p className="text-gray-500 font-medium">{staff.length} empleados</p>
+                </div>
+                <Link
+                    href="/dashboard/staff"
+                    className="bg-black text-white px-6 py-3.5 rounded-[1.5rem] font-bold flex items-center gap-2 shadow-xl hover:scale-105 active:scale-95 transition-all"
                 >
                     <UserPlus size={20} /> Agregar
-                </button>
+                </Link>
             </div>
 
             {loading ? (
                 <div className="flex items-center justify-center py-40">
                     <Loader2 className="animate-spin text-gray-200" size={48} />
                 </div>
+            ) : staff.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-40 text-center gap-3">
+                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Sin personal registrado</p>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     {staff.map(member => (
-                        <div key={member.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-50 shadow-sm">
-                            <div className="text-4xl mb-4">{member.role === 'WAITER' ? '🤵' : '👨‍🍳'}</div>
-                            <h3 className="font-black text-xl">{member.full_name}</h3>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{member.role}</span>
+                        <div key={member.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-50 shadow-sm hover:shadow-xl transition-all">
+                            <div className="text-4xl mb-4">{roleEmoji[member.role] ?? "👤"}</div>
+                            <h3 className="font-black text-xl text-gray-900 truncate">{member.full_name || "Sin nombre"}</h3>
+                            <p className="text-xs text-gray-400 truncate mb-2">{member.email}</p>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                {roleLabel[member.role] ?? member.role}
+                            </span>
                         </div>
                     ))}
-                </div>
-            )}
-
-            {isAdding && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-md">
-                    <div className="bg-white p-10 rounded-[3rem] w-full max-w-md shadow-2xl">
-                        <h3 className="text-2xl font-black mb-6">Nuevo Empleado</h3>
-                        <form onSubmit={handleAdd} className="space-y-4">
-                            <input
-                                type="text" required placeholder="Nombre completo"
-                                value={newName} onChange={e => setNewName(e.target.value)}
-                                className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold"
-                            />
-                            <select
-                                value={newRole} onChange={e => setNewRole(e.target.value)}
-                                className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold appearance-none"
-                            >
-                                <option value="WAITER">Mesero</option>
-                                <option value="KITCHEN">Cocina</option>
-                            </select>
-                            <div className="flex gap-3">
-                                <button type="button" onClick={() => setIsAdding(false)} className="flex-1 py-4 bg-gray-100 rounded-2xl font-bold">Cancelar</button>
-                                <button type="submit" className="flex-1 bg-black text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs">Guardar</button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
             )}
         </div>
