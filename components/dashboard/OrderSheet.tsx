@@ -128,6 +128,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             }
 
             const status = tableData?.status as string | undefined;
+            
+            // SECURITY: If the table is FREE, we MUST clear any legacy data in DB to prevent "ghost orders"
+            // specifically clearing from kitchen_tickets which causes the "re-appear" bug.
+            if (status !== "OCCUPIED") {
+                await supabase.from("kitchen_tickets").delete().eq("table_id", tableId);
+                await supabase.from("salon_tables").update({ items: [], total: 0 }).eq("id", tableId);
+            }
+
             const persisted = (status === "OCCUPIED" && Array.isArray(tableData?.items)) ? tableData.items : [];
 
             // Limpiar datos previos del estado local SIEMPRE
