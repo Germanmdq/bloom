@@ -197,29 +197,36 @@ export default function TablesPage() {
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
-        // Delivery range or Web Delivery (999)
+        // Delivery range or Web Delivery (999) → RED intense
         if ((table.id >= 100 && table.id < 200) || table.id === 999) {
             return {
-                bg: 'bg-green-100/60 border-green-200/50 shadow-[0_10px_20px_rgba(34,197,94,0.15)]',
-                dot: 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]',
-                badgeBg: 'bg-green-100 text-green-700',
-                label: 'Delivery'
-            };
-        } 
-        // Retiro range or Web Retiro (998)
-        else if ((table.id >= 200 && table.id < 300) || table.id === 998) {
-            return {
-                bg: 'bg-yellow-100/60 border-yellow-200/50 shadow-[0_10px_20px_rgba(250,204,21,0.15)]',
-                dot: 'bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]',
-                badgeBg: 'bg-yellow-100 text-yellow-700',
-                label: 'Retiro'
+                bg: 'bg-red-500 border-red-600 shadow-[0_10px_30px_rgba(239,68,68,0.5)]',
+                dot: 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]',
+                badgeBg: 'bg-red-600 text-white',
+                label: 'Delivery',
+                textColor: 'text-white',
+                subTextColor: 'text-red-100',
             };
         }
+        // Retiro range or Web Retiro (998) → GREEN intense
+        else if ((table.id >= 200 && table.id < 300) || table.id === 998) {
+            return {
+                bg: 'bg-green-500 border-green-600 shadow-[0_10px_30px_rgba(34,197,94,0.5)]',
+                dot: 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]',
+                badgeBg: 'bg-green-600 text-white',
+                label: 'Retiro',
+                textColor: 'text-white',
+                subTextColor: 'text-green-100',
+            };
+        }
+        // Local → YELLOW intense
         return {
-            bg: 'bg-orange-100/60 border-orange-200/50 shadow-[0_10px_20px_rgba(249,115,22,0.15)]',
-            dot: 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]',
-            badgeBg: 'bg-black/5 text-black/40',
-            label: 'Local'
+            bg: 'bg-yellow-400 border-yellow-500 shadow-[0_10px_30px_rgba(234,179,8,0.5)]',
+            dot: 'bg-yellow-900 shadow-[0_0_8px_rgba(113,63,18,0.6)]',
+            badgeBg: 'bg-yellow-500 text-yellow-900',
+            label: 'Local',
+            textColor: 'text-yellow-900',
+            subTextColor: 'text-yellow-700',
         };
     };
 
@@ -423,31 +430,29 @@ export default function TablesPage() {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedWebOrder(order)}
-                                        className={`rounded-3xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden backdrop-blur-2xl border border-white/40 ${
+                                        className={`rounded-3xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border ${
                                             isDelivery
-                                                ? 'bg-green-100/60 border-green-200/50 shadow-[0_10px_20px_rgba(34,197,94,0.15)]'
-                                                : 'bg-yellow-100/60 border-yellow-200/50 shadow-[0_10px_20px_rgba(250,204,21,0.15)]'
+                                                ? 'bg-red-500 border-red-600 shadow-[0_10px_30px_rgba(239,68,68,0.5)]'
+                                                : 'bg-green-500 border-green-600 shadow-[0_10px_30px_rgba(34,197,94,0.5)]'
                                         }`}
                                     >
                                         <div className="flex justify-between items-start">
-                                            <span className="text-xl font-black text-gray-900 truncate max-w-[80%]">
+                                            <span className="text-xl font-black text-white truncate max-w-[80%]">
                                                 {order.customer_name?.split(' ')[0] || 'Web'}
                                             </span>
-                                            <div className={`w-3 h-3 rounded-full animate-pulse shrink-0 ${
-                                                isDelivery ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]'
-                                            }`} />
+                                            <div className="w-3 h-3 rounded-full animate-pulse shrink-0 bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]" />
                                         </div>
 
                                         <div className="mt-auto">
                                             <div className="mb-1">
-                                                <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm ${
-                                                    isDelivery ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                                <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
+                                                    isDelivery ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
                                                 }`}>
                                                     {isDelivery ? '🌐 Delivery' : '🌐 Retiro'}
                                                 </span>
                                             </div>
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
-                                            <div className="text-2xl font-black text-gray-900">${Number(order.total).toLocaleString("es-AR")}</div>
+                                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">Total</span>
+                                            <div className="text-2xl font-black text-white">${Number(order.total).toLocaleString("es-AR")}</div>
                                         </div>
                                     </motion.div>
                                 );
@@ -463,21 +468,21 @@ export default function TablesPage() {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedTable(table)}
-                                        className={`rounded-3xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden backdrop-blur-2xl border border-white/40 ${styles.bg}`}
+                                        className={`rounded-3xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border ${styles.bg}`}
                                     >
                                         <div className="flex justify-between items-start">
-                                            <span className="text-3xl font-black text-gray-900">{table.id}</span>
+                                            <span className={`text-3xl font-black ${styles.textColor}`}>{table.id}</span>
                                             <div className={`w-3 h-3 rounded-full animate-pulse ${styles.dot}`} />
                                         </div>
 
                                         <div className="mt-auto">
                                             <div className="mb-1">
-                                                <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm ${styles.badgeBg}`}>
+                                                <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${styles.badgeBg}`}>
                                                     {styles.label}
                                                 </span>
                                             </div>
-                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
-                                            <div className="text-2xl font-black text-gray-900">${table.total.toLocaleString("es-AR")}</div>
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider ${styles.subTextColor}`}>Total</span>
+                                            <div className={`text-2xl font-black ${styles.textColor}`}>${table.total.toLocaleString("es-AR")}</div>
                                         </div>
                                     </motion.div>
                                 );
