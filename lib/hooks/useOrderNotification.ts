@@ -39,6 +39,33 @@ export function useOrderNotification() {
             .on(
                 'postgres_changes',
                 {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'orders',
+                },
+                (payload: any) => {
+                    const oldOrder = payload.old;
+                    const newOrder = payload.new;
+                    
+                    // Sound if order just transitioned to 'pending' from 'pending_payment' (Mercado Pago success)
+                    if (newOrder.status === 'pending' && oldOrder.status === 'pending_payment' && newOrder.order_type === 'web') {
+                        console.log('💰 Order PAID via MP:', newOrder);
+                        const total = Number(newOrder.total ?? 0);
+                        const customer = newOrder.customer_name || `Pedido #${newOrder.id?.slice(0, 4)}`;
+                        
+                        toast.success(`¡Pago Recibido!: ${customer}`, {
+                            description: `Monto: $${total.toLocaleString()}`,
+                            duration: 10000,
+                        });
+
+                        const audio = new Audio(NOTIFICATION_SOUND_URL);
+                        audio.play().catch(e => console.log('Audio play failed', e));
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
                     event: 'INSERT',
                     schema: 'public',
                     table: 'kitchen_tickets',
