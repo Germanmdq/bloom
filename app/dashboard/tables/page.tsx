@@ -198,7 +198,7 @@ export default function TablesPage() {
     };
 
     const sortedTables = [...tables]
-        .filter(t => (t.status === 'OCCUPIED' || (t.id < 100)) && (t.id !== 998 && t.id !== 999))
+        .filter(t => t.status === 'OCCUPIED' && (t.id !== 998 && t.id !== 999))
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
