@@ -151,6 +151,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // --- NEW: Sync with salon_tables to show in dashboard grid ---
+    try {
+        // Range 100-199 for Delivery, 200-299 for Takeaway
+        const rangeStart = deliveryType === "delivery" ? 100 : 200;
+        const rangeEnd = rangeStart + 99;
+
+        // Find first free table in range or use virtual fallback
+        const { data: freeTable } = await db
+            .from("salon_tables")
+            .select("id")
+            .gte("id", rangeStart)
+            .lte("id", rangeEnd)
+            .eq("status", "FREE")
+            .order("id", { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+        const tableId = freeTable?.id || (deliveryType === "delivery" ? WEB_ORDER_TABLE_DELIVERY : WEB_ORDER_TABLE_RETIRO);
+        
+        // Add meta-customer info for the dashboard
+        const customerMeta = {
+            id: "meta-customer",
+            name: customer_name.trim(),
+            phone: phone,
+            address: deliveryAddress,
+            type: deliveryType
+        };
+
+        const { data: tableCheck } = await db.from("salon_tables").select("id, items, total").eq("id", tableId).maybeSingle();
+        
+        const existingItems = Array.isArray(tableCheck?.items) ? tableCheck.items : [];
+        const updatedItems = [...existingItems, ...itemsJson, customerMeta];
+        const newTotal = (Number(tableCheck?.total || 0)) + total;
+
+        const { error: upsertError } = await db.from("salon_tables").upsert({
+            id: tableId,
+            status: "OCCUPIED",
+            order_type: deliveryType === "delivery" ? "DELIVERY" : "TAKEAWAY",
+            total: newTotal,
+            items: updatedItems,
+            updated_at: new Date().toISOString()
+        });
+
+        if (upsertError) {
+            console.error("[bloom-chat/confirm] sync error:", upsertError);
+        }
+    } catch (syncErr) {
+        console.error("[bloom-chat/confirm] sync catch:", syncErr);
+    }
+
     return NextResponse.json({
       ok: true,
       ...(inserted?.id ? { order_id: inserted.id as string } : {}),

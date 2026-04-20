@@ -6,6 +6,7 @@ import { LayoutGrid, UserCircle, ArrowRight, Loader2, Clock } from "lucide-react
 import type { Order } from "@/lib/types";
 import { CHANNEL_BADGE, CHANNEL_LABEL, CHANNEL_LEFT, getOrderChannel } from "@/lib/dashboard/order-channel";
 import { tableChannelFromId } from "@/lib/dashboard/table-colors";
+import { createClient } from "@/lib/supabase/client";
 
 type PendingQueueEntry =
     | { kind: "order"; created_at: string; order: Record<string, unknown> }
@@ -76,7 +77,7 @@ export function DashboardHomeClient() {
     }, []);
 
     useEffect(() => {
-        void (async () => {
+        const fetchPending = async () => {
             try {
                 const res = await fetch("/api/dashboard/pending-queue", { credentials: "include" });
                 const j = (await res.json()) as { error?: string; entries?: PendingQueueEntry[] };
@@ -91,7 +92,34 @@ export function DashboardHomeClient() {
                 setPendingError("Error de red al cargar pendientes");
                 setPendingQueue([]);
             }
-        })();
+        };
+
+        fetchPending();
+
+        // Subscribe to changes to refresh the list
+        const supabase = createClient();
+        const channel = supabase
+            .channel('dashboard-queue-refresh')
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'orders' },
+                () => { fetchPending(); }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'kitchen_tickets' },
+                () => { fetchPending(); }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'orders' },
+                () => { fetchPending(); }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     return (

@@ -7,11 +7,27 @@ import { OrderSheet } from "@/components/dashboard/OrderSheet";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 
+type WebOrder = {
+    id: string;
+    customer_name: string;
+    customer_phone: string;
+    delivery_type: string;
+    delivery_info: string;
+    items: any[];
+    total: number;
+    status: string;
+    created_at: string;
+};
+
 export default function TablesPage() {
     const [tables, setTables] = useState<Table[]>([]);
     const [selectedTable, setSelectedTable] = useState<Table | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Web orders state
+    const [webOrders, setWebOrders] = useState<WebOrder[]>([]);
+    const [selectedWebOrder, setSelectedWebOrder] = useState<WebOrder | null>(null);
 
     // New Table Modal State
     const [isNewTableModalOpen, setIsNewTableModalOpen] = useState(false);
@@ -22,18 +38,40 @@ export default function TablesPage() {
 
     useEffect(() => {
         fetchTables();
+        fetchWebOrders();
 
-        const channel = supabase
+        // Listen to salon_tables changes (POS tables)
+        const tableChannel = supabase
             .channel('salon_tables_realtime')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'salon_tables' }, () => {
                 fetchTables();
             })
             .subscribe();
 
+        // Listen to orders changes (web orders)
+        const ordersChannel = supabase
+            .channel('web_orders_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+                fetchWebOrders();
+            })
+            .subscribe();
+
         return () => {
-            supabase.removeChannel(channel);
+            supabase.removeChannel(tableChannel);
+            supabase.removeChannel(ordersChannel);
         };
     }, []);
+
+    async function fetchWebOrders() {
+        const { data } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('order_type', 'web')
+            .in('status', ['pending', 'pending_payment'])
+            .eq('paid', false)
+            .order('created_at', { ascending: true });
+        if (data) setWebOrders(data as WebOrder[]);
+    }
 
     async function fetchTables() {
         setLoading(true);
@@ -148,14 +186,17 @@ export default function TablesPage() {
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
-        if (table.id >= 100 && table.id < 200) {
+        // Delivery range or Web Delivery (999)
+        if ((table.id >= 100 && table.id < 200) || table.id === 999) {
             return {
                 bg: 'bg-green-100/60 border-green-200/50 shadow-[0_10px_20px_rgba(34,197,94,0.15)]',
                 dot: 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]',
                 badgeBg: 'bg-green-100 text-green-700',
                 label: 'Delivery'
             };
-        } else if (table.id >= 200 && table.id < 300) {
+        } 
+        // Retiro range or Web Retiro (998)
+        else if ((table.id >= 200 && table.id < 300) || table.id === 998) {
             return {
                 bg: 'bg-yellow-100/60 border-yellow-200/50 shadow-[0_10px_20px_rgba(250,204,21,0.15)]',
                 dot: 'bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]',
@@ -336,7 +377,7 @@ export default function TablesPage() {
                         Reintentar
                     </button>
                 </div>
-            ) : sortedTables.length === 0 ? (
+            ) : sortedTables.length === 0 && webOrders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-40 gap-4 text-center">
                     <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-2">
                         <span className="text-2xl opacity-50">🍽️</span>
@@ -346,6 +387,47 @@ export default function TablesPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 lg:gap-4">
+                    {/* Web Orders - shown directly from orders table */}
+                    {webOrders.map((order, idx) => {
+                        const isDelivery = order.delivery_type === 'delivery';
+                        return (
+                            <motion.div
+                                key={order.id}
+                                layoutId={`web-order-${order.id}`}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => setSelectedWebOrder(order)}
+                                className={`aspect-video rounded-3xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden backdrop-blur-2xl border border-white/40 ${
+                                    isDelivery
+                                        ? 'bg-green-100/60 border-green-200/50 shadow-[0_10px_20px_rgba(34,197,94,0.15)]'
+                                        : 'bg-yellow-100/60 border-yellow-200/50 shadow-[0_10px_20px_rgba(250,204,21,0.15)]'
+                                }`}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <span className="text-lg font-black text-gray-900 truncate max-w-[80%]">
+                                        {order.customer_name?.split(' ')[0] || 'Web'}
+                                    </span>
+                                    <div className={`w-2.5 h-2.5 rounded-full animate-pulse shrink-0 ${
+                                        isDelivery ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]'
+                                    }`} />
+                                </div>
+
+                                <div className="mt-auto">
+                                    <div className="mb-1">
+                                        <span className={`inline-block px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest shadow-sm ${
+                                            isDelivery ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                        }`}>
+                                            {isDelivery ? '🌐 Delivery' : '🌐 Retiro'}
+                                        </span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
+                                    <div className="text-xl font-bold text-gray-900">${Number(order.total).toLocaleString("es-AR")}</div>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+
+                    {/* POS Tables */}
                     {sortedTables.map(table => {
                         const styles = getCardStyles(table);
                         return (
@@ -374,6 +456,35 @@ export default function TablesPage() {
                             </motion.div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* Web Order Sheet */}
+            {selectedWebOrder && (
+                <div className="fixed inset-0 z-50 overflow-hidden">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-white/40 backdrop-blur-3xl"
+                        onClick={() => { setSelectedWebOrder(null); fetchWebOrders(); }}
+                    />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 200, opacity: { duration: 0.2 } }}
+                        className="relative z-10 w-full h-full flex flex-col p-4 md:p-10"
+                    >
+                        <div className="bg-white/90 backdrop-blur-2xl w-full h-full rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50 overflow-hidden flex flex-col">
+                            <OrderSheet
+                                tableId={selectedWebOrder.delivery_type === 'delivery' ? 999 : 998}
+                                webOrderId={selectedWebOrder.id}
+                                onClose={() => { setSelectedWebOrder(null); fetchWebOrders(); }}
+                                onOrderComplete={() => { setSelectedWebOrder(null); fetchWebOrders(); fetchTables(); }}
+                            />
+                        </div>
+                    </motion.div>
                 </div>
             )}
         </div>
