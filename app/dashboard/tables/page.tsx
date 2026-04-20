@@ -261,7 +261,7 @@ export default function TablesPage() {
                                 Cancelar
                             </button>
                             <button
-                                onClick={handleOpenTable}
+                                onClick={() => handleOpenTable()}
                                 className="flex-1 py-4 font-bold text-white bg-black hover:scale-105 active:scale-95 rounded-2xl transition-all shadow-xl"
                             >
                                 Abrir Mesa
