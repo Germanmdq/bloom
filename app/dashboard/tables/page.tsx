@@ -63,14 +63,25 @@ export default function TablesPage() {
     }, []);
 
     async function fetchWebOrders() {
-        const { data } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('order_type', 'web')
-            .in('status', ['pending', 'pending_payment'])
-            .eq('paid', false)
-            .order('created_at', { ascending: true });
-        if (data) setWebOrders(data as WebOrder[]);
+        try {
+            // Only filter on columns that definitely exist (order_type, status)
+            // Avoid filtering on 'paid' which may not exist in older DB schemas
+            const { data, error } = await supabase
+                .from('orders')
+                .select('id, customer_name, customer_phone, delivery_type, delivery_info, items, total, status, created_at, order_type')
+                .eq('order_type', 'web')
+                .in('status', ['pending', 'pending_payment'])
+                .order('created_at', { ascending: true })
+                .limit(50);
+
+            if (error) {
+                console.error('[TablesPage] fetchWebOrders error:', error.message);
+                return;
+            }
+            if (data) setWebOrders(data as WebOrder[]);
+        } catch (err: any) {
+            console.error('[TablesPage] fetchWebOrders catch:', err.message);
+        }
     }
 
     async function fetchTables() {
