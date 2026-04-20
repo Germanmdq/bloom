@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, Suspense, useCallback, useRef, useMemo, useLayoutEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -69,10 +69,25 @@ function categoryCardImageUrl(
     return firstByCat.get(c.id) ?? null;
 }
 
+function useInAppBrowserBanner() {
+    const [show, setShow] = useState(false);
+    const [isIOS, setIsIOS] = useState(false);
+    useLayoutEffect(() => {
+        const ua = navigator.userAgent;
+        const inApp = /WhatsApp|FBAN|FBAV|Instagram|Line|Snapchat|Twitter/i.test(ua);
+        if (inApp) {
+            setShow(true);
+            setIsIOS(/iPhone|iPad|iPod/.test(ua));
+        }
+    }, []);
+    return { show, isIOS };
+}
+
 // --- MAIN COMPONENT ---
 function PublicMenuPage() {
     const supabase = createClient();
     const searchParams = useSearchParams();
+    const { show: showInAppBanner, isIOS } = useInAppBrowserBanner();
     const tableParam = searchParams.get("table");
     const tableId = tableParam ? parseInt(tableParam) : null;
     const zona = searchParams.get("zona"); // "barra" | "mesa" | null
@@ -396,6 +411,33 @@ function PublicMenuPage() {
                     </>
                 }
             />
+
+            {showInAppBanner && (
+                <div className="sticky top-0 z-40 flex items-center justify-between gap-3 bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-sm">
+                    <p className="font-medium text-amber-900">
+                        {isIOS
+                            ? "📱 Para mantener tu sesión, abrí este link en Safari."
+                            : "📱 Para mantener tu sesión, abrí este link en Chrome."}
+                    </p>
+                    {isIOS ? (
+                        <a
+                            href={typeof window !== "undefined" ? window.location.href : "/menu"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 rounded-full bg-amber-800 px-3 py-1.5 text-xs font-bold text-white"
+                        >
+                            Abrir en Safari
+                        </a>
+                    ) : (
+                        <a
+                            href={typeof window !== "undefined" ? `intent://${window.location.host}${window.location.pathname}#Intent;scheme=https;package=com.android.chrome;end` : "/menu"}
+                            className="shrink-0 rounded-full bg-amber-800 px-3 py-1.5 text-xs font-bold text-white"
+                        >
+                            Abrir en Chrome
+                        </a>
+                    )}
+                </div>
+            )}
 
             <div id="menu-categories" className="w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 xl:px-8 scroll-mt-28">
                 <div className="mb-8">

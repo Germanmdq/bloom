@@ -600,6 +600,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   );
 
   const persistCartAndGoToRegistro = useCallback(() => persistCartAndGo("/registro"), [persistCartAndGo]);
+  const persistCartAndGoToLogin = useCallback(() => persistCartAndGo("/auth"), [persistCartAndGo]);
 
   const cartCount = useMemo(() => cart.reduce((n, l) => n + l.quantity, 0), [cart]);
   const cartTotal = useMemo(() => cart.reduce((s, l) => s + l.price * l.quantity, 0), [cart]);
@@ -1364,6 +1365,13 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   >
                     Registrate gratis →
                   </button>
+                  <button
+                    type="button"
+                    onClick={persistCartAndGoToLogin}
+                    className="inline-flex w-full min-h-[44px] items-center justify-center rounded-xl border border-[#2d4a3e] px-4 py-3 text-center text-sm font-bold text-[#2d4a3e] hover:bg-[#2d4a3e]/5 sm:max-w-md sm:mx-auto"
+                  >
+                    Ya tengo cuenta → Iniciar sesión
+                  </button>
                 </div>
               ) : (
               <div className="mt-6 space-y-3 border-t border-[#e0dcd4] pt-4">
@@ -1694,6 +1702,14 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     >
                       Registrate gratis →
                     </button>{" "}
+                    o{" "}
+                    <button
+                      type="button"
+                      onClick={persistCartAndGoToLogin}
+                      className="font-semibold text-[#2d4a3e] underline underline-offset-2 hover:text-[#1a3028]"
+                    >
+                      iniciá sesión
+                    </button>
                   </div>
                 </div>
               ) : null}
