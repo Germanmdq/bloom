@@ -408,14 +408,13 @@ export default function TablesPage() {
                     const totalItems = webOrders.length + sortedTables.length;
                     // Adapt columns starting from a minimum of 4
                     const gridCols =
-                        totalItems <= 6 ? 'grid-cols-2 md:grid-cols-3' :
-                        totalItems <= 9 ? 'grid-cols-3 md:grid-cols-4' :
-                        totalItems <= 12 ? 'grid-cols-4 md:grid-cols-5' :
-                        'grid-cols-4 md:grid-cols-5 lg:grid-cols-6';
+                        totalItems <= 6 ? 'grid-cols-3' :
+                        totalItems <= 8 ? 'grid-cols-4' :
+                        totalItems <= 12 ? 'grid-cols-5' :
+                        'grid-cols-6';
 
                     return (
-                        <div className={`grid ${gridCols} gap-3 lg:gap-4 auto-rows-fr`}
-                            style={{ minHeight: 'calc(100vh - 180px)' }}>
+                        <div className={`grid ${gridCols} gap-6`}>
 
                             {/* Web Orders */}
                             {webOrders.map((order) => {
@@ -427,7 +426,7 @@ export default function TablesPage() {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedWebOrder(order)}
-                                        className={`rounded-3xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border ${
+                                        className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border min-h-[400px] ${
                                             isDelivery
                                                 ? 'bg-red-500 border-red-600 shadow-[0_10px_30px_rgba(239,68,68,0.5)]'
                                                 : 'bg-green-500 border-green-600 shadow-[0_10px_30px_rgba(34,197,94,0.5)]'
@@ -465,7 +464,7 @@ export default function TablesPage() {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedTable(table)}
-                                        className={`rounded-3xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border ${styles.bg}`}
+                                        className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border min-h-[400px] ${styles.bg}`}
                                     >
                                         <div className="flex justify-between items-start">
                                             <span className={`text-3xl font-black ${styles.textColor}`}>{table.id}</span>
