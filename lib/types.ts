@@ -41,8 +41,10 @@ export type Table = {
     status: TableStatus;
     total: number;
     order_type?: 'LOCAL' | 'DELIVERY';
-    webOrderId?: string;  // ID original del pedido web
-    clientName?: string;  // Nombre del cliente
+    webOrderId?: string;
+    clientName?: string;
+    items?: any[];
+    updated_at?: string;
 };
 
 // Dashboard product shape (matches DB schema)
