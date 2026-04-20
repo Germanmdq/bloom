@@ -108,8 +108,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                     .order("created_at", { ascending: true })
                     .limit(30),
             ]);
-            if (tableError) console.error("Error loading table:", tableError.message);
-            if (tableData?.order_type) setOrderType(tableData.order_type);
+            if (tableData?.order_type) {
+                setOrderType(tableData.order_type as any);
+            } else {
+                // Fallback por rango de ID si no está definido en DB
+                if (tableId >= 100 && tableId < 200) setOrderType('DELIVERY');
+                else if (tableId >= 200) setOrderType('TAKEAWAY');
+                else setOrderType('LOCAL');
+            }
 
             // Intentar recuperar data del cliente desde las notas guardadas (formato simple)
             const savedNotes = tableData?.notes || "";
@@ -538,20 +544,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                                     <button
                                         key={item.id}
                                         onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                        className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md active:scale-95 transition-all text-left"
+                                        className="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-md active:scale-95 transition-all text-center border border-gray-100 hover:border-gray-300 flex flex-col justify-center min-h-[120px]"
                                     >
-                                        {item.image_url && (
-                                            <div className="w-full aspect-square overflow-hidden bg-gray-50">
-                                                <img
-                                                    src={item.image_url}
-                                                    alt={item.name}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                />
-                                            </div>
-                                        )}
-                                        <div className="p-3">
-                                            <p className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2 mb-1">{item.name}</p>
-                                            <p className="text-sm font-black text-gray-900">${Number(item.price).toLocaleString()}</p>
+                                        <div className="flex-1 flex flex-col justify-center">
+                                            <p className="text-lg font-black text-gray-900 leading-tight mb-2 line-clamp-3 uppercase">{item.name}</p>
+                                            <p className="text-md font-bold text-gray-500">${Number(item.price).toLocaleString()}</p>
                                         </div>
                                     </button>
                                 ))}
@@ -563,8 +560,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 {/* ── DERECHA: Datos Cliente + Carrito ── */}
                 <div className="w-72 xl:w-96 flex flex-col bg-white border-l border-gray-200 shrink-0">
 
-                    {/* Datos del Cliente (Solo Delivery/Retiro o si queremos siempre) */}
-                    {(orderType === 'DELIVERY' || orderType === 'TAKEAWAY') && (
+                    {/* Datos del Cliente (Solo Delivery/Retiro o si el ID está en el rango) */}
+                    {(orderType === 'DELIVERY' || orderType === 'TAKEAWAY' || tableId >= 100) && (
                         <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex flex-col gap-3">
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Datos de Entrega</h4>
                             <div className="grid gap-2">
