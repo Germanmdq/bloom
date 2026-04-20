@@ -60,7 +60,7 @@ export default function StaffPage() {
             if (res.ok) {
                 setIsAdding(false);
                 setNewStaff({ email: "", password: "", fullName: "", role: "WAITER" });
-                fetchProfiles();
+                fetchEverything();
             } else {
                 if (result.message?.includes("User already registered")) {
                     setError("Este email ya está registrado.");
@@ -84,7 +84,7 @@ export default function StaffPage() {
             const res = await fetch(`/api/staff?id=${deleteId}`, { method: 'DELETE' });
             const result = await res.json();
             if (res.ok) {
-                fetchProfiles();
+                fetchEverything();
             } else {
                 setError(`Error: ${result.message}`);
                 setLoading(false);
