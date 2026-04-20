@@ -175,11 +175,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const handleSelectWebOrder = (order: any) => {
         clearCart();
         setCurrentWebOrderId(order.id);
+        if (order.customer_name) setCustomerName(order.customer_name);
+        if (order.customer_phone) setCustomerPhone(order.customer_phone);
+        if (order.delivery_info && order.delivery_type === 'delivery') setCustomerAddress(order.delivery_info);
         if (order.items && Array.isArray(order.items)) {
             order.items.forEach((item: any) => {
-                if (item.is_meta) {
-                    setClientName(item.name.replace('Cliente: ', ''));
-                } else {
+                if (!item.is_meta && item.name) {
                     addToCart({
                         id: item.id || item.product_id || 'manual-' + Math.random(),
                         name: item.name,

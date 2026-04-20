@@ -425,28 +425,18 @@ export default function TablesPage() {
 
                     return (
                         <div className={`grid ${gridCols} gap-6`}>
-                            {/* Web Summary Tables */}
-                            {['delivery', 'local'].map(type => {
-                                const count = webOrders.filter(o => o.delivery_type === type).length;
-                                if (count === 0) return null;
-                                
-                                const isDelivery = type === 'delivery';
-                                const virtualId = isDelivery ? 5001 : 5000;
-                                
+                            {/* Individual Web Order Cards */}
+                            {webOrders.map(order => {
+                                const isDelivery = order.delivery_type === 'delivery';
+                                const productItems = (order.items || []).filter((i: any) => !i.is_meta);
+                                const timeStr = new Date(order.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
                                 return (
                                     <motion.div
-                                        key={virtualId}
-                                        layoutId={`virtual-${virtualId}`}
+                                        key={order.id}
+                                        layoutId={`weborder-${order.id}`}
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
-                                        onClick={() => setSelectedTable({
-                                            id: virtualId,
-                                            status: 'OCCUPIED',
-                                            total: webOrders.filter(o => o.delivery_type === type).reduce((acc, o) => acc + Number(o.total || 0), 0),
-                                            items: [],
-                                            order_type: isDelivery ? 'DELIVERY' : 'LOCAL',
-                                            updated_at: new Date().toISOString()
-                                        })}
+                                        onClick={() => setSelectedWebOrder(order)}
                                         className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border min-h-[400px] ${
                                             isDelivery
                                                 ? 'bg-red-500 border-red-600 shadow-[0_10px_30px_rgba(239,68,68,0.5)]'
@@ -454,16 +444,26 @@ export default function TablesPage() {
                                         }`}
                                     >
                                         <div className="flex justify-between items-start">
-                                            <span className="text-3xl font-black text-white uppercase">{isDelivery ? 'Delivery' : 'Retiro'}</span>
-                                            <div className="bg-white/20 px-3 py-1 rounded-full text-white text-xs font-bold">
-                                                {count} {count === 1 ? 'pedido' : 'pedidos'}
-                                            </div>
+                                            <span className="text-white/80 text-xs font-bold uppercase tracking-widest">{isDelivery ? 'Delivery' : 'Retiro'}</span>
+                                            <div className="bg-white/20 px-3 py-1 rounded-full text-white text-xs font-bold">{timeStr}</div>
                                         </div>
-                                        <div className="mt-auto">
-                                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">Total Pendiente</span>
-                                            <div className="text-2xl font-black text-white">
-                                                ${webOrders.filter(o => o.delivery_type === type).reduce((acc, o) => acc + Number(o.total || 0), 0).toLocaleString()}
-                                            </div>
+                                        <div className="mt-2">
+                                            <p className="text-xl font-black text-white leading-tight truncate">{order.customer_name || 'Cliente Web'}</p>
+                                            {order.customer_phone && (
+                                                <p className="text-white/70 text-xs font-bold mt-0.5">{order.customer_phone}</p>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 mt-3 space-y-0.5">
+                                            {productItems.slice(0, 3).map((item: any, idx: number) => (
+                                                <p key={idx} className="text-white/80 text-xs">{item.quantity}× {item.name}</p>
+                                            ))}
+                                            {productItems.length > 3 && (
+                                                <p className="text-white/60 text-xs italic">+{productItems.length - 3} más</p>
+                                            )}
+                                        </div>
+                                        <div className="mt-auto pt-4 border-t border-white/20">
+                                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">Total</span>
+                                            <div className="text-2xl font-black text-white">${Number(order.total || 0).toLocaleString('es-AR')}</div>
                                         </div>
                                     </motion.div>
                                 );
