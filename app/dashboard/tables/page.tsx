@@ -70,7 +70,7 @@ export default function TablesPage() {
                 .from('orders')
                 .select('id, customer_name, customer_phone, delivery_type, delivery_info, items, total, status, created_at, order_type')
                 .eq('order_type', 'web')
-                .in('status', ['pending', 'pending_payment'])
+                .eq('status', 'pending')
                 .order('created_at', { ascending: true })
                 .limit(50);
 

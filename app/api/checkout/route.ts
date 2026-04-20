@@ -10,7 +10,7 @@ const client = new MercadoPagoConfig({
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { items } = body;
+        const { items, orderId } = body;
 
         if (!process.env.MP_ACCESS_TOKEN) {
             return NextResponse.json({ error: "Falta configurar MP_ACCESS_TOKEN" }, { status: 500 });
@@ -22,6 +22,7 @@ export async function POST(req: Request) {
         // Crear la preferencia
         const result = await preference.create({
             body: {
+                external_reference: orderId || undefined,
                 // Mapear items al formato de MP
                 items: items.map((item: any) => ({
                     id: item.id,

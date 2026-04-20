@@ -43,6 +43,7 @@ async function markOrderPaid(orderId: string) {
     .from("orders")
     .update({
       paid: true,
+      status: "pending",
       payment_method: "MERCADO_PAGO",
       payment_notes: "Pagado vía Mercado Pago",
     })
