@@ -48,11 +48,11 @@ const CONTACT = {
   hours: "Lun–Dom · 08:00–22:00",
 };
 
-const categoryCards: { title: string; hint: string; href: string; Icon: LucideIcon }[] = [
-  { title: "Cafetería", hint: "Cafés y bebidas calientes", href: "/menu?cat=Cafetería", Icon: Coffee },
-  { title: "Comidas", hint: "Platos del día y más", href: "/menu?cat=Platos%20Diarios", Icon: UtensilsCrossed },
-  { title: "Bebidas", hint: "Bebidas frías", href: "/menu?cat=Bebidas", Icon: GlassWater },
-  { title: "Pastelería", hint: "Dulces y panificados", href: "/menu?cat=Pastelería", Icon: Cookie },
+const categoryCards: { title: string; hint: string; href: string; Icon: LucideIcon; color: string; iconBg: string; iconColor: string }[] = [
+  { title: "Cafetería",  hint: "Cafés y bebidas calientes", href: "/menu?cat=Cafetería",       Icon: Coffee,         color: "from-amber-50 to-orange-50   border-amber-200/60",  iconBg: "bg-amber-100",   iconColor: "text-amber-600" },
+  { title: "Comidas",   hint: "Platos del día y más",       href: "/menu?cat=Platos%20Diarios", Icon: UtensilsCrossed, color: "from-red-50 to-rose-50       border-red-200/60",    iconBg: "bg-red-100",     iconColor: "text-red-600"   },
+  { title: "Bebidas",   hint: "Bebidas frías",               href: "/menu?cat=Bebidas",          Icon: GlassWater,     color: "from-blue-50 to-cyan-50      border-blue-200/60",   iconBg: "bg-blue-100",    iconColor: "text-blue-600"  },
+  { title: "Pastelería",hint: "Dulces y panificados",        href: "/menu?cat=Pastelería",       Icon: Cookie,         color: "from-pink-50 to-fuchsia-50   border-pink-200/60",   iconBg: "bg-pink-100",    iconColor: "text-pink-600"  },
 ];
 
 const destacados: { name: string; desc: string; img: string; nameHint: string }[] = [
@@ -311,16 +311,17 @@ export default function Home() {
             {categoryCards.map((c, i) => {
               const Icon = c.Icon;
               return (
-              <FadeIn key={c.title} delay={i * 0.05}>
+              <FadeIn key={c.title} delay={i * 0.05} className="h-full">
                 <Link
                   href={c.href}
-                  className="group flex flex-col rounded-3xl bg-ink-50 border border-black/[0.08] p-8 sm:p-10 transition-all duration-[450ms] hover:-translate-y-1 hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.10)] hover:bg-white"
-                  style={{ aspectRatio: "3/4" }}
+                  className={`group flex flex-col h-full min-h-[220px] rounded-3xl bg-gradient-to-br border p-7 sm:p-8 transition-all duration-[350ms] hover:-translate-y-1.5 hover:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.13)] ${c.color}`}
                 >
-                  <Icon className="text-bloom-600 transition-transform duration-300 group-hover:scale-105" size={40} strokeWidth={1.25} aria-hidden />
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 ${c.iconBg}`}>
+                    <Icon className={c.iconColor} size={28} strokeWidth={1.75} aria-hidden />
+                  </div>
                   <div className="mt-auto">
-                    <h3 className="text-[20px] sm:text-[22px] font-medium tracking-tight text-ink-800">{c.title}</h3>
-                    <p className="text-[14px] text-ink-500 mt-1.5">{c.hint}</p>
+                    <h3 className="text-[18px] sm:text-[20px] font-bold tracking-tight text-ink-800">{c.title}</h3>
+                    <p className="text-[13px] text-ink-500 mt-1">{c.hint}</p>
                   </div>
                 </Link>
               </FadeIn>
