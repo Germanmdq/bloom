@@ -291,6 +291,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         // Also clear salon_tables entry if it exists for this virtual table
         await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
         
+        // IMPORTANT: Clear kitchen tickets so the next time the table opens it is empty
+        await supabase.from('kitchen_tickets').delete().eq('table_id', tableId);
+        
         if (onOrderComplete) onOrderComplete();
         onClose();
     };
@@ -346,7 +349,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             "El pago aún no figura acreditado. Si el cliente ya pagó, esperá unos segundos y volvé a confirmar."
                     );
                 }
+                
+                // Clear everything for this table
                 await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
+                await supabase.from("kitchen_tickets").delete().eq("table_id", tableId);
                 
                 if (webOrderId || currentWebOrderId) {
                     const idToComplete = webOrderId || currentWebOrderId;
