@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Phone, ShoppingBag } from "lucide-react";
 import { FoodKingMobileNavButton } from "@/components/FoodKingMobileNav";
+import { PublicAccountNav } from "@/components/PublicAccountNav";
 
 const HERO_LOGO_SRC = "/images/bloom-logo.png";
 
@@ -158,6 +159,7 @@ export function SiteHeader({
                 >
                   Pedí ahora
                 </Link>
+                <PublicAccountNav />
               </>
             )}
             {menuExtras != null && showCartButton ? (
