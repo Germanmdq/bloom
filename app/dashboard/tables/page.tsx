@@ -65,26 +65,34 @@ export default function TablesPage() {
         const finalOrderType = newTableType;
 
         if (!id) {
+            const parsed = parseInt(newTableIdInput);
             if (newTableType === 'LOCAL') {
-                const parsed = parseInt(newTableIdInput);
-                if (isNaN(parsed) || parsed < 1 || parsed > 41) {
-                    alert("Por favor ingresa un número de mesa válido del 1 al 41.");
+                if (isNaN(parsed) || parsed < 1 || parsed > 99) {
+                    alert("Por favor ingresa un número de mesa válido (1-99).");
                     return;
                 }
                 targetId = parsed;
             } else if (newTableType === 'DELIVERY') {
-                const freeDeliveryTables = tables
-                    .filter(t => t.id >= 100 && t.id < 200 && t.status === 'FREE')
-                    .sort((a, b) => a.id - b.id);
-                if (freeDeliveryTables.length > 0) {
-                    targetId = freeDeliveryTables[0].id;
+                if (!isNaN(parsed)) {
+                    targetId = parsed;
+                } else {
+                    const freeDeliveryTables = tables
+                        .filter(t => t.id >= 100 && t.id < 200 && t.status === 'FREE')
+                        .sort((a, b) => a.id - b.id);
+                    if (freeDeliveryTables.length > 0) {
+                        targetId = freeDeliveryTables[0].id;
+                    }
                 }
             } else if (newTableType === 'TAKEAWAY') {
-                const freeTakeawayTables = tables
-                    .filter(t => t.id >= 200 && t.id < 300 && t.status === 'FREE')
-                    .sort((a, b) => a.id - b.id);
-                if (freeTakeawayTables.length > 0) {
-                    targetId = freeTakeawayTables[0].id;
+                if (!isNaN(parsed)) {
+                    targetId = parsed;
+                } else {
+                    const freeTakeawayTables = tables
+                        .filter(t => t.id >= 200 && t.id < 300 && t.status === 'FREE')
+                        .sort((a, b) => a.id - b.id);
+                    if (freeTakeawayTables.length > 0) {
+                        targetId = freeTakeawayTables[0].id;
+                    }
                 }
             }
         }
@@ -218,19 +226,21 @@ export default function TablesPage() {
                                 <span className="font-bold text-gray-800">Mesa en Local</span>
                             </label>
 
-                            {newTableType === 'LOCAL' && (
-                                <div className="pl-12 pr-4 pb-2">
-                                    <input
-                                        autoFocus
-                                        type="number" min="1" max="41"
-                                        placeholder="Número de mesa (1-41)"
-                                        value={newTableIdInput}
-                                        onChange={(e) => setNewTableIdInput(e.target.value)}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') handleOpenTable(); }}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold outline-none focus:border-black"
-                                    />
-                                </div>
-                            )}
+                            <div className="pl-12 pr-4 pb-2">
+                                <input
+                                    autoFocus
+                                    type="number"
+                                    placeholder={
+                                        newTableType === 'LOCAL' ? "Nº Mesa (1-99)" :
+                                        newTableType === 'DELIVERY' ? "Nº Delivery (Opcional, 101+)" :
+                                        "Nº Retiro (Opcional, 201+)"
+                                    }
+                                    value={newTableIdInput}
+                                    onChange={(e) => setNewTableIdInput(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') handleOpenTable(); }}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold outline-none focus:border-black"
+                                />
+                            </div>
 
                             <label className="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all hover:border-black/20 has-[:checked]:border-green-500 has-[:checked]:bg-green-50">
                                 <input
