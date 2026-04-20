@@ -408,9 +408,9 @@ export default function TablesPage() {
                     const totalItems = webOrders.length + sortedTables.length;
                     // Adapt columns starting from a minimum of 4
                     const gridCols =
-                        totalItems <= 4 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' :
-                        totalItems <= 6 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4' :
-                        totalItems <= 9 ? 'grid-cols-3 md:grid-cols-4' :
+                        totalItems <= 4 ? 'grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4' :
+                        totalItems <= 6 ? 'grid-cols-3 md:grid-cols-4 lg:grid-cols-4' :
+                        totalItems <= 8 ? 'grid-cols-4 md:grid-cols-4' :
                         totalItems <= 12 ? 'grid-cols-4 md:grid-cols-5' :
                         'grid-cols-4 md:grid-cols-5 lg:grid-cols-6';
 
