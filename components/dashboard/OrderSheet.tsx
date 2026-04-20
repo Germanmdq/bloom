@@ -119,15 +119,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             }
 
             const status = tableData?.status as string | undefined;
-            const persisted = Array.isArray(tableData?.items) ? tableData.items : [];
+            const persisted = (status === "OCCUPIED" && Array.isArray(tableData?.items)) ? tableData.items : [];
 
-            // Limpiar datos previos
+            // Limpiar datos previos del estado local SIEMPRE
             useOrderStore.getState().clearCart();
             setCustomerName("");
             setCustomerAddress("");
             setCustomerPhone("");
 
-            if (persisted.length > 0) {
+            if (status === "OCCUPIED" && persisted.length > 0) {
                 persisted.forEach((item: any) => {
                     if (item.id === 'meta-customer') {
                         setCustomerName(item.name || "");
