@@ -70,6 +70,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [customerPhone, setCustomerPhone] = useState("");
     const [customerAddress, setCustomerAddress] = useState("");
 
+    const [deliveryPersons, setDeliveryPersons] = useState<any[]>([]);
+    const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState<string>("");
+
+    useEffect(() => {
+        fetch("/api/delivery-persons").then(r => r.json()).then(data => {
+            if (Array.isArray(data)) setDeliveryPersons(data);
+        }).catch(console.error);
+    }, []);
+
     const onMpOrderReady = useCallback((id: string | null) => {
         setMpPosOrderId(id);
     }, []);
@@ -366,6 +375,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     total: finalTotal,
                     payment_method: paymentMethod,
                     waiter_id: selectedWaiter || null,
+                    discount: discount,
+                    status: (isWebTable || tableId >= 100) ? 'completed' : 'paid',
+                    customer_id: isWebTable ? (webOrderData?.customer_id || null) : null,
+                    delivery_person_id: selectedDeliveryPerson ? parseInt(selectedDeliveryPerson) : null,
                     items: cart,
                 });
                 
@@ -668,6 +681,23 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <span className="text-sm text-gray-500">Total</span>
                             <span className="text-2xl font-black text-gray-900">${total.toLocaleString()}</span>
                         </div>
+
+                        {/* Delivery Person Selector */}
+                        {(orderType === 'DELIVERY' || orderType === 'TAKEAWAY') && (
+                            <div className="mb-4">
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Repartidor (opcional)</label>
+                                <select 
+                                    value={selectedDeliveryPerson}
+                                    onChange={(e) => setSelectedDeliveryPerson(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-black/5"
+                                >
+                                    <option value="">-- Sin asignar --</option>
+                                    {deliveryPersons.map((p: any) => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         <button
                             onClick={() => setShowPaymentModal(true)}

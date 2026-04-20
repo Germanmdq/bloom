@@ -7,38 +7,39 @@ import { UserPlus, Trash2, Mail, User, Coffee, Loader2 } from "lucide-react";
 
 export default function StaffPage() {
     const [profiles, setProfiles] = useState<any[]>([]);
+    const [deliveries, setDeliveries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
+    const [isAddingDelivery, setIsAddingDelivery] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
-
-    const [newStaff, setNewStaff] = useState({
-        email: "",
-        password: "",
-        fullName: "",
-        role: "WAITER"
-    });
+    const [newStaff, setNewStaff] = useState({ email: "", password: "", fullName: "", role: "WAITER" });
+    const [newDelivery, setNewDelivery] = useState({ name: "" });
 
     const supabase = createClient();
 
     useEffect(() => {
-        fetchProfiles();
+        fetchEverything();
     }, []);
 
-    async function fetchProfiles() {
+    async function fetchEverything() {
         setLoading(true);
         setError(null);
-        const { data, error: profileError } = await supabase
+        
+        // Fetch staff profiles (excluding customers)
+        const { data: pData, error: pErr } = await supabase
             .from('profiles')
             .select('*')
+            .eq('is_customer', false)
             .order('role', { ascending: true });
 
-        if (!profileError) {
-            setProfiles(data || []);
-        } else {
-            console.error("Error fetching profiles:", profileError.message);
-            setError("No se pudieron cargar los empleados. Revisa las políticas RLS.");
-        }
+        // Fetch delivery persons
+        const dResp = await fetch('/api/delivery-persons');
+        const dData = await dResp.json();
+
+        if (!pErr) setProfiles(pData || []);
+        if (Array.isArray(dData)) setDeliveries(dData);
+        
         setLoading(false);
     }
 
