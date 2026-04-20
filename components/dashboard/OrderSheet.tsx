@@ -527,20 +527,20 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     )}
 
                     {/* Área principal: categorías o productos */}
-                    <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-3 no-scrollbar">
                         {!searchTerm && !activeCategory ? (
-                            /* Vista de categorías como cards */
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                            /* Categorías: grid que llena toda la pantalla */
+                            <div className="h-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 auto-rows-fr">
                                 {categories.map((cat: any) => {
                                     const count = products.filter((p: any) => p.category_id === cat.id).length;
                                     return (
                                         <button
                                             key={cat.id}
                                             onClick={() => setActiveCategory(cat.id)}
-                                            className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md active:scale-95 transition-all text-left border border-gray-100 hover:border-gray-300"
+                                            className="bg-white rounded-2xl px-4 py-3 shadow-sm hover:shadow-md active:scale-95 transition-all text-left border border-gray-100 hover:border-gray-300 flex flex-col justify-center min-h-[72px]"
                                         >
-                                            <p className="font-bold text-gray-900 text-sm leading-snug">{cat.name}</p>
-                                            <p className="text-xs text-gray-400 mt-1">{count} productos</p>
+                                            <p className="font-black text-gray-900 text-base leading-snug">{cat.name}</p>
+                                            <p className="text-xs text-gray-400 mt-0.5 font-medium">{count} productos</p>
                                         </button>
                                     );
                                 })}
@@ -550,18 +550,16 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 Sin resultados
                             </div>
                         ) : (
-                            /* Vista de productos */
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                            /* Productos: grid que llena toda la pantalla */
+                            <div className="h-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 auto-rows-fr">
                                 {displayProducts.map((item: any) => (
                                     <button
                                         key={item.id}
                                         onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                        className="group bg-white rounded-2xl p-4 shadow-sm hover:shadow-md active:scale-95 transition-all text-center border border-gray-100 hover:border-gray-300 flex flex-col justify-center min-h-[120px]"
+                                        className="group bg-white rounded-2xl px-4 py-3 shadow-sm hover:shadow-md active:scale-95 transition-all text-center border border-gray-100 hover:border-gray-300 flex flex-col justify-center min-h-[80px]"
                                     >
-                                        <div className="flex-1 flex flex-col justify-center">
-                                            <p className="text-lg font-black text-gray-900 leading-tight mb-2 line-clamp-3 uppercase">{item.name}</p>
-                                            <p className="text-md font-bold text-gray-500">${Number(item.price).toLocaleString()}</p>
-                                        </div>
+                                        <p className="text-base font-black text-gray-900 leading-tight mb-1 line-clamp-3 uppercase">{item.name}</p>
+                                        <p className="text-sm font-bold text-gray-500">${Number(item.price).toLocaleString()}</p>
                                     </button>
                                 ))}
                             </div>
