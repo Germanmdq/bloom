@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { LogIn } from "lucide-react";
+import { LogIn, LogOut, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
-function displayNameFromUser(user: User) {
+function displayNameFromUser(user: SupabaseUser) {
   const meta = user.user_metadata as { full_name?: string; name?: string } | undefined;
   const n = meta?.full_name?.trim() || meta?.name?.trim();
   if (n) return n;
@@ -16,18 +17,18 @@ function displayNameFromUser(user: User) {
 
 type Props = {
   className?: string;
-  /** Ej.: cerrar drawer móvil al ir a /auth o /cuenta */
   onAfterNavigate?: () => void;
-  /** Navbar sobre foto oscura (p. ej. /about) */
   tone?: "default" | "onDark";
 };
 
-/** Navegación pública: sesión Supabase → enlace a /cuenta o icono a /auth. No usar en el dashboard. */
 export function PublicAccountNav({ className = "", onAfterNavigate, tone = "default" }: Props) {
   const supabase = createClient();
+  const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [open, setOpen] = useState(false);
   const sessionCheckedRef = useRef(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +53,25 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
     };
   }, [supabase]);
 
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  const handleSignOut = async () => {
+    setOpen(false);
+    await supabase.auth.signOut();
+    router.replace("/");
+    router.refresh();
+    onAfterNavigate?.();
+  };
+
   const dark = tone === "onDark";
 
   if (!ready) {
@@ -67,20 +87,44 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
     const label = displayNameFromUser(user);
     const initial = label.slice(0, 1).toUpperCase();
     return (
-      <Link
-        href="/cuenta"
-        onClick={() => onAfterNavigate?.()}
-        className={`inline-flex max-w-[11rem] items-center gap-2 rounded-full border px-1.5 py-1 pr-3 text-sm font-black shadow-sm ${
-          dark
-            ? "border-white/25 bg-white/10 text-white hover:bg-white/15"
-            : "border-amber-100/90 bg-white text-neutral-900 hover:bg-[#FAF7F2]"
-        } ${className}`}
-      >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2d4a3e] text-xs font-black text-white">
-          {initial}
-        </span>
-        <span className="truncate">{label}</span>
-      </Link>
+      <div ref={dropdownRef} className={`relative ${className}`}>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className={`inline-flex max-w-[11rem] items-center gap-2 rounded-full border px-1.5 py-1 pr-3 text-sm font-black shadow-sm transition-colors ${
+            dark
+              ? "border-white/25 bg-white/10 text-white hover:bg-white/15"
+              : "border-amber-100/90 bg-white text-neutral-900 hover:bg-[#FAF7F2]"
+          }`}
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2d4a3e] text-xs font-black text-white">
+            {initial}
+          </span>
+          <span className="truncate">{label}</span>
+        </button>
+
+        {open && (
+          <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl border border-neutral-100 bg-white py-1.5 shadow-lg z-50">
+            <Link
+              href="/cuenta"
+              onClick={() => { setOpen(false); onAfterNavigate?.(); }}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
+            >
+              <User size={16} className="text-neutral-400" />
+              Mi cuenta
+            </Link>
+            <div className="my-1 border-t border-neutral-100" />
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <LogOut size={16} />
+              Cerrar sesión
+            </button>
+          </div>
+        )}
+      </div>
     );
   }
 

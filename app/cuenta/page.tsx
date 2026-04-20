@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Camera, ChevronDown, ChevronUp, CircleUser, Coffee, Home, Loader2, Lock, PieChart, ShoppingBag, Tag } from "lucide-react";
+import { Camera, ChevronDown, ChevronUp, CircleUser, Coffee, Home, Loader2, Lock, LogOut, PieChart, ShoppingBag, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 const CUENTA_HABILITADA = false;
@@ -619,6 +619,19 @@ export default function CuentaPage() {
           {navBtn("estadisticas", "Estadísticas", PieChart)}
         </nav>
         <div className="min-h-0 flex-1" />
+        <div className="px-2 pb-6">
+          <button
+            type="button"
+            onClick={async () => {
+              await createClient().auth.signOut();
+              router.replace("/");
+            }}
+            className="flex w-full items-center gap-3 rounded-r-lg border-l-4 border-transparent py-3 pl-4 pr-3 text-left text-[15px] font-semibold text-white/70 transition hover:bg-white/5 hover:text-white"
+          >
+            <LogOut className="h-5 w-5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+            <span>Cerrar sesión</span>
+          </button>
+        </div>
       </>
     );
   };
@@ -1144,6 +1157,17 @@ export default function CuentaPage() {
         style={{ backgroundColor: GREEN }}
       >
         <SidebarBody mobile />
+        <button
+          type="button"
+          onClick={async () => {
+            await createClient().auth.signOut();
+            router.replace("/");
+          }}
+          className="flex min-w-0 flex-col items-center justify-center px-3 text-white/80 hover:text-white transition-colors"
+          aria-label="Cerrar sesión"
+        >
+          <LogOut className="h-6 w-6 shrink-0" strokeWidth={2} aria-hidden />
+        </button>
       </div>
     </div>
   );
