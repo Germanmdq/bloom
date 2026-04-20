@@ -444,7 +444,7 @@ export default function TablesPage() {
                                             status: 'OCCUPIED',
                                             total: webOrders.filter(o => o.delivery_type === type).reduce((acc, o) => acc + Number(o.total || 0), 0),
                                             items: [],
-                                            order_type: isDelivery ? 'DELIVERY' : 'TAKEAWAY',
+                                            order_type: isDelivery ? 'DELIVERY' : 'LOCAL',
                                             updated_at: new Date().toISOString()
                                         })}
                                         className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border min-h-[400px] ${
