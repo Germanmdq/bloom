@@ -111,39 +111,32 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
             if (tableData?.order_type) {
                 setOrderType(tableData.order_type as any);
             } else {
-                // Fallback por rango de ID si no está definido en DB
                 if (tableId >= 100 && tableId < 200) setOrderType('DELIVERY');
                 else if (tableId >= 200) setOrderType('TAKEAWAY');
                 else setOrderType('LOCAL');
             }
 
-            // Intentar recuperar data del cliente desde las notas guardadas (formato simple)
-            const savedNotes = tableData?.notes || "";
-            if (savedNotes.includes("📦 ")) {
-                // Formato: 📦 Nombre | Dir | Tel || Notas Reales
-                const parts = savedNotes.split(" || ");
-                const meta = parts[0].replace("📦 ", "").split(" | ");
-                if (meta.length >= 3) {
-                    setCustomerName(meta[0]);
-                    setCustomerAddress(meta[1]);
-                    setCustomerPhone(meta[2]);
-                    if (parts[1]) setNotes(parts[1]);
-                }
-            } else {
-                setNotes(savedNotes);
-            }
             const status = tableData?.status as string | undefined;
             const persisted = Array.isArray(tableData?.items) ? tableData.items : [];
 
-            // Mesa libre: carrito vacío. No usar kitchen_tickets (son históricos QR/cocina, no “cuenta abierta”).
-            if (status === "FREE") {
-                return;
-            }
+            // Limpiar datos previos
+            useOrderStore.getState().clearCart();
+            setCustomerName("");
+            setCustomerAddress("");
+            setCustomerPhone("");
 
             if (persisted.length > 0) {
-                persisted.forEach((item: any) => addToCart(normalizeTableItem(item)));
+                persisted.forEach((item: any) => {
+                    if (item.id === 'meta-customer') {
+                        setCustomerName(item.name || "");
+                        setCustomerAddress(item.address || "");
+                        setCustomerPhone(item.phone || "");
+                    } else {
+                        addToCart(normalizeTableItem(item));
+                    }
+                });
             } else if (status === "OCCUPIED" && tickets?.length) {
-                // Solo si la mesa está ocupada y no hay items en salon_tables: recuperar desde tickets QR.
+                // Solo si la mesa está ocupada y no hay items en salon_tables: recuperar desde tickets 
                 for (const ticket of tickets) {
                     for (const raw of ticket.items || []) {
                         const item = normalizeTableItem(raw);
@@ -223,22 +216,31 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const persistTableState = async () => {
         if (finishingRef.current) return;
         if (cart.length === 0) return;
-        const currentTotal = useOrderStore.getState().getTotal();
-        const currentCart = useOrderStore.getState().cart;
-        const metaPrefix = (customerName || customerAddress || customerPhone) 
-            ? `📦 ${customerName} | ${customerAddress} | ${customerPhone} || ` 
-            : "";
-        const finalNotes = metaPrefix + notes;
+        const currentCart = [...useOrderStore.getState().cart];
+        
+        // Agregar metadata del cliente como un item virtual para persistencia
+        if (customerName || customerAddress || customerPhone) {
+            currentCart.push({
+                id: 'meta-customer',
+                name: customerName,
+                address: customerAddress,
+                phone: customerPhone,
+                price: 0,
+                quantity: 1
+            } as any);
+        }
 
         const { error } = await supabase
             .from('salon_tables')
-            .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal, items: currentCart, notes: finalNotes });
+            .upsert({ 
+                id: tableId, 
+                status: 'OCCUPIED', 
+                total: currentTotal, 
+                items: currentCart
+            });
+        
         if (error) {
-            // Fallback: columna items puede no existir en DB aún
-            const { error: e2 } = await supabase
-                .from('salon_tables')
-                .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal });
-            if (e2) console.error("Failed to sync table:", e2.message);
+            console.error("Failed to sync table:", error.message);
         }
     };
 
@@ -374,7 +376,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         try {
             await sendKitchenTicket.mutateAsync({
                 table_id: String(tableId),
-                items: cart.map(i => ({ name: i.name, quantity: i.quantity })),
+                items: cart.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
                 notes: notes
             });
             setFeedback({ message: "Enviado a cocina", type: 'success' });
