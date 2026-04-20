@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Camera, ChevronDown, ChevronUp, CircleUser, Coffee, Home, Loader2, Lock, PieChart, ShoppingBag, Tag } from "lucide-react";
+import { ArrowLeft, Camera, ChevronDown, ChevronUp, CircleUser, Coffee, Home, Loader2, Lock, PieChart, ShoppingBag, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 const COFFEE_GOAL = 10;
@@ -552,6 +552,14 @@ export default function CuentaPage() {
     if (mobile) {
       return (
         <nav className="flex min-w-0 flex-1 flex-row justify-around px-1">
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="flex min-w-0 flex-1 flex-col items-center justify-center py-2 text-white"
+            aria-label="Volver al inicio"
+          >
+            <ArrowLeft className="h-6 w-6 shrink-0" strokeWidth={2} aria-hidden />
+          </button>
           {mobileNavBtn("inicio", "Inicio", Home)}
           {mobileNavBtn("pedidos", "Mis pedidos", ShoppingBag)}
           {mobileNavBtn("cupones", "Beneficios", Tag)}
@@ -563,7 +571,9 @@ export default function CuentaPage() {
     return (
       <>
         <div className="px-5 pt-8">
-          <p className="text-2xl font-black tracking-[-0.06em] text-white">BLOOM.</p>
+          <button onClick={() => router.push("/")} className="text-2xl font-black tracking-[-0.06em] text-white hover:opacity-80 transition-opacity">
+            BLOOM.
+          </button>
         </div>
         <div className="mt-8 flex flex-col items-center gap-2 px-4 text-center">
           <div
@@ -584,6 +594,15 @@ export default function CuentaPage() {
           )}
         </div>
         <nav className="mt-8 flex min-h-0 flex-1 flex-col gap-0.5 px-2">
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="mb-4 flex w-full items-center gap-3 rounded-r-lg border-l-4 border-transparent py-3 pl-4 pr-3 text-left text-[15px] font-semibold text-white/90 transition hover:bg-white/5"
+          >
+            <ArrowLeft className="h-5 w-5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+            <span>Volver al sitio</span>
+          </button>
+
           {navBtn("inicio", "Inicio", Home)}
           {navBtn("pedidos", "Mis pedidos", ShoppingBag)}
           {navBtn("cupones", "Beneficios", Tag)}

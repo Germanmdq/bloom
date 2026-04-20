@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, MessageCircle, Briefcase, X, LogOut } from "lucide-react";
+import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, MessageCircle, Briefcase, X, LogOut, Home } from "lucide-react";
 import { useUserRole } from "@/lib/hooks/use-pos-data";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -81,6 +81,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 </div>
 
                 <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                    <Link href="/" onClick={onClose}>
+                        <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-white/40 hover:text-gray-900 transition-all duration-200">
+                           <Home size={20} className="stroke-[2.5px] opacity-70" />
+                           <span className="font-medium">Ver sitio público</span>
+                        </div>
+                    </Link>
+                    <div className="h-px bg-gray-100 my-2 mx-4" />
                     {filteredLinks.map((link) => {
                         const isActive =
                             pathname.startsWith(link.href);

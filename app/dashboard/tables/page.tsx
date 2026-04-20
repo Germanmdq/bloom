@@ -60,35 +60,46 @@ export default function TablesPage() {
         fetchTables();
     };
 
-    const handleOpenTable = async () => {
-        let targetId = 0;
+    const handleOpenTable = async (id?: number) => {
+        let targetId = id || 0;
         const finalOrderType = newTableType;
 
-        if (newTableType === 'LOCAL') {
-            const parsed = parseInt(newTableIdInput);
-            if (isNaN(parsed) || parsed < 1 || parsed > 41) {
-                alert("Por favor ingresa un número de mesa válido del 1 al 41.");
-                return;
-            }
-            targetId = parsed;
-        } else if (newTableType === 'DELIVERY') {
-            const freeDeliveryTables = tables
-                .filter(t => t.id >= 100 && t.id < 200 && t.status === 'FREE')
-                .sort((a, b) => a.id - b.id);
-            if (freeDeliveryTables.length > 0) {
-                targetId = freeDeliveryTables[0].id;
-            }
-        } else if (newTableType === 'TAKEAWAY') {
-            const freeTakeawayTables = tables
-                .filter(t => t.id >= 200 && t.id < 300 && t.status === 'FREE')
-                .sort((a, b) => a.id - b.id);
-            if (freeTakeawayTables.length > 0) {
-                targetId = freeTakeawayTables[0].id;
+        if (!id) {
+            if (newTableType === 'LOCAL') {
+                const parsed = parseInt(newTableIdInput);
+                if (isNaN(parsed) || parsed < 1 || parsed > 41) {
+                    alert("Por favor ingresa un número de mesa válido del 1 al 41.");
+                    return;
+                }
+                targetId = parsed;
+            } else if (newTableType === 'DELIVERY') {
+                const freeDeliveryTables = tables
+                    .filter(t => t.id >= 100 && t.id < 200 && t.status === 'FREE')
+                    .sort((a, b) => a.id - b.id);
+                if (freeDeliveryTables.length > 0) {
+                    targetId = freeDeliveryTables[0].id;
+                }
+            } else if (newTableType === 'TAKEAWAY') {
+                const freeTakeawayTables = tables
+                    .filter(t => t.id >= 200 && t.id < 300 && t.status === 'FREE')
+                    .sort((a, b) => a.id - b.id);
+                if (freeTakeawayTables.length > 0) {
+                    targetId = freeTakeawayTables[0].id;
+                }
             }
         }
 
         if (targetId === 0) {
             alert("No hay mesas libres (o creadas) en este rango.");
+            return;
+        }
+
+        // Si la mesa ya está ocupada, simplemente la seleccionamos
+        const existing = tables.find(t => t.id === targetId);
+        if (existing && existing.status === 'OCCUPIED') {
+            setSelectedTable(existing);
+            setIsNewTableModalOpen(false);
+            setNewTableIdInput("");
             return;
         }
 
@@ -100,7 +111,8 @@ export default function TablesPage() {
             .single();
 
         if (error) {
-            alert("Hubo un error al abrir la mesa.");
+            console.error("Error opening table:", error);
+            alert("Hubo un error al abrir la mesa: " + error.message);
         } else {
             setIsNewTableModalOpen(false);
             setNewTableIdInput("");
@@ -109,6 +121,18 @@ export default function TablesPage() {
                 setSelectedTable(data as Table);
             }
         }
+    };
+
+    const handleQuickOpen = (val: string) => {
+        const num = parseInt(val);
+        if (isNaN(num)) return;
+        
+        // Determinar tipo según rango
+        if (num >= 1 && num < 100) setNewTableType('LOCAL');
+        else if (num >= 100 && num < 200) setNewTableType('DELIVERY');
+        else if (num >= 200 && num < 300) setNewTableType('TAKEAWAY');
+
+        handleOpenTable(num);
     };
 
     const sortedTables = [...tables]
@@ -197,10 +221,12 @@ export default function TablesPage() {
                             {newTableType === 'LOCAL' && (
                                 <div className="pl-12 pr-4 pb-2">
                                     <input
+                                        autoFocus
                                         type="number" min="1" max="41"
                                         placeholder="Número de mesa (1-41)"
                                         value={newTableIdInput}
                                         onChange={(e) => setNewTableIdInput(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') handleOpenTable(); }}
                                         className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold outline-none focus:border-black"
                                     />
                                 </div>
@@ -248,12 +274,25 @@ export default function TablesPage() {
             <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-6">
                     <h2 className="text-3xl font-bold tracking-tight text-gray-900">Salón</h2>
-                    <button
-                        onClick={() => setIsNewTableModalOpen(true)}
-                        className="bg-black text-white px-6 py-2 rounded-full font-bold uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition-all shadow-xl"
-                    >
-                        + Abrir Mesa
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="number"
+                            placeholder="Mesa #"
+                            className="w-24 bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold outline-none focus:border-black focus:ring-2 focus:ring-black/5 transition-all shadow-sm"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleQuickOpen(e.currentTarget.value);
+                                    e.currentTarget.value = "";
+                                }
+                            }}
+                        />
+                        <button
+                            onClick={() => setIsNewTableModalOpen(true)}
+                            className="bg-black text-white px-6 py-2 rounded-xl font-bold uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-xl"
+                        >
+                            + Abrir Mesa
+                        </button>
+                    </div>
                 </div>
                 <div className="flex gap-4">
                     <div className="flex items-center gap-2 text-sm text-gray-500 font-bold">

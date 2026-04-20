@@ -24,19 +24,7 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    let supabase;
-    try {
-      supabase = createServiceRoleClient();
-    } catch {
-      return NextResponse.json(
-        {
-          error:
-            "Falta SUPABASE_SERVICE_ROLE_KEY en el servidor (Vercel / env). Sin ella no se pueden listar pedidos.",
-          code: "MISSING_SERVICE_ROLE_KEY",
-        },
-        { status: 503 }
-      );
-    }
+    const supabase = createServiceRoleClient();
 
     const { data, error } = await supabase
       .from("orders")
