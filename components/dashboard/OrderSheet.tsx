@@ -216,6 +216,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const persistTableState = async () => {
         if (finishingRef.current) return;
         if (cart.length === 0) return;
+        const currentTotal = useOrderStore.getState().getTotal();
         const currentCart = [...useOrderStore.getState().cart];
         
         // Agregar metadata del cliente como un item virtual para persistencia
