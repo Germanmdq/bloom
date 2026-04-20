@@ -397,77 +397,94 @@ export default function TablesPage() {
                     <p className="text-gray-400 text-sm max-w-md">No hay mesas abiertas en este momento.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 lg:gap-4">
-                    {/* Web Orders - shown directly from orders table */}
-                    {webOrders.map((order, idx) => {
-                        const isDelivery = order.delivery_type === 'delivery';
-                        return (
-                            <motion.div
-                                key={order.id}
-                                layoutId={`web-order-${order.id}`}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setSelectedWebOrder(order)}
-                                className={`aspect-video rounded-3xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden backdrop-blur-2xl border border-white/40 ${
-                                    isDelivery
-                                        ? 'bg-green-100/60 border-green-200/50 shadow-[0_10px_20px_rgba(34,197,94,0.15)]'
-                                        : 'bg-yellow-100/60 border-yellow-200/50 shadow-[0_10px_20px_rgba(250,204,21,0.15)]'
-                                }`}
-                            >
-                                <div className="flex justify-between items-start">
-                                    <span className="text-lg font-black text-gray-900 truncate max-w-[80%]">
-                                        {order.customer_name?.split(' ')[0] || 'Web'}
-                                    </span>
-                                    <div className={`w-2.5 h-2.5 rounded-full animate-pulse shrink-0 ${
-                                        isDelivery ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]'
-                                    }`} />
-                                </div>
+                (() => {
+                    const totalItems = webOrders.length + sortedTables.length;
+                    // Adapt columns & card size based on how many items are open
+                    const gridCols =
+                        totalItems <= 2 ? 'grid-cols-2' :
+                        totalItems <= 4 ? 'grid-cols-2 sm:grid-cols-2' :
+                        totalItems <= 6 ? 'grid-cols-2 sm:grid-cols-3' :
+                        totalItems <= 9 ? 'grid-cols-3' :
+                        totalItems <= 12 ? 'grid-cols-3 md:grid-cols-4' :
+                        totalItems <= 16 ? 'grid-cols-4 md:grid-cols-4 lg:grid-cols-5' :
+                        'grid-cols-4 md:grid-cols-5 lg:grid-cols-6';
 
-                                <div className="mt-auto">
-                                    <div className="mb-1">
-                                        <span className={`inline-block px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest shadow-sm ${
-                                            isDelivery ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                                        }`}>
-                                            {isDelivery ? '🌐 Delivery' : '🌐 Retiro'}
-                                        </span>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
-                                    <div className="text-xl font-bold text-gray-900">${Number(order.total).toLocaleString("es-AR")}</div>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
+                    return (
+                        <div className={`grid ${gridCols} gap-3 lg:gap-4 auto-rows-fr`}
+                            style={{ minHeight: 'calc(100vh - 180px)' }}>
 
-                    {/* POS Tables */}
-                    {sortedTables.map(table => {
-                        const styles = getCardStyles(table);
-                        return (
-                            <motion.div
-                                key={table.id}
-                                layoutId={`table-${table.id}`}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setSelectedTable(table)}
-                                className={`aspect-video rounded-3xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden backdrop-blur-2xl border border-white/40 ${styles.bg}`}
-                            >
-                                <div className="flex justify-between items-start">
-                                    <span className="text-2xl font-semibold text-gray-900">{table.id}</span>
-                                    <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${styles.dot}`} />
-                                </div>
+                            {/* Web Orders */}
+                            {webOrders.map((order) => {
+                                const isDelivery = order.delivery_type === 'delivery';
+                                return (
+                                    <motion.div
+                                        key={order.id}
+                                        layoutId={`web-order-${order.id}`}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => setSelectedWebOrder(order)}
+                                        className={`rounded-3xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden backdrop-blur-2xl border border-white/40 ${
+                                            isDelivery
+                                                ? 'bg-green-100/60 border-green-200/50 shadow-[0_10px_20px_rgba(34,197,94,0.15)]'
+                                                : 'bg-yellow-100/60 border-yellow-200/50 shadow-[0_10px_20px_rgba(250,204,21,0.15)]'
+                                        }`}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-xl font-black text-gray-900 truncate max-w-[80%]">
+                                                {order.customer_name?.split(' ')[0] || 'Web'}
+                                            </span>
+                                            <div className={`w-3 h-3 rounded-full animate-pulse shrink-0 ${
+                                                isDelivery ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]' : 'bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]'
+                                            }`} />
+                                        </div>
 
-                                <div className="mt-auto">
-                                    <div className="mb-1">
-                                        <span className={`inline-block px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest shadow-sm ${styles.badgeBg}`}>
-                                            {styles.label}
-                                        </span>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
-                                    <div className="text-xl font-bold text-gray-900">${table.total.toLocaleString("es-AR")}</div>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
-                </div>
+                                        <div className="mt-auto">
+                                            <div className="mb-1">
+                                                <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm ${
+                                                    isDelivery ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                                }`}>
+                                                    {isDelivery ? '🌐 Delivery' : '🌐 Retiro'}
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
+                                            <div className="text-2xl font-black text-gray-900">${Number(order.total).toLocaleString("es-AR")}</div>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+
+                            {/* POS Tables */}
+                            {sortedTables.map(table => {
+                                const styles = getCardStyles(table);
+                                return (
+                                    <motion.div
+                                        key={table.id}
+                                        layoutId={`table-${table.id}`}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => setSelectedTable(table)}
+                                        className={`rounded-3xl p-5 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden backdrop-blur-2xl border border-white/40 ${styles.bg}`}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-3xl font-black text-gray-900">{table.id}</span>
+                                            <div className={`w-3 h-3 rounded-full animate-pulse ${styles.dot}`} />
+                                        </div>
+
+                                        <div className="mt-auto">
+                                            <div className="mb-1">
+                                                <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm ${styles.badgeBg}`}>
+                                                    {styles.label}
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
+                                            <div className="text-2xl font-black text-gray-900">${table.total.toLocaleString("es-AR")}</div>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    );
+                })()
             )}
 
             {/* Web Order Sheet */}
