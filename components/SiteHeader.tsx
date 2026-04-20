@@ -160,12 +160,6 @@ export function SiteHeader({
                   Pedir ahora
                 </Link>
                 <PublicAccountNav />
-                <Link
-                  href="/login"
-                  className="hidden sm:inline text-[11px] font-bold text-neutral-400 hover:text-neutral-700 whitespace-nowrap"
-                >
-                  Equipo
-                </Link>
               </>
             )}
             {menuExtras != null && showCartButton ? (

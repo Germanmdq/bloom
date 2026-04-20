@@ -91,16 +91,12 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className={`inline-flex max-w-[11rem] items-center gap-2 rounded-full border px-1.5 py-1 pr-3 text-sm font-black shadow-sm transition-colors ${
-            dark
-              ? "border-white/25 bg-white/10 text-white hover:bg-white/15"
-              : "border-amber-100/90 bg-white text-neutral-900 hover:bg-[#FAF7F2]"
+          aria-label="Mi cuenta"
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black text-white shadow-sm transition-opacity hover:opacity-80 ${
+            dark ? "bg-white/20" : "bg-[#2d4a3e]"
           }`}
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2d4a3e] text-xs font-black text-white">
-            {initial}
-          </span>
-          <span className="truncate">{label}</span>
+          {initial}
         </button>
 
         {open && (
