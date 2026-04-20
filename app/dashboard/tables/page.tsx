@@ -347,7 +347,12 @@ export default function TablesPage() {
 
             <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-6">
-                    <h2 className="text-3xl font-bold tracking-tight text-gray-900">Salón</h2>
+                    <div>
+                        <h1 className="text-4xl font-black text-gray-900 tracking-tighter">
+                            Bloom <span className="text-gray-300 font-light italic">OS</span>
+                        </h1>
+                        <p className="text-[10px] font-bold text-green-500 uppercase tracking-widest mt-1">Dashboard Actualizado ✓</p>
+                    </div>
                     <div className="flex items-center gap-2">
                         <input
                             type="number"
@@ -414,23 +419,34 @@ export default function TablesPage() {
                     // Adapt columns starting from a minimum of 4
                     const gridCols =
                         totalItems <= 6 ? 'grid-cols-3' :
-                        totalItems <= 8 ? 'grid-cols-4' :
+                totalItems <= 8 ? 'grid-cols-4' :
                         totalItems <= 12 ? 'grid-cols-5' :
                         'grid-cols-6';
 
                     return (
                         <div className={`grid ${gridCols} gap-6`}>
-
-                            {/* Web Orders */}
-                            {webOrders.map((order) => {
-                                const isDelivery = order.delivery_type === 'delivery';
+                            {/* Web Summary Tables */}
+                            {['delivery', 'local'].map(type => {
+                                const count = webOrders.filter(o => o.delivery_type === type).length;
+                                if (count === 0) return null;
+                                
+                                const isDelivery = type === 'delivery';
+                                const virtualId = isDelivery ? 5001 : 5000;
+                                
                                 return (
                                     <motion.div
-                                        key={order.id}
-                                        layoutId={`web-order-${order.id}`}
+                                        key={virtualId}
+                                        layoutId={`virtual-${virtualId}`}
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
-                                        onClick={() => setSelectedWebOrder(order)}
+                                        onClick={() => setSelectedTable({
+                                            id: virtualId,
+                                            status: 'OCCUPIED',
+                                            total: webOrders.filter(o => o.delivery_type === type).reduce((acc, o) => acc + Number(o.total || 0), 0),
+                                            items: [],
+                                            order_type: isDelivery ? 'DELIVERY' : 'TAKEAWAY',
+                                            updated_at: new Date().toISOString()
+                                        })}
                                         className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border min-h-[400px] ${
                                             isDelivery
                                                 ? 'bg-red-500 border-red-600 shadow-[0_10px_30px_rgba(239,68,68,0.5)]'
@@ -438,22 +454,16 @@ export default function TablesPage() {
                                         }`}
                                     >
                                         <div className="flex justify-between items-start">
-                                            <span className="text-xl font-black text-white truncate max-w-[80%]">
-                                                {order.customer_name?.split(' ')[0] || 'Web'}
-                                            </span>
-                                            <div className="w-3 h-3 rounded-full animate-pulse shrink-0 bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]" />
-                                        </div>
-
-                                        <div className="mt-auto">
-                                            <div className="mb-1">
-                                                <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
-                                                    isDelivery ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
-                                                }`}>
-                                                    {isDelivery ? '🌐 Delivery' : '🌐 Retiro'}
-                                                </span>
+                                            <span className="text-3xl font-black text-white uppercase">{isDelivery ? 'Delivery' : 'Retiro'}</span>
+                                            <div className="bg-white/20 px-3 py-1 rounded-full text-white text-xs font-bold">
+                                                {count} {count === 1 ? 'pedido' : 'pedidos'}
                                             </div>
-                                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">Total</span>
-                                            <div className="text-2xl font-black text-white">${Number(order.total).toLocaleString("es-AR")}</div>
+                                        </div>
+                                        <div className="mt-auto">
+                                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">Total Pendiente</span>
+                                            <div className="text-2xl font-black text-white">
+                                                ${webOrders.filter(o => o.delivery_type === type).reduce((acc, o) => acc + Number(o.total || 0), 0).toLocaleString()}
+                                            </div>
                                         </div>
                                     </motion.div>
                                 );

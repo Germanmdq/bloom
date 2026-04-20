@@ -459,12 +459,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     if (isWebTable && !currentWebOrderId) {
         return (
-            <div className="h-full flex items-center justify-center bg-white p-10 text-center">
-                <div>
-                    <h2 className="text-xl font-bold text-gray-400 mb-2">Pedido no encontrado</h2>
-                    <p className="text-sm text-gray-300">Seleccioná un pedido desde la grilla principal.</p>
-                </div>
-            </div>
+            <WebOrderList
+                tableId={tableId}
+                webOrders={webOrders}
+                onSelectOrder={handleSelectWebOrder}
+                onClose={onClose}
+            />
         );
     }
 
