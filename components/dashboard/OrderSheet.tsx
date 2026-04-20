@@ -9,7 +9,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket } from "@/lib/hooks/use-pos-data";
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ReceiptModal } from "@/components/pos/ReceiptModal";
-import { WebOrderList } from "@/components/pos/WebOrderList";
 import { orderSheetHeaderBorderClass } from "@/lib/dashboard/table-colors";
 import { orderMatchesWebVirtualTable, WEB_ORDER_TABLE_DELIVERY, WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
 import type { CartItem } from "@/lib/store/order-store";
@@ -363,17 +362,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
             <div className="h-full flex items-center justify-center bg-gray-50">
                 <Loader2 className="animate-spin text-gray-400" size={32} />
             </div>
-        );
-    }
-
-    if (isWebTable && !currentWebOrderId) {
-        return (
-            <WebOrderList
-                tableId={tableId}
-                webOrders={webOrders}
-                onSelectOrder={handleSelectWebOrder}
-                onClose={onClose}
-            />
         );
     }
 
