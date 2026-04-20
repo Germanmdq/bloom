@@ -64,6 +64,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const [currentWebOrderId, setCurrentWebOrderId] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [mpPosOrderId, setMpPosOrderId] = useState<string | null>(null);
+    const [customerName, setCustomerName] = useState("");
+    const [customerPhone, setCustomerPhone] = useState("");
+    const [customerAddress, setCustomerAddress] = useState("");
 
     const onMpOrderReady = useCallback((id: string | null) => {
         setMpPosOrderId(id);
@@ -108,7 +111,21 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
             if (tableError) console.error("Error loading table:", tableError.message);
             if (tableData?.order_type) setOrderType(tableData.order_type);
 
-            clearCart();
+            // Intentar recuperar data del cliente desde las notas guardadas (formato simple)
+            const savedNotes = tableData?.notes || "";
+            if (savedNotes.includes("📦 ")) {
+                // Formato: 📦 Nombre | Dir | Tel || Notas Reales
+                const parts = savedNotes.split(" || ");
+                const meta = parts[0].replace("📦 ", "").split(" | ");
+                if (meta.length >= 3) {
+                    setCustomerName(meta[0]);
+                    setCustomerAddress(meta[1]);
+                    setCustomerPhone(meta[2]);
+                    if (parts[1]) setNotes(parts[1]);
+                }
+            } else {
+                setNotes(savedNotes);
+            }
             const status = tableData?.status as string | undefined;
             const persisted = Array.isArray(tableData?.items) ? tableData.items : [];
 
@@ -202,9 +219,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
         if (cart.length === 0) return;
         const currentTotal = useOrderStore.getState().getTotal();
         const currentCart = useOrderStore.getState().cart;
+        const metaPrefix = (customerName || customerAddress || customerPhone) 
+            ? `📦 ${customerName} | ${customerAddress} | ${customerPhone} || ` 
+            : "";
+        const finalNotes = metaPrefix + notes;
+
         const { error } = await supabase
             .from('salon_tables')
-            .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal, items: currentCart });
+            .upsert({ id: tableId, status: 'OCCUPIED', total: currentTotal, items: currentCart, notes: finalNotes });
         if (error) {
             // Fallback: columna items puede no existir en DB aún
             const { error: e2 } = await supabase
@@ -217,7 +239,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     useEffect(() => {
         const timer = setTimeout(persistTableState, 1000);
         return () => clearTimeout(timer);
-    }, [cart, tableId]);
+    }, [cart, tableId, customerName, customerPhone, customerAddress, notes]);
 
     const handleClose = async () => {
         if (cart.length === 0) {
@@ -538,8 +560,40 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                     </div>
                 </div>
 
-                {/* ── DERECHA: carrito ── */}
-                <div className="w-72 xl:w-80 flex flex-col bg-white border-l border-gray-200 shrink-0">
+                {/* ── DERECHA: Datos Cliente + Carrito ── */}
+                <div className="w-72 xl:w-96 flex flex-col bg-white border-l border-gray-200 shrink-0">
+
+                    {/* Datos del Cliente (Solo Delivery/Retiro o si queremos siempre) */}
+                    {(orderType === 'DELIVERY' || orderType === 'TAKEAWAY') && (
+                        <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex flex-col gap-3">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Datos de Entrega</h4>
+                            <div className="grid gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Nombre del Cliente"
+                                    value={customerName}
+                                    onChange={(e) => setCustomerName(e.target.value)}
+                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
+                                />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Teléfono"
+                                        value={customerPhone}
+                                        onChange={(e) => setCustomerPhone(e.target.value)}
+                                        className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Dirección"
+                                        value={customerAddress}
+                                        onChange={(e) => setCustomerAddress(e.target.value)}
+                                        className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Lista de items */}
                     <div className="flex-1 overflow-y-auto no-scrollbar">
