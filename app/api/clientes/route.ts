@@ -4,7 +4,10 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 export async function GET() {
     const svc = createServiceRoleClient();
     
-    // Fetch customers joined with their orders to calculate stats
+    // Fetch profiles that are marked as customers OR don't have staff roles
+    // This ensures that existing clients who weren't explicitly marked show up
+    const STAFF_ROLES = ["ADMIN", "WAITER", "KITCHEN", "MANAGER"];
+    
     const { data: profiles, error } = await svc
         .from("profiles")
         .select(`
@@ -14,9 +17,10 @@ export async function GET() {
             phone,
             points,
             created_at,
+            is_customer,
+            role,
             orders(total, created_at)
         `)
-        .eq("is_customer", true)
         .order("full_name");
 
     if (error) {
@@ -24,8 +28,13 @@ export async function GET() {
         return NextResponse.json([], { status: 500 });
     }
 
+    // Filter: Include if is_customer is true OR if they don't have a staff role
+    const filteredProfiles = (profiles || []).filter((p: any) => 
+        p.is_customer === true || !STAFF_ROLES.includes(p.role)
+    );
+
     // Process and aggregate stats for each customer
-    const processedClients = (profiles || []).map((p: any) => {
+    const processedClients = filteredProfiles.map((p: any) => {
         const orders = p.orders || [];
         const totalSpent = orders.reduce((sum: number, o: any) => sum + (Number(o.total) || 0), 0);
         const orderCount = orders.length;
@@ -33,13 +42,17 @@ export async function GET() {
         // Find last order date
         let lastOrderAt = null;
         if (orders.length > 0) {
-            const dates = orders.map((o: any) => new RegExp(o.created_at).test('Z') ? new Date(o.created_at).getTime() : new Date(o.created_at + 'Z').getTime());
-            lastOrderAt = new Date(Math.max(...dates)).toISOString();
+            try {
+                const dates = orders.map((o: any) => new Date(o.created_at).getTime());
+                lastOrderAt = new Date(Math.max(...dates)).toISOString();
+            } catch (e) {
+                console.error("Date processing error:", e);
+            }
         }
 
         return {
             id: p.id,
-            full_name: p.full_name,
+            full_name: p.full_name || "Cliente S/N",
             email: p.email,
             phone: p.phone,
             points: p.points || 0,
