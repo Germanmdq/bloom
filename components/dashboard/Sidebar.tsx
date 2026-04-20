@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, MessageCircle, Briefcase, X } from "lucide-react";
+import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, MessageCircle, Briefcase, X, LogOut } from "lucide-react";
 import { useUserRole } from "@/lib/hooks/use-pos-data";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 const links = [
     { href: "/dashboard/tables",   label: "Mesas",     icon: LayoutGrid },
@@ -28,7 +30,14 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
     const pathname = usePathname();
+    const router = useRouter();
     const { data: role = 'WAITER' } = useUserRole();
+    const supabase = createClient();
+
+    async function handleSignOut() {
+        await supabase.auth.signOut();
+        router.push("/auth");
+    }
 
     const filteredLinks = links.filter(link => {
         if (HIDDEN_SECTIONS.includes(link.label)) return false;
@@ -90,10 +99,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                     })}
                 </nav>
 
-                <div
-                    className="mt-4 shrink-0 border-t border-gray-200/90 pt-4 px-4"
-                    aria-label="Referencia de colores de pedidos"
-                >
+                <div className="mt-4 shrink-0 border-t border-gray-200/90 pt-4 px-4 space-y-3">
                     <ul className="space-y-1.5 text-xs text-gray-500">
                         <li className="flex items-center gap-2">
                             <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" aria-hidden />
@@ -108,6 +114,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                             <span>Retiro</span>
                         </li>
                     </ul>
+                    <button
+                        onClick={handleSignOut}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all duration-200 text-sm font-medium"
+                    >
+                        <LogOut size={18} />
+                        <span>Cerrar sesión</span>
+                    </button>
                 </div>
             </div>
         </>
