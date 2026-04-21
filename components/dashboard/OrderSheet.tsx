@@ -543,7 +543,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         <div className="h-full flex flex-col bg-gray-100 overflow-hidden">
 
             {/* ── HEADER: Dynamic Status Widget ── */}
-            <div className={`px-6 py-5 bg-white border-b border-gray-100 shrink-0 ${orderSheetHeaderBorderClass(tableId)}`}>
+            <div className="px-6 py-5 bg-white border-b border-gray-100 shrink-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] z-10">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-5">
                         {isWebTable && currentWebOrderId && (
