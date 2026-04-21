@@ -23,7 +23,7 @@ interface PaymentModalProps {
     cart: CartItem[];
     isFinishing: boolean;
     onClose: () => void;
-    onConfirm: (ctx?: { mpOrderId?: string | null }) => void;
+    onConfirm: (ctx?: { mpOrderId?: string | null; customerId?: string | null }) => void;
     /** UUID de `orders` al generar preferencia QR (webhook marca paid). */
     onMpOrderReady?: (orderId: string | null) => void;
     waiterId?: string | null;
