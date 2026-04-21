@@ -50,9 +50,19 @@ export async function GET() {
 
         if (profileError) throw profileError;
 
+        // 3. Inicializar app_settings si está vacía
+        const { error: settingsError } = await supabase
+            .from('app_settings')
+            .upsert({
+                id: 1,
+                mesas: 10,
+                barra: 3,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'id' });
+
         return NextResponse.json({ 
             success: true, 
-            message: "Acceso Administrativo Reseteado Exitosamente",
+            message: "Acceso Administrativo y Configuración Inicializados",
             credencliales: {
                 email: email,
                 password: password
