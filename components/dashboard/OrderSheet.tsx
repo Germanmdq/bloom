@@ -705,22 +705,57 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         ) : (
                             /* Productos: grid que llena toda la pantalla */
                             <div className="h-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 auto-rows-fr">
-                                {displayProducts.map((item: any) => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                        className="group bg-white rounded-2xl p-5 shadow-[0_12px_40px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-gray-200 active:scale-95 transition-all text-center border border-gray-100 flex flex-col justify-center gap-2"
-                                    >
-                                        <p className="text-sm font-black text-gray-900 leading-tight uppercase tracking-tight line-clamp-3">
-                                            {item.name}
-                                        </p>
-                                        <div className="mt-1">
-                                            <span className="px-3 py-1 bg-gray-50 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:bg-gray-900 group-hover:text-white transition-colors">
-                                                ${Number(item.price).toLocaleString()}
-                                            </span>
-                                        </div>
-                                    </button>
-                                ))}
+                                {displayProducts.map((item: any) => {
+                                    // Mapeador inteligente de iconos para productos
+                                    const getProductIcon = (name: string, catName: string) => {
+                                        const n = (name + " " + catName).toLowerCase();
+                                        if (n.includes('caf') || n.includes('latte') || n.includes('capu')) return '☕';
+                                        if (n.includes('piz') || n.includes('muzza')) return '🍕';
+                                        if (n.includes('ham') || n.includes('burg')) return '🍔';
+                                        if (n.includes('beb') || n.includes('soda') || n.includes('agua') || n.includes('coca')) return '🥤';
+                                        if (n.includes('jug') || n.includes('licua') || n.includes('batid')) return '🍹';
+                                        if (n.includes('dul') || n.includes('pos') || n.includes('torta') || n.includes('cake')) return '🍰';
+                                        if (n.includes('ensala')) return '🥗';
+                                        if (n.includes('mila') || n.includes('carne') || n.includes('lomo')) return '🥩';
+                                        if (n.includes('pasta') || n.includes('fideo') || n.includes('sorren')) return '🍝';
+                                        if (n.includes('empa') || n.includes('tarta')) return '🥧';
+                                        if (n.includes('tosta') || n.includes('sand') || n.includes('mig')) return '🥪';
+                                        if (n.includes('papa') || n.includes('frit')) return '🍟';
+                                        if (n.includes('crois') || n.includes('media') || n.includes('factu')) return '🥐';
+                                        if (n.includes('tostado') || n.includes('brus')) return '🥖';
+                                        if (n.includes('te ') || n.includes('infus')) return '🫖';
+                                        if (n.includes('vino') || n.includes('copa')) return '🍷';
+                                        if (n.includes('cerve') || n.includes('pinta')) return '🍺';
+                                        return '🍽️';
+                                    };
+
+                                    const catName = categories.find((c: any) => c.id === item.category_id)?.name || "";
+                                    const icon = getProductIcon(item.name, catName);
+
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
+                                            className="group bg-white rounded-2xl p-5 shadow-[0_12px_40px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-gray-200 active:scale-95 transition-all text-center border border-gray-100 flex flex-col items-center justify-center gap-2 overflow-hidden"
+                                        >
+                                            <motion.div 
+                                                whileHover={{ y: -3, scale: 1.2, rotate: [0, -5, 5, 0] }}
+                                                className="text-2xl mb-1 filter drop-shadow-sm"
+                                            >
+                                                {icon}
+                                            </motion.div>
+                                            
+                                            <p className="text-[11px] font-black text-gray-900 leading-tight uppercase tracking-tight line-clamp-2 min-h-[1.5rem]">
+                                                {item.name}
+                                            </p>
+                                            <div className="mt-1">
+                                                <span className="px-3 py-1 bg-gray-50 rounded-full text-[9px] font-black text-gray-400 uppercase tracking-widest group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                                                    ${Number(item.price).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
