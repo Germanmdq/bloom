@@ -568,7 +568,9 @@ export default function TablesPage() {
                             {/* POS Tables */}
                             {sortedTables.map(table => {
                                 const styles = getCardStyles(table);
-                                const timeStr = table.updated_at ? new Date(table.updated_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+                                const lastActive = new Date(table.updated_at || new Date()).getTime();
+                                const minutesElapsed = Math.floor((Date.now() - lastActive) / 60000);
+                                
                                 return (
                                     <motion.div
                                         key={table.id}
@@ -578,21 +580,17 @@ export default function TablesPage() {
                                         onClick={() => setSelectedTable(table)}
                                         className={`rounded-[2.5rem] p-8 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[400px] ${styles.bg}`}
                                     >
-                                        {/* Superimposed Table Number */}
-                                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] font-black text-[15rem] leading-none ${styles.textColor}`}>
-                                            {table.id}
+                                        <div className="flex justify-between items-start relative z-10">
+                                            <div className="flex flex-col">
+                                                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${styles.subTextColor}`}>Minutos</span>
+                                                <span className={`text-xl font-black ${styles.textColor}`}>{minutesElapsed} min</span>
+                                            </div>
+                                            <div className={`w-3 h-3 rounded-full animate-pulse ${styles.dot}`} />
                                         </div>
 
-                                        <div className="relative z-10 flex justify-between items-start">
-                                            <div className="flex flex-col">
-                                                <span className={`text-4xl font-black tracking-tighter ${styles.textColor}`}>{table.id}</span>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <div className={`w-3 h-3 rounded-full animate-pulse mb-2 ${styles.dot}`} />
-                                                <span className={`text-[10px] font-black uppercase tracking-widest ${styles.subTextColor} flex items-center gap-1`}>
-                                                    🕒 {timeStr}
-                                                </span>
-                                            </div>
+                                        {/* Large Centered ID */}
+                                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none font-black text-[10rem] tracking-tighter ${styles.textColor}`}>
+                                            {table.id}
                                         </div>
 
                                         <div className="relative z-10 mt-auto">
