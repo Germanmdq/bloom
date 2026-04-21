@@ -18,7 +18,7 @@ const SIDEBAR_ACTIVE_BG = "rgba(255,255,255,0.08)";
 const SIDEBAR_W = 240;
 
 type SectionId = "inicio" | "pedidos" | "cupones" | "perfil" | "estadisticas";
-type OrderFilter = "todos" | "mes" | "ano";
+type OrderFilter = "todos" | "mes" | "ano" | "deuda";
 
 type OrderRow = {
   id: string;
@@ -30,6 +30,7 @@ type OrderRow = {
   customer_name?: string | null;
   order_type?: string | null;
   delivery_type?: string | null;
+  cuenta_corriente?: boolean;
 };
 
 const COUPON_DEFS = [
@@ -187,7 +188,7 @@ export default function CuentaPage() {
       const [listRes, profRes] = await Promise.all([
         supabase
           .from("orders")
-          .select("id, created_at, total, items, status, paid, customer_name, order_type, delivery_type")
+          .select("id, created_at, total, items, status, paid, customer_name, order_type, delivery_type, cuenta_corriente")
           .eq("customer_id", uid)
           .order("created_at", { ascending: false }),
         supabase
@@ -386,6 +387,7 @@ export default function CuentaPage() {
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     if (orderFilter === "todos") return orders;
     if (orderFilter === "mes") return orders.filter((o) => new Date(o.created_at) >= startOfMonth);
+    if (orderFilter === "deuda") return orders.filter((o) => !o.paid);
     return orders.filter((o) => new Date(o.created_at) >= startOfYear);
   }, [orders, orderFilter]);
 
@@ -674,16 +676,30 @@ export default function CuentaPage() {
         </p>
       </div>
 
-      {birthdayActive && (
-        <div className={`${cardCls} border-2 border-amber-200 bg-amber-50 shadow-amber-100`}>
-            <h2 className="flex items-center gap-2 text-base font-bold text-amber-900">
-                🎂 ¡Regalo de Cumpleaños!
-            </h2>
-            <p className="mt-2 text-sm text-amber-800 leading-snug">
-                Como es tu mes, tenés un **Café con Medialunas** de regalo en tu próxima visita al local. ¡Vení a festejar con nosotros!
-            </p>
+      {profile && profile.balance > 0 && (
+        <div className={`${cardCls} border-2 border-red-200 bg-red-50 shadow-red-100 flex items-center justify-between gap-4`}>
+            <div className="flex-1">
+                <h2 className="flex items-center gap-2 text-base font-black text-red-900 leading-none mb-1.5">
+                    <TrendingUp className="h-5 w-5 text-red-600" />
+                    Cuenta Corriente
+                </h2>
+                <p className="text-sm text-red-800 leading-snug font-medium mb-2">
+                    Tenés un saldo pendiente de pago de <strong>{formatMoney(profile.balance)}</strong>. 
+                </p>
+                <button 
+                    onClick={() => setSection("pedidos")}
+                    className="text-xs font-bold uppercase tracking-wider text-red-700 underline underline-offset-4 hover:text-red-900 transition-colors"
+                >
+                    Ver detalle de pedidos
+                </button>
+            </div>
+            <div className="text-right whitespace-nowrap">
+                <p className="text-2xl font-black text-red-600 leading-none">-{formatMoney(profile.balance)}</p>
+            </div>
         </div>
       )}
+
+      {birthdayActive && (
 
       <div className={cardCls}>
         <h2 className="text-base font-bold" style={{ color: TEXT_DARK }}>
@@ -715,6 +731,7 @@ export default function CuentaPage() {
             ["todos", "Todos"],
             ["mes", "Este mes"],
             ["ano", "Este año"],
+            ["deuda", "Pendientes"],
           ] as const
         ).map(([key, lab]) => (
           <button
@@ -787,12 +804,19 @@ export default function CuentaPage() {
                         </td>
                         <td className="px-4 py-3 text-neutral-700">{orderTypeLabel(o)}</td>
                         <td className="px-4 py-3">
-                          <span
-                            className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${paid ? "text-white" : "bg-amber-100 text-amber-900"}`}
-                            style={paid ? { backgroundColor: GREEN } : undefined}
-                          >
-                            {paid ? "Pagado" : "Pendiente"}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase w-fit ${paid ? "text-white" : "bg-amber-100 text-amber-900"}`}
+                              style={paid ? { backgroundColor: GREEN } : undefined}
+                            >
+                              {paid ? "Pagado" : "Pendiente"}
+                            </span>
+                            {o.cuenta_corriente && !paid && (
+                              <span className="text-[9px] font-black uppercase text-red-600 bg-red-50 px-1.5 py-0.5 rounded-md w-fit">
+                                A cuenta
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-2 py-3">
                           <button

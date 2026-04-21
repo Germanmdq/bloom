@@ -214,10 +214,10 @@ export default function ClientesPage() {
                                         <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Puntos</p>
                                         <p className="text-lg font-black text-gray-900">{selectedClient.points}</p>
                                     </div>
-                                    <div className={`${selectedClient.balance > 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'} p-4 rounded-[2rem] text-center border`}>
-                                        <ArrowUpDown className={`mx-auto mb-2 ${selectedClient.balance > 0 ? 'text-red-600' : 'text-gray-400'}`} size={20} />
+                                    <div className={`${selectedClient.balance > 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'} p-4 rounded-[2rem] flex flex-col items-center justify-center border transition-all`}>
+                                        <ArrowUpDown className={`mb-2 ${selectedClient.balance > 0 ? 'text-red-600' : 'text-gray-400'}`} size={20} />
                                         <p className={`text-[9px] font-black uppercase tracking-widest ${selectedClient.balance > 0 ? 'text-red-400' : 'text-gray-400'} mb-1`}>Saldo CC</p>
-                                        <p className={`text-lg font-black ${selectedClient.balance > 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                                        <p className={`text-lg md:text-xl font-black ${selectedClient.balance > 0 ? 'text-red-600' : 'text-gray-900'} leading-none`}>
                                             {selectedClient.balance > 0 ? `-$${selectedClient.balance.toLocaleString()}` : `$${selectedClient.balance.toLocaleString()}`}
                                         </p>
                                     </div>
