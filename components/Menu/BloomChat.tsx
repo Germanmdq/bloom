@@ -1335,16 +1335,39 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-              <ul className="space-y-3 text-sm">
+                              <ul className="space-y-3 text-sm">
                 {cart.map((line) => (
                   <li key={line.lineId} className="rounded-xl border border-[#d4cfc4] bg-white p-3">
-                    <p className="font-bold text-neutral-900">
-                      {line.quantity}× {line.name}
-                    </p>
-                    {line.observations ? (
-                      <p className="mt-1 text-xs text-neutral-600">Obs.: {line.observations}</p>
-                    ) : null}
-                    <p className="mt-1 font-semibold text-[#2d4a3e]">{formatArs(line.price * line.quantity)}</p>
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                            <p className="font-bold text-neutral-900 line-clamp-2">
+                                {line.name}
+                            </p>
+                            {line.observations ? (
+                                <p className="mt-1 text-xs text-neutral-600">Obs.: {line.observations}</p>
+                            ) : null}
+                            <p className="mt-1 font-semibold text-[#2d4a3e]">{formatArs(line.price * line.quantity)}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-[#f5f2eb] rounded-lg p-1 shrink-0 border border-[#e0dcd4]">
+                            <button 
+                                onClick={() => {
+                                    setCart(prev => prev.map(l => l.lineId === line.lineId ? { ...l, quantity: Math.max(0, l.quantity - 1) } : l).filter(l => l.quantity > 0));
+                                }}
+                                className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-[#2d4a3e] shadow-sm hover:bg-neutral-50 active:scale-90 transition-all font-black"
+                            >
+                                −
+                            </button>
+                            <span className="w-6 text-center font-black text-xs">{line.quantity}</span>
+                            <button 
+                                onClick={() => {
+                                    setCart(prev => prev.map(l => l.lineId === line.lineId ? { ...l, quantity: l.quantity + 1 } : l));
+                                }}
+                                className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-[#2d4a3e] shadow-sm hover:bg-neutral-50 active:scale-90 transition-all font-black"
+                            >
+                                +
+                            </button>
+                        </div>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -1600,16 +1623,6 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                       className="accent-[#2d4a3e]"
                     />
                     <span className="text-sm font-medium">💵 Pago contra entrega</span>
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#d4cfc4] bg-white px-3 py-2">
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={paymentMethod === "bank_transfer"}
-                      onChange={() => setPaymentMethod("bank_transfer")}
-                      className="accent-[#2d4a3e]"
-                    />
-                    <span className="text-sm font-medium">🏦 Transferencia bancaria</span>
                   </label>
                 </fieldset>
               </div>

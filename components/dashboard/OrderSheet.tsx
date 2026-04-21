@@ -385,6 +385,41 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 setMpPosOrderId(null);
                 queryClient.invalidateQueries({ queryKey: ["orders"] });
             } else {
+                // ── NUEVA LÓGICA DE FIDELIZACIÓN Y SALDO ──
+                const customerId = isWebTable ? (webOrderData?.customer_id || null) : null;
+                
+                if (customerId) {
+                    // 1. Contar cafés para el sistema de fidelidad
+                    const coffeeCount = cart.reduce((acc, item) => {
+                        const n = item.name.toLowerCase();
+                        if (n.includes('cafe') || n.includes('café') || n.includes('medialuna') || n.includes('factura')) {
+                            return acc + item.quantity;
+                        }
+                        return acc;
+                    }, 0);
+
+                    // 2. Actualizar stamps y saldo (si es cuenta corriente)
+                    if (coffeeCount > 0 || paymentMethod === "CUENTA_CORRIENTE") {
+                        const { data: prof } = await supabase.from('profiles').select('coffee_stamps, balance').eq('id', customerId).single();
+                        
+                        let newStamps = (prof?.coffee_stamps || 0) + coffeeCount;
+                        let newBalance = Number(prof?.balance || 0);
+
+                        if (paymentMethod === "CUENTA_CORRIENTE") {
+                            newBalance += finalTotal;
+                        }
+
+                        // Si llega a 11, el próximo es gratis (se reinicia después del 10)
+                        // (Lógica simple: si acumuló 10, los siguientes restan del total o avisamos)
+                        // Aquí simplemente acumulamos y si pasa de 10 el próximo se cobra 0 en el POS (manual por ahora o automático)
+                        
+                        await supabase.from('profiles').update({
+                            coffee_stamps: newStamps % 11, // Ejemplo: si llega a 11, vuelve a 0
+                            balance: newBalance
+                        }).eq('id', customerId);
+                    }
+                }
+
                 await createOrder.mutateAsync({
                     table_id: tableId,
                     total: finalTotal,
@@ -392,7 +427,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     waiter_id: selectedWaiter || null,
                     discount: discount,
                     status: (isWebTable || tableId >= 100) ? 'completed' : 'paid',
-                    customer_id: isWebTable ? (webOrderData?.customer_id || null) : null,
+                    customer_id: customerId,
                     delivery_person_id: selectedDeliveryPerson ? parseInt(selectedDeliveryPerson) : null,
                     items: cart,
                 });

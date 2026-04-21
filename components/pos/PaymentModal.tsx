@@ -257,19 +257,44 @@ export function PaymentModal({
 
                 {/* Right panel: payment method + action */}
                 <div className="flex-1 p-12 bg-white flex flex-col">
-                    <h3 className="text-2xl font-black uppercase tracking-tighter mb-8">Método de Pago</h3>
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-2xl font-black uppercase tracking-tighter">Método de Pago</h3>
+                        {waiterId && (
+                            <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mozo</span>
+                                <span className="text-xs font-bold text-gray-700">Enviado</span>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <button
                             onClick={() => setPaymentMethod("CASH")}
                             className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === "CASH" ? "border-[#FFD60A] bg-[#FFD60A]/5" : "border-gray-100"}`}
                         >
                             <p className="font-black text-lg">Efectivo</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Cash / Delivery</p>
                         </button>
                         <button
                             onClick={handleSelectMercadoPago}
                             className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === "MERCADO_PAGO" ? "border-sky-500 bg-sky-50" : "border-gray-100"}`}
                         >
                             <p className="font-black text-lg">Mercado Pago</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Point / QR / Online</p>
+                        </button>
+                        <button
+                            onClick={() => setPaymentMethod("BANK_TRANSFER")}
+                            className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === "BANK_TRANSFER" ? "border-purple-500 bg-purple-50" : "border-gray-100"}`}
+                        >
+                            <p className="font-black text-lg">Transferencia</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">CBU / Alias</p>
+                        </button>
+                        <button
+                            onClick={() => setPaymentMethod("CUENTA_CORRIENTE")}
+                            className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === "CUENTA_CORRIENTE" ? "border-orange-500 bg-orange-50" : "border-gray-100"}`}
+                        >
+                            <p className="font-black text-lg">Cuenta Corriente</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Clientes Frecuentes</p>
                         </button>
                     </div>
 
@@ -281,6 +306,18 @@ export function PaymentModal({
                                 className="text-4xl font-black text-center bg-transparent outline-none w-full"
                                 autoFocus
                             />
+                        )}
+                        {paymentMethod === "BANK_TRANSFER" && (
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Transferencia Bancaria</p>
+                                <p className="text-xs font-semibold text-gray-400">Verificá el comprobante o el ingreso en la cuenta antes de confirmar.</p>
+                            </div>
+                        )}
+                        {paymentMethod === "CUENTA_CORRIENTE" && (
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-orange-600 uppercase tracking-widest mb-2">Anotar en Cuenta Corriente</p>
+                                <p className="text-xs font-semibold text-gray-400">El total se sumará al saldo pendiente del cliente.</p>
+                            </div>
                         )}
                         {paymentMethod === "MERCADO_PAGO" && (
                             <div className="text-center w-full max-w-sm space-y-5">

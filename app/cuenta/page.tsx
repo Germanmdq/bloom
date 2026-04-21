@@ -165,7 +165,7 @@ export default function CuentaPage() {
   const [sessionPending, setSessionPending] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [paidOrderCount, setPaidOrderCount] = useState(0);
+  const [profile, setProfile] = useState<{ coffee_stamps: number; balance: number; birthday?: string } | null>(null);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [section, setSection] = useState<SectionId>("inicio");
   const [orderFilter, setOrderFilter] = useState<OrderFilter>("todos");
@@ -181,25 +181,27 @@ export default function CuentaPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
 
-  const loadOrders = useCallback(
+  const loadData = useCallback(
     async (uid: string) => {
       setOrdersLoading(true);
-      const [listRes, paidCountRes] = await Promise.all([
+      const [listRes, profRes] = await Promise.all([
         supabase
           .from("orders")
           .select("id, created_at, total, items, status, paid, customer_name, order_type, delivery_type")
           .eq("customer_id", uid)
           .order("created_at", { ascending: false }),
         supabase
-          .from("orders")
-          .select("*", { count: "exact", head: true })
-          .eq("customer_id", uid)
-          .eq("paid", true),
+          .from("profiles")
+          .select("coffee_stamps, balance, birthday")
+          .eq("id", uid)
+          .single()
       ]);
+      
       if (listRes.error) console.error(listRes.error);
-      if (paidCountRes.error) console.error(paidCountRes.error);
+      if (profRes.error) console.error(profRes.error);
+      
       setOrders((listRes.data as OrderRow[]) ?? []);
-      setPaidOrderCount(paidCountRes.count ?? 0);
+      setProfile(profRes.data);
       setOrdersLoading(false);
     },
     [supabase]
@@ -237,7 +239,7 @@ export default function CuentaPage() {
       }
       setUser(session.user);
       hydrateProfileFields(session.user);
-      await loadOrders(session.user.id);
+      await loadData(session.user.id);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -249,7 +251,7 @@ export default function CuentaPage() {
       }
       setUser(session.user);
       hydrateProfileFields(session.user);
-      void loadOrders(session.user.id);
+      void loadData(session.user.id);
     });
     return () => {
       cancelled = true;
@@ -652,15 +654,34 @@ export default function CuentaPage() {
       <div className={cardCls}>
         <h2 className="flex items-center gap-2 text-base font-bold" style={{ color: TEXT_DARK }}>
           <Coffee className="h-5 w-5" style={{ color: GREEN }} aria-hidden />
-          Tu progreso — café gratis
+          Club Bloom — Tu Fidelidad
         </h2>
-        <p className="mt-1 text-sm text-neutral-600">
-          {paidOrderCount} pedidos pagos · {loyaltyFilled}/{COFFEE_GOAL} en esta ronda
-        </p>
-        <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-neutral-200">
-          <div className="h-full rounded-full transition-all" style={{ width: `${loyaltyPct}%`, backgroundColor: GREEN }} />
+        <div className="mt-4 flex items-center justify-between">
+            <p className="text-sm text-neutral-600">
+                {profile?.coffee_stamps || 0} / {COFFEE_GOAL} cafés acumulados
+            </p>
+            {profile?.coffee_stamps === COFFEE_GOAL && (
+                <span className="text-[10px] font-black uppercase bg-amber-100 text-amber-600 px-2 py-1 rounded-md animate-pulse">¡PRÓXIMO GRATIS!</span>
+            )}
         </div>
+        <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-neutral-200">
+          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, ((profile?.coffee_stamps || 0) / COFFEE_GOAL) * 100)}%`, backgroundColor: GREEN }} />
+        </div>
+        <p className="mt-3 text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
+            Cada 10 cafés, el 11º va sin cargo. Válido para Café, Café con leche y promos con facturas.
+        </p>
       </div>
+
+      {birthdayActive && (
+        <div className={`${cardCls} border-2 border-amber-200 bg-amber-50 shadow-amber-100`}>
+            <h2 className="flex items-center gap-2 text-base font-bold text-amber-900">
+                🎂 ¡Regalo de Cumpleaños!
+            </h2>
+            <p className="mt-2 text-sm text-amber-800 leading-snug">
+                Como es tu mes, tenés un **Café con Medialunas** de regalo en tu próxima visita al local. ¡Vení a festejar con nosotros!
+            </p>
+        </div>
+      )}
 
       <div className={cardCls}>
         <h2 className="text-base font-bold" style={{ color: TEXT_DARK }}>

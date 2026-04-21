@@ -58,7 +58,7 @@ export type DashboardProduct = {
     categories?: { name: string };
 };
 
-export type PaymentMethod = 'CASH' | 'CARD' | 'MERCADO_PAGO' | 'BANK_TRANSFER';
+export type PaymentMethod = 'CASH' | 'CARD' | 'MERCADO_PAGO' | 'BANK_TRANSFER' | 'CUENTA_CORRIENTE';
 
 export type OrderItem = {
     id?: string;
@@ -87,6 +87,18 @@ export type Order = {
     /** Cobrado en caja */
     paid?: boolean | null;
     customer_id?: string | null;
-    /** Repartidor 1–5 (dashboard), solo delivery */
     delivery_person_id?: number | null;
+};
+
+export type Profile = {
+    id: string;
+    full_name: string;
+    role: 'ADMIN' | 'WAITER' | 'KITCHEN' | 'MANAGER' | 'CUSTOMER';
+    is_customer: boolean;
+    phone?: string;
+    address?: string;
+    email?: string;
+    balance: number;
+    coffee_stamps: number;
+    birthday?: string;
 };
