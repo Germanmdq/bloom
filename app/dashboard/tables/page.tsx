@@ -523,47 +523,53 @@ export default function TablesPage() {
 
                     return (
                         <div className={`grid ${gridCols} gap-6`}>
-                            {/* Individual Web Order Cards (Only those not in notification stack) */}
-                            {webOrders.filter(order => !notifications.find(n => n.id === order.id)).map(order => {
-                                const isDelivery = order.delivery_type === 'delivery';
-                                const productItems = (order.items || []).filter((i: any) => !i.is_meta);
-                                const timeStr = new Date(order.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-                                return (
-                                    <motion.div
-                                        key={order.id}
-                                        layoutId={`weborder-${order.id}`}
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => setSelectedWebOrder(order)}
-                                        className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden shadow-[0_22px_70px_rgba(0,0,0,0.18)] min-h-[400px] ${
-                                            isDelivery ? 'bg-red-500' : 'bg-emerald-500'
-                                        }`}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <span className="text-white/80 text-xs font-bold uppercase tracking-widest">{isDelivery ? 'Delivery' : 'Retiro'}</span>
-                                            <div className="bg-white/20 px-3 py-1 rounded-full text-white text-xs font-bold">{timeStr}</div>
+                             {/* Individual Web Order Cards (Only those not in notification stack) */}
+                             {webOrders.filter(order => !notifications.find(n => n.id === order.id)).map(order => {
+                                 const isDelivery = order.delivery_type === 'delivery' || (!order.delivery_type && order.order_type === 'web');
+                                 const timeStr = new Date(order.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                                 const now = Date.now();
+                                 const createdAt = new Date(order.created_at).getTime();
+                                 let minutesElapsed = Math.floor((now - createdAt) / 60000);
+                                 if (minutesElapsed < 0) minutesElapsed = 0;
+                                 const displayTime = minutesElapsed > 1440 ? '--' : `${minutesElapsed} min`;
+
+                                 return (
+                                     <motion.div
+                                         key={order.id}
+                                         layoutId={`weborder-${order.id}`}
+                                         whileHover={{ scale: 1.02 }}
+                                         whileTap={{ scale: 0.98 }}
+                                         onClick={() => setSelectedWebOrder(order)}
+                                         className={`rounded-[2.5rem] p-8 flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[400px] shadow-[0_22px_70px_rgba(0,0,0,0.18)] ${
+                                             isDelivery ? 'bg-red-500' : 'bg-emerald-500'
+                                         }`}
+                                     >
+                                        {/* Timer Centered Top */}
+                                        <div className="flex flex-col items-center gap-1 z-10">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 text-white">Minutos</span>
+                                            <span className="text-xl font-medium text-white">{displayTime}</span>
                                         </div>
-                                        <div className="mt-2">
-                                            <p className="text-xl font-black text-white leading-tight truncate">{order.customer_name || 'Cliente Web'}</p>
-                                            {order.customer_phone && (
-                                                <p className="text-white/70 text-xs font-bold mt-0.5">{order.customer_phone}</p>
-                                            )}
+
+                                        {/* Name Initial or "WEB" Identifier - Apple Typography */}
+                                        <div className="flex-1 flex flex-col items-center justify-center z-10 w-full">
+                                            <span className="font-semibold text-[8rem] leading-none tracking-tight text-white mb-2">
+                                                W
+                                            </span>
+                                            <p className="text-sm font-black text-white/90 uppercase tracking-widest truncate max-w-full px-2">
+                                                {order.customer_name || 'PEDIDO WEB'}
+                                            </p>
                                         </div>
-                                        <div className="flex-1 mt-3 space-y-0.5">
-                                            {productItems.slice(0, 3).map((item: any, idx: number) => (
-                                                <p key={idx} className="text-white/80 text-xs">{item.quantity}× {item.name}</p>
-                                            ))}
-                                            {productItems.length > 3 && (
-                                                <p className="text-white/60 text-xs italic">+{productItems.length - 3} más</p>
-                                            )}
+
+                                        {/* Total Centered Bottom */}
+                                        <div className="flex flex-col items-center z-10 w-full">
+                                            <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Total</span>
+                                            <div className="text-4xl font-black text-white tracking-tighter">
+                                                ${Number(order.total || 0).toLocaleString('es-AR')}
+                                            </div>
                                         </div>
-                                        <div className="mt-auto pt-4 border-t border-white/20">
-                                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">Total</span>
-                                            <div className="text-2xl font-black text-white">${Number(order.total || 0).toLocaleString('es-AR')}</div>
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
+                                     </motion.div>
+                                 );
+                             })}
 
                             {/* POS Tables */}
                             {sortedTables.map(table => {

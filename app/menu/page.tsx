@@ -113,12 +113,25 @@ function PublicMenuPage() {
     // FETCH DATA — deps fijas [] (evita warning “dependency array changed size” con HMR/hidratación)
     useEffect(() => {
         const fetchMenu = async () => {
-            const [{ data: cats }, { data: prods }, { data: settings }] = await Promise.all([
+            const [{ data: cats }, { data: prods }, { data: settings }, { data: popularLines }] = await Promise.all([
                 supabase.from("categories").select("id, name, sort_order, icon, image_url").order("sort_order", { ascending: true }),
                 supabase.from("products").select(MENU_PRODUCT_SELECT).eq("active", true),
                 supabase.from("app_settings").select("whatsapp, plato_del_dia_id").eq("id", 1).single(),
+                supabase.from("order_lines").select("product_id, quantity").order("created_at", { ascending: false }).limit(500),
             ]);
-            if (cats) {
+
+            if (cats && prods) {
+                // Calcular popularidad si hay líneas de pedido
+                const popularityMap: Record<string, number> = {};
+                if (popularLines) {
+                    popularLines.forEach((line: any) => {
+                        const product = prods.find(p => p.id === line.product_id);
+                        if (product && product.category_id) {
+                            popularityMap[product.category_id] = (popularityMap[product.category_id] || 0) + (line.quantity || 1);
+                        }
+                    });
+                }
+
                 const seen = new Set();
                 const unique = cats.filter((c: any) => {
                     const key = c.name.toLowerCase().trim();
@@ -126,6 +139,15 @@ function PublicMenuPage() {
                     seen.add(key);
                     return true;
                 });
+
+                // Ordenar por popularidad (descendente) y luego por sort_order original
+                unique.sort((a, b) => {
+                    const popA = popularityMap[a.id] || 0;
+                    const popB = popularityMap[b.id] || 0;
+                    if (popB !== popA) return popB - popA;
+                    return (a.sort_order || 0) - (b.sort_order || 0);
+                });
+
                 setCategories(unique);
             }
             if (prods) setProducts(prods);
