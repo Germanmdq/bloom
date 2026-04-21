@@ -703,44 +703,35 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 Sin resultados
                             </div>
                         ) : (
-                            /* Productos: Bento Grid que llena la pantalla */
-                            <div className="h-full grid grid-cols-2 md:grid-cols-3 gap-6 auto-rows-fr">
+                            /* Productos: Masonry Grid con Iconos de Categoría */
+                            <div className="columns-2 md:columns-3 gap-4 [column-fill:_balance] pb-20">
                                 {displayProducts.map((item: any) => {
-                                    // Mapeador de Iconos de Alta Precisión
-                                    const getProductIcon = (name: string, catName: string) => {
-                                        const n = (name + " " + catName).toLowerCase();
-                                        const words = n.split(/[\s,.-]+/);
-                                        const has = (word: string) => words.includes(word);
-                                        const includes = (part: string) => n.includes(part);
-
-                                        if (has('té') || has('te') || has('infusión') || has('infusion')) return '🫖';
-                                        if (includes('caf') || includes('latte') || includes('capu')) return '☕';
-                                        if (includes('piz') || includes('muzza')) return '🍕';
-                                        if (includes('ham') || includes('burg')) return '🍔';
-                                        if (includes('coca') || includes('soda') || includes('agua')) return '🥤';
-                                        if (includes('jug') || includes('batid') || includes('licua')) return '🍹';
-                                        if (includes('dul') || includes('pos') || includes('torta') || includes('cake')) return '🍰';
-                                        if (includes('ensala')) return '🥗';
-                                        if (includes('mila') || includes('carne') || includes('lomo')) return '🥩';
-                                        if (includes('pasta') || includes('fideo') || includes('sorren')) return '🍝';
-                                        if (includes('empa') || includes('tarta')) return '🥧';
-                                        if (includes('tosta') || includes('sand') || includes('mig')) return '🥪';
-                                        if (includes('papa') || includes('frit')) return '🍟';
-                                        if (includes('crois') || includes('media') || includes('factu')) return '🥐';
-                                        if (includes('tostado') || includes('brus')) return '🥖';
-                                        if (includes('vino') || includes('copa')) return '🍷';
-                                        if (includes('cerve') || includes('pinta')) return '🍺';
+                                    // Los productos heredan el icono de su categoría para coherencia total
+                                    const getSafeIcon = (name: string) => {
+                                        const n = name.toLowerCase();
+                                        if (n.includes('caf')) return '☕';
+                                        if (n.includes('piz')) return '🍕';
+                                        if (n.includes('ham')) return '🍔';
+                                        if (n.includes('beb') || n.includes('jug')) return '🍹';
+                                        if (n.includes('dul') || n.includes('pos')) return '🍰';
+                                        if (n.includes('ens')) return '🥗';
+                                        if (n.includes('mila') || n.includes('pla')) return '🍽️';
+                                        if (n.includes('pan') || n.includes('fact')) return '🥐';
+                                        if (n.includes('tost')) return '🥪';
+                                        if (n.includes('papa')) return '🍟';
+                                        if (n.includes('cerve')) return '🍺';
+                                        if (n.includes('vino')) return '🍷';
                                         return '🍽️';
                                     };
 
                                     const catName = categories.find((c: any) => c.id === item.category_id)?.name || "";
-                                    const icon = getProductIcon(item.name, catName);
+                                    const icon = getSafeIcon(catName);
 
                                     return (
                                         <button
                                             key={item.id}
                                             onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                            className="group w-full h-full bg-white rounded-[2rem] p-6 shadow-[0_15px_35px_rgba(0,0,0,0.05)] hover:shadow-2xl active:scale-95 transition-all text-center border border-gray-50 flex flex-col items-center justify-center gap-4 overflow-hidden"
+                                            className="group w-full mb-4 break-inside-avoid bg-white rounded-[2rem] p-6 shadow-[0_15px_35px_rgba(0,0,0,0.05)] hover:shadow-2xl active:scale-95 transition-all text-center border border-gray-50 flex flex-col items-center justify-center gap-4"
                                         >
                                             <motion.div 
                                                 whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
