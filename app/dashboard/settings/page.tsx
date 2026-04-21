@@ -10,13 +10,6 @@ export default function SettingsPage() {
     const supabase = createClient();
     const [isLoading, setIsLoading] = useState(true);
 
-    const [restaurantName, setRestaurantName] = useState("Bloom Cafe");
-    const [address, setAddress] = useState("Av. Libertador 1234, CABA");
-    const [phone, setPhone] = useState("5491112345678");
-    const [taxRate, setTaxRate] = useState("21");
-    const [currency, setCurrency] = useState("ARS");
-    const [stockTracking, setStockTracking] = useState(true);
-    const [printTickets, setPrintTickets] = useState(true);
     const [mesas, setMesas] = useState(10);
     const [barra, setBarra] = useState(3);
     const [f1Action, setF1Action] = useState<ComparisonType>('yesterday');
@@ -35,19 +28,9 @@ export default function SettingsPage() {
                     .eq("id", 1)
                     .single();
 
-                if (error) {
-                    console.warn('[Settings] Carga principal falló, probando columnas individuales...', error.message);
-                    // Probar columnas básicas una a una si falla la carga completa
-                    const { data: base } = await supabase.from("app_settings").select("mesas, barra, whatsapp").eq("id", 1).maybeSingle();
-                    if (base) {
-                        setMesas(base.mesas || 10);
-                        setBarra(base.barra || 3);
-                        setPhone(base.whatsapp || "");
-                    }
-                } else if (data) {
+                if (data) {
                     setMesas(data.mesas);
                     setBarra(data.barra);
-                    setPhone(data.whatsapp);
                     if (data.plato_del_dia_id) setSelectedPlatoDia(data.plato_del_dia_id);
                 }
             } catch (err: any) {
@@ -107,7 +90,6 @@ export default function SettingsPage() {
                 id: 1,
                 mesas,
                 barra,
-                whatsapp: phone,
                 updated_at: new Date().toISOString(),
             });
 
@@ -141,100 +123,7 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                {/* RESTAURANT PROFILE */}
-                <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-2xl bg-[#FFD60A]/20 flex items-center justify-center text-black">
-                            <Store size={24} />
-                        </div>
-                        <h2 className="text-xl font-black text-gray-900">Perfil del Local</h2>
-                    </div>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-black uppercase text-gray-400 mb-2">Nombre del Restaurante</label>
-                            <input
-                                type="text"
-                                value={restaurantName}
-                                onChange={(e) => setRestaurantName(e.target.value)}
-                                className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none focus:ring-2 ring-[#FFD60A]"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-black uppercase text-gray-400 mb-2">Dirección</label>
-                            <input
-                                type="text"
-                                value={address}
-                                onChange={(e) => setAddress(e.target.value)}
-                                className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none focus:ring-2 ring-[#FFD60A]"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-black uppercase text-gray-400 mb-2">Teléfono</label>
-                            <input
-                                type="text"
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none focus:ring-2 ring-[#FFD60A]"
-                            />
-                        </div>
-                        </div>
-                </section>
 
-                {/* SYSTEM PREFERENCES */}
-                <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
-                            <Sliders size={24} />
-                        </div>
-                        <h2 className="text-xl font-black text-gray-900">Preferencias</h2>
-                    </div>
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-black uppercase text-gray-400 mb-2">Impuestos (%)</label>
-                                <div className="relative">
-                                    <input
-                                        type="number"
-                                        value={taxRate}
-                                        onChange={(e) => setTaxRate(e.target.value)}
-                                        className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none focus:ring-2 ring-blue-500"
-                                    />
-                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-gray-400">%</span>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-black uppercase text-gray-400 mb-2">Moneda</label>
-                                <select
-                                    value={currency}
-                                    onChange={(e) => setCurrency(e.target.value)}
-                                    className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none focus:ring-2 ring-blue-500"
-                                >
-                                    <option value="ARS">ARS ($)</option>
-                                    <option value="USD">USD (US$)</option>
-                                    <option value="EUR">EUR (€)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div className="pt-4 border-t border-gray-100">
-                            <div className="flex items-center justify-between py-3">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-6 rounded-full p-1 transition-colors ${stockTracking ? 'bg-green-500' : 'bg-gray-200'}`} onClick={() => setStockTracking(!stockTracking)}>
-                                        <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${stockTracking ? 'translate-x-4' : ''}`} />
-                                    </div>
-                                    <span className="font-bold text-sm">Control de Stock Activo</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between py-3">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-6 rounded-full p-1 transition-colors ${printTickets ? 'bg-green-500' : 'bg-gray-200'}`} onClick={() => setPrintTickets(!printTickets)}>
-                                        <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${printTickets ? 'translate-x-4' : ''}`} />
-                                    </div>
-                                    <span className="font-bold text-sm">Imprimir Tickets Cocina</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
                 {/* SALON CONFIG */}
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
