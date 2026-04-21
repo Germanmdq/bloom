@@ -71,6 +71,28 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     const [deliveryPersons, setDeliveryPersons] = useState<any[]>([]);
     const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState<string>("");
+    const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+    const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+    const [customerResults, setCustomerResults] = useState<any[]>([]);
+    const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+
+    const handleCustomerSearch = async (q: string) => {
+        setCustomerSearchQuery(q);
+        if (q.length < 2) {
+            setCustomerResults([]);
+            return;
+        }
+        setIsSearchingCustomer(true);
+        const { data } = await supabase
+            .from('profiles')
+            .select('id, full_name, phone, balance')
+            .ilike('full_name', `%${q}%`)
+            .limit(5);
+        setCustomerResults(data || []);
+        setIsSearchingCustomer(false);
+    };
+
+    const isWebTable = tableId === WEB_ORDER_TABLE_RETIRO || tableId === WEB_ORDER_TABLE_DELIVERY;
 
     useEffect(() => {
         fetch("/api/delivery-persons").then(r => r.json()).then(data => {
@@ -637,11 +659,78 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 {/* ── DERECHA: Datos Cliente + Carrito ── */}
                 <div className="w-72 xl:w-96 flex flex-col bg-white border-l border-gray-200 shrink-0">
 
-                    {/* Datos del Cliente (Solo Delivery/Retiro o si el ID está en el rango) */}
-                    {(orderType === 'DELIVERY' || orderType === 'TAKEAWAY' || tableId >= 100) && (
-                        <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex flex-col gap-3">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Datos de Entrega</h4>
-                            <div className="grid gap-2">
+                    {/* Cliente / Cuenta Corriente Selector (Only for local tables) */}
+                    {!isWebTable && (
+                        <div className="px-4 py-3 bg-white border-b border-gray-100 shrink-0">
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cliente / Cuenta Corriente</label>
+                            
+                            {!selectedCustomerId ? (
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={customerSearchQuery}
+                                        onChange={(e) => handleCustomerSearch(e.target.value)}
+                                        placeholder="Buscar cliente por nombre..."
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
+                                    />
+                                    {isSearchingCustomer && <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" />}
+                                    
+                                    {customerResults.length > 0 && (
+                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden divide-y divide-gray-50">
+                                            {customerResults.map(c => (
+                                                <button
+                                                    key={c.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedCustomerId(c.id);
+                                                        setCustomerName(c.full_name);
+                                                        setCustomerResults([]);
+                                                        setCustomerSearchQuery("");
+                                                    }}
+                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex justify-between items-center"
+                                                >
+                                                    <div>
+                                                        <p className="font-bold text-sm text-gray-900">{c.full_name}</p>
+                                                        <p className="text-[10px] text-gray-400">{c.phone || 'Sin teléfono'}</p>
+                                                    </div>
+                                                    {Number(c.balance || 0) > 0 && (
+                                                        <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-md">Debe ${Number(c.balance).toLocaleString()}</span>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between p-3 bg-gray-900 rounded-2xl">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white font-black text-xs">
+                                            {customerName.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-white leading-none">{customerName}</p>
+                                            <p className="text-[10px] text-white/50 mt-1 uppercase font-bold tracking-wider">Cliente vinculado</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            setSelectedCustomerId(null);
+                                            setCustomerName("");
+                                        }}
+                                        className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 transition-colors"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Formulario de cliente (solo si es delivery/retiro no web y no vinculaste un cliente arriba) */}
+                    {(orderType === 'DELIVERY' || orderType === 'TAKEAWAY' || tableId >= 100) && !isWebTable && !selectedCustomerId && (
+                        <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 shrink-0">
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Datos de Entrega</label>
+                            <div className="space-y-2">
                                 <input
                                     type="text"
                                     placeholder="Nombre del Cliente"
