@@ -232,7 +232,7 @@ export default function TablesPage() {
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
-        // Delivery range or Web Delivery (999) → RED intense
+        // Delivery range or Web Delivery (999) → RED
         if ((table.id >= 100 && table.id < 200) || table.id === 999) {
             return {
                 bg: 'bg-red-500 border-red-600 shadow-[0_10px_30px_rgba(239,68,68,0.5)]',
@@ -243,25 +243,25 @@ export default function TablesPage() {
                 subTextColor: 'text-red-100',
             };
         }
-        // Retiro range → GREEN intense
+        // Retiro range → GREEN
         else if ((table.id >= 200 && table.id < 300)) {
             return {
-                bg: 'bg-green-500 border-green-600 shadow-[0_10px_30px_rgba(34,197,94,0.5)]',
+                bg: 'bg-emerald-500 border-emerald-600 shadow-[0_10px_30px_rgba(16,185,129,0.5)]',
                 dot: 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]',
-                badgeBg: 'bg-green-600 text-white',
+                badgeBg: 'bg-emerald-600 text-white',
                 label: 'Retiro',
                 textColor: 'text-white',
-                subTextColor: 'text-green-100',
+                subTextColor: 'text-emerald-100',
             };
         }
-        // Local → YELLOW intense
+        // Local → YELLOW
         return {
-            bg: 'bg-yellow-400 border-yellow-500 shadow-[0_10px_30px_rgba(234,179,8,0.5)]',
-            dot: 'bg-yellow-900 shadow-[0_0_8px_rgba(113,63,18,0.6)]',
-            badgeBg: 'bg-yellow-500 text-yellow-900',
-            label: 'Local',
-            textColor: 'text-yellow-900',
-            subTextColor: 'text-yellow-700',
+            bg: 'bg-amber-400 border-amber-500 shadow-[0_10px_30px_rgba(245,158,11,0.5)]',
+            dot: 'bg-amber-900 shadow-[0_0_8px_rgba(113,63,18,0.6)]',
+            badgeBg: 'bg-amber-500 text-amber-950',
+            label: 'Salón',
+            textColor: 'text-amber-950',
+            subTextColor: 'text-amber-700',
         };
     };
 
@@ -405,13 +405,13 @@ export default function TablesPage() {
                 </div>
                 <div className="flex gap-4">
                     <div className="flex items-center gap-2 text-sm text-gray-500 font-bold">
-                        <div className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.4)]" /> Salón
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.4)]" /> Salón
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-500 font-bold">
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" /> Delivery
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" /> Retiro
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-500 font-bold">
-                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.4)]" /> Retiro
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]" /> Delivery
                     </div>
                 </div>
             </div>
@@ -538,7 +538,7 @@ export default function TablesPage() {
                                         className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border min-h-[400px] ${
                                             isDelivery
                                                 ? 'bg-red-500 border-red-600 shadow-[0_10px_30px_rgba(239,68,68,0.5)]'
-                                                : 'bg-green-500 border-green-600 shadow-[0_10px_30px_rgba(34,197,94,0.5)]'
+                                                : 'bg-emerald-500 border-emerald-600 shadow-[0_10px_30px_rgba(16,185,129,0.5)]'
                                         }`}
                                     >
                                         <div className="flex justify-between items-start">
