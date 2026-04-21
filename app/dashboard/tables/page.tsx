@@ -568,8 +568,11 @@ export default function TablesPage() {
                             {/* POS Tables */}
                             {sortedTables.map(table => {
                                 const styles = getCardStyles(table);
-                                const lastActive = new Date(table.updated_at || new Date()).getTime();
-                                const minutesElapsed = Math.floor((Date.now() - lastActive) / 60000);
+                                const now = Date.now();
+                                const lastActive = table.updated_at ? new Date(table.updated_at).getTime() : now;
+                                let minutesElapsed = Math.floor((now - lastActive) / 60000);
+                                if (minutesElapsed < 0) minutesElapsed = 0;
+                                const displayTime = minutesElapsed > 1440 ? '--' : `${minutesElapsed} min`;
                                 
                                 return (
                                     <motion.div
@@ -581,10 +584,10 @@ export default function TablesPage() {
                                         className={`rounded-[2.5rem] p-8 flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[400px] ${styles.bg}`}
                                     >
                                         {/* Timer Centered Top */}
-                                        <div className="flex flex-col items-center gap-1 z-10">
-                                            <span className={`text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 ${styles.textColor}`}>Minutos</span>
-                                            <span className={`text-xl font-medium ${styles.textColor}`}>{minutesElapsed} min</span>
-                                        </div>
+                                            <div className="flex flex-col items-center gap-1 z-10">
+                                                <span className={`text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 ${styles.textColor}`}>Minutos</span>
+                                                <span className={`text-xl font-medium ${styles.textColor}`}>{displayTime}</span>
+                                            </div>
 
                                         {/* Single Large Centered ID - Refined Apple Typography */}
                                         <div className="flex-1 flex items-center justify-center z-10">
