@@ -731,7 +731,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     // Mapeador de Iconos Ultra-Específico
                                     const getSmartIcon = (name: string, cat: string) => {
                                         const n = (name + " " + cat).toLowerCase();
-                                        if (n.includes('mila') || n.includes('carne') || n.includes('bife') || n.includes('lomo')) return '🥩';
+                                        if (n.includes('rucula') || n.includes('ensala') || n.includes('vegeta')) return '🥗';
+                                        if (n.includes('crudo') || n.includes('jamon') || n.includes('bacon') || n.includes('pancet')) return '🥓';
+                                        if (n.includes('mila') || n.includes('carne') || n.includes('bife') || n.includes('lomo') || n.includes('parri')) return '🥩';
+                                        if (n.includes('choriz') || n.includes('salchi')) return '🌭';
                                         if (n.includes('poll') || n.includes('supre') || n.includes('alitas')) return '🍗';
                                         if (n.includes('piz') || n.includes('muzza') || n.includes('fuga')) return '🍕';
                                         if (n.includes('ham') || n.includes('burg')) return '🍔';
@@ -747,7 +750,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         if (n.includes('papa') || n.includes('frit')) return '🍟';
                                         if (n.includes('factu') || n.includes('media') || n.includes('pan')) return '🥐';
                                         if (n.includes('pasta') || n.includes('fideo')) return '🍝';
-                                        if (n.includes('ensala')) return '🥗';
                                         if (n.includes('empa')) return '🥧';
                                         return '🍽️';
                                     };
