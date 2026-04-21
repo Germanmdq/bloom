@@ -722,49 +722,58 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 Sin resultados
                             </div>
                         ) : (
-                            /* Productos: Masonry Grid con Iconos de Categoría */
-                            <div className="columns-2 md:columns-3 gap-4 [column-fill:_balance] pb-20">
+                            /* Productos: Grilla Inteligente Adaptativa */
+                            <div className={`grid gap-4 w-full h-full pb-20 ${
+                                displayProducts.length === 4 ? 'grid-cols-2' : 
+                                displayProducts.length >= 5 ? 'grid-cols-3' : 'grid-cols-1'
+                            }`}>
                                 {displayProducts.map((item: any) => {
-                                    // Los productos heredan el icono de su categoría para coherencia total
-                                    const getSafeIcon = (name: string) => {
-                                        const n = name.toLowerCase();
-                                        if (n.includes('caf')) return '☕';
-                                        if (n.includes('piz')) return '🍕';
-                                        if (n.includes('ham')) return '🍔';
-                                        if (n.includes('beb') || n.includes('jug')) return '🍹';
-                                        if (n.includes('dul') || n.includes('pos')) return '🍰';
-                                        if (n.includes('ens')) return '🥗';
-                                        if (n.includes('mila') || n.includes('pla')) return '🍽️';
-                                        if (n.includes('pan') || n.includes('fact')) return '🥐';
-                                        if (n.includes('tost')) return '🥪';
-                                        if (n.includes('papa')) return '🍟';
-                                        if (n.includes('cerve')) return '🍺';
+                                    // Mapeador de Iconos Ultra-Específico
+                                    const getSmartIcon = (name: string, cat: string) => {
+                                        const n = (name + " " + cat).toLowerCase();
+                                        if (n.includes('mila') || n.includes('carne') || n.includes('bife') || n.includes('lomo')) return '🥩';
+                                        if (n.includes('poll') || n.includes('supre') || n.includes('alitas')) return '🍗';
+                                        if (n.includes('piz') || n.includes('muzza') || n.includes('fuga')) return '🍕';
+                                        if (n.includes('ham') || n.includes('burg')) return '🍔';
+                                        if (n.includes('caf') || n.includes('latte') || n.includes('capu')) return '☕';
+                                        if (n.includes('te ') || n.includes('infus')) return '🫖';
+                                        if (n.includes('helad') || n.includes('postr')) return '🍦';
+                                        if (n.includes('torta') || n.includes('dulc') || n.includes('cake')) return '🍰';
+                                        if (n.includes('soda') || n.includes('agua') || n.includes('coca')) return '🥤';
+                                        if (n.includes('jug') || n.includes('batid')) return '🍹';
+                                        if (n.includes('cerve') || n.includes('pinta')) return '🍺';
                                         if (n.includes('vino')) return '🍷';
+                                        if (n.includes('sand') || n.includes('tosta') || n.includes('mig')) return '🥪';
+                                        if (n.includes('papa') || n.includes('frit')) return '🍟';
+                                        if (n.includes('factu') || n.includes('media') || n.includes('pan')) return '🥐';
+                                        if (n.includes('pasta') || n.includes('fideo')) return '🍝';
+                                        if (n.includes('ensala')) return '🥗';
+                                        if (n.includes('empa')) return '🥧';
                                         return '🍽️';
                                     };
 
                                     const catName = categories.find((c: any) => c.id === item.category_id)?.name || "";
-                                    const icon = getSafeIcon(catName);
+                                    const icon = getSmartIcon(item.name, catName);
 
                                     return (
                                         <button
                                             key={item.id}
                                             onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                            className="group w-full mb-4 break-inside-avoid bg-white rounded-[2rem] p-6 shadow-[0_15px_35px_rgba(0,0,0,0.05)] hover:shadow-2xl active:scale-95 transition-all text-center border border-gray-50 flex flex-col items-center justify-center gap-4"
+                                            className="group relative bg-white rounded-[24px] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.05)] hover:shadow-2xl active:scale-95 transition-all text-center border border-gray-50 flex flex-col items-center justify-center gap-4 overflow-hidden h-full"
                                         >
                                             <motion.div 
                                                 whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
-                                                className="text-6xl md:text-7xl py-2 drop-shadow-md select-none"
+                                                className="text-6xl md:text-7xl drop-shadow-md select-none"
                                             >
                                                 {icon}
                                             </motion.div>
                                             
                                             <div className="w-full">
-                                                <p className="text-[12px] font-black text-gray-900 leading-tight uppercase tracking-tight mb-2">
+                                                <p className="text-[14px] font-black text-gray-900 leading-tight uppercase tracking-tight mb-2">
                                                     {item.name}
                                                 </p>
                                                 <div className="flex justify-center">
-                                                    <span className="px-4 py-1 bg-gray-50 rounded-full text-[10px] font-black text-gray-400 tracking-tighter group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                                                    <span className="px-4 py-1.5 bg-gray-900 text-white rounded-full text-[10px] font-black tracking-widest">
                                                         ${Number(item.price).toLocaleString()}
                                                     </span>
                                                 </div>
