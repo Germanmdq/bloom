@@ -412,6 +412,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 const customerIdForDb = isWebTable ? (webOrderData?.customer_id || null) : effectiveCustomerId;
                 
                 if (customerIdForDb) {
+                    console.log('🔔 [FinishOrder] Procesando cliente vinculando:', customerIdForDb);
                     // 1. Contar cafés para el sistema de fidelidad
                     const coffeeCount = cart.reduce((acc, item) => {
                         const n = item.name.toLowerCase();
@@ -422,20 +423,35 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     }, 0);
 
                     // 2. Actualizar stamps y saldo (si es cuenta corriente)
-                    const { data: prof } = await supabase.from('profiles').select('coffee_stamps, balance').eq('id', customerIdForDb).single();
+                    const { data: prof, error: getError } = await supabase.from('profiles').select('full_name, coffee_stamps, balance').eq('id', customerIdForDb).single();
                     
+                    if (getError) {
+                        console.error('❌ [FinishOrder] Error al obtener perfil:', getError.message);
+                    } else {
+                        console.log('👤 [FinishOrder] Cliente encontrado:', prof?.full_name, '| Saldo actual:', prof?.balance);
+                    }
+
                     let newStamps = (prof?.coffee_stamps || 0) + coffeeCount;
                     let newBalance = Number(prof?.balance || 0);
 
                     if (paymentMethod === "CUENTA_CORRIENTE") {
-                        // En cuenta corriente, el saldo sube (deuda)
+                        console.log('🏦 [FinishOrder] Aplicando deuda CC:', finalTotal);
                         newBalance += finalTotal;
                     }
 
-                    await supabase.from('profiles').update({
+                    const { error: updError } = await supabase.from('profiles').update({
                         coffee_stamps: newStamps % 11,
                         balance: newBalance
                     }).eq('id', customerIdForDb);
+
+                    if (updError) {
+                        console.error('❌ [FinishOrder] Error al actualizar saldo/puntos:', updError.message);
+                        alert("Error al actualizar saldo del cliente: " + updError.message);
+                    } else {
+                        console.log('✅ [FinishOrder] Saldo actualizado con éxito. Nuevo saldo:', newBalance);
+                    }
+                } else {
+                    console.warn('⚠️ [FinishOrder] No hay customerId vinculado, se omite balance/puntos.');
                 }
 
                 await createOrder.mutateAsync({

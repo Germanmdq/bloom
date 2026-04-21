@@ -28,18 +28,34 @@ export default function SettingsPage() {
 
     useEffect(() => {
         const loadSettings = async () => {
-            const { data } = await supabase
-                .from("app_settings")
-                .select("mesas, barra, whatsapp, plato_del_dia_id, fachada_image_url")
-                .eq("id", 1)
-                .single();
-            if (data) {
-                setMesas(data.mesas);
-                setBarra(data.barra);
-                setPhone(data.whatsapp);
-                if (data.plato_del_dia_id) setSelectedPlatoDia(data.plato_del_dia_id);
-                if (typeof data.fachada_image_url === "string") setFachadaImageUrl(data.fachada_image_url);
+            // Intento de carga robusto para evitar errores de esquema (400)
+            try {
+                const { data, error } = await supabase
+                    .from("app_settings")
+                    .select("id, mesas, barra, whatsapp, plato_del_dia_id, fachada_image_url")
+                    .eq("id", 1)
+                    .single();
+
+                if (error) {
+                    console.warn('[Settings] Carga principal falló, probando columnas individuales...', error.message);
+                    // Probar columnas básicas una a una si falla la carga completa
+                    const { data: base } = await supabase.from("app_settings").select("mesas, barra, whatsapp").eq("id", 1).maybeSingle();
+                    if (base) {
+                        setMesas(base.mesas || 10);
+                        setBarra(base.barra || 3);
+                        setPhone(base.whatsapp || "");
+                    }
+                } else if (data) {
+                    setMesas(data.mesas);
+                    setBarra(data.barra);
+                    setPhone(data.whatsapp);
+                    if (data.plato_del_dia_id) setSelectedPlatoDia(data.plato_del_dia_id);
+                    if (typeof data.fachada_image_url === "string") setFachadaImageUrl(data.fachada_image_url);
+                }
+            } catch (err: any) {
+                console.error('[Settings] Error en loadSettings:', err.message);
             }
+
             const savedF1 = localStorage.getItem('bloom_f1_action') as ComparisonType | null;
             const savedF2 = localStorage.getItem('bloom_f2_action') as ComparisonType | null;
             if (savedF1) setF1Action(savedF1);
