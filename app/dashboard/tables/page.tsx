@@ -568,6 +568,7 @@ export default function TablesPage() {
                             {/* POS Tables */}
                             {sortedTables.map(table => {
                                 const styles = getCardStyles(table);
+                                const timeStr = table.updated_at ? new Date(table.updated_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
                                 return (
                                     <motion.div
                                         key={table.id}
@@ -575,21 +576,31 @@ export default function TablesPage() {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedTable(table)}
-                                        className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[400px] ${styles.bg}`}
+                                        className={`rounded-[2.5rem] p-8 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[400px] ${styles.bg}`}
                                     >
-                                        <div className="flex justify-between items-start">
-                                            <span className={`text-3xl font-black ${styles.textColor}`}>{table.id}</span>
-                                            <div className={`w-3 h-3 rounded-full animate-pulse ${styles.dot}`} />
+                                        {/* Superimposed Table Number */}
+                                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.08] font-black text-[15rem] leading-none ${styles.textColor}`}>
+                                            {table.id}
                                         </div>
 
-                                        <div className="mt-auto">
-                                            <div className="mb-1">
-                                                <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${styles.badgeBg}`}>
-                                                    {styles.label}
+                                        <div className="relative z-10 flex justify-between items-start">
+                                            <div className="flex flex-col">
+                                                <span className={`text-4xl font-black tracking-tighter ${styles.textColor}`}>{table.id}</span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <div className={`w-3 h-3 rounded-full animate-pulse mb-2 ${styles.dot}`} />
+                                                <span className={`text-[10px] font-black uppercase tracking-widest ${styles.subTextColor} flex items-center gap-1`}>
+                                                    🕒 {timeStr}
                                                 </span>
                                             </div>
-                                            <span className={`text-[10px] font-bold uppercase tracking-wider ${styles.subTextColor}`}>Total</span>
-                                            <div className={`text-2xl font-black ${styles.textColor}`}>${table.total.toLocaleString("es-AR")}</div>
+                                        </div>
+
+                                        <div className="relative z-10 mt-auto">
+                                            <div className="h-px w-full bg-white/20 mb-6" />
+                                            <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${styles.subTextColor}`}>Total de la Mesa</p>
+                                            <div className={`text-5xl font-black tracking-tighter ${styles.textColor}`}>
+                                                ${table.total.toLocaleString("es-AR")}
+                                            </div>
                                         </div>
                                     </motion.div>
                                 );
