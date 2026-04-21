@@ -28,12 +28,6 @@ export function useOrderNotification() {
                         description: `Total: $${total.toLocaleString()}`,
                         duration: 8000,
                     });
-
-                    // Only play sound for remote/web orders to avoid self-sound during POS checkout
-                    if (isWeb) {
-                        const audio = new Audio(NOTIFICATION_SOUND_URL);
-                        audio.play().catch(e => console.log('Audio play failed', e));
-                    }
                 }
             )
             .on(
@@ -57,9 +51,6 @@ export function useOrderNotification() {
                             description: `Monto: $${total.toLocaleString()}`,
                             duration: 10000,
                         });
-
-                        const audio = new Audio(NOTIFICATION_SOUND_URL);
-                        audio.play().catch(e => console.log('Audio play failed', e));
                     }
                 }
             )
@@ -78,10 +69,6 @@ export function useOrderNotification() {
                         description: 'Nuevo pedido enviado a cocina',
                         duration: 5000,
                     });
-
-                    // Sound for kitchen ticket
-                    const audio = new Audio(NOTIFICATION_SOUND_URL);
-                    audio.play().catch(e => console.log('Audio play failed', e));
                 }
             )
             .subscribe();

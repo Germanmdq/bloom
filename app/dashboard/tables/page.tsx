@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Table, TableStatus } from "@/lib/types";
 import { OrderSheet } from "@/components/dashboard/OrderSheet";
@@ -28,6 +28,7 @@ export default function TablesPage() {
     // Web orders state
     const [webOrders, setWebOrders] = useState<WebOrder[]>([]);
     const [selectedWebOrder, setSelectedWebOrder] = useState<WebOrder | null>(null);
+    const [notifications, setNotifications] = useState<WebOrder[]>([]);
 
     // New Table Modal State
     const [isNewTableModalOpen, setIsNewTableModalOpen] = useState(false);
@@ -56,7 +57,28 @@ export default function TablesPage() {
         // Listen to orders changes (web orders)
         const ordersChannel = supabase
             .channel('web_orders_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+                const newOrder = payload.new as any;
+                // Only notify if it's web and pending (not POS)
+                if (newOrder.status === 'pending' && (!newOrder.table_id || newOrder.order_type === 'web')) {
+                    setNotifications(prev => [...prev, newOrder]);
+                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                    audio.play().catch(e => console.log('Audio play failed', e));
+                }
+                fetchWebOrders();
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+                const newOrder = payload.new as any;
+                const oldOrder = payload.old as any;
+                // Transitions from pending_payment to pending (Mercado Pago success)
+                if (newOrder.status === 'pending' && oldOrder.status === 'pending_payment' && (!newOrder.table_id || newOrder.order_type === 'web')) {
+                    setNotifications(prev => {
+                        if (prev.find(n => n.id === newOrder.id)) return prev;
+                        return [...prev, newOrder];
+                    });
+                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                    audio.play().catch(e => console.log('Audio play failed', e));
+                }
                 fetchWebOrders();
             })
             .subscribe();
@@ -420,6 +442,74 @@ export default function TablesPage() {
                     <p className="text-gray-400 text-sm max-w-md">No hay mesas abiertas en este momento.</p>
                 </div>
             ) : (
+                <>
+                {/* PERSISTENT NOTIFICATION STACK */}
+                <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center pointer-events-none">
+                    <div className="relative w-[340px] h-[400px]">
+                        <AnimatePresence>
+                            {notifications.map((notif, idx) => {
+                            const isDelivery = notif.delivery_type === 'delivery' || (!notif.delivery_type && notif.order_type === 'web' && !notif.table_id);
+                            // We stack them with a little offset
+                            const stackOffset = idx * 12;
+                            const reverseIdx = notifications.length - 1 - idx;
+                            
+                            return (
+                                <motion.div
+                                    key={notif.id}
+                                    initial={{ opacity: 0, y: -50, scale: 0.9 }}
+                                    animate={{ 
+                                        opacity: 1, 
+                                        y: stackOffset, 
+                                        scale: 1 - (reverseIdx * 0.05),
+                                        zIndex: reverseIdx
+                                    }}
+                                    exit={{ opacity: 0, scale: 0.5, y: 100 }}
+                                    className={`absolute inset-0 p-6 rounded-[2.5rem] shadow-2xl flex flex-col justify-between pointer-events-auto border-4 ${
+                                        isDelivery 
+                                            ? 'bg-red-500 border-red-400 text-white' 
+                                            : 'bg-green-500 border-green-400 text-white'
+                                    }`}
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                                NUEVO PEDIDO WEB
+                                            </span>
+                                            <h4 className="text-2xl font-black mt-2 leading-tight">
+                                                {notif.customer_name || 'Sin Nombre'}
+                                            </h4>
+                                        </div>
+                                        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-2xl">
+                                            {isDelivery ? '🛵' : '🛍️'}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1 my-4 flex-1">
+                                        <p className="text-sm font-bold opacity-80">Total: ${Number(notif.total).toLocaleString()}</p>
+                                        <p className="text-[10px] font-medium opacity-60 uppercase tracking-widest italic truncate">{notif.id}</p>
+                                    </div>
+
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setNotifications(prev => prev.filter(p => p.id !== notif.id));
+                                            setSelectedWebOrder(notif);
+                                        }}
+                                        className="w-full bg-white text-gray-900 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl active:scale-95 transition-all"
+                                    >
+                                        Aceptar Pedido
+                                    </button>
+                                </motion.div>
+                            );
+                        })}
+                        </AnimatePresence>
+                    </div>
+                    {notifications.length > 1 && (
+                        <div className="mt-4 bg-black/80 backdrop-blur-xl px-4 py-2 rounded-full text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-2xl pointer-events-none">
+                            Tenés {notifications.length} pedidos pendientes
+                        </div>
+                    )}
+                </div>
                 (() => {
                     const totalItems = webOrders.length + sortedTables.length;
                     // Adapt columns starting from a minimum of 4
@@ -506,7 +596,8 @@ export default function TablesPage() {
                             })}
                         </div>
                     );
-                })()
+                })()}
+                </>
             )}
 
             {/* Web Order Sheet */}
