@@ -232,32 +232,32 @@ export default function TablesPage() {
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
-        // Delivery range or Web Delivery (999) → RED (Minimalist Apple style)
+        // Delivery range or Web Delivery (999) → RED (Solid Apple float style)
         if ((table.id >= 100 && table.id < 200) || table.id === 999) {
             return {
-                bg: 'bg-red-500 border-red-600/20 shadow-lg shadow-red-500/10',
-                dot: 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.6)]',
+                bg: 'bg-red-500 shadow-2xl shadow-red-500/10',
+                dot: 'bg-white/40 shadow-sm',
                 badgeBg: 'bg-white/20 text-white',
                 label: 'Delivery',
                 textColor: 'text-white',
                 subTextColor: 'text-red-100/70',
             };
         }
-        // Retiro range → GREEN (Minimalist Apple style)
+        // Retiro range → GREEN (Solid Apple float style)
         else if ((table.id >= 200 && table.id < 300)) {
             return {
-                bg: 'bg-emerald-500 border-emerald-600/20 shadow-lg shadow-emerald-500/10',
-                dot: 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.6)]',
+                bg: 'bg-emerald-500 shadow-2xl shadow-emerald-500/10',
+                dot: 'bg-white/40 shadow-sm',
                 badgeBg: 'bg-white/20 text-white',
                 label: 'Retiro',
                 textColor: 'text-white',
                 subTextColor: 'text-emerald-100/70',
             };
         }
-        // Local → YELLOW (Minimalist Apple style)
+        // Local → YELLOW (Solid Apple float style)
         return {
-            bg: 'bg-amber-400 border-amber-500/20 shadow-lg shadow-amber-500/10',
-            dot: 'bg-amber-900/40 shadow-sm',
+            bg: 'bg-amber-400 shadow-2xl shadow-amber-500/10',
+            dot: 'bg-amber-950/20 shadow-sm',
             badgeBg: 'bg-black/10 text-amber-950',
             label: 'Salón',
             textColor: 'text-amber-950',
@@ -535,10 +535,10 @@ export default function TablesPage() {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedWebOrder(order)}
-                                        className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border min-h-[400px] ${
+                                        className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden shadow-2xl min-h-[400px] ${
                                             isDelivery
-                                                ? 'bg-red-500 border-red-600/20 shadow-xl shadow-red-500/10'
-                                                : 'bg-emerald-500 border-emerald-600/20 shadow-xl shadow-emerald-500/10'
+                                                ? 'bg-red-500 shadow-red-500/20'
+                                                : 'bg-emerald-500 shadow-emerald-500/20'
                                         }`}
                                     >
                                         <div className="flex justify-between items-start">
@@ -577,7 +577,7 @@ export default function TablesPage() {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedTable(table)}
-                                        className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border min-h-[400px] ${styles.bg}`}
+                                        className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[400px] ${styles.bg}`}
                                     >
                                         <div className="flex justify-between items-start">
                                             <span className={`text-3xl font-black ${styles.textColor}`}>{table.id}</span>
