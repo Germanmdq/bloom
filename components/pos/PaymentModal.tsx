@@ -6,6 +6,8 @@ import { Loader2 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { CartItem } from "@/lib/store/order-store";
 import { PaymentMethod } from "@/lib/types";
+import { Search, X, User } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const POINT_POLL_MS = 1200;
 const POINT_POLL_MAX = 100;
@@ -25,6 +27,10 @@ interface PaymentModalProps {
     /** UUID de `orders` al generar preferencia QR (webhook marca paid). */
     onMpOrderReady?: (orderId: string | null) => void;
     waiterId?: string | null;
+    selectedCustomerId?: string | null;
+    setSelectedCustomerId?: (id: string | null) => void;
+    customerName?: string;
+    setCustomerName?: (name: string) => void;
 }
 
 export function PaymentModal({
@@ -41,7 +47,12 @@ export function PaymentModal({
     onConfirm,
     onMpOrderReady,
     waiterId = null,
+    selectedCustomerId,
+    setSelectedCustomerId,
+    customerName,
+    setCustomerName
 }: PaymentModalProps) {
+    const supabase = createClient();
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
     const [isGeneratingQR, setIsGeneratingQR] = useState(false);
     const [qrError, setQrError] = useState<string | null>(null);
@@ -50,6 +61,27 @@ export function PaymentModal({
     const [pointBusy, setPointBusy] = useState(false);
     const [pointWaiting, setPointWaiting] = useState(false);
     const [pointError, setPointError] = useState<string | null>(null);
+
+    // Customer search states
+    const [q, setQ] = useState("");
+    const [results, setResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+
+    const handleSearch = async (val: string) => {
+        setQ(val);
+        if (val.length < 2) {
+            setResults([]);
+            return;
+        }
+        setIsSearching(true);
+        const { data } = await supabase
+            .from('profiles')
+            .select('id, full_name, balance')
+            .ilike('full_name', `%${val}%`)
+            .limit(4);
+        setResults(data || []);
+        setIsSearching(false);
+    };
 
     const onMpOrderReadyRef = useRef(onMpOrderReady);
     onMpOrderReadyRef.current = onMpOrderReady;
@@ -263,6 +295,73 @@ export function PaymentModal({
                             <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mozo</span>
                                 <span className="text-xs font-bold text-gray-700">Enviado</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* MINI BUSCADOR DE CLIENTE */}
+                    <div className="mb-6">
+                        {!selectedCustomerId ? (
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                <input
+                                    type="text"
+                                    value={q}
+                                    onChange={(e) => handleSearch(e.target.value)}
+                                    placeholder="Vincular cliente seleccionado..."
+                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-black/5 focus:bg-white transition-all"
+                                />
+                                {isSearching && <Loader2 className="absolute right-4 top-1/3 h-4 w-4 animate-spin text-gray-400" />}
+
+                                {results.length > 0 && (
+                                    <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-[110] overflow-hidden divide-y divide-gray-50">
+                                        {results.map(cust => (
+                                            <button
+                                                key={cust.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedCustomerId?.(cust.id);
+                                                    setCustomerName?.(cust.full_name);
+                                                    setResults([]);
+                                                    setQ("");
+                                                }}
+                                                className="w-full px-5 py-4 text-left hover:bg-gray-50 transition-colors flex justify-between items-center group"
+                                            >
+                                                <div>
+                                                    <p className="font-bold text-gray-900">{cust.full_name}</p>
+                                                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{cust.phone || 'Sin WhatsApp'}</p>
+                                                </div>
+                                                {Number(cust.balance || 0) > 0 && (
+                                                    <div className="text-right">
+                                                        <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-lg border border-red-100">DEUDOR: ${Number(cust.balance).toLocaleString()}</span>
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-between p-4 bg-gray-900 rounded-2xl border border-black shadow-xl">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                                        <User size={20} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black text-white leading-none">{customerName}</p>
+                                        <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-wider">Cliente Vinculado</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedCustomerId?.(null);
+                                        setCustomerName?.("");
+                                    }}
+                                    className="p-2 rounded-xl hover:bg-white/10 text-white/40 transition-colors"
+                                >
+                                    <X size={18} />
+                                </button>
                             </div>
                         )}
                     </div>

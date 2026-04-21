@@ -877,6 +877,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     onConfirm={finishOrder}
                     onMpOrderReady={onMpOrderReady}
                     waiterId={selectedWaiter || null}
+                    selectedCustomerId={selectedCustomerId}
+                    setSelectedCustomerId={setSelectedCustomerId}
+                    customerName={customerName}
+                    setCustomerName={setCustomerName}
                 />
             )}
 
