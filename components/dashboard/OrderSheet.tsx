@@ -703,29 +703,33 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 Sin resultados
                             </div>
                         ) : (
-                            /* Productos: Masonry Grid Estilo Apple */
-                            <div className="columns-2 md:columns-3 gap-6 space-y-6">
+                            /* Productos: Masonry Grid Real Estilo Apple */
+                            <div className="columns-2 md:columns-3 gap-4 [column-fill:_balance] w-full h-full pb-20">
                                 {displayProducts.map((item: any) => {
-                                    // Mapeador inteligente de iconos para productos
+                                    // Mapeador de Iconos de Alta Precisión
                                     const getProductIcon = (name: string, catName: string) => {
                                         const n = (name + " " + catName).toLowerCase();
-                                        if (n.includes('caf') || n.includes('latte') || n.includes('capu')) return '☕';
-                                        if (n.includes('piz') || n.includes('muzza')) return '🍕';
-                                        if (n.includes('ham') || n.includes('burg')) return '🍔';
-                                        if (n.includes('beb') || n.includes('soda') || n.includes('agua') || n.includes('coca')) return '🥤';
-                                        if (n.includes('jug') || n.includes('licua') || n.includes('batid')) return '🍹';
-                                        if (n.includes('dul') || n.includes('pos') || n.includes('torta') || n.includes('cake')) return '🍰';
-                                        if (n.includes('ensala')) return '🥗';
-                                        if (n.includes('mila') || n.includes('carne') || n.includes('lomo')) return '🥩';
-                                        if (n.includes('pasta') || n.includes('fideo') || n.includes('sorren')) return '🍝';
-                                        if (n.includes('empa') || n.includes('tarta')) return '🥧';
-                                        if (n.includes('tosta') || n.includes('sand') || n.includes('mig')) return '🥪';
-                                        if (n.includes('papa') || n.includes('frit')) return '🍟';
-                                        if (n.includes('crois') || n.includes('media') || n.includes('factu')) return '🥐';
-                                        if (n.includes('tostado') || n.includes('brus')) return '🥖';
-                                        if (n.includes('te ') || n.includes('infus')) return '🫖';
-                                        if (n.includes('vino') || n.includes('copa')) return '🍷';
-                                        if (n.includes('cerve') || n.includes('pinta')) return '🍺';
+                                        const words = n.split(/[\s,.-]+/);
+                                        const has = (word: string) => words.includes(word);
+                                        const includes = (part: string) => n.includes(part);
+
+                                        if (has('té') || has('te') || has('infusión') || has('infusion')) return '🫖';
+                                        if (includes('caf') || includes('latte') || includes('capu')) return '☕';
+                                        if (includes('piz') || includes('muzza')) return '🍕';
+                                        if (includes('ham') || includes('burg')) return '🍔';
+                                        if (includes('coca') || includes('soda') || includes('agua')) return '🥤';
+                                        if (includes('jug') || includes('batid') || includes('licua')) return '🍹';
+                                        if (includes('dul') || includes('pos') || includes('torta') || includes('cake')) return '🍰';
+                                        if (includes('ensala')) return '🥗';
+                                        if (includes('mila') || includes('carne') || includes('lomo')) return '🥩';
+                                        if (includes('pasta') || includes('fideo') || includes('sorren')) return '🍝';
+                                        if (includes('empa') || includes('tarta')) return '🥧';
+                                        if (includes('tosta') || includes('sand') || includes('mig')) return '🥪';
+                                        if (includes('papa') || includes('frit')) return '🍟';
+                                        if (includes('crois') || includes('media') || includes('factu')) return '🥐';
+                                        if (includes('tostado') || includes('brus')) return '🥖';
+                                        if (includes('vino') || includes('copa')) return '🍷';
+                                        if (includes('cerve') || includes('pinta')) return '🍺';
                                         return '🍽️';
                                     };
 
@@ -736,21 +740,21 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         <button
                                             key={item.id}
                                             onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                            className="group w-full break-inside-avoid bg-white rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.06)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.1)] hover:border-gray-200 active:scale-95 transition-all text-center border border-gray-100 flex flex-col items-center justify-center gap-6"
+                                            className="group w-full mb-4 break-inside-avoid bg-white rounded-[2rem] p-6 shadow-[0_15px_35px_rgba(0,0,0,0.05)] hover:shadow-2xl active:scale-95 transition-all text-center border border-gray-50 flex flex-col items-center justify-center gap-4"
                                         >
                                             <motion.div 
-                                                whileHover={{ y: -10, scale: 1.1, rotate: [0, -5, 5, 0] }}
-                                                className="text-7xl filter drop-shadow-md py-2"
+                                                whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
+                                                className="text-6xl md:text-7xl py-2 drop-shadow-md select-none"
                                             >
                                                 {icon}
                                             </motion.div>
                                             
-                                            <div className="space-y-3">
-                                                <p className="text-sm font-black text-gray-900 leading-tight uppercase tracking-tight">
+                                            <div className="w-full">
+                                                <p className="text-[12px] font-black text-gray-900 leading-tight uppercase tracking-tight mb-2">
                                                     {item.name}
                                                 </p>
                                                 <div className="flex justify-center">
-                                                    <span className="px-5 py-1.5 bg-gray-50 rounded-full text-xs font-black text-gray-400 uppercase tracking-widest group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                                                    <span className="px-4 py-1 bg-gray-50 rounded-full text-[10px] font-black text-gray-400 tracking-tighter group-hover:bg-gray-900 group-hover:text-white transition-colors">
                                                         ${Number(item.price).toLocaleString()}
                                                     </span>
                                                 </div>
