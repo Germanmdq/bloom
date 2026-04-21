@@ -555,18 +555,24 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         {/* Status Circle Identifier */}
                         <div className="w-14 h-14 bg-gray-900 rounded-[1.25rem] flex items-center justify-center text-white shadow-lg shadow-black/10 transition-transform hover:scale-105">
                             <span className="font-black text-2xl tracking-tighter">
-                                {tableId === WEB_ORDER_TABLE_RETIRO ? 'R' : 
-                                 tableId === WEB_ORDER_TABLE_DELIVERY ? 'E' : 
-                                 customerName ? customerName.charAt(0).toUpperCase() : tableId}
+                                {(() => {
+                                    const clean = customerName.replace('Cliente: ', '');
+                                    if (tableId === WEB_ORDER_TABLE_RETIRO) return 'R';
+                                    if (tableId === WEB_ORDER_TABLE_DELIVERY) return 'E';
+                                    return clean ? clean.charAt(0).toUpperCase() : tableId;
+                                })()}
                             </span>
                         </div>
 
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none">
-                                    {tableId === WEB_ORDER_TABLE_RETIRO ? 'Retiro' : 
-                                     tableId === WEB_ORDER_TABLE_DELIVERY ? 'Envío' : 
-                                     `Mesa ${tableId}`}
+                                    {(() => {
+                                        const clean = customerName.replace('Cliente: ', '');
+                                        if (tableId === WEB_ORDER_TABLE_RETIRO) return 'Retiro';
+                                        if (tableId === WEB_ORDER_TABLE_DELIVERY) return 'Envío';
+                                        return clean ? clean : `Mesa ${tableId}`;
+                                    })()}
                                 </h2>
                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
                                     cart.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'
@@ -575,7 +581,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 </span>
                             </div>
                             <p className="text-sm font-bold text-gray-400 mt-1">
-                                {customerName ? customerName : (cart.length === 0 ? 'Sincronizando...' : `${cart.reduce((s, i) => s + i.quantity, 0)} productos en comanda`)}
+                                {customerName ? `Mesa ${tableId}` : (cart.length === 0 ? 'Sincronizando...' : `${cart.reduce((s, i) => s + i.quantity, 0)} productos en comanda`)}
                             </p>
                         </div>
                     </div>

@@ -36,6 +36,7 @@ export default function TablesPage() {
     const [isNewTableModalOpen, setIsNewTableModalOpen] = useState(false);
     const [newTableType, setNewTableType] = useState<'LOCAL' | 'DELIVERY' | 'TAKEAWAY'>('LOCAL');
     const [newTableIdInput, setNewTableIdInput] = useState("");
+    const [newTableName, setNewTableName] = useState("");
 
     const supabase = createClient();
 
@@ -197,7 +198,18 @@ export default function TablesPage() {
 
         const { data, error } = await supabase
             .from('salon_tables')
-            .update({ status: 'OCCUPIED', order_type: finalOrderType })
+            .update({ 
+                status: 'OCCUPIED', 
+                order_type: finalOrderType,
+                items: newTableName ? [{
+                    id: 'meta-customer',
+                    name: `Cliente: ${newTableName}`,
+                    price: 0,
+                    quantity: 1,
+                    category: 'METADATA'
+                }] : [],
+                updated_at: new Date().toISOString()
+            })
             .eq('id', targetId)
             .select()
             .single();
@@ -208,6 +220,7 @@ export default function TablesPage() {
         } else {
             setIsNewTableModalOpen(false);
             setNewTableIdInput("");
+            setNewTableName("");
             fetchTables();
             if (data) {
                 setSelectedTable(data as Table);
@@ -331,6 +344,18 @@ export default function TablesPage() {
                                     }
                                     value={newTableIdInput}
                                     onChange={(e) => setNewTableIdInput(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' && !newTableName) handleOpenTable(); }}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold outline-none focus:border-black"
+                                />
+                            </div>
+
+                            <div className="pl-12 pr-4 pb-2">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Alias / Nombre (Opcional)</p>
+                                <input
+                                    type="text"
+                                    placeholder="Ej: Germán, Barra, Vereda 1..."
+                                    value={newTableName}
+                                    onChange={(e) => setNewTableName(e.target.value)}
                                     onKeyDown={(e) => { if (e.key === 'Enter') handleOpenTable(); }}
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold outline-none focus:border-black"
                                 />
@@ -594,11 +619,30 @@ export default function TablesPage() {
                                                 <span className={`text-xl font-medium ${styles.textColor}`}>{displayTime}</span>
                                             </div>
 
-                                        {/* Single Large Centered ID - Refined Apple Typography */}
-                                        <div className="flex-1 flex items-center justify-center z-10">
-                                            <span className={`font-semibold text-[9rem] leading-none tracking-tight ${styles.textColor}`}>
-                                                {table.id}
-                                            </span>
+                                        {/* Single Large Centered ID/Name - Refined Apple Typography */}
+                                        <div className="flex-1 flex flex-col items-center justify-center z-10 w-full px-4 text-center">
+                                            {(() => {
+                                                const metaCust = table.items?.find((i: any) => i.id === 'meta-customer');
+                                                const hasName = metaCust?.name;
+                                                const displayName = hasName ? metaCust.name.replace('Cliente: ', '') : table.id.toString();
+                                                
+                                                return (
+                                                    <>
+                                                        {hasName && (
+                                                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-40 ${styles.textColor}`}>
+                                                                Mesa {table.id}
+                                                            </span>
+                                                        )}
+                                                        <span className={`font-semibold leading-none tracking-tight break-words w-full ${styles.textColor} ${
+                                                            displayName.length > 8 ? 'text-[3rem]' : 
+                                                            displayName.length > 5 ? 'text-[5rem]' : 
+                                                            'text-[9rem]'
+                                                        }`}>
+                                                            {displayName}
+                                                        </span>
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
 
                                         {/* Total Centered Bottom */}
