@@ -672,13 +672,27 @@ function PublicMenuPage() {
                                 <div className="space-y-3">
                                     {/* Prompt login */}
                                     {!tableId && (
-                                        <Link
-                                            href="/auth"
-                                            onClick={() => setIsCartOpen(false)}
-                                            className="block w-full text-center text-sm font-bold text-neutral-600 underline-offset-4 hover:underline hover:text-neutral-900 py-2"
-                                        >
-                                            Iniciar sesión
-                                        </Link>
+                                        <div className="bg-neutral-50 rounded-2xl p-4 border border-black/5 flex flex-col items-center gap-3">
+                                          <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest text-center leading-tight">
+                                            Identificate para continuar con tu encargo
+                                          </p>
+                                          <div className="flex gap-4 w-full">
+                                            <Link
+                                                href="/auth"
+                                                onClick={() => setIsCartOpen(false)}
+                                                className="flex-1 text-center text-xs font-black text-neutral-900 bg-white border border-black/10 py-2.5 rounded-xl shadow-sm hover:bg-neutral-50 transition-colors"
+                                            >
+                                                Iniciar sesión
+                                            </Link>
+                                            <Link
+                                                href="/registro"
+                                                onClick={() => setIsCartOpen(false)}
+                                                className="flex-1 text-center text-xs font-black text-white bg-neutral-900 py-2.5 rounded-xl shadow-md hover:bg-neutral-800 transition-colors"
+                                            >
+                                                Registrarse
+                                            </Link>
+                                          </div>
+                                        </div>
                                     )}
 
                                     {tableId ? (

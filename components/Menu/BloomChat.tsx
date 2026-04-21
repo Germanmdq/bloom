@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { MessageCircle, X, Loader2, Check } from "lucide-react";
+import { MessageCircle, X, Loader2, Check, ShoppingBag, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
@@ -19,6 +19,7 @@ type ProductRow = {
   name: string;
   description: string | null;
   price: number;
+  image_url?: string | null;
   category_id: string | null;
   /** Nombre de categoría (join) para sugerencias post-encargo */
   category_name?: string | null;
@@ -315,13 +316,18 @@ function buildChoiceFromGroups(
 function ProductCard({
   product,
   added,
+  isLoggedIn,
   onEncargar,
+  onLoginClick,
 }: {
   product: ProductRow;
   added: boolean;
-  onEncargar: (observations: string, choice?: VariantChoice) => void;
+  isLoggedIn: boolean;
+  onEncargar: (observations: string, quantity: number, choice?: VariantChoice) => void;
+  onLoginClick: () => void;
 }) {
   const [observation, setObservation] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [pickOpen, setPickOpen] = useState(false);
   const [selectedFlat, setSelectedFlat] = useState("");
   const [groupSingle, setGroupSingle] = useState<Record<string, string>>({});
@@ -345,12 +351,12 @@ function ProductCard({
       resetPicker();
       return;
     }
-    onEncargar(observation.trim());
+    onEncargar(observation.trim(), quantity);
   };
 
   const handleConfirmFlat = () => {
     if (!selectedFlat) return;
-    onEncargar(observation.trim(), {
+    onEncargar(observation.trim(), quantity, {
       summaryLabel: selectedFlat,
       variants: [{ name: selectedFlat }],
     });
@@ -364,7 +370,7 @@ function ProductCard({
       toast.error("Completá las opciones obligatorias");
       return;
     }
-    onEncargar(observation.trim(), choice);
+    onEncargar(observation.trim(), quantity, choice);
     setPickOpen(false);
     resetPicker();
   };
@@ -384,147 +390,148 @@ function ProductCard({
   };
 
   return (
-    <div className="flex w-full flex-col gap-3 rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-black/5">
-      <div className="flex w-full items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-1 flex-col gap-1 text-left">
-          <p className="font-bold text-neutral-900">{product.name}</p>
-          <p className="text-sm font-semibold text-[#2d4a3e]">{formatArs(Number(product.price))}</p>
+    <div className="flex w-full flex-col gap-4 rounded-3xl bg-white p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-black/[0.03] transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+      <div className="flex w-full gap-4">
+        {/* Product Image */}
+        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[1.25rem] bg-neutral-100 ring-1 ring-black/5">
+          {product.image_url ? (
+            <Image src={product.image_url} alt={product.name} fill className="object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-bloom-gold/10 text-bloom-600 font-bold text-[10px] uppercase tracking-widest">Bloom</div>
+          )}
         </div>
-        {added ? (
-          <span
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md"
-            aria-label="Agregado"
-          >
-            <Check className="h-5 w-5" strokeWidth={3} />
-          </span>
-        ) : null}
+
+        <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
+          <div>
+            <div className="flex justify-between items-start gap-2">
+              <h4 className="font-bold text-neutral-900 leading-[1.1] text-base">{product.name}</h4>
+              {added && (
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+                  <Check className="h-3 w-3" strokeWidth={4} />
+                </span>
+              )}
+            </div>
+            <p className="line-clamp-2 text-[11px] text-neutral-400 mt-1.5 leading-snug font-medium">{product.description}</p>
+          </div>
+          <div className="mt-2">
+            <span className="font-bold text-bloom-700 text-lg tracking-tight">{formatArs(Number(product.price))}</span>
+          </div>
+        </div>
       </div>
 
-      {pickOpen && needsPicker ? (
-        <div className="space-y-4 border-t border-[#e8e4dc] pt-3">
-          {hasFlat ? (
-            <div className="space-y-2">
-              <p className="text-xs font-black uppercase tracking-wide text-neutral-500">Elegí una opción</p>
-              <fieldset className="space-y-2">
-                {variantList.map((v) => (
-                  <label
-                    key={v}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-[#e0dcd4] bg-[#faf8f3] px-3 py-2 text-sm font-medium text-neutral-800"
-                  >
-                    <input
-                      type="radio"
-                      name={`bloom-flat-${product.id}`}
-                      value={v}
-                      checked={selectedFlat === v}
-                      onChange={() => setSelectedFlat(v)}
-                      className="accent-[#2d4a3e]"
-                    />
-                    {v}
-                  </label>
-                ))}
-              </fieldset>
-            </div>
-          ) : null}
-
-          {hasGroups
-            ? groups.map((g) => (
-                <div key={`${product.id}-${g.name}`} className="space-y-2">
-                  <p className="text-xs font-black uppercase tracking-wide text-neutral-600">
-                    {g.name}
-                    {g.min > 0 ? <span className="font-bold text-red-600"> *</span> : null}
-                    {g.max > 1 ? (
-                      <span className="block text-[10px] font-semibold normal-case text-neutral-500">
-                        Elegí hasta {g.max}
-                      </span>
-                    ) : null}
-                  </p>
-                  {g.max <= 1 ? (
-                    <fieldset className="space-y-2">
-                      {g.options.map((opt) => (
-                        <label
-                          key={opt}
-                          className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-[#e0dcd4] bg-[#faf8f3] px-3 py-2 text-sm font-medium text-neutral-800"
-                        >
-                          <input
-                            type="radio"
-                            name={`bloom-g-${product.id}-${g.name}`}
-                            value={opt}
-                            checked={(groupSingle[g.name] ?? "") === opt}
-                            onChange={() => setGroupSingle((s) => ({ ...s, [g.name]: opt }))}
-                            className="accent-[#2d4a3e]"
-                          />
-                          {opt}
-                        </label>
-                      ))}
-                    </fieldset>
-                  ) : (
-                    <fieldset className="space-y-2">
-                      {g.options.map((opt) => (
-                        <label
-                          key={opt}
-                          className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-[#e0dcd4] bg-[#faf8f3] px-3 py-2 text-sm font-medium text-neutral-800"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={(groupMulti[g.name] ?? []).includes(opt)}
-                            onChange={() => toggleMulti(g.name, opt, g.max)}
-                            className="accent-[#2d4a3e]"
-                          />
-                          {opt}
-                        </label>
-                      ))}
-                    </fieldset>
-                  )}
+      {isLoggedIn ? (
+        <div className="space-y-4">
+          {pickOpen && needsPicker ? (
+            <div className="space-y-5 border-t border-neutral-50 pt-5">
+              {/* Opción Flat (ej. Sabores) */}
+              {hasFlat && (
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Seleccioná una opción</p>
+                  <div className="flex flex-wrap gap-2">
+                    {variantList.map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setSelectedFlat(v)}
+                        className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all ${
+                          selectedFlat === v ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              ))
-            : null}
+              )}
 
-          <button
-            type="button"
-            disabled={hasFlat ? !selectedFlat : false}
-            onClick={() => {
-              if (hasFlat) handleConfirmFlat();
-              else handleConfirmGroups();
-            }}
-            className="w-full rounded-xl bg-[#2d4a3e] px-3 py-2.5 text-xs font-black uppercase tracking-wide text-white transition hover:bg-[#1f342c] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Agregar al encargo
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setPickOpen(false);
-              resetPicker();
-            }}
-            className="w-full text-center text-xs font-bold text-neutral-500 underline-offset-2 hover:text-neutral-800 hover:underline"
-          >
-            Cancelar
-          </button>
+              {/* Grupos de Opciones */}
+              {hasGroups && groups.map((g) => (
+                <div key={g.name} className="space-y-3">
+                  <div className="flex justify-between items-end">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                      {g.name} {g.min > 0 && <span className="text-red-500">*</span>}
+                    </p>
+                    {g.max > 1 && <span className="text-[10px] font-bold text-neutral-300">Máx {g.max}</span>}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {g.options.map((opt) => {
+                      const isSelected = g.max <= 1 ? groupSingle[g.name] === opt : (groupMulti[g.name] ?? []).includes(opt);
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => {
+                            if (g.max <= 1) setGroupSingle(prev => ({ ...prev, [g.name]: opt }));
+                            else toggleMulti(g.name, opt, g.max);
+                          }}
+                          className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all ${
+                            isSelected ? 'bg-neutral-900 text-white border-neutral-900 shadow-md' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setPickOpen(false); resetPicker(); }}
+                  className="flex-1 py-3 text-[11px] font-bold text-neutral-400"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { if (hasFlat) handleConfirmFlat(); else handleConfirmGroups(); }}
+                  className="flex-[2] rounded-2xl bg-neutral-900 py-3.5 text-xs font-black uppercase tracking-widest text-white shadow-xl active:scale-95 transition-all"
+                >
+                  Confirmar selección
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4 border-t border-neutral-50 pt-5">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={observation}
+                  onChange={(e) => setObservation(e.target.value)}
+                  placeholder="¿Alguna aclaración? (sin cebolla, etc.)"
+                  className="w-full rounded-2xl bg-neutral-50 border-none px-4 py-3 text-xs font-medium focus:ring-2 focus:ring-neutral-100 outline-none placeholder:text-neutral-300"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 bg-neutral-50 p-1.5 rounded-2xl ring-1 ring-black/[0.03]">
+                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all text-neutral-400 hover:text-neutral-900"><Minus size={16} /></button>
+                  <span className="w-8 text-center font-bold text-sm text-neutral-900">{quantity}</span>
+                  <button onClick={() => setQuantity(q => q + 1)} className="w-9 h-9 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all text-neutral-400 hover:text-neutral-900"><Plus size={16} /></button>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleEncargarClick}
+                  className="flex-1 py-4 rounded-2xl bg-[#7a765a] text-white text-[11px] font-black uppercase tracking-[0.14em] shadow-[0_10px_25px_-5px_rgba(122,118,90,0.4)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 hover:bg-[#6b674e]"
+                >
+                  <ShoppingBag size={16} /> {added ? "Sumar más" : "Agregar"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
-        <>
-          <label className="block text-left text-xs font-bold text-neutral-500" htmlFor={`bloom-obs-${product.id}`}>
-            Observaciones (opcional)
-          </label>
-          <input
-            id={`bloom-obs-${product.id}`}
-            type="text"
-            name={`obs-${product.id}`}
-            value={observation}
-            onChange={(e) => setObservation(e.target.value)}
-            disabled={added}
-            autoComplete="off"
-            className="w-full rounded-lg border border-[#d4cfc4] bg-white px-3 py-2 text-sm text-left text-neutral-900 disabled:bg-neutral-100"
-          />
+        <div className="border-t border-neutral-50 pt-5">
           <button
-            type="button"
-            disabled={added}
-            onClick={handleEncargarClick}
-            className={`w-full rounded-xl px-3 py-2.5 text-xs font-black uppercase tracking-wide text-white transition ${
-              added ? "bg-emerald-600" : "bg-[#7a765a] hover:bg-[#5f5c46]"
-            } disabled:cursor-default`}
+            onClick={onLoginClick}
+            className="w-full py-4 rounded-2xl bg-neutral-900 text-white text-[11px] font-black uppercase tracking-[0.14em] shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
-            {added ? "Agregado ✓" : "Encargar"}
+            Iniciá sesión para pedir
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}cargar"}
           </button>
         </>
       )}
@@ -535,6 +542,7 @@ function ProductCard({
 export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, ref) {
   const router = useRouter();
   const [supabase] = useState(() => createClient());
+  const [session, setSession] = useState<any>(null);
   const [open, setOpen] = useState(false);
   const [context, setContext] = useState<ChatContext | null>(null);
   const [contextKey, setContextKey] = useState(0);
@@ -714,7 +722,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       try {
         let q = supabase
           .from("products")
-          .select("id,name,description,price,category_id,options, categories(name)")
+          .select("id,name,description,price,image_url,category_id,options, categories(name)")
           .eq("active", true);
         if (context.productIds?.length) {
           q = q.in("id", context.productIds);
@@ -743,6 +751,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
             id: raw.id as string,
             name: raw.name as string,
             description: (raw.description as string | null) ?? null,
+            image_url: (raw.image_url as string | null) ?? null,
             price: Number(raw.price),
             category_id: (raw.category_id as string | null) ?? null,
             category_name: categoryName,
@@ -816,6 +825,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
       const user = session?.user;
       if (user) {
         setSoftAuthHintVisible(false);
@@ -968,7 +978,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setDeliveryZoneCheckedFor("");
   }, []);
 
-  const addLine = useCallback((p: ProductRow, observations: string, choice?: VariantChoice) => {
+  const addLine = useCallback((p: ProductRow, observations: string, quantity: number, choice?: VariantChoice) => {
     const lineId =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
@@ -991,7 +1001,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         product_id: p.id,
         name: displayName,
         price: Number(p.price),
-        quantity: 1,
+        quantity: quantity || 1,
         observations,
         ...(variantsPayload ? { variants: variantsPayload } : {}),
         productHadVariants: hadVariants,
@@ -1652,31 +1662,33 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           aria-modal="true"
           aria-labelledby="bloom-chat-title"
         >
-          <div className="flex h-full w-full max-w-full flex-col overflow-hidden bg-[#f7f5ef] md:h-[80vh] md:max-h-[80vh] md:max-w-[480px] md:rounded-2xl md:shadow-2xl">
-            <div className="flex shrink-0 flex-col gap-1.5 border-b border-[#e0dcd4] bg-[#2d4a3e] px-3 py-2.5 text-white md:px-4">
+          <div className="flex h-full w-full max-w-full flex-col overflow-hidden bg-[#f7f5ef] md:h-[85vh] md:max-h-[85vh] md:max-w-[460px] md:rounded-[2.5rem] md:shadow-[0_20px_60px_rgba(0,0,0,0.15)] ring-1 ring-black/5">
+            <div className="flex shrink-0 flex-col gap-1.5 border-b border-black/[0.03] bg-white/80 backdrop-blur-md px-4 py-4 text-neutral-900 md:px-6">
               {context && (!!context.categoryId || (context.productIds?.length ?? 0) > 0) ? (
                 <button
                   type="button"
                   onClick={context.fromHomeFeatured ? closeChatAndGoToMenu : closeChatKeepCart}
-                  className="w-fit text-left text-xs font-bold text-[#c4b896] underline-offset-2 hover:text-white hover:underline"
+                  className="w-fit text-left text-[10px] font-black uppercase tracking-widest text-bloom-600 hover:text-bloom-800 transition-colors"
                 >
                   ← Ver categorías
                 </button>
               ) : null}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <MessageCircle className="h-5 w-5 shrink-0 text-[#c4b896]" aria-hidden />
-                  <h2 id="bloom-chat-title" className="truncate font-bold tracking-tight">
-                    {context?.displayName ?? "Bloom"}
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-bloom-700 flex items-center justify-center text-white shadow-inner">
+                    <ShoppingBag size={16} strokeWidth={2.5} />
+                  </div>
+                  <h2 id="bloom-chat-title" className="truncate font-black text-lg tracking-tight text-neutral-900">
+                    {context?.displayName ?? "Bloom Store"}
                   </h2>
                 </div>
                 <button
                   type="button"
                   onClick={() => closeModal()}
-                  className="shrink-0 rounded-lg p-1.5 hover:bg-white/10"
+                  className="shrink-0 rounded-full p-2 bg-neutral-100 hover:bg-neutral-200 transition-colors text-neutral-500"
                   aria-label="Cerrar"
                 >
-                  <X className="h-5 w-5" />
+                  <X size={18} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
@@ -1743,8 +1755,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                         <ProductCard
                           key={`${productListKey}-${p.id}`}
                           product={p}
+                          isLoggedIn={!!session}
                           added={!productHasConfigurableOptions(p) && addedProductIds.has(p.id)}
-                          onEncargar={(obs, choice) => addLine(p, obs, choice)}
+                          onEncargar={(obs, qty, choice) => addLine(p, obs, qty, choice)}
+                          onLoginClick={persistCartAndGoToRegistro}
                         />
                       ))}
                     </div>
