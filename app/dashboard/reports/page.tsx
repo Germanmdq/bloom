@@ -31,7 +31,7 @@ export default function ReportsPage() {
 
         const { data, error } = await supabase
             .from('orders')
-            .select('*')
+            .select('total, payment_method, created_at')
             .gte('created_at', thresholdDate); // Filter by date
 
         if (!error && data) {

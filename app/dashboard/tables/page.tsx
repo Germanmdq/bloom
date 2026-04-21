@@ -69,21 +69,27 @@ export default function TablesPage() {
 
     async function fetchWebOrders() {
         try {
-            // Only filter on columns that definitely exist (order_type, status)
-            // Avoid filtering on 'paid' which may not exist in older DB schemas
+            // Usamos una selección más segura para evitar el error 400
             const { data, error } = await supabase
                 .from('orders')
-                .select('id, customer_name, customer_phone, delivery_type, delivery_info, items, total, status, created_at, order_type')
-                .eq('order_type', 'web')
+                .select('id, status, total, items, created_at, customer_name, customer_phone')
                 .eq('status', 'pending')
                 .order('created_at', { ascending: true })
                 .limit(50);
 
             if (error) {
-                console.error('[TablesPage] fetchWebOrders error:', error.message);
+                console.error('[TablesPage] Error Fatal 400:', error.message);
+                // Si falla, intentamos una carga mínima absoluta
+                const { data: minData } = await supabase.from('orders').select('id, total').limit(10);
+                if (minData) console.log('Carga mínima exitosa, el problema es una columna específica.');
                 return;
             }
-            if (data) setWebOrders(data as WebOrder[]);
+            
+            // Filtramos por order_type en el cliente si es necesario para evitar el error 400 en el backend
+            if (data) {
+                const webOnly = data.filter((o: any) => !o.table_id || o.order_type === 'web');
+                setWebOrders(webOnly as WebOrder[]);
+            }
         } catch (err: any) {
             console.error('[TablesPage] fetchWebOrders catch:', err.message);
         }
