@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Receipt, Plus, TrendingDown, Lightbulb, Flame, Home } from "lucide-react";
+import { Receipt, Plus, TrendingDown, Lightbulb, Flame, Home, Users, Wrench, FileText, ShoppingCart, Megaphone, ShieldAlert, MoreHorizontal } from "lucide-react";
 
 export default function ExpensesPage() {
     const [expenses, setExpenses] = useState<any[]>([]);
@@ -94,8 +94,15 @@ export default function ExpensesPage() {
                         <div className="flex items-center gap-6">
                             <div className="p-4 rounded-2xl bg-gray-50 text-gray-400">
                                 {expense.category === 'Luz' ? <Lightbulb size={24} /> :
-                                    expense.category === 'Gas' ? <Flame size={24} /> :
-                                        expense.category === 'Alquiler' ? <Home size={24} /> : <Receipt size={24} />}
+                                 expense.category === 'Gas' ? <Flame size={24} /> :
+                                 expense.category === 'Alquiler' ? <Home size={24} /> :
+                                 expense.category === 'Sueldos' ? <Users size={24} className="text-blue-500" /> :
+                                 expense.category === 'Reparaciones' ? <Wrench size={24} className="text-orange-500" /> :
+                                 expense.category === 'Impuestos' ? <FileText size={24} className="text-purple-500" /> :
+                                 expense.category === 'Mercadería' ? <ShoppingCart size={24} className="text-emerald-500" /> :
+                                 expense.category === 'Publicidad' ? <Megaphone size={24} className="text-pink-500" /> :
+                                 expense.category === 'Seguros' ? <ShieldAlert size={24} className="text-indigo-500" /> :
+                                 <MoreHorizontal size={24} />}
                             </div>
                             <div>
                                 <h4 className="text-lg font-bold text-gray-900">{expense.description}</h4>
@@ -160,11 +167,14 @@ export default function ExpensesPage() {
                                         onChange={e => setNewExpense({ ...newExpense, category: e.target.value })}
                                         className="w-full bg-white/50 border border-black/5 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-black/5 outline-none appearance-none"
                                     >
-                                        <option value="Servicios">Servicios</option>
-                                        <option value="Luz">Luz</option>
-                                        <option value="Gas">Gas</option>
+                                        <option value="Mercadería">Mercadería (Ingsumos)</option>
+                                        <option value="Sueldos">Sueldos / Personal</option>
                                         <option value="Alquiler">Alquiler</option>
-                                        <option value="Mercadería">Mercadería</option>
+                                        <option value="Servicios">Servicios (Luz, Agua, Gas)</option>
+                                        <option value="Reparaciones">Reparaciones / Mant.</option>
+                                        <option value="Impuestos">Impuestos / Tasas</option>
+                                        <option value="Seguros">Seguros</option>
+                                        <option value="Publicidad">Publicidad / Marketing</option>
                                         <option value="Otros">Otros</option>
                                     </select>
                                 </div>
