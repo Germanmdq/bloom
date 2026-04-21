@@ -47,6 +47,7 @@ export function OrderList() {
     const [unpaidOnly, setUnpaidOnly] = useState(false);
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const [assigningDeliveryId, setAssigningDeliveryId] = useState<string | null>(null);
+    const [changingPaymentId, setChangingPaymentId] = useState<string | null>(null);
 
     const fetchOrders = useCallback(async (opts?: { silent?: boolean }) => {
         const silent = opts?.silent === true;
@@ -149,6 +150,31 @@ export function OrderList() {
             await fetchOrders();
         } finally {
             setAssigningDeliveryId(null);
+        }
+    }
+
+    async function changePaymentMethod(orderId: string, payment_method: string) {
+        setChangingPaymentId(orderId);
+        try {
+            const res = await fetch("/api/orders/payment-method", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId, payment_method }),
+            });
+            if (!res.ok) {
+                const j = await res.json().catch(() => ({}));
+                console.error(j);
+                return;
+            }
+            setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, payment_method } : o)));
+            setSelectedOrder((prev) => (prev?.id === orderId ? { ...prev, payment_method } : prev));
+            setSelectedGroup((prev) =>
+                prev
+                    ? { ...prev, orders: prev.orders.map((o) => (o.id === orderId ? { ...o, payment_method } : o)) }
+                    : null
+            );
+        } finally {
+            setChangingPaymentId(null);
         }
     }
 
@@ -609,6 +635,31 @@ export function OrderList() {
                                     >
                                         {togglingId === selectedOrder.id ? "…" : isOrderPaid(selectedOrder) ? "Marcar impago" : "Marcar pagado"}
                                     </button>
+                                    </div>
+                                    <div className="flex flex-col gap-2 pt-1 border-t border-gray-100">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Cambiar método de pago</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {([
+                                                { key: "CASH", label: "Efectivo" },
+                                                { key: "CARD", label: "Tarjeta" },
+                                                { key: "MERCADO_PAGO", label: "Mercado Pago" },
+                                                { key: "BANK_TRANSFER", label: "Transferencia" },
+                                            ] as const).map(({ key, label }) => (
+                                                <button
+                                                    key={key}
+                                                    type="button"
+                                                    disabled={changingPaymentId === selectedOrder.id}
+                                                    onClick={() => void changePaymentMethod(selectedOrder.id, key)}
+                                                    className={`px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wide transition-all ${
+                                                        selectedOrder.payment_method === key
+                                                            ? "bg-gray-900 text-white"
+                                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                    }`}
+                                                >
+                                                    {label}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -64,10 +64,44 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
     const [currentWebOrderId, setCurrentWebOrderId] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [mpPosOrderId, setMpPosOrderId] = useState<string | null>(null);
+    const [lastSaleOrderId, setLastSaleOrderId] = useState<string | null>(null);
+    const [showPostSale, setShowPostSale] = useState(false);
+    const [postSalePayment, setPostSalePayment] = useState<string>("");
+    const [postSaleTotal, setPostSaleTotal] = useState(0);
+    const [changingPayment, setChangingPayment] = useState(false);
 
     const onMpOrderReady = useCallback((id: string | null) => {
         setMpPosOrderId(id);
     }, []);
+
+    const closePostSale = () => {
+        setShowPostSale(false);
+        setLastSaleOrderId(null);
+        clearCart();
+        finishingRef.current = false;
+        setIsFinishing(false);
+        if (isWebTable) {
+            setCurrentWebOrderId(null);
+            refreshData();
+        } else {
+            if (onOrderComplete) onOrderComplete();
+            onClose();
+        }
+    };
+
+    const handleChangePaymentMethod = async (newMethod: string) => {
+        if (!lastSaleOrderId || changingPayment) return;
+        setChangingPayment(true);
+        try {
+            await supabase.from("orders").update({ payment_method: newMethod }).eq("id", lastSaleOrderId);
+            setPostSalePayment(newMethod);
+            queryClient.invalidateQueries({ queryKey: ["orders"] });
+        } catch (err) {
+            console.error("Error changing payment:", err);
+        } finally {
+            setChangingPayment(false);
+        }
+    };
 
     const isWebTable = tableId === WEB_ORDER_TABLE_RETIRO || tableId === WEB_ORDER_TABLE_DELIVERY;
 
@@ -302,7 +336,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 setMpPosOrderId(null);
                 queryClient.invalidateQueries({ queryKey: ["orders"] });
             } else {
-                await createOrder.mutateAsync({
+                const result = await createOrder.mutateAsync({
                     table_id: tableId,
                     total: finalTotal,
                     payment_method: paymentMethod,
@@ -313,6 +347,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                 if (currentWebOrderId) {
                     await fetch(`/api/orders/delete?id=${currentWebOrderId}`, { method: "DELETE" });
                 }
+                setShowPaymentModal(false);
+                setLastSaleOrderId(result?.id ?? null);
+                setPostSalePayment(paymentMethod);
+                setPostSaleTotal(finalTotal);
+                setShowPostSale(true);
+                setIsFinishing(false);
+                return;
             }
             setFeedback({ message: "¡Venta registrada!", type: "success" });
             setTimeout(() => {
@@ -644,6 +685,69 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId }: Or
                     waiterId={selectedWaiter || null}
                 />
             )}
+
+            {/* ── POST-SALE SCREEN ── */}
+            <AnimatePresence>
+                {showPostSale && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                            onClick={closePostSale}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                            className="relative bg-gray-900 text-white rounded-3xl shadow-2xl p-8 flex flex-col items-center gap-6 text-center max-w-sm w-full mx-4"
+                        >
+                            <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center">
+                                <Check size={32} className="text-white" />
+                            </div>
+                            <div>
+                                <p className="font-black text-2xl">¡Venta registrada!</p>
+                                <p className="text-gray-400 text-sm mt-1">${postSaleTotal.toLocaleString()} · Podés cambiar el método</p>
+                            </div>
+                            <div className="w-full space-y-2">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Método de pago</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {([
+                                        { key: "CASH", label: "Efectivo", icon: "💵" },
+                                        { key: "CARD", label: "Tarjeta", icon: "💳" },
+                                        { key: "MERCADO_PAGO", label: "Mercado Pago", icon: "📱" },
+                                        { key: "BANK_TRANSFER", label: "Transferencia", icon: "🏦" },
+                                    ] as const).map(({ key, label, icon }) => (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            onClick={() => void handleChangePaymentMethod(key)}
+                                            disabled={changingPayment}
+                                            className={`flex items-center gap-2 px-3 py-3 rounded-xl font-bold text-sm transition-all ${
+                                                postSalePayment === key
+                                                    ? "bg-emerald-500 text-white"
+                                                    : "bg-white/10 text-white/70 hover:bg-white/20"
+                                            }`}
+                                        >
+                                            <span>{icon}</span>
+                                            <span className="text-xs">{label}</span>
+                                            {postSalePayment === key && changingPayment && <Loader2 size={12} className="animate-spin ml-auto" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={closePostSale}
+                                className="w-full h-12 bg-white text-gray-900 rounded-2xl font-black text-sm hover:bg-gray-100 transition-colors"
+                            >
+                                Listo
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* ── FEEDBACK ── */}
             <AnimatePresence>
