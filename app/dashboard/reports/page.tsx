@@ -74,9 +74,9 @@ export default function ReportsPage() {
         setLoading(false);
     }
 
-    const cashPercentage = stats.total > 0 ? (stats.cash / stats.total) * 100 : 0;
-    const cardPercentage = stats.total > 0 ? (stats.card / stats.total) * 100 : 0;
-    const mpPercentage = stats.total > 0 ? (stats.mercadoPago / stats.total) * 100 : 0;
+    const cashPercentage = stats.totalSales > 0 ? (stats.cash / stats.totalSales) * 100 : 0;
+    const cardPercentage = stats.totalSales > 0 ? (stats.card / stats.totalSales) * 100 : 0;
+    const mpPercentage = stats.totalSales > 0 ? (stats.mercadoPago / stats.totalSales) * 100 : 0;
 
     return (
         <div className="pb-20">
