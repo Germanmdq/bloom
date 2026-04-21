@@ -48,6 +48,13 @@ export function OrderList() {
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const [assigningDeliveryId, setAssigningDeliveryId] = useState<string | null>(null);
 
+    // Advanced Filters
+    const [searchTerm, setSearchTerm] = useState("");
+    const [dateFilter, setDateFilter] = useState("");
+    const [minAmount, setMinAmount] = useState("");
+    const [maxAmount, setMaxAmount] = useState("");
+    const [showFilters, setShowFilters] = useState(false);
+
     const fetchOrders = useCallback(async (opts?: { silent?: boolean }) => {
         const silent = opts?.silent === true;
         if (!silent) {
@@ -158,10 +165,31 @@ export function OrderList() {
         return { count: unpaid.length, total };
     }, [orders]);
 
-    const visibleOrders = useMemo(
-        () => (unpaidOnly ? orders.filter((o) => !isOrderPaid(o as Order & { paid?: boolean })) : orders),
-        [orders, unpaidOnly]
-    );
+    const visibleOrders = useMemo(() => {
+        let items = unpaidOnly ? orders.filter((o) => !isOrderPaid(o as Order & { paid?: boolean })) : orders;
+
+        if (searchTerm) {
+            const low = searchTerm.toLowerCase();
+            items = items.filter(o => 
+                (o.customer_name?.toLowerCase().includes(low)) || 
+                (o.table_id?.toString() === searchTerm)
+            );
+        }
+
+        if (dateFilter) {
+            // dateFilter is YYYY-MM-DD
+            items = items.filter(o => o.created_at.startsWith(dateFilter));
+        }
+
+        if (minAmount) {
+            items = items.filter(o => Number(o.total) >= Number(minAmount));
+        }
+        if (maxAmount) {
+            items = items.filter(o => Number(o.total) <= Number(maxAmount));
+        }
+
+        return items;
+    }, [orders, unpaidOnly, searchTerm, dateFilter, minAmount, maxAmount]);
 
     const exportToExcel = () => {
         if (orders.length === 0) return;
@@ -307,6 +335,15 @@ export function OrderList() {
                         </button>
                     ))}
                 </div>
+
+                <button
+                    type="button"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold shadow-sm transition-all active:scale-95 border ${showFilters ? "bg-black text-[#FFD60A] border-black" : "bg-white border-gray-200 text-gray-700 hover:border-black/20"}`}
+                >
+                    <Filter size={16} /> {showFilters ? "Ocultar Filtros" : "Búsqueda Avanzada"}
+                </button>
+
                 <div className="ml-auto flex flex-wrap items-center gap-2">
                     <button
                         type="button"
@@ -322,6 +359,75 @@ export function OrderList() {
                     </button>
                 </div>
             </div>
+
+            {/* ADVANCED FILTERS PANEL */}
+            <AnimatePresence>
+                {showFilters && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Cliente / Mesa</label>
+                                <input
+                                    type="text"
+                                    placeholder="Nombre o Nº Mesa..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:border-black transition-all"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Fecha</label>
+                                <input
+                                    type="date"
+                                    value={dateFilter}
+                                    onChange={(e) => setDateFilter(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:border-black transition-all"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Monto Mínimo</label>
+                                <input
+                                    type="number"
+                                    placeholder="$ Min"
+                                    value={minAmount}
+                                    onChange={(e) => setMinAmount(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:border-black transition-all"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Monto Máximo</label>
+                                <input
+                                    type="number"
+                                    placeholder="$ Max"
+                                    value={maxAmount}
+                                    onChange={(e) => setMaxAmount(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:border-black transition-all"
+                                />
+                            </div>
+                            {(searchTerm || dateFilter || minAmount || maxAmount) && (
+                                <div className="lg:col-span-4 flex justify-end">
+                                    <button
+                                        onClick={() => {
+                                            setSearchTerm("");
+                                            setDateFilter("");
+                                            setMinAmount("");
+                                            setMaxAmount("");
+                                        }}
+                                        className="text-[10px] font-black uppercase tracking-widest bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors"
+                                    >
+                                        Limpiar Filtros
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* GRID */}
             {groupedOrders.length === 0 ? (

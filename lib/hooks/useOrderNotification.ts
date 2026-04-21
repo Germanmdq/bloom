@@ -24,10 +24,12 @@ export function useOrderNotification() {
                     const customer = newOrder.customer_name || `Pedido #${newOrder.id?.slice(0, 4)}`;
                     const isWeb = newOrder.order_type === 'web';
                     
-                    toast.success(`Nuevo pedido: ${customer}`, {
-                        description: `Total: $${total.toLocaleString()}`,
-                        duration: 8000,
-                    });
+                    if (isWeb) {
+                        toast.success(`Nuevo pedido: ${customer}`, {
+                            description: `Total: $${total.toLocaleString()}`,
+                            duration: 8000,
+                        });
+                    }
                 }
             )
             .on(
