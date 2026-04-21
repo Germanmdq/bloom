@@ -290,7 +290,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 id: tableId, 
                 status: 'OCCUPIED', 
                 total: currentTotal, 
-                items: currentCart
+                items: currentCart,
+                updated_at: new Date().toISOString()
             });
         
         if (error) {
