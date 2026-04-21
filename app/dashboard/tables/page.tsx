@@ -550,15 +550,14 @@ export default function TablesPage() {
                                             <span className="text-xl font-medium text-white">{displayTime}</span>
                                         </div>
 
-                                        {/* Name Initial or "WEB" Identifier - Apple Typography */}
-                                        <div className="flex-1 flex flex-col items-center justify-center z-10 w-full">
-                                            <span className="font-semibold text-[8rem] leading-none tracking-tight text-white mb-2">
-                                                W
-                                            </span>
-                                            <p className="text-sm font-black text-white/90 uppercase tracking-widest truncate max-w-full px-2">
-                                                {order.customer_name || 'PEDIDO WEB'}
-                                            </p>
-                                        </div>
+                                         <div className="flex-1 flex flex-col items-center justify-center z-10 w-full">
+                                             <span className="font-semibold text-[8rem] leading-none tracking-tight text-white mb-2">
+                                                 {order.customer_name ? order.customer_name.charAt(0).toUpperCase() : 'W'}
+                                             </span>
+                                             <p className="text-sm font-black text-white/90 uppercase tracking-widest truncate max-w-full px-2">
+                                                 {order.customer_name || 'PEDIDO WEB'}
+                                             </p>
+                                         </div>
 
                                         {/* Total Centered Bottom */}
                                         <div className="flex flex-col items-center z-10 w-full">
