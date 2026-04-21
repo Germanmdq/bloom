@@ -232,36 +232,36 @@ export default function TablesPage() {
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
-        // Delivery range or Web Delivery (999) → RED
+        // Delivery range or Web Delivery (999) → RED (Minimalist Apple style)
         if ((table.id >= 100 && table.id < 200) || table.id === 999) {
             return {
-                bg: 'bg-red-500 border-red-600 shadow-[0_10px_30px_rgba(239,68,68,0.5)]',
-                dot: 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]',
-                badgeBg: 'bg-red-600 text-white',
+                bg: 'bg-red-500 border-red-600/20 shadow-lg shadow-red-500/10',
+                dot: 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.6)]',
+                badgeBg: 'bg-white/20 text-white',
                 label: 'Delivery',
                 textColor: 'text-white',
-                subTextColor: 'text-red-100',
+                subTextColor: 'text-red-100/70',
             };
         }
-        // Retiro range → GREEN
+        // Retiro range → GREEN (Minimalist Apple style)
         else if ((table.id >= 200 && table.id < 300)) {
             return {
-                bg: 'bg-emerald-500 border-emerald-600 shadow-[0_10px_30px_rgba(16,185,129,0.5)]',
-                dot: 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]',
-                badgeBg: 'bg-emerald-600 text-white',
+                bg: 'bg-emerald-500 border-emerald-600/20 shadow-lg shadow-emerald-500/10',
+                dot: 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.6)]',
+                badgeBg: 'bg-white/20 text-white',
                 label: 'Retiro',
                 textColor: 'text-white',
-                subTextColor: 'text-emerald-100',
+                subTextColor: 'text-emerald-100/70',
             };
         }
-        // Local → YELLOW
+        // Local → YELLOW (Minimalist Apple style)
         return {
-            bg: 'bg-amber-400 border-amber-500 shadow-[0_10px_30px_rgba(245,158,11,0.5)]',
-            dot: 'bg-amber-900 shadow-[0_0_8px_rgba(113,63,18,0.6)]',
-            badgeBg: 'bg-amber-500 text-amber-950',
+            bg: 'bg-amber-400 border-amber-500/20 shadow-lg shadow-amber-500/10',
+            dot: 'bg-amber-900/40 shadow-sm',
+            badgeBg: 'bg-black/10 text-amber-950',
             label: 'Salón',
             textColor: 'text-amber-950',
-            subTextColor: 'text-amber-700',
+            subTextColor: 'text-amber-900/60',
         };
     };
 
@@ -537,8 +537,8 @@ export default function TablesPage() {
                                         onClick={() => setSelectedWebOrder(order)}
                                         className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden border min-h-[400px] ${
                                             isDelivery
-                                                ? 'bg-red-500 border-red-600 shadow-[0_10px_30px_rgba(239,68,68,0.5)]'
-                                                : 'bg-emerald-500 border-emerald-600 shadow-[0_10px_30px_rgba(16,185,129,0.5)]'
+                                                ? 'bg-red-500 border-red-600/20 shadow-xl shadow-red-500/10'
+                                                : 'bg-emerald-500 border-emerald-600/20 shadow-xl shadow-emerald-500/10'
                                         }`}
                                     >
                                         <div className="flex justify-between items-start">
