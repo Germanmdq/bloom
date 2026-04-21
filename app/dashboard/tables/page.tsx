@@ -228,12 +228,12 @@ export default function TablesPage() {
     };
 
     const sortedTables = [...tables]
-        .filter(t => t.status === 'OCCUPIED' && t.id < 300)
+        .filter(t => t.status === 'OCCUPIED' && t.id >= 1 && t.id <= 150)
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
-        // Delivery range or Web Delivery (999) → RED (Solid Apple float style)
-        if ((table.id >= 100 && table.id < 200) || table.id === 999) {
+        // Delivery range (51 - 100) → RED
+        if (table.id >= 51 && table.id <= 100) {
             return {
                 bg: 'bg-red-500 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
                 dot: 'bg-white/40 shadow-sm',
@@ -243,8 +243,8 @@ export default function TablesPage() {
                 subTextColor: 'text-red-100/70',
             };
         }
-        // Retiro range → GREEN (Solid Apple float style)
-        else if ((table.id >= 200 && table.id < 300)) {
+        // Retiro range (101 - 150) → GREEN
+        else if (table.id >= 101 && table.id <= 150) {
             return {
                 bg: 'bg-emerald-500 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
                 dot: 'bg-white/40 shadow-sm',
@@ -254,7 +254,7 @@ export default function TablesPage() {
                 subTextColor: 'text-emerald-100/70',
             };
         }
-        // Local → YELLOW (Solid Apple float style)
+        // Local (1 - 50) → YELLOW
         return {
             bg: 'bg-amber-400 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
             dot: 'bg-amber-950/20 shadow-sm',
