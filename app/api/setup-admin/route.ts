@@ -9,48 +9,54 @@ export async function GET() {
         );
 
         const email = 'admin@bloom.com';
-        const password = '123456'; // Mínimo 6 caracteres por seguridad de Supabase
+        const password = 'Admin123!'; 
 
-        // 1. Crear usuario en Auth
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-            email: email,
-            password: password,
-            email_confirm: true,
-            user_metadata: { full_name: 'Administrador' }
-        });
+        // 1. Buscar si el usuario ya existe en Auth
+        const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+        if (listError) throw listError;
 
-        if (authError) {
-            // Si ya existe, lo intentamos promover igualmente
-            if (authError.message.includes('already registered')) {
-                const { data: existing } = await supabase.from('profiles').select('id').eq('full_name', 'Administrador').maybeSingle();
-                // Si no tiene perfil, lo buscamos en auth.users (mejor que el usuario lo maneje manualmente o lo promovemos por email)
-            } else {
-                throw authError;
-            }
+        const existingUser = users.find(u => u.email === email);
+        let userId: string;
+
+        if (existingUser) {
+            // Si ya existe, forzamos el cambio de contraseña
+            const { data: updated, error: updateError } = await supabase.auth.admin.updateUserById(
+                existingUser.id,
+                { password: password, email_confirm: true }
+            );
+            if (updateError) throw updateError;
+            userId = updated.user.id;
+        } else {
+            // Si no existe, lo creamos de cero
+            const { data: created, error: createError } = await supabase.auth.admin.createUser({
+                email: email,
+                password: password,
+                email_confirm: true,
+                user_metadata: { full_name: 'Administrador' }
+            });
+            if (createError) throw createError;
+            userId = created.user.id;
         }
 
-        const userId = authData?.user?.id;
+        // 2. Asegurar que el perfil exista y sea ADMIN
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+                id: userId,
+                full_name: 'Administrador Principal',
+                role: 'ADMIN',
+                is_customer: false
+            });
 
-        if (userId) {
-            // 2. Crear/Actualizar perfil como ADMIN
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .upsert({
-                    id: userId,
-                    full_name: 'Administrador Principal',
-                    role: 'ADMIN',
-                    is_customer: false
-                });
-
-            if (profileError) throw profileError;
-        }
+        if (profileError) throw profileError;
 
         return NextResponse.json({ 
             success: true, 
-            message: "Admin creado con éxito",
-            login: email,
-            pass: password,
-            note: "Ya podés borrar este archivo api/setup-admin/route.ts por seguridad."
+            message: "Acceso Administrativo Reseteado Exitosamente",
+            credencliales: {
+                email: email,
+                password: password
+            }
         });
 
     } catch (error: any) {
