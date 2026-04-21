@@ -849,7 +849,9 @@ export default function CuentaPage() {
         style={{ background: `linear-gradient(135deg, ${GREEN} 0%, #1f352c 100%)` }}
       >
         <p className="text-sm font-semibold text-white/70">Tus beneficios</p>
-        <p className="mt-1 text-3xl font-black text-white tabular-nums">{paidOrderCount} pedidos pagos</p>
+        <p className="mt-1 text-3xl font-black text-white tabular-nums">
+            {orders.filter(o => o.paid).length} pedidos pagos
+        </p>
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/20">
           <div
             className="h-full rounded-full bg-white transition-all"
