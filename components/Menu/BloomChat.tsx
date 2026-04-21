@@ -1243,7 +1243,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         toast.info("Elegí sabor u opción en la lista");
         return;
       }
-      addLine(productRow, "");
+      addLine(productRow, "", 1);
     },
     [addLine, resetForContext, supabase]
   );
