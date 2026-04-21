@@ -703,8 +703,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 Sin resultados
                             </div>
                         ) : (
-                            /* Productos: Grid estable de 3 columnas */
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            /* Productos: Masonry Grid Estilo Apple */
+                            <div className="columns-2 md:columns-3 gap-6 space-y-6">
                                 {displayProducts.map((item: any) => {
                                     // Mapeador inteligente de iconos para productos
                                     const getProductIcon = (name: string, catName: string) => {
@@ -736,22 +736,24 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         <button
                                             key={item.id}
                                             onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                            className="group bg-white rounded-2xl p-5 shadow-[0_12px_40px_rgba(0,0,0,0.06)] hover:shadow-xl hover:border-gray-200 active:scale-95 transition-all text-center border border-gray-100 flex flex-col items-center justify-center gap-2 overflow-hidden"
+                                            className="group w-full break-inside-avoid bg-white rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.06)] hover:shadow-[0_30px_70px_rgba(0,0,0,0.1)] hover:border-gray-200 active:scale-95 transition-all text-center border border-gray-100 flex flex-col items-center justify-center gap-6"
                                         >
                                             <motion.div 
-                                                whileHover={{ y: -3, scale: 1.2, rotate: [0, -5, 5, 0] }}
-                                                className="text-2xl mb-1 filter drop-shadow-sm"
+                                                whileHover={{ y: -10, scale: 1.1, rotate: [0, -5, 5, 0] }}
+                                                className="text-7xl filter drop-shadow-md py-2"
                                             >
                                                 {icon}
                                             </motion.div>
                                             
-                                            <p className="text-[11px] font-black text-gray-900 leading-tight uppercase tracking-tight line-clamp-2 min-h-[1.5rem]">
-                                                {item.name}
-                                            </p>
-                                            <div className="mt-1">
-                                                <span className="px-3 py-1 bg-gray-50 rounded-full text-[9px] font-black text-gray-400 uppercase tracking-widest group-hover:bg-gray-900 group-hover:text-white transition-colors">
-                                                    ${Number(item.price).toLocaleString()}
-                                                </span>
+                                            <div className="space-y-3">
+                                                <p className="text-sm font-black text-gray-900 leading-tight uppercase tracking-tight">
+                                                    {item.name}
+                                                </p>
+                                                <div className="flex justify-center">
+                                                    <span className="px-5 py-1.5 bg-gray-50 rounded-full text-xs font-black text-gray-400 uppercase tracking-widest group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                                                        ${Number(item.price).toLocaleString()}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </button>
                                     );
