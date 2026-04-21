@@ -582,22 +582,22 @@ export default function TablesPage() {
                                     >
                                         {/* Timer Centered Top */}
                                         <div className="flex flex-col items-center gap-1 z-10">
-                                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${styles.subTextColor}`}>Minutos</span>
-                                            <span className={`text-xl font-black ${styles.textColor}`}>{minutesElapsed} min</span>
+                                            <span className={`text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 ${styles.textColor}`}>Minutos</span>
+                                            <span className={`text-xl font-medium ${styles.textColor}`}>{minutesElapsed} min</span>
                                         </div>
 
-                                        {/* Single Large Centered ID */}
+                                        {/* Single Large Centered ID - Refined Apple Typography */}
                                         <div className="flex-1 flex items-center justify-center z-10">
-                                            <span className={`font-black text-[10rem] leading-none tracking-tighter ${styles.textColor}`}>
+                                            <span className={`font-semibold text-[9rem] leading-none tracking-tight ${styles.textColor}`}>
                                                 {table.id}
                                             </span>
                                         </div>
 
                                         {/* Total Centered Bottom */}
                                         <div className="flex flex-col items-center z-10 w-full">
-                                            <div className="h-px w-20 bg-white/20 mb-6" />
-                                            <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${styles.subTextColor}`}>Total</p>
-                                            <div className={`text-5xl font-black tracking-tighter ${styles.textColor}`}>
+                                            <div className="h-px w-16 bg-black/5 mb-6" />
+                                            <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-1 opacity-60 ${styles.textColor}`}>Total de la Mesa</p>
+                                            <div className={`text-4xl font-semibold tracking-tight ${styles.textColor}`}>
                                                 ${table.total.toLocaleString("es-AR")}
                                             </div>
                                         </div>
