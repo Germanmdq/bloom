@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isAdminEmail } from "@/lib/auth/admin";
-import { Loader2, Mail } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -68,6 +68,7 @@ export function AuthPageClient() {
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [regName, setRegName] = useState("");
   const [regPhone, setRegPhone] = useState("");
@@ -175,12 +176,14 @@ export function AuthPageClient() {
     setPanel("login");
     setError("");
     setInfo("");
+    setShowPassword(false);
   };
 
   const switchToRegister = () => {
     setPanel("register");
     setError("");
     setInfo("");
+    setShowPassword(false);
   };
 
   return (
@@ -189,7 +192,7 @@ export function AuthPageClient() {
       <SiteHeader scrolled={false} onMobileNavOpen={() => setMobileNavOpen(true)} activeNav={null} />
 
       <main className="mx-auto max-w-md px-5 pb-16 pt-10">
-        <div className="mb-8 text-center">
+        <div className="mb-8 text-center" aria-hidden="true">
           <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-[#e8e4d4] ring-2 ring-[#c4b896]/40">
             <Mail className="h-9 w-9 text-[#5f5c46]" strokeWidth={2} />
           </div>
@@ -204,40 +207,51 @@ export function AuthPageClient() {
         <div className="rounded-3xl border border-amber-100/80 bg-white p-6 shadow-sm">
           {panel === "login" && (
             <div className="space-y-4">
-              <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Email</label>
-              <input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="vos@email.com"
-                value={loginEmail}
-                onChange={(e) => {
-                  setLoginEmail(e.target.value);
-                  setError("");
-                  setInfo("");
-                }}
-                onKeyDown={(e) => e.key === "Enter" && void login()}
-                className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
-                  error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
-                }`}
-                autoFocus
-              />
-              <label className="block text-xs font-black uppercase tracking-wider text-neutral-400">Contraseña</label>
-              <input
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={loginPassword}
-                onChange={(e) => {
-                  setLoginPassword(e.target.value);
-                  setError("");
-                  setInfo("");
-                }}
-                onKeyDown={(e) => e.key === "Enter" && void login()}
-                className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
-                  error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
-                }`}
-              />
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-neutral-400 mb-1.5">Email</label>
+                <input
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="vos@email.com"
+                    value={loginEmail}
+                    onChange={(e) => {
+                    setLoginEmail(e.target.value);
+                    setError("");
+                    setInfo("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && void login()}
+                    className={`w-full rounded-2xl border-2 px-4 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
+                    error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
+                    }`}
+                    autoFocus
+                />
+              </div>
+              <div className="relative">
+                <label className="block text-xs font-black uppercase tracking-wider text-neutral-400 mb-1.5">Contraseña</label>
+                <input
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={loginPassword}
+                    onChange={(e) => {
+                    setLoginPassword(e.target.value);
+                    setError("");
+                    setInfo("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && void login()}
+                    className={`w-full rounded-2xl border-2 pl-4 pr-12 py-4 text-base font-bold outline-none transition-all placeholder:font-medium placeholder:text-neutral-300 ${
+                    error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#7a765a]"
+                    }`}
+                />
+                <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute bottom-4 right-4 text-neutral-400 hover:text-[#7a765a] transition-colors"
+                >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
               {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
               {info ? <p className="text-sm font-medium text-[#2d4a3e]">{info}</p> : null}
               <button
