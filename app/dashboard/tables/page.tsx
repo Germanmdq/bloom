@@ -578,24 +578,25 @@ export default function TablesPage() {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedTable(table)}
-                                        className={`rounded-[2.5rem] p-8 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[400px] ${styles.bg}`}
+                                        className={`rounded-[2.5rem] p-8 flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[400px] ${styles.bg}`}
                                     >
-                                        <div className="flex justify-between items-start relative z-10">
-                                            <div className="flex flex-col">
-                                                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${styles.subTextColor}`}>Minutos</span>
-                                                <span className={`text-xl font-black ${styles.textColor}`}>{minutesElapsed} min</span>
-                                            </div>
-                                            <div className={`w-3 h-3 rounded-full animate-pulse ${styles.dot}`} />
+                                        {/* Timer Centered Top */}
+                                        <div className="flex flex-col items-center gap-1 z-10">
+                                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${styles.subTextColor}`}>Minutos</span>
+                                            <span className={`text-xl font-black ${styles.textColor}`}>{minutesElapsed} min</span>
                                         </div>
 
-                                        {/* Large Centered ID */}
-                                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none font-black text-[10rem] tracking-tighter ${styles.textColor}`}>
-                                            {table.id}
+                                        {/* Single Large Centered ID */}
+                                        <div className="flex-1 flex items-center justify-center z-10">
+                                            <span className={`font-black text-[10rem] leading-none tracking-tighter ${styles.textColor}`}>
+                                                {table.id}
+                                            </span>
                                         </div>
 
-                                        <div className="relative z-10 mt-auto">
-                                            <div className="h-px w-full bg-white/20 mb-6" />
-                                            <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${styles.subTextColor}`}>Total de la Mesa</p>
+                                        {/* Total Centered Bottom */}
+                                        <div className="flex flex-col items-center z-10 w-full">
+                                            <div className="h-px w-20 bg-white/20 mb-6" />
+                                            <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${styles.subTextColor}`}>Total</p>
                                             <div className={`text-5xl font-black tracking-tighter ${styles.textColor}`}>
                                                 ${table.total.toLocaleString("es-AR")}
                                             </div>
