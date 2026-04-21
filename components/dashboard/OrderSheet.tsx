@@ -104,8 +104,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         setMpPosOrderId(id);
     }, []);
 
-    const isWebTable = tableId === WEB_ORDER_TABLE_RETIRO || tableId === WEB_ORDER_TABLE_DELIVERY;
-
     /** Sincronizar ID de pedido web si viene por prop */
     useEffect(() => {
         if (webOrderId) {
