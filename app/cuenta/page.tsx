@@ -257,10 +257,10 @@ export default function CuentaPage() {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, [router, supabase, loadOrders, hydrateProfileFields]);
+  }, [router, supabase, loadData, hydrateProfileFields]);
 
   const displayName = editFullName.trim() || "Cliente Bloom";
-  const { filled: loyaltyFilled, pct: loyaltyPct } = loyaltyProgress(paidOrderCount);
+  const { filled: loyaltyFilled, pct: loyaltyPct } = loyaltyProgress(profile?.coffee_stamps || 0);
   const birthdayActive = isBirthdayThisMonth(editBirthdate);
 
   const analytics = useMemo(() => {
