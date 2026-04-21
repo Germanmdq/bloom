@@ -510,7 +510,7 @@ export default function TablesPage() {
                         </div>
                     )}
                 </div>
-                (() => {
+                {(() => {
                     const totalItems = webOrders.length + sortedTables.length;
                     // Adapt columns starting from a minimum of 4
                     const gridCols =
