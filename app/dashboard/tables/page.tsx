@@ -17,6 +17,8 @@ type WebOrder = {
     total: number;
     status: string;
     created_at: string;
+    order_type?: string;
+    table_id?: number;
 };
 
 export default function TablesPage() {
