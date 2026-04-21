@@ -103,25 +103,43 @@ export default function SettingsPage() {
 
     const handleSave = async () => {
         setIsLoading(true);
+        const payload: any = {
+            mesas,
+            barra,
+            whatsapp: phone,
+            updated_at: new Date().toISOString(),
+        };
+
+        // Attempt full update first
         const { error } = await supabase
             .from("app_settings")
             .update({
-                mesas,
-                barra,
-                whatsapp: phone,
+                ...payload,
                 fachada_image_url: fachadaImageUrl.trim() || null,
-                updated_at: new Date().toISOString(),
             })
             .eq("id", 1);
+
+        if (error) {
+            console.warn('[Settings] Guardado completo falló, reintentando sin fachada_image_url...', error.message);
+            // Fallback: try without the problematic column
+            const { error: retryError } = await supabase
+                .from("app_settings")
+                .update(payload)
+                .eq("id", 1);
+
+            if (retryError) {
+                alert("Error crítico al guardar: " + retryError.message);
+            } else {
+                alert("Ajustes guardados (Nota: fachada_image_url no se guardó porque la columna no existe en la DB).");
+            }
+        } else {
+            alert("Ajustes guardados correctamente.");
+        }
+
         // Save F-key actions to localStorage
         localStorage.setItem('bloom_f1_action', f1Action);
         localStorage.setItem('bloom_f2_action', f2Action);
         setIsLoading(false);
-        if (error) {
-            alert("Error al guardar: " + error.message);
-        } else {
-            alert("Ajustes guardados correctamente.");
-        }
     };
 
     return (
