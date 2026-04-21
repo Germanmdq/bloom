@@ -703,8 +703,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 Sin resultados
                             </div>
                         ) : (
-                            /* Productos: Masonry Grid Real Estilo Apple */
-                            <div className="columns-2 md:columns-3 gap-4 [column-fill:_balance] w-full h-full pb-20">
+                            /* Productos: Bento Grid que llena la pantalla */
+                            <div className="h-full grid grid-cols-2 md:grid-cols-3 gap-6 auto-rows-fr">
                                 {displayProducts.map((item: any) => {
                                     // Mapeador de Iconos de Alta Precisión
                                     const getProductIcon = (name: string, catName: string) => {
@@ -740,7 +740,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         <button
                                             key={item.id}
                                             onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                            className="group w-full mb-4 break-inside-avoid bg-white rounded-[2rem] p-6 shadow-[0_15px_35px_rgba(0,0,0,0.05)] hover:shadow-2xl active:scale-95 transition-all text-center border border-gray-50 flex flex-col items-center justify-center gap-4"
+                                            className="group w-full h-full bg-white rounded-[2rem] p-6 shadow-[0_15px_35px_rgba(0,0,0,0.05)] hover:shadow-2xl active:scale-95 transition-all text-center border border-gray-50 flex flex-col items-center justify-center gap-4 overflow-hidden"
                                         >
                                             <motion.div 
                                                 whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
