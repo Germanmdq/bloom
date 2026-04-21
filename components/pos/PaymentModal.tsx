@@ -495,7 +495,7 @@ export function PaymentModal({
                         </button>
                         <button
                             disabled={isFinishing || pointWaiting || pointBusy}
-                            onClick={() => onConfirm()}
+                            onClick={() => onConfirm({ customerId: selectedCustomerId })}
                             className="flex-[2] py-6 rounded-[2rem] bg-black text-[#FFD60A] font-black hover:scale-[1.03] disabled:opacity-20 shadow-2xl"
                         >
                             {isFinishing ? "..." : "Confirmar Venta"}

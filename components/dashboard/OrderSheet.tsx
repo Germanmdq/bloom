@@ -370,9 +370,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleClose, total, isFinishing, showPaymentModal, showReceiptModal]);
 
-    const finishOrder = async (ctx?: { mpOrderId?: string | null }) => {
+    const finishOrder = async (ctx?: { mpOrderId?: string | null; customerId?: string | null }) => {
         if (finalTotal === 0 && discount === 0) return;
         const mpId = ctx?.mpOrderId ?? mpPosOrderId;
+        const effectiveCustomerId = ctx?.customerId ?? selectedCustomerId;
+        
         finishingRef.current = true;
         setIsFinishing(true);
         try {
@@ -404,11 +406,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 }
                 setMpPosOrderId(null);
                 queryClient.invalidateQueries({ queryKey: ["orders"] });
+                queryClient.invalidateQueries({ queryKey: ["customers"] });
             } else {
                 // ── NUEVA LÓGICA DE FIDELIZACIÓN Y SALDO ──
-                const customerId = isWebTable ? (webOrderData?.customer_id || null) : selectedCustomerId;
+                const customerIdForDb = isWebTable ? (webOrderData?.customer_id || null) : effectiveCustomerId;
                 
-                if (customerId) {
+                if (customerIdForDb) {
                     // 1. Contar cafés para el sistema de fidelidad
                     const coffeeCount = cart.reduce((acc, item) => {
                         const n = item.name.toLowerCase();
@@ -419,7 +422,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     }, 0);
 
                     // 2. Actualizar stamps y saldo (si es cuenta corriente)
-                    const { data: prof } = await supabase.from('profiles').select('coffee_stamps, balance').eq('id', customerId).single();
+                    const { data: prof } = await supabase.from('profiles').select('coffee_stamps, balance').eq('id', customerIdForDb).single();
                     
                     let newStamps = (prof?.coffee_stamps || 0) + coffeeCount;
                     let newBalance = Number(prof?.balance || 0);
@@ -432,7 +435,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     await supabase.from('profiles').update({
                         coffee_stamps: newStamps % 11,
                         balance: newBalance
-                    }).eq('id', customerId);
+                    }).eq('id', customerIdForDb);
                 }
 
                 await createOrder.mutateAsync({
@@ -442,7 +445,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     waiter_id: selectedWaiter || null,
                     discount: discount,
                     status: (isWebTable || tableId >= 100) ? 'completed' : 'paid',
-                    customer_id: customerId,
+                    customer_id: customerIdForDb,
                     delivery_person_id: selectedDeliveryPerson ? parseInt(selectedDeliveryPerson) : null,
                     items: cart,
                 });
