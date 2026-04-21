@@ -1656,7 +1656,11 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           aria-modal="true"
           aria-labelledby="bloom-chat-title"
         >
-          <div className="flex h-full w-full max-w-full flex-col overflow-hidden bg-[#f7f5ef] md:h-[85vh] md:max-h-[85vh] md:max-w-[460px] md:rounded-[2.5rem] md:shadow-[0_20px_60px_rgba(0,0,0,0.15)] ring-1 ring-black/5">
+          <div className="flex h-[94%] mt-auto w-full max-w-full flex-col overflow-hidden bg-[#f7f5ef] rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:mt-0 md:h-[85vh] md:max-h-[85vh] md:max-w-[460px] md:rounded-[2.5rem] md:shadow-[0_20px_60px_rgba(0,0,0,0.15)] ring-1 ring-black/5">
+            {/* Mobile Sheet Handle */}
+            <div className="flex w-full justify-center pt-3 pb-1 md:hidden">
+              <div className="w-10 h-1 rounded-full bg-black/10" />
+            </div>
             <div className="flex shrink-0 flex-col gap-1.5 border-b border-black/[0.03] bg-white/80 backdrop-blur-md px-4 py-4 text-neutral-900 md:px-6">
               {context && (!!context.categoryId || (context.productIds?.length ?? 0) > 0) ? (
                 <button
