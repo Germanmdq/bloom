@@ -31,7 +31,7 @@ export default function SettingsPage() {
             try {
                 const { data, error } = await supabase
                     .from("app_settings")
-                    .select("id, mesas, barra, whatsapp, plato_del_dia_id, fachada_image_url")
+                    .select("id, mesas, barra, whatsapp, plato_del_dia_id")
                     .eq("id", 1)
                     .single();
 
