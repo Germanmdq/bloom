@@ -646,7 +646,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 <ChevronLeft size={14} />
                                 {searchTerm
                                     ? `Resultados para "${productSearch}"`
-                                    : (categories.find((c: any) => c.id === activeCategory)?.name ?? 'Categoría')}
+                    : (categories.find((c: any) => c.id === activeCategory)?.name ?? 'Categoría')}
                             </button>
                         </div>
                     )}
@@ -654,13 +654,23 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     {/* Área principal: categorías o productos */}
                     <div className="flex-1 overflow-y-auto p-3 no-scrollbar">
                         {!searchTerm && !activeCategory ? (
-                            /* Categorías: Grid estable de 3 columnas */
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                {categories.map((cat: any) => {
+                            /* Categorías: Bento Grid Estilo Apple (Hero Layout) */
+                            <div 
+                                className="grid gap-4 w-full h-full pb-20"
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(3, 1fr)',
+                                    gridAutoRows: 'minmax(140px, auto)',
+                                    gridTemplateAreas: `
+                                        "big big s1"
+                                        "big big s2"
+                                        "s3 s4 s5"
+                                    `
+                                }}
+                            >
+                                {categories.map((cat: any, idx: number) => {
                                     const count = products.filter((p: any) => p.category_id === cat.id).length;
-                                    
-                                    // Mapeo dinámico de iconos (puedes expandir esto)
-                                    const getIcon = (name: string) => {
+                                    const getSafeIcon = (name: string) => {
                                         const n = name.toLowerCase();
                                         if (n.includes('caf')) return '☕';
                                         if (n.includes('piz')) return '🍕';
@@ -668,30 +678,39 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         if (n.includes('beb') || n.includes('jug')) return '🍹';
                                         if (n.includes('dul') || n.includes('pos')) return '🍰';
                                         if (n.includes('ens')) return '🥗';
-                                        if (n.includes('mil') || n.includes('pla')) return '🍽️';
-                                        if (n.includes('pro')) return '🌟';
-                                        return '📦';
+                                        if (n.includes('mila') || n.includes('pla')) return '🍽️';
+                                        if (n.includes('pan') || n.includes('fact')) return '🥐';
+                                        if (n.includes('tost')) return '🥪';
+                                        if (n.includes('papa')) return '🍟';
+                                        if (n.includes('cerve')) return '🍺';
+                                        if (n.includes('vino')) return '🍷';
+                                        return '🌟';
                                     };
+
+                                    const icon = getSafeIcon(cat.name);
+                                    
+                                    // Asignar área según el índice (Bento Pattern)
+                                    const area = idx === 0 ? 'big' : idx === 1 ? 's1' : idx === 2 ? 's2' : idx === 3 ? 's3' : idx === 4 ? 's4' : idx === 5 ? 's5' : 'auto';
 
                                     return (
                                         <button
                                             key={cat.id}
                                             onClick={() => setActiveCategory(cat.id)}
-                                            className="group relative bg-white rounded-[2rem] p-6 shadow-[0_15px_45px_rgba(0,0,0,0.08)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.12)] active:scale-95 transition-all text-center border border-gray-100 flex flex-col items-center justify-center gap-3 overflow-hidden"
+                                            style={{ gridArea: area }}
+                                            className={`group relative bg-white rounded-[24px] p-6 shadow-[0_15px_45px_rgba(0,0,0,0.06)] hover:shadow-2xl active:scale-95 transition-all text-center border border-gray-50 flex flex-col items-center justify-center gap-4 overflow-hidden ${idx === 0 ? 'min-h-[300px]' : ''}`}
                                         >
-                                            {/* Pastel Background Tint */}
+                                            {/* Pastel Tint */}
                                             <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity bg-current" />
                                             
-                                            {/* Animated Icon Gadget */}
                                             <motion.div 
-                                                whileHover={{ y: -5, scale: 1.2, rotate: [0, -10, 10, 0] }}
-                                                className="text-4xl filter drop-shadow-sm"
+                                                whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
+                                                className={`${idx === 0 ? 'text-8xl' : 'text-5xl'} drop-shadow-md select-none transition-all`}
                                             >
-                                                {getIcon(cat.name)}
+                                                {icon}
                                             </motion.div>
 
                                             <div>
-                                                <p className="font-black text-gray-900 text-sm leading-tight tracking-tight uppercase">{cat.name}</p>
+                                                <p className={`${idx === 0 ? 'text-lg' : 'text-xs'} font-black text-gray-900 leading-tight uppercase tracking-tight`}>{cat.name}</p>
                                                 <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-wider">{count} items</p>
                                             </div>
                                         </button>
