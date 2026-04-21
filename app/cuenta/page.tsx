@@ -700,6 +700,15 @@ export default function CuentaPage() {
       )}
 
       {birthdayActive && (
+        <div className={`${cardCls} border-2 border-amber-200 bg-amber-50 shadow-amber-100`}>
+            <h2 className="flex items-center gap-2 text-base font-bold text-amber-900">
+                🎂 ¡Regalo de Cumpleaños!
+            </h2>
+            <p className="mt-2 text-sm text-amber-800 leading-snug">
+                Como es tu mes, tenés un **Café con Medialunas** de regalo en tu próxima visita al local. ¡Vení a festejar con nosotros!
+            </p>
+        </div>
+      )}
 
       <div className={cardCls}>
         <h2 className="text-base font-bold" style={{ color: TEXT_DARK }}>
