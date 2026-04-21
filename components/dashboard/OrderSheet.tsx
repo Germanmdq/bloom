@@ -722,7 +722,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 Sin resultados
                             </div>
                         ) : (
-                            /* Productos: Grilla Inteligente Adaptativa */
+                            /* Productos: Grilla Inteligente Adaptativa (v2.1) */
                             <div className={`grid gap-4 w-full h-full pb-20 ${
                                 displayProducts.length === 4 ? 'grid-cols-2' : 
                                 displayProducts.length >= 5 ? 'grid-cols-3' : 'grid-cols-1'
