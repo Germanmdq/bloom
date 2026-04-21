@@ -654,34 +654,45 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     {/* Área principal: categorías o productos */}
                     <div className="flex-1 overflow-y-auto p-3 no-scrollbar">
                         {!searchTerm && !activeCategory ? (
-                            /* Categorías: Tarjetas Apple con imágenes */
+                            /* Categorías: Estilo Apple Minimalista con Iconos Animados */
                             <div className="h-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-fr">
                                 {categories.map((cat: any) => {
                                     const count = products.filter((p: any) => p.category_id === cat.id).length;
-                                    // Buscar primera imagen de producto si la categoría no tiene una directa
-                                    const firstProdWithImg = products.find(p => p.category_id === cat.id && p.image_url);
-                                    const bgImg = cat.image_url || firstProdWithImg?.image_url || "https://images.unsplash.com/photo-1511984804822-e16ba72f5848?q=80&w=2048&auto=format&fit=crop";
+                                    
+                                    // Mapeo dinámico de iconos (puedes expandir esto)
+                                    const getIcon = (name: string) => {
+                                        const n = name.toLowerCase();
+                                        if (n.includes('caf')) return '☕';
+                                        if (n.includes('piz')) return '🍕';
+                                        if (n.includes('ham')) return '🍔';
+                                        if (n.includes('beb') || n.includes('jug')) return '🍹';
+                                        if (n.includes('dul') || n.includes('pos')) return '🍰';
+                                        if (n.includes('ens')) return '🥗';
+                                        if (n.includes('mil') || n.includes('pla')) return '🍽️';
+                                        if (n.includes('pro')) return '🌟';
+                                        return '📦';
+                                    };
 
                                     return (
                                         <button
                                             key={cat.id}
                                             onClick={() => setActiveCategory(cat.id)}
-                                            className="group relative bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl active:scale-95 transition-all text-left border border-gray-100 h-[140px]"
+                                            className="group relative bg-white rounded-[2rem] p-6 shadow-sm hover:shadow-md active:scale-95 transition-all text-center border border-gray-100 flex flex-col items-center justify-center gap-3 overflow-hidden"
                                         >
-                                            {/* Background Image with Overlay */}
-                                            <div className="absolute inset-0 z-0">
-                                                <img 
-                                                    src={bgImg} 
-                                                    alt={cat.name}
-                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                                            </div>
+                                            {/* Pastel Background Tint */}
+                                            <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity bg-current" />
+                                            
+                                            {/* Animated Icon Gadget */}
+                                            <motion.div 
+                                                whileHover={{ y: -5, scale: 1.2, rotate: [0, -10, 10, 0] }}
+                                                className="text-4xl filter drop-shadow-sm"
+                                            >
+                                                {getIcon(cat.name)}
+                                            </motion.div>
 
-                                            {/* Content */}
-                                            <div className="relative z-10 h-full p-5 flex flex-col justify-end">
-                                                <p className="font-black text-white text-lg leading-tight tracking-tight uppercase">{cat.name}</p>
-                                                <p className="text-[10px] text-white/60 mt-1 font-bold uppercase tracking-wider">{count} productos</p>
+                                            <div>
+                                                <p className="font-black text-gray-900 text-sm leading-tight tracking-tight uppercase">{cat.name}</p>
+                                                <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-wider">{count} items</p>
                                             </div>
                                         </button>
                                     );
@@ -694,35 +705,22 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         ) : (
                             /* Productos: grid que llena toda la pantalla */
                             <div className="h-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 auto-rows-fr">
-                                {displayProducts.map((item: any) => {
-                                    const bgImg = item.image_url || 
-                                                  categories.find((c: any) => c.id === item.category_id)?.image_url || 
-                                                  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=2048&auto=format&fit=crop";
-                                    
-                                    return (
-                                        <button
-                                            key={item.id}
-                                            onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                            className="group relative bg-white rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-xl active:scale-95 transition-all text-center border border-gray-100 h-[120px]"
-                                        >
-                                            {/* Background Image with Overlay */}
-                                            <div className="absolute inset-0 z-0">
-                                                <img 
-                                                    src={bgImg} 
-                                                    alt={item.name}
-                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                                            </div>
-
-                                            {/* Content */}
-                                            <div className="relative z-10 h-full p-4 flex flex-col justify-end">
-                                                <p className="text-sm font-black text-white leading-tight mb-0.5 line-clamp-2 uppercase tracking-tight">{item.name}</p>
-                                                <p className="text-xs font-bold text-white/70">${Number(item.price).toLocaleString()}</p>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
+                                {displayProducts.map((item: any) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
+                                        className="group bg-white rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-gray-200 active:scale-95 transition-all text-center border border-gray-100 flex flex-col justify-center gap-2"
+                                    >
+                                        <p className="text-sm font-black text-gray-900 leading-tight uppercase tracking-tight line-clamp-3">
+                                            {item.name}
+                                        </p>
+                                        <div className="mt-1">
+                                            <span className="px-3 py-1 bg-gray-50 rounded-full text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                                                ${Number(item.price).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    </button>
+                                ))}
                             </div>
                         )}
                     </div>
