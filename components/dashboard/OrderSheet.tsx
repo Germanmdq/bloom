@@ -224,7 +224,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             supabase.from('profiles').select('id, full_name').eq('role', 'WAITER').then(({ data: waiterData }) => {
                 if (waiterData) {
                     setWaiters(waiterData);
-                    if (waiterData.length > 0) setSelectedWaiter(waiterData[0].id);
                 }
             });
 
@@ -585,11 +584,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         <div className="flex flex-col items-end mr-4">
                             <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-1">Mesa {tableId}</span>
                             <div className="flex items-center gap-2">
-                                <select
+                                 <select
                                     value={selectedWaiter}
                                     onChange={(e) => setSelectedWaiter(e.target.value)}
                                     className="h-9 px-3 bg-gray-50/50 border border-transparent rounded-xl text-xs font-bold text-gray-600 outline-none hover:bg-gray-100 transition-colors cursor-pointer"
                                 >
+                                    <option value="">Seleccionar Mozo...</option>
                                     {waiters.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
                                 </select>
                             </div>
@@ -894,10 +894,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                         <button
                             onClick={() => setShowPaymentModal(true)}
-                            disabled={total === 0 || isFinishing}
+                            disabled={finalTotal === 0 || isFinishing}
                             className="w-full h-12 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:bg-gray-800 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                         >
-                            Cobrar ${total.toLocaleString()}
+                            Cobrar ${finalTotal.toLocaleString()}
                         </button>
 
                         <div className="grid grid-cols-2 gap-2">
