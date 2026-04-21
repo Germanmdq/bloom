@@ -1811,7 +1811,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
             </div>
 
             {cartCount > 0 && !upsellVariant ? (
-              <div className="sticky bottom-0 z-10 border-t border-[#e0dcd4] bg-[#f7f5ef]/95 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-sm">
+              <div className="sticky bottom-0 z-10 border-t border-[#e0dcd4] bg-[#f7f5ef]/95 px-3 py-4 pb-[max(2.5rem,env(safe-area-inset-bottom)+1.5rem)] backdrop-blur-sm">
                 <button
                   type="button"
                   onClick={() => setEncargoOpen(true)}

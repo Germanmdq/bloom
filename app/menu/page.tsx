@@ -15,6 +15,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { BloomChat, type BloomChatHandle } from "@/components/Menu/BloomChat";
 import { WEB_ORDER_TABLE_DELIVERY, WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
 import type { BloomChatCartLine } from "@/lib/bloom-chat-types";
+import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
 
 const PEDIDOS_YA_BLOOM_URL =
     "https://www.pedidosya.com.ar/restaurantes/mar-del-plata/bloom-mar-del-plata-5c1357e3-e095-476e-9eee-eeda4620b75e-menu";
@@ -390,85 +391,80 @@ function PublicMenuPage() {
                 }
             />
 
-            <div id="menu-categories" className="w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 xl:px-8 scroll-mt-28">
-                <div className="mb-8">
-                    <p className="font-bold uppercase tracking-[0.15em] text-xs mb-1" style={{ color: fk.primary }}>
-                        Bloom
+            <div id="menu-categories" className="w-full py-8 scroll-mt-28">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 mb-4">
+                    <p className="font-bold uppercase tracking-[0.15em] text-[10px] mb-1" style={{ color: fk.primary }}>
+                        Lo más pedido
                     </p>
-                    <h1 className="text-2xl sm:text-4xl font-black text-neutral-900 tracking-tight">Elegí una categoría</h1>
-                    <p className="text-neutral-600 text-sm mt-2 max-w-xl">
-                        Tocá una tarjeta para ver productos y armar tu encargo.
-                    </p>
+                    <h2 className="text-3xl sm:text-5xl font-black text-neutral-900 tracking-tighter">Nuestros Favoritos</h2>
                 </div>
 
-                <div className="grid w-full grid-cols-2 gap-3">
-                    {platoDiaProduct && (
-                        <button
-                            type="button"
-                            disabled={!platoDiaProduct}
-                            onClick={() =>
-                                platoDiaProduct &&
-                                bloomChatRef.current?.openWithCategoryMessage({
-                                    displayName: "Plato del Día",
-                                    productIds: [platoDiaProduct.id],
-                                })
-                            }
-                            className="group flex flex-col overflow-hidden rounded-2xl border border-black/[0.07] bg-white text-left shadow-sm transition hover:shadow-md active:scale-[0.98] disabled:opacity-50"
-                            aria-label="Plato del Día — armar encargo"
-                        >
-                            <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
-                                {platoDiaProduct.image_url?.trim() ? (
-                                    <Image
-                                        src={platoDiaProduct.image_url.trim()}
-                                        alt=""
-                                        fill
-                                        className="object-cover transition duration-300 group-hover:scale-105"
-                                        sizes="(max-width: 768px) 50vw, 360px"
-                                    />
-                                ) : (
-                                    <div className="absolute inset-0 bg-gradient-to-br from-amber-800 to-amber-950" />
-                                )}
-                            </div>
-                            <div className="px-3 py-2.5">
-                                <span className="text-sm font-bold leading-tight text-neutral-900 md:text-base">
-                                    Plato del Día
-                                </span>
-                            </div>
-                        </button>
-                    )}
-                    {categories.map((c: { id: string; name: string; icon?: string | null; image_url?: string | null }) => {
+                <Carousel 
+                    items={[
+                        ...(platoDiaProduct ? [
+                            <Card
+                                key="plato-dia"
+                                index={0}
+                                card={{
+                                    src: platoDiaProduct.image_url || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=2048&auto=format&fit=crop",
+                                    title: "Plato del Día",
+                                    category: "Recomendado",
+                                    content: null
+                                }}
+                                onClick={() =>
+                                    bloomChatRef.current?.openWithCategoryMessage({
+                                        displayName: "Plato del Día",
+                                        productIds: [platoDiaProduct.id],
+                                    })
+                                }
+                            />
+                        ] : []),
+                        ...categories.slice(0, Math.ceil(categories.length / 2)).map((c, index) => {
+                            const label = categoryLabel(c);
+                            const cardUrl = categoryCardImageUrl(c, firstProductImageByCategory);
+                            return (
+                                <Card
+                                    key={c.id}
+                                    index={index + (platoDiaProduct ? 1 : 0)}
+                                    card={{
+                                        src: cardUrl || "https://images.unsplash.com/photo-1511984804822-e16ba72f5848?q=80&w=2048&auto=format&fit=crop",
+                                        title: label,
+                                        category: "Categoría",
+                                        content: null
+                                    }}
+                                    onClick={() => openChatWithCategory(c.id, label)}
+                                />
+                            );
+                        })
+                    ]}
+                />
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 mt-12 mb-4">
+                    <p className="font-bold uppercase tracking-[0.15em] text-[10px] mb-1" style={{ color: fk.primary }}>
+                        Más para vos
+                    </p>
+                    <h2 className="text-3xl sm:text-5xl font-black text-neutral-900 tracking-tighter">Explorá el Menú</h2>
+                </div>
+
+                <Carousel 
+                    items={categories.slice(Math.ceil(categories.length / 2)).map((c, index) => {
                         const label = categoryLabel(c);
                         const cardUrl = categoryCardImageUrl(c, firstProductImageByCategory);
                         return (
-                            <button
+                            <Card
                                 key={c.id}
-                                type="button"
+                                index={index}
+                                card={{
+                                    src: cardUrl || "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?q=80&w=3556&auto=format&fit=crop",
+                                    title: label,
+                                    category: "Categoría",
+                                    content: null
+                                }}
                                 onClick={() => openChatWithCategory(c.id, label)}
-                                className="group flex flex-col overflow-hidden rounded-2xl border border-black/[0.07] bg-white text-left shadow-sm transition hover:shadow-md active:scale-[0.98]"
-                                aria-label={`${label} — armar encargo`}
-                            >
-                                <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
-                                    {cardUrl ? (
-                                        <Image
-                                            src={cardUrl}
-                                            alt=""
-                                            fill
-                                            className="object-cover transition duration-300 group-hover:scale-105"
-                                            sizes="(max-width: 768px) 50vw, 360px"
-                                        />
-                                    ) : (
-                                        <div className="absolute inset-0 bg-gradient-to-br from-neutral-700 to-neutral-900" />
-                                    )}
-                                </div>
-                                <div className="px-3 py-2.5">
-                                    <span className="text-sm font-bold leading-tight text-neutral-900 md:text-base">
-                                        {label}
-                                    </span>
-                                </div>
-                            </button>
+                            />
                         );
                     })}
-                </div>
+                />
             </div>
 
             {/* CART & CHECKOUT UI */}
