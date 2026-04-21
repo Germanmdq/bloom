@@ -616,6 +616,8 @@ export default function CuentaPage() {
     );
   };
 
+  const currentStamps = profile?.coffee_stamps || 0;
+
   const SectionInicio = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -658,14 +660,14 @@ export default function CuentaPage() {
         </h2>
         <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-neutral-600">
-                {profile?.coffee_stamps || 0} / {COFFEE_GOAL} cafés acumulados
+                {currentStamps} / {COFFEE_GOAL} cafés acumulados
             </p>
-            {profile?.coffee_stamps === COFFEE_GOAL && (
+            {currentStamps === COFFEE_GOAL && (
                 <span className="text-[10px] font-black uppercase bg-amber-100 text-amber-600 px-2 py-1 rounded-md animate-pulse">¡PRÓXIMO GRATIS!</span>
             )}
         </div>
         <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-neutral-200">
-          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, ((profile?.coffee_stamps || 0) / COFFEE_GOAL) * 100)}%`, backgroundColor: GREEN }} />
+          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (currentStamps / COFFEE_GOAL) * 100)}%`, backgroundColor: GREEN }} />
         </div>
         <p className="mt-3 text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
             Cada 10 cafés, el 11º va sin cargo. Válido para Café, Café con leche y promos con facturas.
@@ -850,18 +852,18 @@ export default function CuentaPage() {
       >
         <p className="text-sm font-semibold text-white/70">Tus beneficios</p>
         <p className="mt-1 text-3xl font-black text-white tabular-nums">
-            {orders.filter(o => o.paid).length} pedidos pagos
+            {currentStamps} cafés registrados
         </p>
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/20">
           <div
             className="h-full rounded-full bg-white transition-all"
-            style={{ width: `${Math.min((paidOrderCount / COUPON_DEFS[COUPON_DEFS.length - 1].unlock) * 100, 100)}%` }}
+            style={{ width: `${Math.min((currentStamps / COFFEE_GOAL) * 100, 100)}%` }}
           />
         </div>
         <p className="mt-2 text-xs text-white/50">
-          {paidOrderCount < COUPON_DEFS[COUPON_DEFS.length - 1].unlock
-            ? `Te faltan ${COUPON_DEFS[COUPON_DEFS.length - 1].unlock - paidOrderCount} pedidos para desbloquear todos los beneficios`
-            : "¡Desbloqueaste todos los beneficios!"}
+          {currentStamps < COFFEE_GOAL
+            ? `Te faltan ${COFFEE_GOAL - currentStamps} cafés para tu próxima recompensa`
+            : "¡Próximo café sin cargo!"}
         </p>
       </div>
 
@@ -877,7 +879,7 @@ export default function CuentaPage() {
               ¡Es tu mes de cumpleaños!
             </p>
             <p className="mt-0.5 text-sm font-medium opacity-80" style={{ color: TEXT_DARK }}>
-              Mostrá esta pantalla en el local para canjear tu regalo
+              Reclamá tu café con medialunas de regalo en el local
             </p>
           </div>
         </div>
@@ -886,8 +888,8 @@ export default function CuentaPage() {
       {/* Grid de beneficios */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {COUPON_DEFS.map((c) => {
-          const unlocked = paidOrderCount >= c.unlock;
-          const progress = Math.min(paidOrderCount / c.unlock, 1);
+          const unlocked = currentStamps >= c.unlock;
+          const progress = Math.min(currentStamps / c.unlock, 1);
           if (unlocked) {
             return (
               <div
@@ -901,14 +903,14 @@ export default function CuentaPage() {
                     className="rounded-full px-3 py-1 text-xs font-black"
                     style={{ backgroundColor: "rgba(255,255,255,0.4)", color: TEXT_DARK }}
                   >
-                    Activo
+                    ¡LISTO!
                   </span>
                 </div>
                 <p className="mt-3 text-lg font-black" style={{ color: TEXT_DARK }}>
                   {c.label}
                 </p>
                 <p className="mt-1 text-xs font-semibold" style={{ color: TEXT_DARK, opacity: 0.7 }}>
-                  Presentá esta pantalla en el local
+                  Presentá esta pantalla en el local para usarlo
                 </p>
               </div>
             );
@@ -924,7 +926,7 @@ export default function CuentaPage() {
                     {c.label}
                   </p>
                   <p className="mt-0.5 text-xs text-neutral-500">
-                    Desbloquea a los {c.unlock} pedidos pagos
+                    Acumulá {c.unlock} cafés para desbloquearlo
                   </p>
                   <div className="mt-3 flex items-center gap-2">
                     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-200">
@@ -934,7 +936,7 @@ export default function CuentaPage() {
                       />
                     </div>
                     <span className="text-xs font-bold tabular-nums text-neutral-500">
-                      {paidOrderCount}/{c.unlock}
+                      {currentStamps}/{c.unlock}
                     </span>
                   </div>
                 </div>
