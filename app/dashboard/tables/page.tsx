@@ -40,9 +40,9 @@ export default function TablesPage() {
         fetchTables();
         fetchWebOrders();
         
-        // Anti-ghost cleanup for legacy virtual tables
-        supabase.from('salon_tables').delete().in('id', [998, 999]).then(() => {
-            console.log('Legacy 998/999 purged.');
+        // Anti-ghost cleanup for legacy or virtual tables
+        supabase.from('salon_tables').delete().gte('id', 300).then(() => {
+            console.log('Ghost tables purged.');
         });
 
         // Listen to salon_tables changes (POS tables)
@@ -204,7 +204,7 @@ export default function TablesPage() {
     };
 
     const sortedTables = [...tables]
-        .filter(t => t.status === 'OCCUPIED' && (t.id !== 998 && t.id !== 999))
+        .filter(t => t.status === 'OCCUPIED' && t.id < 300)
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
