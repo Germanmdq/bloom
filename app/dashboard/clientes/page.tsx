@@ -132,18 +132,22 @@ export default function ClientesPage() {
                                     {client.phone && <p className="text-xs text-gray-400 flex items-center gap-1.5"><Phone size={12} /> {client.phone}</p>}
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-50">
+                                <div className="grid grid-cols-4 gap-2 pt-4 border-t border-gray-50">
                                     <div className="text-center">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Ventas</p>
-                                        <p className="font-bold text-gray-900">${client.total_spent.toLocaleString()}</p>
+                                        <p className="text-[8px] font-black uppercase tracking-tight text-gray-400 mb-0.5">Ventas</p>
+                                        <p className="text-xs font-bold text-gray-900">${client.total_spent.toLocaleString()}</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Pedidos</p>
-                                        <p className="font-bold text-gray-900">{client.order_count}</p>
+                                        <p className="text-[8px] font-black uppercase tracking-tight text-gray-400 mb-0.5">Pedidos</p>
+                                        <p className="text-xs font-bold text-gray-900">{client.order_count}</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Puntos</p>
-                                        <p className="font-bold text-accent">★{client.points}</p>
+                                        <p className="text-[8px] font-black uppercase tracking-tight text-gray-400 mb-0.5">Puntos</p>
+                                        <p className="text-xs font-bold text-accent">★{client.points}</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className={`text-[8px] font-black uppercase tracking-tight ${client.balance > 0 ? 'text-red-400' : 'text-gray-400'} mb-0.5`}>Saldo</p>
+                                        <p className={`text-xs font-bold ${client.balance > 0 ? 'text-red-600' : 'text-gray-900'}`}>${client.balance.toLocaleString()}</p>
                                     </div>
                                 </div>
                             </motion.div>
@@ -192,21 +196,28 @@ export default function ClientesPage() {
                             </div>
 
                             <div className="p-10 space-y-8">
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="bg-gray-50 p-6 rounded-[2rem] text-center">
-                                        <TrendingUp className="mx-auto mb-2 text-accent" size={24} />
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Gasto Total</p>
-                                        <p className="text-xl font-black text-gray-900">${selectedClient.total_spent.toLocaleString()}</p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
+                                        <TrendingUp className="mx-auto mb-2 text-accent" size={20} />
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Gasto Total</p>
+                                        <p className="text-lg font-black text-gray-900">${selectedClient.total_spent.toLocaleString()}</p>
                                     </div>
-                                    <div className="bg-gray-50 p-6 rounded-[2rem] text-center">
-                                        <ShoppingBag className="mx-auto mb-2 text-blue-500" size={24} />
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Pedidos</p>
-                                        <p className="text-xl font-black text-gray-900">{selectedClient.order_count}</p>
+                                    <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
+                                        <ShoppingBag className="mx-auto mb-2 text-blue-500" size={20} />
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Pedidos</p>
+                                        <p className="text-lg font-black text-gray-900">{selectedClient.order_count}</p>
                                     </div>
-                                    <div className="bg-gray-50 p-6 rounded-[2rem] text-center">
-                                        <Star className="mx-auto mb-2 text-yellow-500" size={24} fill="currentColor" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Puntos</p>
-                                        <p className="text-xl font-black text-gray-900">{selectedClient.points}</p>
+                                    <div className="bg-gray-50 p-4 rounded-[2rem] text-center border border-gray-100">
+                                        <Star className="mx-auto mb-2 text-yellow-500" size={20} fill="currentColor" />
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Puntos</p>
+                                        <p className="text-lg font-black text-gray-900">{selectedClient.points}</p>
+                                    </div>
+                                    <div className={`${selectedClient.balance > 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'} p-4 rounded-[2rem] text-center border`}>
+                                        <ArrowUpDown className={`mx-auto mb-2 ${selectedClient.balance > 0 ? 'text-red-600' : 'text-gray-400'}`} size={20} />
+                                        <p className={`text-[9px] font-black uppercase tracking-widest ${selectedClient.balance > 0 ? 'text-red-400' : 'text-gray-400'} mb-1`}>Saldo CC</p>
+                                        <p className={`text-lg font-black ${selectedClient.balance > 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                                            ${selectedClient.balance.toLocaleString()}
+                                        </p>
                                     </div>
                                 </div>
 

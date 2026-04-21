@@ -46,6 +46,8 @@ export async function GET() {
                     email: p.email || "",
                     phone: p.phone || "",
                     points: p.points || 0,
+                    balance: Number(p.balance || 0),
+                    coffee_stamps: p.coffee_stamps || 0,
                     created_at: p.created_at || new Date().toISOString(),
                     total_spent: totalSpent,
                     order_count: orderCount,
