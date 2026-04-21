@@ -9,6 +9,7 @@ export type DashboardCustomerRow = {
   orderCount: number;
   lastOrderAt: string | null;
   loyaltyPoints: number;
+  balance: number;
   isSocio: boolean;
 };
 

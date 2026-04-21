@@ -145,7 +145,8 @@ export default function DashboardCustomersPage() {
                   <th className="px-4 py-3">Dirección habitual</th>
                   <th className="px-4 py-3 text-center">Pedidos</th>
                   <th className="px-4 py-3">Último pedido</th>
-                  <th className="px-4 py-3 text-center">Lealtad</th>
+                  <th className="px-4 py-3 text-center">Saldo CC</th>
+                  <th className="px-4 py-3 text-center">Puntos</th>
                   <th className="px-4 py-3 whitespace-nowrap">Acceso</th>
                 </tr>
               </thead>
@@ -168,6 +169,9 @@ export default function DashboardCustomersPage() {
                     <td className="max-w-[220px] truncate px-4 py-3 text-gray-600">{r.defaultAddress}</td>
                     <td className="px-4 py-3 text-center tabular-nums font-bold text-gray-900">{r.orderCount}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-gray-700">{fmtDate(r.lastOrderAt)}</td>
+                    <td className={`px-4 py-3 text-center tabular-nums font-black ${r.balance > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                      {r.balance > 0 ? `-$${r.balance.toLocaleString()}` : `$${r.balance.toLocaleString()}`}
+                    </td>
                     <td className="px-4 py-3 text-center tabular-nums font-bold text-[#2d4a3e]">
                       {r.loyaltyPoints}
                     </td>

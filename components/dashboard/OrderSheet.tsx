@@ -386,7 +386,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 queryClient.invalidateQueries({ queryKey: ["orders"] });
             } else {
                 // ── NUEVA LÓGICA DE FIDELIZACIÓN Y SALDO ──
-                const customerId = isWebTable ? (webOrderData?.customer_id || null) : null;
+                const customerId = isWebTable ? (webOrderData?.customer_id || null) : selectedCustomerId;
                 
                 if (customerId) {
                     // 1. Contar cafés para el sistema de fidelidad
@@ -399,25 +399,20 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     }, 0);
 
                     // 2. Actualizar stamps y saldo (si es cuenta corriente)
-                    if (coffeeCount > 0 || paymentMethod === "CUENTA_CORRIENTE") {
-                        const { data: prof } = await supabase.from('profiles').select('coffee_stamps, balance').eq('id', customerId).single();
-                        
-                        let newStamps = (prof?.coffee_stamps || 0) + coffeeCount;
-                        let newBalance = Number(prof?.balance || 0);
+                    const { data: prof } = await supabase.from('profiles').select('coffee_stamps, balance').eq('id', customerId).single();
+                    
+                    let newStamps = (prof?.coffee_stamps || 0) + coffeeCount;
+                    let newBalance = Number(prof?.balance || 0);
 
-                        if (paymentMethod === "CUENTA_CORRIENTE") {
-                            newBalance += finalTotal;
-                        }
-
-                        // Si llega a 11, el próximo es gratis (se reinicia después del 10)
-                        // (Lógica simple: si acumuló 10, los siguientes restan del total o avisamos)
-                        // Aquí simplemente acumulamos y si pasa de 10 el próximo se cobra 0 en el POS (manual por ahora o automático)
-                        
-                        await supabase.from('profiles').update({
-                            coffee_stamps: newStamps % 11, // Ejemplo: si llega a 11, vuelve a 0
-                            balance: newBalance
-                        }).eq('id', customerId);
+                    if (paymentMethod === "CUENTA_CORRIENTE") {
+                        // En cuenta corriente, el saldo sube (deuda)
+                        newBalance += finalTotal;
                     }
+
+                    await supabase.from('profiles').update({
+                        coffee_stamps: newStamps % 11,
+                        balance: newBalance
+                    }).eq('id', customerId);
                 }
 
                 await createOrder.mutateAsync({

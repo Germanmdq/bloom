@@ -21,7 +21,7 @@ export async function GET() {
 
     const { data: profiles, error: pErr } = await svc
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, balance, coffee_stamps")
       .eq("is_customer", true);
     if (pErr) {
       console.error("[dashboard/customers] profiles", pErr);
@@ -35,7 +35,7 @@ export async function GET() {
 
     const { data: orders, error: oErr } = await svc
       .from("orders")
-      .select("customer_id, created_at, paid, cuenta_corriente")
+      .select("customer_id, created_at, paid, payment_method")
       .not("customer_id", "is", null);
     if (oErr) {
       console.error("[dashboard/customers] orders", oErr);
@@ -44,23 +44,21 @@ export async function GET() {
 
     const byCustomer = new Map<
       string,
-      { dates: string[]; total: number; paidCount: number; loyaltyCount: number }
+      { dates: string[]; total: number; paidCount: number }
     >();
     for (const row of orders ?? []) {
       const cid = row.customer_id as string;
       if (!customerIdSet.has(cid)) continue;
       let agg = byCustomer.get(cid);
       if (!agg) {
-        agg = { dates: [], total: 0, paidCount: 0, loyaltyCount: 0 };
+        agg = { dates: [], total: 0, paidCount: 0 };
         byCustomer.set(cid, agg);
       }
       agg.total += 1;
       const created = row.created_at as string | null;
       if (created) agg.dates.push(created);
-      const paid = Boolean(row.paid);
-      const cc = Boolean(row.cuenta_corriente);
+      const paid = Boolean(row.paid) || row.payment_method === 'CUENTA_CORRIENTE';
       if (paid) agg.paidCount += 1;
-      if (paid || cc) agg.loyaltyCount += 1;
     }
 
     const allUsers: User[] = [];
@@ -78,9 +76,13 @@ export async function GET() {
       page = next;
     }
 
-    const profileNameById = new Map<string, string>();
+    const profileDataById = new Map<string, { name: string; balance: number; stamps: number }>();
     for (const pr of profiles ?? []) {
-      profileNameById.set(pr.id as string, String(pr.full_name ?? "").trim());
+      profileDataById.set(pr.id as string, {
+        name: String(pr.full_name ?? "").trim(),
+        balance: Number(pr.balance || 0),
+        stamps: Number(pr.coffee_stamps || 0)
+      });
     }
 
     const customers: DashboardCustomerRow[] = [];
@@ -95,10 +97,12 @@ export async function GET() {
           : null;
       const paidCount = agg?.paidCount ?? 0;
       const birthRaw = metaString(user, "birthdate");
+      const pInfo = profileDataById.get(id);
+
       customers.push({
         id,
         displayName:
-          profileNameById.get(id) ||
+          pInfo?.name ||
           metaString(user, "full_name") ||
           metaString(user, "name") ||
           "—",
@@ -108,7 +112,8 @@ export async function GET() {
         defaultAddress: metaString(user, "default_address") || "—",
         orderCount: agg?.total ?? 0,
         lastOrderAt: last,
-        loyaltyPoints: agg?.loyaltyCount ?? 0,
+        loyaltyPoints: pInfo?.stamps ?? 0,
+        balance: pInfo?.balance ?? 0,
         isSocio: paidCount >= 1,
       });
     }
