@@ -235,7 +235,7 @@ export default function TablesPage() {
         // Delivery range or Web Delivery (999) → RED (Solid Apple float style)
         if ((table.id >= 100 && table.id < 200) || table.id === 999) {
             return {
-                bg: 'bg-red-500 shadow-2xl shadow-red-500/10',
+                bg: 'bg-red-500 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
                 dot: 'bg-white/40 shadow-sm',
                 badgeBg: 'bg-white/20 text-white',
                 label: 'Delivery',
@@ -246,7 +246,7 @@ export default function TablesPage() {
         // Retiro range → GREEN (Solid Apple float style)
         else if ((table.id >= 200 && table.id < 300)) {
             return {
-                bg: 'bg-emerald-500 shadow-2xl shadow-emerald-500/10',
+                bg: 'bg-emerald-500 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
                 dot: 'bg-white/40 shadow-sm',
                 badgeBg: 'bg-white/20 text-white',
                 label: 'Retiro',
@@ -256,7 +256,7 @@ export default function TablesPage() {
         }
         // Local → YELLOW (Solid Apple float style)
         return {
-            bg: 'bg-amber-400 shadow-2xl shadow-amber-500/10',
+            bg: 'bg-amber-400 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
             dot: 'bg-amber-950/20 shadow-sm',
             badgeBg: 'bg-black/10 text-amber-950',
             label: 'Salón',
@@ -535,10 +535,8 @@ export default function TablesPage() {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setSelectedWebOrder(order)}
-                                        className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden shadow-2xl min-h-[400px] ${
-                                            isDelivery
-                                                ? 'bg-red-500 shadow-red-500/20'
-                                                : 'bg-emerald-500 shadow-emerald-500/20'
+                                        className={`rounded-3xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden shadow-[0_22px_70px_rgba(0,0,0,0.18)] min-h-[400px] ${
+                                            isDelivery ? 'bg-red-500' : 'bg-emerald-500'
                                         }`}
                                     >
                                         <div className="flex justify-between items-start">
