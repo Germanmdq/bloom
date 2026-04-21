@@ -405,13 +405,13 @@ export default function TablesPage() {
                 </div>
                 <div className="flex gap-4">
                     <div className="flex items-center gap-2 text-sm text-gray-500 font-bold">
-                        <div className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]" /> Local
+                        <div className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.4)]" /> Salón
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-500 font-bold">
-                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" /> Delivery
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" /> Delivery
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-500 font-bold">
-                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.5)]" /> Retiro
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.4)]" /> Retiro
                     </div>
                 </div>
             </div>

@@ -109,15 +109,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 <div className="mt-4 shrink-0 border-t border-gray-200/90 pt-4 px-4 space-y-3">
                     <ul className="space-y-1.5 text-xs text-gray-500">
                         <li className="flex items-center gap-2">
-                            <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" aria-hidden />
-                            <span>Mesa</span>
+                            <span className="h-2 w-2 shrink-0 rounded-full bg-orange-500" aria-hidden />
+                            <span>Salón</span>
                         </li>
                         <li className="flex items-center gap-2">
-                            <span className="h-2 w-2 shrink-0 rounded-full bg-green-600" aria-hidden />
+                            <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-hidden />
                             <span>Delivery</span>
                         </li>
                         <li className="flex items-center gap-2">
-                            <span className="h-2 w-2 shrink-0 rounded-full bg-amber-400" aria-hidden />
+                            <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden />
                             <span>Retiro</span>
                         </li>
                     </ul>
