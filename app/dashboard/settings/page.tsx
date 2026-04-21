@@ -104,28 +104,27 @@ export default function SettingsPage() {
     const handleSave = async () => {
         setIsLoading(true);
         const payload: any = {
+            id: 1,
             mesas,
             barra,
             whatsapp: phone,
             updated_at: new Date().toISOString(),
         };
 
-        // Attempt full update first
+        // Attempt full upsert first
         const { error } = await supabase
             .from("app_settings")
-            .update({
+            .upsert({
                 ...payload,
                 fachada_image_url: fachadaImageUrl.trim() || null,
-            })
-            .eq("id", 1);
+            });
 
         if (error) {
-            console.warn('[Settings] Guardado completo falló, reintentando sin fachada_image_url...', error.message);
+            console.warn('[Settings] Upsert completo falló, reintentando sin fachada_image_url...', error.message);
             // Fallback: try without the problematic column
             const { error: retryError } = await supabase
                 .from("app_settings")
-                .update(payload)
-                .eq("id", 1);
+                .upsert(payload);
 
             if (retryError) {
                 alert("Error crítico al guardar: " + retryError.message);
