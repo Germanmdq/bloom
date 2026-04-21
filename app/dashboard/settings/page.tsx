@@ -24,7 +24,6 @@ export default function SettingsPage() {
     const [platoDiaProducts, setPlatoDiaProducts] = useState<any[]>([]);
     const [selectedPlatoDia, setSelectedPlatoDia] = useState<string | null>(null);
     const [savingPlatoDia, setSavingPlatoDia] = useState(false);
-    const [fachadaImageUrl, setFachadaImageUrl] = useState("");
 
     useEffect(() => {
         const loadSettings = async () => {
@@ -50,7 +49,6 @@ export default function SettingsPage() {
                     setBarra(data.barra);
                     setPhone(data.whatsapp);
                     if (data.plato_del_dia_id) setSelectedPlatoDia(data.plato_del_dia_id);
-                    if (typeof data.fachada_image_url === "string") setFachadaImageUrl(data.fachada_image_url);
                 }
             } catch (err: any) {
                 console.error('[Settings] Error en loadSettings:', err.message);
@@ -103,34 +101,19 @@ export default function SettingsPage() {
 
     const handleSave = async () => {
         setIsLoading(true);
-        const payload: any = {
-            id: 1,
-            mesas,
-            barra,
-            whatsapp: phone,
-            updated_at: new Date().toISOString(),
-        };
-
-        // Attempt full upsert first
         const { error } = await supabase
             .from("app_settings")
             .upsert({
-                ...payload,
-                fachada_image_url: fachadaImageUrl.trim() || null,
+                id: 1,
+                mesas,
+                barra,
+                whatsapp: phone,
+                updated_at: new Date().toISOString(),
             });
 
+        setIsLoading(false);
         if (error) {
-            console.warn('[Settings] Upsert completo falló, reintentando sin fachada_image_url...', error.message);
-            // Fallback: try without the problematic column
-            const { error: retryError } = await supabase
-                .from("app_settings")
-                .upsert(payload);
-
-            if (retryError) {
-                alert("Error crítico al guardar: " + retryError.message);
-            } else {
-                alert("Ajustes guardados (Nota: fachada_image_url no se guardó porque la columna no existe en la DB).");
-            }
+            alert("Error al guardar: " + error.message);
         } else {
             alert("Ajustes guardados correctamente.");
         }
@@ -138,7 +121,6 @@ export default function SettingsPage() {
         // Save F-key actions to localStorage
         localStorage.setItem('bloom_f1_action', f1Action);
         localStorage.setItem('bloom_f2_action', f2Action);
-        setIsLoading(false);
     };
 
     return (
@@ -195,21 +177,6 @@ export default function SettingsPage() {
                                 className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none focus:ring-2 ring-[#FFD60A]"
                             />
                         </div>
-                        <div>
-                            <label className="block text-xs font-black uppercase text-gray-400 mb-2">
-                                URL imagen fachada (sitio público)
-                            </label>
-                            <input
-                                type="url"
-                                value={fachadaImageUrl}
-                                onChange={(e) => setFachadaImageUrl(e.target.value)}
-                                placeholder="https://….supabase.co/storage/v1/object/public/site/…"
-                                className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none focus:ring-2 ring-[#FFD60A] text-sm"
-                            />
-                            <p className="text-[11px] text-gray-400 font-medium mt-1.5">
-                                Vacío = imagen local. Podés pegar la URL tras subir con{" "}
-                                <code className="text-gray-600">npm run upload:fachada</code>.
-                            </p>
                         </div>
                     </div>
                 </section>
