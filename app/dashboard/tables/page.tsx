@@ -523,8 +523,8 @@ export default function TablesPage() {
 
                     return (
                         <div className={`grid ${gridCols} gap-6`}>
-                            {/* Individual Web Order Cards */}
-                            {webOrders.map(order => {
+                            {/* Individual Web Order Cards (Only those not in notification stack) */}
+                            {webOrders.filter(order => !notifications.find(n => n.id === order.id)).map(order => {
                                 const isDelivery = order.delivery_type === 'delivery';
                                 const productItems = (order.items || []).filter((i: any) => !i.is_meta);
                                 const timeStr = new Date(order.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
