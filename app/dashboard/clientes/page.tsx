@@ -147,7 +147,9 @@ export default function ClientesPage() {
                                     </div>
                                     <div className="text-center">
                                         <p className={`text-[8px] font-black uppercase tracking-tight ${client.balance > 0 ? 'text-red-400' : 'text-gray-400'} mb-0.5`}>Saldo</p>
-                                        <p className={`text-xs font-bold ${client.balance > 0 ? 'text-red-600' : 'text-gray-900'}`}>${client.balance.toLocaleString()}</p>
+                                        <p className={`text-xs font-bold ${client.balance > 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                                            {client.balance > 0 ? `-$${client.balance.toLocaleString()}` : `$${client.balance.toLocaleString()}`}
+                                        </p>
                                     </div>
                                 </div>
                             </motion.div>
@@ -216,7 +218,7 @@ export default function ClientesPage() {
                                         <ArrowUpDown className={`mx-auto mb-2 ${selectedClient.balance > 0 ? 'text-red-600' : 'text-gray-400'}`} size={20} />
                                         <p className={`text-[9px] font-black uppercase tracking-widest ${selectedClient.balance > 0 ? 'text-red-400' : 'text-gray-400'} mb-1`}>Saldo CC</p>
                                         <p className={`text-lg font-black ${selectedClient.balance > 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                                            ${selectedClient.balance.toLocaleString()}
+                                            {selectedClient.balance > 0 ? `-$${selectedClient.balance.toLocaleString()}` : `$${selectedClient.balance.toLocaleString()}`}
                                         </p>
                                     </div>
                                 </div>
