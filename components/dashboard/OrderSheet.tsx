@@ -543,56 +543,74 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     return (
         <div className="h-full flex flex-col bg-gray-100 overflow-hidden">
 
-            {/* ── HEADER ── */}
-            <div className={`flex items-center justify-between px-5 py-3 bg-white border-b border-gray-200 shrink-0 ${orderSheetHeaderBorderClass(tableId)}`}>
-                <div className="flex items-center gap-3">
-                    {isWebTable && currentWebOrderId && (
-                        <button onClick={handleBackToWebList} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                            <ChevronLeft size={18} className="text-gray-500" />
-                        </button>
-                    )}
-                    <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center text-white font-black text-base">
-                        {tableId === WEB_ORDER_TABLE_RETIRO ? 'R' : tableId === WEB_ORDER_TABLE_DELIVERY ? 'E' : tableId}
-                    </div>
-                    <div>
-                        <p className="font-black text-gray-900 leading-none">
-                            {tableId === WEB_ORDER_TABLE_RETIRO ? 'Retiro' : tableId === WEB_ORDER_TABLE_DELIVERY ? 'Envío' : `Mesa ${tableId}`}
-                        </p>
-                        <p className="text-[11px] text-gray-400 mt-0.5">
-                            {cart.length === 0 ? 'Sin productos' : `${cart.reduce((s, i) => s + i.quantity, 0)} productos`}
-                        </p>
-                    </div>
-                </div>
+            {/* ── HEADER: Dynamic Status Widget ── */}
+            <div className={`px-6 py-5 bg-white border-b border-gray-100 shrink-0 ${orderSheetHeaderBorderClass(tableId)}`}>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-5">
+                        {isWebTable && currentWebOrderId && (
+                            <button onClick={handleBackToWebList} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-all active:scale-90">
+                                <ChevronLeft size={20} className="text-gray-900" />
+                            </button>
+                        )}
+                        
+                        {/* Status Circle Identifier */}
+                        <div className="w-14 h-14 bg-gray-900 rounded-[1.25rem] flex items-center justify-center text-white shadow-lg shadow-black/10 transition-transform hover:scale-105">
+                            <span className="font-black text-2xl tracking-tighter">
+                                {tableId === WEB_ORDER_TABLE_RETIRO ? 'R' : 
+                                 tableId === WEB_ORDER_TABLE_DELIVERY ? 'E' : 
+                                 customerName ? customerName.charAt(0).toUpperCase() : tableId}
+                            </span>
+                        </div>
 
-                <div className="flex items-center gap-2">
-                    <select
-                        value={selectedWaiter}
-                        onChange={(e) => setSelectedWaiter(e.target.value)}
-                        className="h-9 px-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none"
-                    >
-                        {waiters.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
-                    </select>
-                    <select
-                        value={invoiceType}
-                        onChange={(e) => setInvoiceType(e.target.value)}
-                        className="h-9 px-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none"
-                    >
-                        <option>Factura C</option>
-                        <option>Factura B</option>
-                        <option>Ticket</option>
-                    </select>
-                    <button
-                        onClick={handleFreeTable}
-                        className="h-9 px-3 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 text-xs font-semibold transition-colors"
-                    >
-                        Liberar
-                    </button>
-                    <button
-                        onClick={handleClose}
-                        className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-                    >
-                        <X size={18} />
-                    </button>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none">
+                                    {tableId === WEB_ORDER_TABLE_RETIRO ? 'Retiro' : 
+                                     tableId === WEB_ORDER_TABLE_DELIVERY ? 'Envío' : 
+                                     `Mesa ${tableId}`}
+                                </h2>
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                    cart.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'
+                                }`}>
+                                    {cart.length > 0 ? 'Ocupada' : 'Libre'}
+                                </span>
+                            </div>
+                            <p className="text-sm font-bold text-gray-400 mt-1">
+                                {customerName ? customerName : (cart.length === 0 ? 'Sincronizando...' : `${cart.reduce((s, i) => s + i.quantity, 0)} productos en comanda`)}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <div className="flex flex-col items-end mr-4">
+                            <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-1">Mesa {tableId}</span>
+                            <div className="flex items-center gap-2">
+                                <select
+                                    value={selectedWaiter}
+                                    onChange={(e) => setSelectedWaiter(e.target.value)}
+                                    className="h-9 px-3 bg-gray-50/50 border border-transparent rounded-xl text-xs font-bold text-gray-600 outline-none hover:bg-gray-100 transition-colors cursor-pointer"
+                                >
+                                    {waiters.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="h-10 w-[1px] bg-gray-100 mx-2" />
+
+                        <button
+                            onClick={handleFreeTable}
+                            className="h-11 px-5 rounded-xl text-red-500 bg-red-50 hover:bg-red-100 text-xs font-black uppercase tracking-widest transition-all active:scale-95"
+                        >
+                            Liberar
+                        </button>
+                        
+                        <button
+                            onClick={handleClose}
+                            className="w-11 h-11 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-900 transition-all active:scale-90"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -636,18 +654,35 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     {/* Área principal: categorías o productos */}
                     <div className="flex-1 overflow-y-auto p-3 no-scrollbar">
                         {!searchTerm && !activeCategory ? (
-                            /* Categorías: grid que llena toda la pantalla */
-                            <div className="h-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 auto-rows-fr">
+                            /* Categorías: Tarjetas Apple con imágenes */
+                            <div className="h-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-fr">
                                 {categories.map((cat: any) => {
                                     const count = products.filter((p: any) => p.category_id === cat.id).length;
+                                    // Buscar primera imagen de producto si la categoría no tiene una directa
+                                    const firstProdWithImg = products.find(p => p.category_id === cat.id && p.image_url);
+                                    const bgImg = cat.image_url || firstProdWithImg?.image_url || "https://images.unsplash.com/photo-1511984804822-e16ba72f5848?q=80&w=2048&auto=format&fit=crop";
+
                                     return (
                                         <button
                                             key={cat.id}
                                             onClick={() => setActiveCategory(cat.id)}
-                                            className="bg-white rounded-2xl px-4 py-3 shadow-sm hover:shadow-md active:scale-95 transition-all text-left border border-gray-100 hover:border-gray-300 flex flex-col justify-center min-h-[72px]"
+                                            className="group relative bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl active:scale-95 transition-all text-left border border-gray-100 h-[140px]"
                                         >
-                                            <p className="font-black text-gray-900 text-base leading-snug">{cat.name}</p>
-                                            <p className="text-xs text-gray-400 mt-0.5 font-medium">{count} productos</p>
+                                            {/* Background Image with Overlay */}
+                                            <div className="absolute inset-0 z-0">
+                                                <img 
+                                                    src={bgImg} 
+                                                    alt={cat.name}
+                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                            </div>
+
+                                            {/* Content */}
+                                            <div className="relative z-10 h-full p-5 flex flex-col justify-end">
+                                                <p className="font-black text-white text-lg leading-tight tracking-tight uppercase">{cat.name}</p>
+                                                <p className="text-[10px] text-white/60 mt-1 font-bold uppercase tracking-wider">{count} productos</p>
+                                            </div>
                                         </button>
                                     );
                                 })}
@@ -658,17 +693,36 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             </div>
                         ) : (
                             /* Productos: grid que llena toda la pantalla */
-                            <div className="h-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 auto-rows-fr">
-                                {displayProducts.map((item: any) => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
-                                        className="group bg-white rounded-2xl px-4 py-3 shadow-sm hover:shadow-md active:scale-95 transition-all text-center border border-gray-100 hover:border-gray-300 flex flex-col justify-center min-h-[80px]"
-                                    >
-                                        <p className="text-base font-black text-gray-900 leading-tight mb-1 line-clamp-3 uppercase">{item.name}</p>
-                                        <p className="text-sm font-bold text-gray-500">${Number(item.price).toLocaleString()}</p>
-                                    </button>
-                                ))}
+                            <div className="h-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 auto-rows-fr">
+                                {displayProducts.map((item: any) => {
+                                    const bgImg = item.image_url || 
+                                                  categories.find((c: any) => c.id === item.category_id)?.image_url || 
+                                                  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=2048&auto=format&fit=crop";
+                                    
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
+                                            className="group relative bg-white rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-xl active:scale-95 transition-all text-center border border-gray-100 h-[120px]"
+                                        >
+                                            {/* Background Image with Overlay */}
+                                            <div className="absolute inset-0 z-0">
+                                                <img 
+                                                    src={bgImg} 
+                                                    alt={item.name}
+                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                                            </div>
+
+                                            {/* Content */}
+                                            <div className="relative z-10 h-full p-4 flex flex-col justify-end">
+                                                <p className="text-sm font-black text-white leading-tight mb-0.5 line-clamp-2 uppercase tracking-tight">{item.name}</p>
+                                                <p className="text-xs font-bold text-white/70">${Number(item.price).toLocaleString()}</p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
