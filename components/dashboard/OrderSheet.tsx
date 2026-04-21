@@ -654,8 +654,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     {/* Área principal: categorías o productos */}
                     <div className="flex-1 overflow-y-auto p-3 no-scrollbar">
                         {!searchTerm && !activeCategory ? (
-                            /* Categorías: Estilo Apple Minimalista con Iconos Animados */
-                            <div className="h-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-fr">
+                            /* Categorías: Grid estable de 3 columnas */
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {categories.map((cat: any) => {
                                     const count = products.filter((p: any) => p.category_id === cat.id).length;
                                     
@@ -703,8 +703,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 Sin resultados
                             </div>
                         ) : (
-                            /* Productos: grid que llena toda la pantalla */
-                            <div className="h-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 auto-rows-fr">
+                            /* Productos: Grid estable de 3 columnas */
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {displayProducts.map((item: any) => {
                                     // Mapeador inteligente de iconos para productos
                                     const getProductIcon = (name: string, catName: string) => {
