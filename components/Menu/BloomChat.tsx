@@ -531,12 +531,6 @@ function ProductCard({
       )}
     </div>
   );
-}cargar"}
-          </button>
-        </>
-      )}
-    </div>
-  );
 }
 
 export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, ref) {
