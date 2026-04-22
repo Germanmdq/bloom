@@ -31,8 +31,8 @@ export default function ReportsPage() {
     async function fetchReports() {
         setLoading(true);
 
-        let thresholdDate: string;
         const now = new Date();
+        let thresholdDate: string;
         
         if (timeframe === 'TODAY') {
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -42,21 +42,27 @@ export default function ReportsPage() {
             thresholdDate = new Date(now.getTime() - (daysToSubtract * 24 * 60 * 60 * 1000)).toISOString();
         }
 
-        // 1. Fetch Orders (Sales)
-        const { data: salesData, error: salesError } = await supabase
-            .from('orders')
-            .select('total, payment_method, created_at')
-            .gte('created_at', thresholdDate);
+        try {
+            // Paralelizar las consultas para máxima velocidad
+            const [salesRes, expensesRes] = await Promise.all([
+                supabase
+                    .from('orders')
+                    .select('total, payment_method')
+                    .gte('created_at', thresholdDate),
+                supabase
+                    .from('expenses')
+                    .select('amount, category')
+                    .gte('expense_date', thresholdDate)
+            ]);
 
-        // 2. Fetch Expenses
-        const { data: expensesData, error: expensesError } = await supabase
-            .from('expenses')
-            .select('amount, category, expense_date')
-            .gte('expense_date', thresholdDate);
+            if (salesRes.error) throw salesRes.error;
+            if (expensesRes.error) throw expensesRes.error;
 
-        if (!salesError && salesData) {
+            const salesData = salesRes.data || [];
+            const expensesData = expensesRes.data || [];
+
             const totals = salesData.reduce((acc, order) => {
-                const amount = parseFloat(order.total);
+                const amount = Number(order.total);
                 if (order.payment_method === 'CASH') acc.cash += amount;
                 else if (order.payment_method === 'CARD') acc.card += amount;
                 else if (order.payment_method === 'MERCADO_PAGO') acc.mercadoPago += amount;
@@ -69,17 +75,15 @@ export default function ReportsPage() {
             let totalPurch = 0;
             const expByCat: Record<string, number> = {};
             
-            if (expensesData) {
-                expensesData.forEach(exp => {
-                    const amount = Number(exp.amount);
-                    if (exp.category === 'Mercadería') {
-                        totalPurch += amount;
-                    } else {
-                        totalExp += amount;
-                    }
-                    expByCat[exp.category] = (expByCat[exp.category] || 0) + amount;
-                });
-            }
+            expensesData.forEach(exp => {
+                const amount = Number(exp.amount);
+                if (exp.category === 'Mercadería') {
+                    totalPurch += amount;
+                } else {
+                    totalExp += amount;
+                }
+                expByCat[exp.category] = (expByCat[exp.category] || 0) + amount;
+            });
 
             setStats({
                 ...totals,
@@ -88,8 +92,12 @@ export default function ReportsPage() {
                 netBalance: totals.totalSales - (totalExp + totalPurch),
                 expensesByCategory: expByCat
             });
+        } catch (error: any) {
+            console.error("Error fetching reports:", error);
+            alert("Error al cargar reportes: " + error.message);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }
 
     const cashPercentage = stats.totalSales > 0 ? (stats.cash / stats.totalSales) * 100 : 0;
