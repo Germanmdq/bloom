@@ -176,6 +176,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         setCustomerName(item.name || "");
                         setCustomerAddress(item.address || "");
                         setCustomerPhone(item.phone || "");
+                        if (item.customer_id) setSelectedCustomerId(item.customer_id);
                     } else {
                         addToCart(normalizeTableItem(item));
                     }
@@ -278,6 +279,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 name: customerName,
                 address: customerAddress,
                 phone: customerPhone,
+                customer_id: selectedCustomerId,
                 price: 0,
                 quantity: 1
             } as any);

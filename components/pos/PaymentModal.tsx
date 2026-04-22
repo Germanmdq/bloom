@@ -494,11 +494,15 @@ export function PaymentModal({
                             Volver
                         </button>
                         <button
-                            disabled={isFinishing || pointWaiting || pointBusy}
+                            disabled={isFinishing || pointWaiting || pointBusy || (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId)}
                             onClick={() => onConfirm({ customerId: selectedCustomerId })}
-                            className="flex-[2] py-6 rounded-[2rem] bg-black text-[#FFD60A] font-black hover:scale-[1.03] disabled:opacity-20 shadow-2xl"
+                            className={`flex-[2] py-6 rounded-[2rem] font-black hover:scale-[1.03] disabled:opacity-20 shadow-2xl transition-all ${
+                                paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId 
+                                ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
+                                : "bg-black text-[#FFD60A]"
+                            }`}
                         >
-                            {isFinishing ? "..." : "Confirmar Venta"}
+                            {isFinishing ? "..." : (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId ? "Seleccionar Cliente" : "Confirmar Venta")}
                         </button>
                     </div>
                 </div>

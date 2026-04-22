@@ -6,6 +6,7 @@ import { MobileBottomNav } from "@/components/dashboard/MobileBottomNav";
 import { Lock, Delete } from "lucide-react";
 import { SalesComparisonPanel, ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import { OrderNotificationListener } from "./OrderNotificationListener";
+import { GlobalOrderNotification } from "./GlobalOrderNotification";
 import "@/app/dashboard/dashboard.css";
 
 export function DashboardClientLayout({
@@ -143,6 +144,7 @@ export function DashboardClientLayout({
         <SalesComparisonPanel comparisonType={comparisonPanel} onClose={() => setComparisonPanel(null)} />
       )}
       <OrderNotificationListener />
+      <GlobalOrderNotification />
     </div>
   );
 }
