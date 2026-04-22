@@ -273,7 +273,7 @@ export default function ClientesPage() {
                                                             <Receipt size={20} />
                                                         </div>
                                                         <div>
-                                                            <p className="font-black text-gray-900 text-sm">Pedido #{order.id.slice(0, 8)}</p>
+                                                            <p className="font-black text-gray-900 text-sm">Pedido #{order.id?.slice(0, 8) || 'N/A'}</p>
                                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                                                                 {new Date(order.created_at).toLocaleDateString()} • {new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                                             </p>
