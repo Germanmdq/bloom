@@ -27,10 +27,10 @@ export function useCategories() {
             const { data, error } = await supabase
                 .from('categories')
                 .select('*')
-                .order('sort_order', { ascending: true }); // ← ORDEN CORRECTO
+                .order('sort_order', { ascending: true });
 
             if (error) throw error;
-            return data; // ← SIN SORTING ADICIONAL
+            return data;
         },
         staleTime: 1000 * 60 * 60,
     });
@@ -59,7 +59,6 @@ export function useCreateOrder() {
 
     return useMutation({
         mutationFn: async (orderData: any) => {
-            // Insert directo a orders (BloomAgent usa columnas que no existen en la tabla)
             const total = orderData.total ??
                 orderData.items.reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0);
 
@@ -95,7 +94,7 @@ export function useKitchenTickets() {
             if (error) throw error;
             return data;
         },
-        staleTime: 5000, // Fallback: 5 seconds if Realtime fails
+        staleTime: 5000,
     });
 }
 
@@ -110,7 +109,7 @@ export function useStock() {
             if (error) throw error;
             return data;
         },
-        staleTime: 0, // Always fetch fresh stock
+        staleTime: 1000 * 30, // 30s cache
     });
 }
 
@@ -122,7 +121,7 @@ export function useInventoryMovements() {
                 .from('inventory_movements')
                 .select('*, products(name, unit)')
                 .order('created_at', { ascending: false })
-                .limit(50);
+                .limit(100);
             if (error) throw error;
             return data;
         },
@@ -159,6 +158,7 @@ export function useSuppliers() {
             if (error) throw error;
             return data;
         },
+        staleTime: 1000 * 60 * 5, // 5 min cache
     });
 }
 
@@ -204,7 +204,8 @@ export function useExpenses() {
             const { data, error } = await supabase
                 .from('expenses')
                 .select('*, suppliers(name)')
-                .order('expense_date', { ascending: false });
+                .order('expense_date', { ascending: false })
+                .limit(100);
             if (error) throw error;
             return data;
         },
@@ -233,7 +234,7 @@ export function useUserRole() {
         queryKey: ['user_role'],
         queryFn: async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return 'WAITER'; // Default safe fallback
+            if (!user) return 'WAITER';
 
             const { data, error } = await supabase
                 .from('profiles')
@@ -241,12 +242,9 @@ export function useUserRole() {
                 .eq('id', user.id)
                 .single();
 
-            if (error) {
-                // If profile doesn't exist yet, return waiter/default
-                return 'WAITER';
-            }
+            if (error) return 'WAITER';
             return data?.role || 'WAITER';
         },
-        staleTime: 1000 * 60 * 10, // Cache for 10 min
+        staleTime: 1000 * 60 * 10,
     });
 }
