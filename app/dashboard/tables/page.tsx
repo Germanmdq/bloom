@@ -155,6 +155,12 @@ export default function TablesPage() {
                         .sort((a, b) => a.id - b.id);
                     if (freeDeliveryTables.length > 0) {
                         targetId = freeDeliveryTables[0].id;
+                    } else {
+                        // Si no hay ninguna mesa de delivery ocupada ni libre, empezamos por la 101
+                        const highestDelivery = tables
+                            .filter(t => t.id >= 100 && t.id < 200)
+                            .sort((a, b) => b.id - a.id)[0]?.id || 100;
+                        targetId = highestDelivery + 1;
                     }
                 }
             } else if (newTableType === 'TAKEAWAY') {
@@ -166,13 +172,19 @@ export default function TablesPage() {
                         .sort((a, b) => a.id - b.id);
                     if (freeTakeawayTables.length > 0) {
                         targetId = freeTakeawayTables[0].id;
+                    } else {
+                        // Si no hay ninguna mesa de retiro, empezamos por la 201
+                        const highestTakeaway = tables
+                            .filter(t => t.id >= 200 && t.id < 300)
+                            .sort((a, b) => b.id - a.id)[0]?.id || 200;
+                        targetId = highestTakeaway + 1;
                     }
                 }
             }
         }
 
         if (targetId === 0) {
-            alert("No hay mesas libres (o creadas) en este rango.");
+            alert("No se pudo determinar un ID de mesa válido.");
             return;
         }
 
@@ -187,7 +199,8 @@ export default function TablesPage() {
 
         const { data, error } = await supabase
             .from('salon_tables')
-            .update({ 
+            .upsert({ 
+                id: targetId,
                 status: 'OCCUPIED', 
                 order_type: finalOrderType,
                 items: (newTableName || newTableCustomerId) ? [{
@@ -200,7 +213,6 @@ export default function TablesPage() {
                 }] : [],
                 updated_at: new Date().toISOString()
             })
-            .eq('id', targetId)
             .select()
             .single();
 
@@ -233,7 +245,7 @@ export default function TablesPage() {
     };
 
     const sortedTables = [...tables]
-        .filter(t => t.status === 'OCCUPIED' && t.id >= 1 && t.id <= 150)
+        .filter(t => t.status === 'OCCUPIED' && t.id >= 1 && t.id <= 300)
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
