@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, MessageCircle, Briefcase, X, LogOut, Home } from "lucide-react";
+import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, MessageCircle, Briefcase, X, LogOut, Home, History as HistoryIcon } from "lucide-react";
 import { useUserRole } from "@/lib/hooks/use-pos-data";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,7 @@ const links = [
     { href: "/dashboard/personal", label: "Personal",  icon: Briefcase },
     { href: "/dashboard/reports",  label: "Reportes",  icon: PieChart },
     { href: "/dashboard/inventory", label: "Operaciones", icon: Package },
-    { href: "/dashboard/history-stock", label: "Historial Stock", icon: History },
+    { href: "/dashboard/history-stock", label: "Historial Stock", icon: HistoryIcon },
     { href: "/dashboard/kitchen",  label: "Cocina",    icon: CookingPot },
     { href: "/dashboard/whatsapp", label: "WhatsApp",  icon: MessageCircle },
     { href: "/dashboard/settings", label: "Ajustes",   icon: Settings },
