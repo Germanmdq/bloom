@@ -40,7 +40,7 @@ export type Table = {
     id: number;
     status: TableStatus;
     total: number;
-    order_type?: 'LOCAL' | 'DELIVERY';
+    order_type?: 'LOCAL' | 'DELIVERY' | 'TAKEAWAY';
     webOrderId?: string;
     clientName?: string;
     items?: any[];

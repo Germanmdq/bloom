@@ -245,7 +245,29 @@ export default function TablesPage() {
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
-        // Delivery range (51 - 100) → RED
+        // 1. Check order_type first (Most reliable)
+        if (table.order_type === 'DELIVERY') {
+            return {
+                bg: 'bg-red-500 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
+                dot: 'bg-white/40 shadow-sm',
+                badgeBg: 'bg-white/20 text-white',
+                label: 'Delivery',
+                textColor: 'text-white',
+                subTextColor: 'text-red-100/70',
+            };
+        }
+        if (table.order_type === 'TAKEAWAY') {
+            return {
+                bg: 'bg-emerald-500 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
+                dot: 'bg-white/40 shadow-sm',
+                badgeBg: 'bg-white/20 text-white',
+                label: 'Retiro',
+                textColor: 'text-white',
+                subTextColor: 'text-emerald-100/70',
+            };
+        }
+
+        // 2. Fallback to ID ranges if order_type is not set
         if (table.id >= 51 && table.id <= 100) {
             return {
                 bg: 'bg-red-500 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
@@ -256,7 +278,6 @@ export default function TablesPage() {
                 subTextColor: 'text-red-100/70',
             };
         }
-        // Retiro range (101 - 150) → GREEN
         else if (table.id >= 101 && table.id <= 150) {
             return {
                 bg: 'bg-emerald-500 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
@@ -267,7 +288,8 @@ export default function TablesPage() {
                 subTextColor: 'text-emerald-100/70',
             };
         }
-        // Local (1 - 50) → YELLOW
+
+        // Local (1 - 50 or explicitly LOCAL)
         return {
             bg: 'bg-amber-400 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
             dot: 'bg-amber-950/20 shadow-sm',
