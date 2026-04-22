@@ -147,6 +147,87 @@ export function useCreateMovement() {
     });
 }
 
+export function useSuppliers() {
+    return useQuery({
+        queryKey: ['suppliers'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('suppliers')
+                .select('*')
+                .eq('active', true)
+                .order('name');
+            if (error) throw error;
+            return data;
+        },
+    });
+}
+
+export function useCreateSupplier() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (supplier: any) => {
+            const { data, error } = await supabase
+                .from('suppliers')
+                .insert([supplier])
+                .select();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+        }
+    });
+}
+
+export function useUpdateSupplier() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, ...supplier }: any) => {
+            const { data, error } = await supabase
+                .from('suppliers')
+                .update(supplier)
+                .eq('id', id)
+                .select();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+        }
+    });
+}
+
+export function useExpenses() {
+    return useQuery({
+        queryKey: ['expenses'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('expenses')
+                .select('*, suppliers(name)')
+                .order('expense_date', { ascending: false });
+            if (error) throw error;
+            return data;
+        },
+    });
+}
+
+export function useCreateExpense() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (expense: any) => {
+            const { data, error } = await supabase
+                .from('expenses')
+                .insert([expense])
+                .select();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['expenses'] });
+        }
+    });
+}
+
 export function useUserRole() {
     return useQuery({
         queryKey: ['user_role'],

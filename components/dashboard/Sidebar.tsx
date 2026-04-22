@@ -14,10 +14,9 @@ const links = [
     { href: "/dashboard/clientes", label: "Clientes",  icon: Users },
     { href: "/dashboard/personal", label: "Personal",  icon: Briefcase },
     { href: "/dashboard/reports",  label: "Reportes",  icon: PieChart },
-    { href: "/dashboard/expenses", label: "Gastos",    icon: Receipt },
+    { href: "/dashboard/inventory", label: "Operaciones", icon: Package },
     { href: "/dashboard/kitchen",  label: "Cocina",    icon: CookingPot },
     { href: "/dashboard/whatsapp", label: "WhatsApp",  icon: MessageCircle },
-    { href: "/dashboard/stock",    label: "Stock",     icon: Package },
     { href: "/dashboard/settings", label: "Ajustes",   icon: Settings },
 ];
 
@@ -41,7 +40,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
     const filteredLinks = links.filter(link => {
         if (HIDDEN_SECTIONS.includes(link.label)) return false;
-        if (link.label === "Reportes" || link.label === "Gastos") return role === 'ADMIN';
+        if (link.label === "Reportes" || link.label === "Operaciones") return role === 'ADMIN';
         return true;
     });
 
