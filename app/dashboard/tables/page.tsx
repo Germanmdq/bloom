@@ -30,7 +30,6 @@ export default function TablesPage() {
     // Web orders state
     const [webOrders, setWebOrders] = useState<WebOrder[]>([]);
     const [selectedWebOrder, setSelectedWebOrder] = useState<WebOrder | null>(null);
-    const [notifications, setNotifications] = useState<WebOrder[]>([]);
 
     // New Table Modal State
     const [isNewTableModalOpen, setIsNewTableModalOpen] = useState(false);
@@ -520,6 +519,7 @@ export default function TablesPage() {
                     </div>
                     <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-xs">Salón Vacío</p>
                     <p className="text-gray-400 text-sm max-w-md">No hay mesas abiertas en este momento.</p>
+                </div>
             ) : (
                 <>
                 {(() => {
@@ -533,8 +533,8 @@ export default function TablesPage() {
 
                     return (
                         <div className={`grid ${gridCols} gap-6`}>
-                             {/* Individual Web Order Cards (Only those not in notification stack) */}
-                             {webOrders.filter(order => !notifications.find(n => n.id === order.id)).map(order => {
+                             {/* Individual Web Order Cards */}
+                             {webOrders.map(order => {
                                  const isDelivery = order.delivery_type === 'delivery' || (!order.delivery_type && order.order_type === 'web');
                                  const timeStr = new Date(order.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
                                  const now = Date.now();
