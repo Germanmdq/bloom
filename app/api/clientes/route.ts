@@ -40,6 +40,10 @@ export async function GET() {
                     } catch (e) {}
                 }
 
+                const lastOrders = [...clientOrders].sort((a: any, b: any) => 
+                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                ).slice(0, 5);
+
                 return {
                     id: p.id,
                     full_name: p.full_name || "Cliente S/N",
@@ -51,7 +55,8 @@ export async function GET() {
                     created_at: p.created_at || new Date().toISOString(),
                     total_spent: totalSpent,
                     order_count: orderCount,
-                    last_order_at: lastOrderAt
+                    last_order_at: lastOrderAt,
+                    last_orders: lastOrders
                 };
             });
 
