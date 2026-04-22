@@ -35,11 +35,20 @@ export default function ReportsPage() {
         let thresholdDate: string;
         
         if (timeframe === 'TODAY') {
+            // Hoy desde las 00:00:00
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             thresholdDate = startOfDay.toISOString();
+        } else if (timeframe === 'WEEK') {
+            // Desde el lunes de esta semana
+            const day = now.getDay();
+            const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Lunes
+            const startOfWeek = new Date(now.setDate(diff));
+            startOfWeek.setHours(0, 0, 0, 0);
+            thresholdDate = startOfWeek.toISOString();
         } else {
-            const daysToSubtract = timeframe === 'WEEK' ? 7 : 30;
-            thresholdDate = new Date(now.getTime() - (daysToSubtract * 24 * 60 * 60 * 1000)).toISOString();
+            // Desde el 1ero de este mes
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            thresholdDate = startOfMonth.toISOString();
         }
 
         try {
@@ -52,7 +61,7 @@ export default function ReportsPage() {
                 supabase
                     .from('expenses')
                     .select('amount, category')
-                    .gte('expense_date', thresholdDate)
+                    .gte('expense_date', thresholdDate.split('T')[0])
             ]);
 
             if (salesRes.error) throw salesRes.error;

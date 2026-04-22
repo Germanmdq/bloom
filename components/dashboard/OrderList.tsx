@@ -243,24 +243,32 @@ export function OrderList() {
         const groups: Record<string, GroupedData> = {};
         visibleOrders.forEach(order => {
             const date = new Date(order.created_at);
+            const y = date.getFullYear();
+            const m = date.getMonth();
+            const d = date.getDate();
+            const dayStr = String(d).padStart(2, '0');
+            const monthStr = String(m + 1).padStart(2, '0');
+            
             let key = "", label = "", subLabel = "";
             if (viewMode === 'day') {
-                key = date.toLocaleDateString("es-AR");
+                key = `${y}-${monthStr}-${dayStr}`;
                 label = date.toLocaleDateString("es-AR", { weekday: 'long', day: 'numeric', month: 'long' });
-                subLabel = String(date.getFullYear());
+                subLabel = `Día ${dayStr}/${monthStr}`;
             } else if (viewMode === 'week') {
-                const first = new Date(date.getFullYear(), 0, 1);
+                const first = new Date(y, 0, 1);
                 const wn = Math.ceil(((date.getTime() - first.getTime()) / 86400000 + first.getDay() + 1) / 7);
-                key = `${date.getFullYear()}-W${wn}`; label = `Semana ${wn}`; subLabel = String(date.getFullYear());
+                key = `${y}-W${wn}`; 
+                label = `Semana ${wn}`; 
+                subLabel = `Año ${y}`;
             } else if (viewMode === 'fortnight') {
-                const fn = date.getDate() <= 15 ? "1ra" : "2da";
-                key = `${date.getFullYear()}-${date.getMonth()}-${fn}`;
+                const fn = d <= 15 ? "1ra" : "2da";
+                key = `${y}-${m}-${fn}`;
                 label = `${fn} Quincena de ${date.toLocaleDateString("es-AR", { month: 'long' })}`;
-                subLabel = String(date.getFullYear());
+                subLabel = `Año ${y}`;
             } else {
-                key = `${date.getFullYear()}-${date.getMonth()}`;
+                key = `${y}-${m}`;
                 label = date.toLocaleDateString("es-AR", { month: 'long' });
-                subLabel = String(date.getFullYear());
+                subLabel = `Mensual ${y}`;
             }
             if (!groups[key]) groups[key] = { id: key, label, subLabel, orders: [], total: 0, count: 0, date };
             groups[key].orders.push(order);
