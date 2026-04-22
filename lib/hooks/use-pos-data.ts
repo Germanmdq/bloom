@@ -69,6 +69,11 @@ export function useCreateOrder() {
                     total,
                     payment_method: orderData.payment_method,
                     waiter_id: orderData.waiter_id || null,
+                    customer_id: orderData.customer_id || null,
+                    status: orderData.status || 'paid',
+                    items: orderData.items || [],
+                    discount: orderData.discount || 0,
+                    delivery_person_id: orderData.delivery_person_id || null,
                 })
                 .select()
                 .single();
