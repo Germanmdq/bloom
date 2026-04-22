@@ -160,7 +160,15 @@ export function OrderList() {
     }
 
     const unpaidSummary = useMemo(() => {
-        const unpaid = orders.filter((o) => !isOrderPaid(o as Order & { paid?: boolean }));
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const unpaid = orders.filter((o) => {
+            const isUnpaid = !isOrderPaid(o as Order & { paid?: boolean });
+            const isRecent = new Date(o.created_at) >= thirtyDaysAgo;
+            return isUnpaid && isRecent;
+        });
+        
         const total = unpaid.reduce((s, o) => s + Number(o.total), 0);
         return { count: unpaid.length, total };
     }, [orders]);
@@ -296,12 +304,15 @@ export function OrderList() {
                         <AlertCircle size={24} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Cuentas por cobrar</p>
+                        <div className="flex items-center gap-2">
+                             <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Cuentas por cobrar</p>
+                             <span className="bg-amber-200 text-amber-900 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">Reciente</span>
+                        </div>
                         <p className="text-xl font-black text-gray-900">
-                            {unpaidSummary.count} pedido{unpaidSummary.count === 1 ? "" : "s"} impago{unpaidSummary.count === 1 ? "" : "s"}
+                             {unpaidSummary.count} pedido{unpaidSummary.count === 1 ? "" : "s"} sugerido{unpaidSummary.count === 1 ? "" : "s"}
                         </p>
                         <p className="text-sm font-bold text-amber-800">
-                            Total: <span className="text-lg">${unpaidSummary.total.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</span>
+                            Pendientes (últimos 30 días): <span className="text-lg">${unpaidSummary.total.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</span>
                         </p>
                     </div>
                 </div>
