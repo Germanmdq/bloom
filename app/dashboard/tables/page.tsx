@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Table, TableStatus } from "@/lib/types";
 import { OrderSheet } from "@/components/dashboard/OrderSheet";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 
 type WebOrder = {
     id: string;
