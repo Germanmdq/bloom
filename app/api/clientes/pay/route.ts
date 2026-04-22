@@ -25,8 +25,8 @@ export async function POST(req: Request) {
                 .eq("id", clientId)
                 .single();
             
-            const currentBalance = profile?.balance || 0;
-            const newBalance = Math.max(0, currentBalance - amount);
+            const currentBalance = Number(profile?.balance || 0);
+            const newBalance = currentBalance - Number(amount);
 
             const { error } = await svc
                 .from("profiles")

@@ -10,8 +10,15 @@ export default function ClientesPage() {
     const [sortBy, setSortBy] = useState<"spent" | "points" | "orders" | "name">("spent");
     const [selectedClient, setSelectedClient] = useState<any | null>(null);
     const [isPaying, setIsPaying] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState("");
 
     useEffect(() => { fetchClients(); }, []);
+    
+    useEffect(() => {
+        if (selectedClient) {
+            setPaymentAmount(selectedClient.balance > 0 ? selectedClient.balance.toString() : "");
+        }
+    }, [selectedClient]);
 
     async function fetchClients() {
         setLoading(true);
@@ -27,18 +34,28 @@ export default function ClientesPage() {
     }
 
     async function handleSettleDebt(clientId: string) {
-        if (!confirm("¿Confirmas que el cliente pagó su saldo pendiente?")) return;
+        const amountToPay = parseFloat(paymentAmount);
+        if (isNaN(amountToPay) || amountToPay <= 0) {
+            alert("Ingresa un monto válido mayor a 0");
+            return;
+        }
+
+        if (!confirm(`¿Confirmas el pago de $${amountToPay.toLocaleString()}?`)) return;
+        
         setIsPaying(true);
         try {
             const res = await fetch("/api/clientes/pay", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ clientId })
+                body: JSON.stringify({ clientId, amount: amountToPay })
             });
             if (res.ok) {
-                alert("Saldo actualizado correctamente ✅");
+                alert("Pago registrado correctamente ✅");
                 await fetchClients();
                 setSelectedClient(null);
+            } else {
+                const errData = await res.json();
+                alert("Error: " + errData.error);
             }
         } catch (err) {
             alert("Error al procesar el pago");
@@ -227,34 +244,54 @@ export default function ClientesPage() {
                                         <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Puntos</p>
                                         <p className="text-xl font-black text-gray-900">{selectedClient.points}</p>
                                     </div>
-                                    <div className={`${selectedClient.balance > 0 ? 'bg-red-600 text-white shadow-xl shadow-red-600/20' : 'bg-black text-white'} p-5 rounded-[2.5rem] text-center transition-all relative overflow-hidden`}>
-                                         {selectedClient.balance > 0 && <div className="absolute top-0 right-0 w-8 h-8 -mr-4 -mt-4 bg-white/20 rotate-45" />}
+                                    <div className={`${selectedClient.balance > 0 ? 'bg-red-600 text-white shadow-xl shadow-red-600/20' : selectedClient.balance < 0 ? 'bg-emerald-600 text-white' : 'bg-black text-white'} p-5 rounded-[2.5rem] text-center transition-all relative overflow-hidden`}>
+                                         {selectedClient.balance !== 0 && <div className="absolute top-0 right-0 w-8 h-8 -mr-4 -mt-4 bg-white/20 rotate-45" />}
                                         <ArrowUpDown className="mx-auto mb-3 opacity-40" size={20} />
                                         <p className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-1">Saldo CC</p>
-                                        <p className="text-xl font-black">{selectedClient.balance > 0 ? `-$${selectedClient.balance.toLocaleString()}` : `$0`}</p>
+                                        <p className="text-xl font-black">
+                                            {selectedClient.balance > 0 ? `-$${selectedClient.balance.toLocaleString()}` : selectedClient.balance < 0 ? `+$${Math.abs(selectedClient.balance).toLocaleString()}` : `$0`}
+                                        </p>
                                     </div>
                                 </div>
 
                                 {/* Debt Settlement Section */}
-                                {selectedClient.balance > 0 && (
-                                    <div className="p-8 rounded-[2.5rem] bg-red-50 border-2 border-red-100 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center text-red-600">
-                                                <AlertCircle size={28} />
-                                            </div>
-                                            <div className="text-center sm:text-left">
-                                                <h4 className="font-black text-red-900 text-lg">Cuenta Pendiente</h4>
-                                                <p className="text-red-700/60 font-bold text-xs uppercase tracking-widest">Saldar para limpiar historial</p>
-                                            </div>
+                                <div className={`p-8 rounded-[3rem] ${selectedClient.balance > 0 ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'} border-2 flex flex-col gap-6 shadow-sm`}>
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-14 h-14 ${selectedClient.balance > 0 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'} rounded-full flex items-center justify-center`}>
+                                            <Receipt size={28} />
+                                        </div>
+                                        <div>
+                                            <h4 className={`font-black ${selectedClient.balance > 0 ? 'text-red-900' : 'text-emerald-900'} text-lg`}>Registrar Pago</h4>
+                                            <p className={`${selectedClient.balance > 0 ? 'text-red-700/60' : 'text-emerald-700/60'} font-bold text-xs uppercase tracking-widest`}>Ingresa el monto que entrega el cliente</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <div className="relative flex-1">
+                                            <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-gray-400">$</span>
+                                            <input 
+                                                type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)}
+                                                className="w-full h-16 pl-10 pr-6 rounded-2xl bg-white border-transparent focus:ring-4 ring-black/5 outline-none font-black text-xl text-gray-900 shadow-inner"
+                                                placeholder="0.00"
+                                            />
                                         </div>
                                         <button 
                                             disabled={isPaying} onClick={() => handleSettleDebt(selectedClient.id)}
-                                            className="w-full sm:w-auto h-16 px-10 bg-red-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-red-600/20"
+                                            className={`h-16 px-10 ${selectedClient.balance > 0 ? 'bg-red-600 shadow-red-600/20' : 'bg-emerald-600 shadow-emerald-600/20'} text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-xl`}
                                         >
-                                            {isPaying ? <Loader2 className="animate-spin" size={18} /> : <><CheckCircle2 size={18} /> Saldar Deuda</>}
+                                            {isPaying ? <Loader2 className="animate-spin" size={18} /> : <><CheckCircle2 size={18} /> Confirmar Pago</>}
                                         </button>
                                     </div>
-                                )}
+                                    
+                                    {selectedClient.balance > 0 && (
+                                        <button 
+                                            onClick={() => setPaymentAmount(selectedClient.balance.toString())}
+                                            className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-600 transition-colors mx-auto"
+                                        >
+                                            Autocompletar deuda total (${selectedClient.balance.toLocaleString()})
+                                        </button>
+                                    )}
+                                </div>
 
                                 {/* CONSUMPTION HISTORY - NEW SECTION */}
                                 <div className="space-y-6">
