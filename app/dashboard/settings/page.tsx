@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Store, Sliders, Database, Printer, Shield, Download, LayoutGrid, Keyboard, Star, Check } from "lucide-react";
+import { Save, Store, Sliders, Database, Printer, Shield, Download, LayoutGrid, Keyboard, Star, Check, Megaphone, Plus, Trash2, Edit2, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
@@ -17,6 +18,12 @@ export default function SettingsPage() {
     const [platoDiaProducts, setPlatoDiaProducts] = useState<any[]>([]);
     const [selectedPlatoDia, setSelectedPlatoDia] = useState<string | null>(null);
     const [savingPlatoDia, setSavingPlatoDia] = useState(false);
+    
+    // Promociones States
+    const [promotions, setPromotions] = useState<any[]>([]);
+    const [showPromoModal, setShowPromoModal] = useState(false);
+    const [promoForm, setPromoForm] = useState({ id: '', name: '', description: '', price: '', image_url: '' });
+    const [isSavingPromo, setIsSavingPromo] = useState(false);
 
     useEffect(() => {
         const loadSettings = async () => {
@@ -61,6 +68,14 @@ export default function SettingsPage() {
                     if (featured) setSelectedPlatoDia(featured.id);
                 }
             }
+            // Load Promociones
+            const { data: promoData } = await supabase
+                .from('products')
+                .select('*')
+                .eq('kind', 'promocion')
+                .order('created_at', { ascending: false });
+            if (promoData) setPromotions(promoData);
+
             setIsLoading(false);
         };
         loadSettings();
@@ -80,6 +95,45 @@ export default function SettingsPage() {
             console.error('app_settings error:', error.message);
         }
         setSavingPlatoDia(false);
+    };
+
+    const handleSavePromo = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSavingPromo(true);
+        const payload = {
+            name: promoForm.name,
+            description: promoForm.description,
+            price: Number(promoForm.price),
+            image_url: promoForm.image_url,
+            kind: 'promocion',
+            active: true
+        };
+
+        try {
+            if (promoForm.id) {
+                await supabase.from('products').update(payload).eq('id', promoForm.id);
+            } else {
+                await supabase.from('products').insert([payload]);
+            }
+            
+            const { data } = await supabase.from('products').select('*').eq('kind', 'promocion').order('created_at', { ascending: false });
+            if (data) setPromotions(data);
+            
+            setShowPromoModal(false);
+            setPromoForm({ id: '', name: '', description: '', price: '', image_url: '' });
+        } catch (err: any) {
+            alert("Error guardando promoción: " + err.message);
+        } finally {
+            setIsSavingPromo(false);
+        }
+    };
+
+    const handleDeletePromo = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if(confirm("¿Seguro que quieres eliminar esta promoción?")) {
+            await supabase.from('products').delete().eq('id', id);
+            setPromotions(prev => prev.filter(p => p.id !== id));
+        }
     };
 
     const handleSave = async () => {
@@ -263,6 +317,54 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
+                {/* PROMOCIONES */}
+                <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                            <Megaphone size={24} />
+                        </div>
+                        <div className="flex-1">
+                            <h2 className="text-xl font-black text-gray-900">Promociones Activas</h2>
+                            <p className="text-xs text-gray-400 font-medium mt-0.5">Se mostrarán destacadas en la pantalla principal de la web</p>
+                        </div>
+                        <button onClick={() => { setPromoForm({ id: '', name: '', description: '', price: '', image_url: '' }); setShowPromoModal(true); }} className="bg-indigo-600 text-white rounded-xl px-4 py-2 text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 transition-colors">
+                            <Plus size={16} /> Nueva Promo
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {promotions.map(promo => (
+                            <div key={promo.id} className="relative rounded-2xl border border-gray-100 overflow-hidden flex group hover:border-indigo-200 transition-colors">
+                                <div className="w-1/3 relative bg-gray-50 min-h-[100px]">
+                                    {promo.image_url ? (
+                                        <Image src={promo.image_url} alt={promo.name} fill className="object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-2xl">📸</div>
+                                    )}
+                                </div>
+                                <div className="p-4 flex-1 flex flex-col justify-center">
+                                    <h3 className="font-black text-gray-900 mb-1">{promo.name}</h3>
+                                    <p className="text-[11px] font-medium text-gray-500 leading-tight mb-2 line-clamp-2">{promo.description}</p>
+                                    <span className="font-black text-indigo-600">${promo.price?.toLocaleString()}</span>
+                                </div>
+                                <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={(e) => { e.stopPropagation(); setPromoForm({ id: promo.id, name: promo.name, description: promo.description, price: promo.price || '', image_url: promo.image_url || '' }); setShowPromoModal(true); }} className="w-8 h-8 rounded-full bg-white/90 backdrop-blur shadow-sm flex items-center justify-center text-gray-600 hover:text-black">
+                                        <Edit2 size={14} />
+                                    </button>
+                                    <button onClick={(e) => handleDeletePromo(promo.id, e)} className="w-8 h-8 rounded-full bg-white/90 backdrop-blur shadow-sm flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50">
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {promotions.length === 0 && (
+                            <div className="col-span-2 text-center py-10 border-2 border-dashed border-gray-100 rounded-2xl">
+                                <p className="text-sm font-bold text-gray-400">No hay promociones activas.</p>
+                            </div>
+                        )}
+                    </div>
+                </section>
+
                 {/* DEVICE & DATA */}
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
                     <div className="flex items-center gap-4 mb-6">
@@ -358,7 +460,49 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
+                </section>
             </div>
+
+            {/* PROMOCION MODAL */}
+            <AnimatePresence>
+                {showPromoModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowPromoModal(false)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-lg z-10 border border-gray-100">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-2xl font-black text-gray-900">{promoForm.id ? "Editar" : "Crear"} Promoción</h2>
+                                <button onClick={() => setShowPromoModal(false)} className="text-gray-400 hover:text-black"><X size={24} /></button>
+                            </div>
+                            <form onSubmit={handleSavePromo} className="space-y-4">
+                                <div>
+                                    <label className="block text-[11px] font-black text-gray-500 uppercase tracking-widest mb-1">Título</label>
+                                    <input type="text" required value={promoForm.name} onChange={e => setPromoForm({...promoForm, name: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-indigo-500 font-bold outline-none" placeholder="Ej: Super Desayuno" />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-black text-gray-500 uppercase tracking-widest mb-1">Descripción</label>
+                                    <textarea rows={3} required value={promoForm.description} onChange={e => setPromoForm({...promoForm, description: e.target.value})} className="w-full p-4 rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-indigo-500 font-bold outline-none resize-none" placeholder="Ingresa los detalles de lo que incluye..." />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[11px] font-black text-gray-500 uppercase tracking-widest mb-1">Precio ($)</label>
+                                        <input type="number" required value={promoForm.price} onChange={e => setPromoForm({...promoForm, price: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-indigo-500 font-bold outline-none" placeholder="0.00" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-black text-gray-500 uppercase tracking-widest mb-1">URL Imagen (Opcional)</label>
+                                        <input type="text" value={promoForm.image_url} onChange={e => setPromoForm({...promoForm, image_url: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-indigo-500 font-bold outline-none text-sm placeholder:text-gray-300" placeholder="https://ejemplo.com/foto.jpg" />
+                                    </div>
+                                </div>
+                                <div className="pt-4 flex gap-3">
+                                    <button type="button" onClick={() => setShowPromoModal(false)} className="flex-1 h-12 rounded-xl font-bold bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors">Cancelar</button>
+                                    <button type="submit" disabled={isSavingPromo} className="flex-1 h-12 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50">
+                                        {isSavingPromo ? "Guardando..." : "Guardar Promo"}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

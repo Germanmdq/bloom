@@ -107,6 +107,10 @@ export default function Home() {
   const [heroVideoReady, setHeroVideoReady] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const bloomChatRef = useRef<BloomChatHandle>(null);
+  
+  /** Promociones Activas desde DB */
+  const [promociones, setPromociones] = useState<any[]>([]);
+
   /** Por tarjeta: producto y categoría encontrados para abrir el chat con una sola tarjeta desde la home. */
   const [favoriteCategoryByName, setFavoriteCategoryByName] = useState<
     Record<string, { categoryId: string; displayName: string; productId: string } | null>
@@ -155,6 +159,16 @@ export default function Home() {
         };
       }
       setFavoriteCategoryByName(next);
+
+      // Cargar Promociones
+      const { data: promoData } = await supabase
+        .from("products")
+        .select("*")
+        .eq("kind", "promocion")
+        .eq("active", true)
+        .order("created_at", { ascending: false });
+      if (promoData) setPromociones(promoData);
+
     })();
   }, []);
 
@@ -376,6 +390,58 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* SECCIÓN DINÁMICA DE PROMOCIONES */}
+      <AnimatePresence>
+        {promociones.length > 0 && (
+          <section className="py-24 md:py-32 bg-white relative overflow-hidden ring-1 ring-black/[0.04] z-10">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="mx-auto w-full max-w-[1200px] px-6 relative z-10">
+              <FadeIn className="max-w-[720px] mb-16">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+                  <p className="text-[12px] font-semibold tracking-[0.14em] uppercase text-indigo-600">Novedades</p>
+                </div>
+                <h2 className="font-[300] tracking-tight text-ink-800" style={{ fontSize: "clamp(2.5rem,4vw,4.5rem)", lineHeight: 1.05 }}>
+                  Nuestras <span className="text-indigo-600">Promociones.</span>
+                </h2>
+              </FadeIn>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {promociones.map((promo, i) => (
+                  <FadeIn key={promo.id} delay={i * 0.1}>
+                    <div className="group h-full flex flex-col bg-white rounded-[2rem] border border-black/[0.06] overflow-hidden transition-all duration-[450ms] hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_rgba(79,70,229,0.15)] hover:border-indigo-100">
+                      <div className="relative aspect-[4/3] bg-gray-50 overflow-hidden">
+                        {promo.image_url ? (
+                          <Image src={promo.image_url} alt={promo.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 640px) 100vw, 33vw" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-indigo-50">
+                            <Star size={40} className="text-indigo-200" />
+                          </div>
+                        )}
+                        <div className="absolute top-4 left-4">
+                          <span className="bg-white/90 backdrop-blur-md text-indigo-600 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-sm">
+                            Promo Especial
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-8 flex-1 flex flex-col">
+                        <h3 className="text-2xl font-bold tracking-tight text-ink-800 leading-snug mb-3">{promo.name}</h3>
+                        <p className="text-[15px] text-ink-500 leading-relaxed mb-6 flex-1">{promo.description}</p>
+                        <div className="flex items-center justify-between mt-auto pt-6 border-t border-black/[0.04]">
+                          <span className="text-2xl font-black text-indigo-600">${promo.price?.toLocaleString()}</span>
+                          <button onClick={() => bloomChatRef.current?.openWithCategoryMessage({ categoryId: '', displayName: 'Promociones', productIds: [promo.id], fromHomeFeatured: true })} className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors duration-300">
+                            <ArrowRight size={20} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </FadeIn>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+      </AnimatePresence>
 
       <section className="py-16 md:py-20 bg-white">
         <div className="container mx-auto px-4">
