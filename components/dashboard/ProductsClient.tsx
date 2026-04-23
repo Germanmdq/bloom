@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence } from "framer-motion";
-import { Search, Plus, Tag, ChevronRight, X, DollarSign } from "lucide-react";
+import { Search, Plus, Tag, ChevronRight, X, DollarSign, Flame } from "lucide-react";
 
 function formatName(name: string): string {
     if (!name) return "";
