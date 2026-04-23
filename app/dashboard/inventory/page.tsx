@@ -10,7 +10,8 @@ import {
     useCreateExpense, 
     useSuppliers,
     useCreateSupplier,
-    useUpdateSupplier
+    useUpdateSupplier,
+    useCreateProduct
 } from "@/lib/hooks/use-pos-data";
 import { 
     Loader2, Plus, ArrowDown, AlertTriangle, Package, Search, 
@@ -36,6 +37,7 @@ export default function InventoryPage() {
     const createExpense = useCreateExpense();
     const createSupplier = useCreateSupplier();
     const updateSupplier = useUpdateSupplier();
+    const createProduct = useCreateProduct();
 
     const rawOptions = rawProducts.filter((p: any) => p.kind === 'raw');
 
@@ -172,6 +174,33 @@ export default function InventoryPage() {
             setSupplierForm({ name: "", phone: "", provided_items: [] });
         } catch (err: any) {
             alert("Error: " + err.message);
+        }
+    };
+
+    const handleQuickCreateInsumo = async (name: string, type: 'stock' | 'supplier', index?: number) => {
+        try {
+            const result = await createProduct.mutateAsync({
+                name,
+                kind: 'raw',
+                category: 'General',
+                current_stock: 0,
+                min_stock: 0,
+                active: true,
+                price: 0
+            });
+            const newId = result[0].id;
+            if (type === 'stock' && index !== undefined) {
+                updateStockItem(index, 'productId', newId);
+                updateStockItem(index, 'search', name);
+                updateStockItem(index, 'isOpen', false);
+            } else if (type === 'supplier') {
+                setSupplierForm(prev => ({ ...prev, provided_items: [...prev.provided_items, name] }));
+                setSupplierItemSearch("");
+                setIsSupplierItemSearchOpen(false);
+            }
+            alert(`Insumo "${name}" creado ✅`);
+        } catch (err: any) {
+            alert("Error al crear: " + err.message);
         }
     };
 
@@ -352,6 +381,10 @@ export default function InventoryPage() {
                                                                 <span className="text-[10px] text-gray-400 font-black uppercase font-mono">{p.unit}</span>
                                                             </div>
                                                         ))}
+                                                        <div onClick={() => handleQuickCreateInsumo(item.search, 'stock', index)} className="p-4 bg-emerald-50 hover:bg-emerald-100 rounded-xl cursor-pointer flex items-center justify-center gap-2 border border-dashed border-emerald-200 transition-all">
+                                                            <Plus size={14} className="text-emerald-600" />
+                                                            <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Crear "{item.search}" como nuevo</span>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -467,6 +500,10 @@ export default function InventoryPage() {
                                                     + {p.name}
                                                 </div>
                                             ))}
+                                            <div onClick={() => handleQuickCreateInsumo(supplierItemSearch, 'supplier')} className="p-3 bg-emerald-50 hover:bg-emerald-100 rounded-lg cursor-pointer flex items-center justify-center gap-2 border border-dashed border-emerald-200 mt-1 transition-all">
+                                                <Plus size={12} className="text-emerald-600" />
+                                                <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest leading-none">Crear nuevo insumo</span>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

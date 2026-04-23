@@ -20,6 +20,24 @@ export function useProducts() {
     });
 }
 
+export function useCreateProduct() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (product: any) => {
+            const { data, error } = await supabase
+                .from('products')
+                .insert([product])
+                .select();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['stock'] });
+        }
+    });
+}
+
 export function useCategories() {
     return useQuery({
         queryKey: ['categories'],
