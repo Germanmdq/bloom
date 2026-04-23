@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { PieChart, DollarSign, CreditCard, Wallet, Calendar, Loader2, TrendingUp, TrendingDown, ShoppingBag, Receipt, ArrowRight, RefreshCcw } from "lucide-react";
+import { PieChart, DollarSign, CreditCard, Wallet, Calendar, Loader2, TrendingUp, TrendingDown, ShoppingBag, Receipt, ArrowRight, RefreshCcw, Package } from "lucide-react";
 
 type Timeframe = 'TODAY' | 'WEEK' | 'MONTH';
 
