@@ -58,6 +58,23 @@ export default function InventoryPage() {
         items: [{ productId: "", qty: "", search: "", isOpen: false }]
     });
 
+    // Form States - Expenses
+    const [expenseForm, setExpenseForm] = useState({
+        description: "",
+        amount: "",
+        category: "Mercadería",
+        supplierId: ""
+    });
+
+    // Form States - Suppliers
+    const [supplierForm, setSupplierForm] = useState({
+        name: "",
+        phone: "",
+        provided_items: [] as string[]
+    });
+    const [supplierItemSearch, setSupplierItemSearch] = useState("");
+    const [isSupplierItemSearchOpen, setIsSupplierItemSearchOpen] = useState(false);
+
     // Handlers
     const handleAddStockItem = () => {
         setStockForm(prev => ({
@@ -117,22 +134,46 @@ export default function InventoryPage() {
         }
     };
 
-    // Form States - Expenses
-    const [expenseForm, setExpenseForm] = useState({
-        description: "",
-        amount: "",
-        category: "Mercadería",
-        supplierId: ""
-    });
+    const handleExpenseSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await createExpense.mutateAsync({
+                description: expenseForm.description,
+                amount: parseFloat(expenseForm.amount),
+                category: expenseForm.category,
+                supplier_id: expenseForm.supplierId || null
+            });
+            setShowExpenseModal(false);
+            setExpenseForm({ description: "", amount: "", category: "Mercadería", supplierId: "" });
+            alert("Gasto registrado ✅");
+        } catch (err: any) {
+            alert("Error: " + err.message);
+        }
+    };
 
-    // Form States - Suppliers
-    const [supplierForm, setSupplierForm] = useState({
-        name: "",
-        contact_name: "",
-        phone: "",
-        email: "",
-        category: "Mercadería"
-    });
+    const handleSupplierSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const dataToSave = {
+                name: supplierForm.name,
+                phone: supplierForm.phone,
+                category: supplierForm.provided_items.join(", ")
+            };
+
+            if (editingSupplier) {
+                await updateSupplier.mutateAsync({ id: editingSupplier.id, ...dataToSave });
+                alert("Proveedor actualizado ✅");
+            } else {
+                await createSupplier.mutateAsync(dataToSave);
+                alert("Proveedor creado ✅");
+            }
+            setShowSupplierModal(false);
+            setEditingSupplier(null);
+            setSupplierForm({ name: "", phone: "", provided_items: [] });
+        } catch (err: any) {
+            alert("Error: " + err.message);
+        }
+    };
 
     // F1 Shortcut
     useEffect(() => {
@@ -164,41 +205,6 @@ export default function InventoryPage() {
         s.name.toLowerCase().includes(supplierSearch.toLowerCase()) ||
         s.category?.toLowerCase().includes(supplierSearch.toLowerCase())
     ), [suppliers, supplierSearch]);
-
-    const handleExpenseSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            await createExpense.mutateAsync({
-                description: expenseForm.description,
-                amount: parseFloat(expenseForm.amount),
-                category: expenseForm.category,
-                supplier_id: expenseForm.supplierId || null
-            });
-            setShowExpenseModal(false);
-            setExpenseForm({ description: "", amount: "", category: "Mercadería", supplierId: "" });
-            alert("Gasto registrado ✅");
-        } catch (err: any) {
-            alert("Error: " + err.message);
-        }
-    };
-
-    const handleSupplierSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            if (editingSupplier) {
-                await updateSupplier.mutateAsync({ id: editingSupplier.id, ...supplierForm });
-                alert("Proveedor actualizado ✅");
-            } else {
-                await createSupplier.mutateAsync(supplierForm);
-                alert("Proveedor creado ✅");
-            }
-            setShowSupplierModal(false);
-            setEditingSupplier(null);
-            setSupplierForm({ name: "", contact_name: "", phone: "", email: "", category: "Mercadería" });
-        } catch (err: any) {
-            alert("Error: " + err.message);
-        }
-    };
 
     const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
@@ -237,7 +243,7 @@ export default function InventoryPage() {
                 <div className="flex flex-wrap gap-3">
                     <button onClick={() => { setStockForm({...stockForm, type: 'purchase'}); setShowStockModal(true); }} className="flex-1 lg:flex-none h-16 px-6 bg-black text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10"> <ShoppingCart size={18} /> + Insumo </button>
                     <button onClick={() => setShowExpenseModal(true)} className="flex-1 lg:flex-none h-16 px-6 bg-red-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-red-500/10"> <Receipt size={18} /> + Gasto </button>
-                    <button onClick={() => { setEditingSupplier(null); setSupplierForm({ name: "", contact_name: "", phone: "", email: "", category: "Mercadería" }); setShowSupplierModal(true); }} className="flex-1 lg:flex-none h-16 px-6 bg-emerald-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-500/10"> <Users size={18} /> + Proveedor </button>
+                    <button onClick={() => { setEditingSupplier(null); setSupplierForm({ name: "", phone: "", provided_items: [] }); setShowSupplierModal(true); }} className="flex-1 lg:flex-none h-16 px-6 bg-emerald-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-500/10"> <Users size={18} /> + Proveedor </button>
                 </div>
             </header>
 
@@ -286,7 +292,7 @@ export default function InventoryPage() {
                     <motion.div key="suppliers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                          <div className="flex items-center justify-between mb-8"> <div className="relative flex-1 max-w-md"> <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} /> <input id="supplier-search" type="text" value={supplierSearch} onChange={(e) => setSupplierSearch(e.target.value)} placeholder="Buscar proveedores (F1)..." className="w-full h-14 pl-12 pr-6 rounded-2xl bg-white border-transparent focus:ring-2 ring-black/5 shadow-sm outline-none font-bold" /> </div> </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {filteredSuppliers.map((supplier: any) => ( <div key={supplier.id} className="bg-white p-8 rounded-[2.5rem] border border-transparent hover:border-gray-100 shadow-sm hover:shadow-xl transition-all group"> <div className="flex justify-between items-start mb-6"> <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform"> <Users size={28} /> </div> <button onClick={() => { setEditingSupplier(supplier); setSupplierForm({ name: supplier.name, contact_name: supplier.contact_name || "", phone: supplier.phone || "", email: supplier.email || "", category: supplier.category || "Mercadería" }); setShowSupplierModal(true); }} className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-black transition-all"> <Edit2 size={16} /> </button> </div> <h3 className="text-xl font-black text-gray-900 mb-1">{supplier.name}</h3> <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-6 font-mono">{supplier.category}</p> <div className="space-y-3"> {supplier.contact_name && ( <div className="flex items-center gap-3 text-sm text-gray-500 font-bold"> <Users size={14} className="opacity-40" /> {supplier.contact_name} </div> )} {supplier.phone && ( <div className="flex items-center gap-3 text-sm text-gray-500 font-bold"> <Phone size={14} className="opacity-40" /> {supplier.phone} </div> )} {supplier.email && ( <div className="flex items-center gap-3 text-sm text-gray-500 font-bold"> <Mail size={14} className="opacity-40" /> {supplier.email} </div> )} </div> </div> ))}
+                            {filteredSuppliers.map((supplier: any) => ( <div key={supplier.id} className="bg-white p-8 rounded-[2.5rem] border border-transparent hover:border-gray-100 shadow-sm hover:shadow-xl transition-all group"> <div className="flex justify-between items-start mb-6"> <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform"> <Users size={28} /> </div> <button onClick={() => { setEditingSupplier(supplier); setSupplierForm({ name: supplier.name, phone: supplier.phone || "", provided_items: supplier.category ? supplier.category.split(", ") : [] }); setShowSupplierModal(true); }} className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-black transition-all"> <Edit2 size={16} /> </button> </div> <h3 className="text-xl font-black text-gray-900 mb-1">{supplier.name}</h3> <div className="space-y-3 mt-4 text-xs font-bold text-gray-500"> {supplier.phone && ( <div className="flex items-center gap-3"> <Phone size={14} className="text-emerald-500" /> {supplier.phone} </div> )} {supplier.category && ( <div className="flex flex-wrap gap-1 items-center"> <Tag size={14} className="text-gray-300" /> {supplier.category.split(", ").map((t: string) => <span key={t} className="bg-gray-50 px-2 py-0.5 rounded text-[9px] uppercase">{t}</span>)} </div> )} </div> </div> ))}
                         </div>
                     </motion.div>
                 )}
@@ -301,7 +307,6 @@ export default function InventoryPage() {
                         <p className="text-sm font-bold text-gray-400 mb-8 uppercase tracking-widest font-mono">Carga Masiva de Insumos</p> 
                         
                         <form onSubmit={handleStockSubmit} className="space-y-8"> 
-                            {/* Global Fields */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
                                 <div> 
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Proveedor (Opcional)</label> 
@@ -316,12 +321,11 @@ export default function InventoryPage() {
                                 </div> 
                             </div>
 
-                            {/* Multi-items List */}
                             <div className="space-y-4">
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ítems a cargar</label>
                                 {stockForm.items.map((item, index) => (
-                                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end animate-in fade-in slide-in-from-left-2 transition-all">
-                                        <div className="md:col-span-1 border-t md:border-t-0 pt-4 md:pt-0">
+                                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                                        <div className="md:col-span-1 flex items-center justify-center">
                                             <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400">{index + 1}</div>
                                         </div>
                                         <div className="md:col-span-6 relative">
@@ -366,7 +370,6 @@ export default function InventoryPage() {
                                         </div>
                                     </div>
                                 ))}
-                                
                                 <button type="button" onClick={handleAddStockItem} className="w-full h-14 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 font-black text-[10px] uppercase tracking-widest hover:border-black hover:text-black transition-all flex items-center justify-center gap-2">
                                     <Plus size={16} /> Agregar otro insumo
                                 </button>
@@ -383,9 +386,106 @@ export default function InventoryPage() {
                 </div> 
             )}
 
-            {showExpenseModal && ( <div className="fixed inset-0 z-[100] flex items-center justify-center p-6"> <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowExpenseModal(false)} /> <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white/95 backdrop-blur-3xl p-10 rounded-[3rem] shadow-2xl w-full max-w-xl border border-white/50"> <h2 className="text-3xl font-black mb-1 capitalize">Registrar Gasto</h2> <p className="text-sm font-bold text-gray-400 mb-8 uppercase tracking-widest font-mono">Salida de Caja</p> <form onSubmit={handleExpenseSubmit} className="space-y-6"> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Descripción del Gasto</label> <input type="text" required value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="Ej: Pago de servicios..." /> </div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Monto ($ Total)</label> <input type="number" required value={expenseForm.amount} onChange={e => setExpenseForm({ ...expenseForm, amount: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="0.00" /> </div> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Categoría</label> <select value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })} className="w-full h-14 px-5 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none appearance-none cursor-pointer"> <option value="Mercadería">Mercadería</option> <option value="Sueldos">Sueldos / Personal</option> <option value="Servicios">Servicios (Luz, Agua, Gas)</option> <option value="Alquiler">Alquiler</option> <option value="Reparaciones">Reparaciones</option> <option value="Impuestos">Impuestos</option> <option value="Publicidad">Publicidad</option> <option value="Seguros">Seguros</option> <option value="Otros">Otros</option> </select> </div> </div> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Proveedor Asociado</label> <select value={expenseForm.supplierId} onChange={(e) => setExpenseForm({...expenseForm, supplierId: e.target.value})} className="w-full h-14 px-5 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none appearance-none cursor-pointer"> <option value="">Proveedor Ocasional / Otros</option> {suppliers.map((s: any) => ( <option key={s.id} value={s.id}>{s.name}</option> ))} </select> </div> <div className="flex gap-4 pt-6"> <button type="button" onClick={() => setShowExpenseModal(false)} className="flex-1 h-14 rounded-2xl font-black text-gray-400 bg-gray-100 hover:bg-gray-200 transition-all uppercase text-[10px] tracking-widest">Cerrar</button> <button type="submit" className="flex-[2] h-14 rounded-2xl font-black text-white bg-red-600 transition-all shadow-xl shadow-red-500/20 hover:scale-105 active:scale-95">Confirmar Gasto</button> </div> </form> </motion.div> </div> )}
+            {showExpenseModal && ( 
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6"> 
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowExpenseModal(false)} /> 
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white/95 backdrop-blur-3xl p-10 rounded-[3rem] shadow-2xl w-full max-w-xl border border-white/50"> 
+                        <h2 className="text-3xl font-black mb-1 capitalize">Registrar Gasto</h2> 
+                        <p className="text-sm font-bold text-gray-400 mb-8 uppercase tracking-widest font-mono">Salida de Caja</p> 
+                        <form onSubmit={handleExpenseSubmit} className="space-y-6"> 
+                            <div> 
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Descripción del Gasto</label> 
+                                <input type="text" required value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="Ej: Pago de servicios..." /> 
+                            </div> 
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> 
+                                <div> 
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Monto ($ Total)</label> 
+                                    <input type="number" required value={expenseForm.amount} onChange={e => setExpenseForm({ ...expenseForm, amount: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="0.00" /> 
+                                </div> 
+                                <div> 
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Categoría</label> 
+                                    <select value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })} className="w-full h-14 px-5 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none appearance-none cursor-pointer"> 
+                                        <option value="Mercadería">Mercadería</option> 
+                                        <option value="Sueldos">Sueldos / Personal</option> 
+                                        <option value="Servicios">Servicios (Luz, Agua, Gas)</option> 
+                                        <option value="Alquiler">Alquiler</option> 
+                                        <option value="Reparaciones">Reparaciones</option> 
+                                        <option value="Impuestos">Impuestos</option> 
+                                        <option value="Publicidad">Publicidad</option> 
+                                        <option value="Seguros">Seguros</option> 
+                                        <option value="Otros">Otros</option> 
+                                    </select> 
+                                </div> 
+                            </div> 
+                            <div> 
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Proveedor Asociado</label> 
+                                <select value={expenseForm.supplierId} onChange={(e) => setExpenseForm({...expenseForm, supplierId: e.target.value})} className="w-full h-14 px-5 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none appearance-none cursor-pointer"> 
+                                    <option value="">Proveedor Ocasional / Otros</option> 
+                                    {suppliers.map((s: any) => ( <option key={s.id} value={s.id}>{s.name}</option> ))} 
+                                </select> 
+                            </div> 
+                            <div className="flex gap-4 pt-6"> 
+                                <button type="button" onClick={() => setShowExpenseModal(false)} className="flex-1 h-14 rounded-2xl font-black text-gray-400 bg-gray-100 hover:bg-gray-200 transition-all uppercase text-[10px] tracking-widest">Cerrar</button> 
+                                <button type="submit" className="flex-[2] h-14 rounded-2xl font-black text-white bg-red-600 transition-all shadow-xl shadow-red-500/20 hover:scale-105 active:scale-95">Confirmar Gasto</button> 
+                            </div> 
+                        </form> 
+                    </motion.div> 
+                </div> 
+            )}
 
-            {showSupplierModal && ( <div className="fixed inset-0 z-[100] flex items-center justify-center p-6"> <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowSupplierModal(false)} /> <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white/95 backdrop-blur-3xl p-10 rounded-[3rem] shadow-2xl w-full max-w-xl border border-white/50"> <h2 className="text-3xl font-black mb-1">{editingSupplier ? 'Ficha de' : 'Nuevo'} Proveedor</h2> <p className="text-sm font-bold text-gray-400 mb-8 uppercase tracking-widest font-mono">Agenda de Contactos</p> <form onSubmit={handleSupplierSubmit} className="space-y-6"> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Razón Social</label> <input type="text" required value={supplierForm.name} onChange={e => setSupplierForm({ ...supplierForm, name: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="Ej: Distribuidora Norte" /> </div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Contacto</label> <input type="text" value={supplierForm.contact_name} onChange={e => setSupplierForm({ ...supplierForm, contact_name: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="Nombre del vendedor..." /> </div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Rubro</label> <select value={supplierForm.category} onChange={e => setSupplierForm({ ...supplierForm, category: e.target.value })} className="w-full h-14 px-5 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none appearance-none cursor-pointer"> <option value="Mercadería">Mercadería</option> <option value="Bebidas">Bebidas</option> <option value="Servicios">Servicios</option> <option value="Otros">Otros</option> </select> </div> </div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">WhatsApp / Tel</label> <input type="text" value={supplierForm.phone} onChange={e => setSupplierForm({ ...supplierForm, phone: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="+54..." /> </div> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Email</label> <input type="email" value={supplierForm.email} onChange={e => setSupplierForm({ ...supplierForm, email: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="email@dominio.com" /> </div> </div> <div className="flex gap-4 pt-6"> <button type="button" onClick={() => {setShowSupplierModal(false); setEditingSupplier(null);}} className="flex-1 h-14 rounded-2xl font-black text-gray-400 bg-gray-100 hover:bg-gray-200 transition-all uppercase text-[10px] tracking-widest">Cerrar</button> <button type="submit" className="flex-[2] h-14 rounded-2xl font-black text-white bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 hover:scale-105 active:scale-95">{editingSupplier ? 'Guardar' : 'Registrar'}</button> </div> </form> </motion.div> </div> )}
+            {showSupplierModal && ( 
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6"> 
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => {setShowSupplierModal(false); setEditingSupplier(null);}} /> 
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white/95 backdrop-blur-3xl p-10 rounded-[3rem] shadow-2xl w-full max-w-md border border-white/50"> 
+                        <h2 className="text-3xl font-black mb-1">{editingSupplier ? 'Editar' : 'Nuevo'} Proveedor</h2> 
+                        <form onSubmit={handleSupplierSubmit} className="space-y-6 mt-8"> 
+                            <div> 
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nombre</label> 
+                                <input type="text" required value={supplierForm.name} onChange={e => setSupplierForm({ ...supplierForm, name: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="Ej: La Serenísima" /> 
+                            </div> 
+                            <div> 
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Teléfono (WhatsApp)</label> 
+                                <input type="text" value={supplierForm.phone} onChange={e => setSupplierForm({ ...supplierForm, phone: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="Opcional..." /> 
+                            </div> 
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Insumos que provee</label>
+                                <div className="relative">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                    <input type="text" placeholder="Buscar insumo..." value={supplierItemSearch}
+                                        onChange={(e) => { setSupplierItemSearch(e.target.value); setIsSupplierItemSearchOpen(true); }}
+                                        onFocus={() => setIsSupplierItemSearchOpen(true)}
+                                        className="w-full h-12 pl-11 pr-4 rounded-xl bg-gray-50 border-transparent focus:ring-2 ring-black/5 outline-none font-bold text-sm"
+                                    />
+                                    {isSupplierItemSearchOpen && supplierItemSearch && (
+                                        <div className="absolute z-[110] w-full mt-2 bg-white rounded-xl shadow-2xl max-h-40 overflow-y-auto border border-gray-100 p-2">
+                                            {rawOptions.filter(p => p.name.toLowerCase().includes(supplierItemSearch.toLowerCase()) && !supplierForm.provided_items.includes(p.name)).map(p => (
+                                                <div key={p.id} onClick={() => {
+                                                    setSupplierForm(prev => ({ ...prev, provided_items: [...prev.provided_items, p.name] }));
+                                                    setSupplierItemSearch("");
+                                                    setIsSupplierItemSearchOpen(false);
+                                                }} className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer font-bold text-xs uppercase text-emerald-600">
+                                                    + {p.name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                    {supplierForm.provided_items.map(item => (
+                                        <span key={item} className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[9px] font-black uppercase flex items-center gap-2 border border-emerald-100">
+                                            {item} <button type="button" onClick={() => setSupplierForm(prev => ({ ...prev, provided_items: prev.provided_items.filter(i => i !== item) }))}><X size={10} /></button>
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex gap-4 pt-4"> 
+                                <button type="button" onClick={() => {setShowSupplierModal(false); setEditingSupplier(null);}} className="flex-1 h-16 rounded-2xl font-black text-gray-400 bg-gray-100 hover:bg-gray-200 transition-all uppercase text-[10px] tracking-widest">Cerrar</button> 
+                                <button type="submit" className="flex-[2] h-16 rounded-2xl font-black text-white bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 hover:scale-105 active:scale-95">{editingSupplier ? 'Guardar' : 'Crear'}</button> 
+                            </div> 
+                        </form> 
+                    </motion.div> 
+                </div> 
+            )}
         </div>
     );
 }
