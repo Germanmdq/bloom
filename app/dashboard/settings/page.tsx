@@ -459,8 +459,6 @@ export default function SettingsPage() {
                         </button>
                     </div>
                 </section>
-
-                </section>
             </div>
 
             {/* PROMOCION MODAL */}
