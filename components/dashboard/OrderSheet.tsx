@@ -467,6 +467,37 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     delivery_person_id: selectedDeliveryPerson ? parseInt(selectedDeliveryPerson) : null,
                     items: cart,
                 });
+
+                // ── LÓGICA DE ACTUALIZACIÓN DE PRODUCTOS (TOTAL VENDIDOS) ──
+                try {
+                    const updatePromises = cart.map(item => {
+                        // Usamos rpc de postgres para incrementar de forma atómica para evitar colisiones
+                        // Si no hay rpc, usamos una actualización simple
+                        return supabase.rpc('increment_product_sales', { 
+                            row_id: item.id, 
+                            amount: item.quantity 
+                        }).then(({ error: rpcError }) => {
+                            if (rpcError) {
+                                // Fallback a update estándar si el RPC no existe
+                                return supabase
+                                    .from('products')
+                                    .select('total_vendidos')
+                                    .eq('id', item.id)
+                                    .single()
+                                    .then(({ data: prod }) => {
+                                        const currentVal = prod?.total_vendidos || 0;
+                                        return supabase
+                                            .from('products')
+                                            .update({ total_vendidos: currentVal + item.quantity })
+                                            .eq('id', item.id);
+                                    });
+                            }
+                        });
+                    });
+                    await Promise.all(updatePromises);
+                } catch (err) {
+                    console.error("Error actualizando acumulados de venta:", err);
+                }
                 
                 // If it's a web order, we mark it as completed and paid
                 if (webOrderId || currentWebOrderId) {

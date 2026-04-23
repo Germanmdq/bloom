@@ -171,6 +171,14 @@ export default function ProductsClient({ initialProducts, initialCategories }: P
                                             )}
                                         </div>
                                         <p className="text-xs text-gray-400 italic mb-4">{product.description}</p>
+                                        <div className="mt-auto pt-4 border-t border-gray-100/50 flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5 bg-orange-50 text-orange-600 px-2.5 py-1 rounded-lg">
+                                                <Flame size={12} className="animate-pulse" />
+                                                <span className="text-[10px] font-black uppercase tracking-tight">
+                                                    {product.total_vendidos || 0} vendidos
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
