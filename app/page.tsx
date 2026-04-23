@@ -407,6 +407,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* SECCIÓN DINÁMICA DE PROMOCIONES */}
       <AnimatePresence>
