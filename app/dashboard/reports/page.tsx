@@ -17,6 +17,7 @@ export default function ReportsPage() {
         totalPurchases: 0,
         netBalance: 0,
         expensesByCategory: {} as Record<string, number>,
+        productsByCategory: {} as Record<string, Record<string, number>>,
         salesCount: 0
     });
     const [timeframe, setTimeframe] = useState<Timeframe>('TODAY');
@@ -53,22 +54,32 @@ export default function ReportsPage() {
 
         try {
             // Paralelizar las consultas para máxima velocidad
-            const [salesRes, expensesRes] = await Promise.all([
+            const [salesRes, expensesRes, productsRes] = await Promise.all([
                 supabase
                     .from('orders')
-                    .select('total, payment_method')
+                    .select('total, payment_method, items')
                     .gte('created_at', thresholdDate),
                 supabase
                     .from('expenses')
                     .select('amount, category')
-                    .gte('expense_date', thresholdDate.split('T')[0])
+                    .gte('expense_date', thresholdDate.split('T')[0]),
+                supabase
+                    .from('products')
+                    .select('name, categories(name)')
             ]);
 
             if (salesRes.error) throw salesRes.error;
             if (expensesRes.error) throw expensesRes.error;
+            if (productsRes.error) throw productsRes.error;
 
             const salesData = salesRes.data || [];
             const expensesData = expensesRes.data || [];
+            const productMappings = (productsRes.data || []).reduce((acc, p) => {
+                acc[p.name] = (p.categories as any)?.name || "Otros";
+                return acc;
+            }, {} as Record<string, string>);
+
+            const prodByCat: Record<string, Record<string, number>> = {};
 
             const totals = salesData.reduce((acc, order) => {
                 const amount = Number(order.total);
@@ -77,6 +88,15 @@ export default function ReportsPage() {
                 else if (order.payment_method === 'MERCADO_PAGO') acc.mercadoPago += amount;
                 acc.totalSales += amount;
                 acc.salesCount += 1;
+
+                // ── AGREGAR VENTAS POR PRODUCTO ──
+                const items = order.items as any[] || [];
+                items.forEach(item => {
+                    const catName = productMappings[item.name] || "Otros";
+                    if (!prodByCat[catName]) prodByCat[catName] = {};
+                    prodByCat[catName][item.name] = (prodByCat[catName][item.name] || 0) + (item.quantity || 1);
+                });
+
                 return acc;
             }, { cash: 0, card: 0, mercadoPago: 0, totalSales: 0, salesCount: 0 });
 
@@ -99,7 +119,8 @@ export default function ReportsPage() {
                 totalExpenses: totalExp,
                 totalPurchases: totalPurch,
                 netBalance: totals.totalSales - (totalExp + totalPurch),
-                expensesByCategory: expByCat
+                expensesByCategory: expByCat,
+                productsByCategory: prodByCat
             });
         } catch (error: any) {
             console.error("Error fetching reports:", error);
@@ -305,14 +326,52 @@ export default function ReportsPage() {
                             </div>
                         </div>
 
-                        <div className="bg-gray-900 p-10 rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col justify-between">
-                            <div className="relative z-10">
-                                <h3 className="text-white text-xl font-black tracking-tight uppercase mb-4">Nota del Sistema</h3>
-                                <p className="text-gray-400 font-bold text-sm leading-relaxed mb-6">
-                                    Los datos presentados son un reflejo directo de las órdenes cerradas y los gastos cargados manualmente. 
-                                    Asegúrate de registrar todas las compras de insumos para un balance preciso.
-                                </p>
+                    {/* PRODUCTS BY CATEGORY BREAKDOWN SECTION */}
+                    <div className="mt-8">
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center"><ShoppingBag size={20} className="text-orange-500" /></div>
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Unidades Vendidas por Categoría</h3>
+                        </div>
+
+                        {Object.keys(stats.productsByCategory).length === 0 ? (
+                            <div className="bg-white p-20 rounded-[3rem] border border-gray-100 text-center">
+                                <Package size={48} className="mx-auto text-gray-100 mb-4" />
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay ventas registradas en este período</p>
                             </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {Object.entries(stats.productsByCategory).map(([category, items]) => (
+                                    <div key={category} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col h-full">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h4 className="text-lg font-black text-gray-900 uppercase tracking-tighter">{category}</h4>
+                                            <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+                                                {Object.values(items).reduce((a, b) => a + b, 0)} u.
+                                            </span>
+                                        </div>
+                                        <div className="space-y-3 flex-1">
+                                            {Object.entries(items)
+                                                .sort((a, b) => b[1] - a[1])
+                                                .map(([name, qty]) => (
+                                                    <div key={name} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0 group">
+                                                        <span className="text-sm font-bold text-gray-600 group-hover:text-gray-900 transition-colors">{name}</span>
+                                                        <span className="font-black text-gray-900 text-sm bg-gray-50 px-2 py-1 rounded-lg">x{qty}</span>
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="bg-gray-900 p-10 rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col justify-between mt-8">
+                        <div className="relative z-10">
+                            <h3 className="text-white text-xl font-black tracking-tight uppercase mb-4">Nota del Sistema</h3>
+                            <p className="text-gray-400 font-bold text-sm leading-relaxed mb-6">
+                                Los datos presentados son un reflejo directo de las órdenes cerradas y los gastos cargados manualmente. 
+                                Asegúrate de registrar todas las compras de insumos para un balance preciso.
+                            </p>
+                        </div>
                             <div className="flex items-center gap-4 relative z-10">
                                 <div className="bg-white/10 p-4 rounded-2xl border border-white/5">
                                     <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Última Actualización</p>
