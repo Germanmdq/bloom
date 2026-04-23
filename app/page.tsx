@@ -111,6 +111,9 @@ export default function Home() {
   /** Promociones Activas desde DB */
   const [promociones, setPromociones] = useState<any[]>([]);
 
+  /** Plato del Día Dinámico desde DB */
+  const [platoDelDia, setPlatoDelDia] = useState<any>(null);
+
   /** Por tarjeta: producto y categoría encontrados para abrir el chat con una sola tarjeta desde la home. */
   const [favoriteCategoryByName, setFavoriteCategoryByName] = useState<
     Record<string, { categoryId: string; displayName: string; productId: string } | null>
@@ -168,6 +171,17 @@ export default function Home() {
         .eq("active", true)
         .order("created_at", { ascending: false });
       if (promoData) setPromociones(promoData);
+
+      // Cargar Plato del Día desde Ajustes
+      const { data: appSettings } = await supabase.from('app_settings').select('plato_del_dia_id').eq('id', 1).maybeSingle();
+      if (appSettings?.plato_del_dia_id) {
+          const { data: plato } = await supabase.from('products').select('*').eq('id', appSettings.plato_del_dia_id).maybeSingle();
+          if (plato) setPlatoDelDia(plato);
+      } else {
+          // Backup if not found in app_settings, look for kind
+          const { data: platoBackup } = await supabase.from('products').select('*').eq('kind', 'plato_del_dia').maybeSingle();
+          if (platoBackup) setPlatoDelDia(platoBackup);
+      }
 
     })();
   }, []);
@@ -345,45 +359,48 @@ export default function Home() {
         </div>
       </section>
 
+      {platoDelDia && (
       <section className="py-24 md:py-32 bg-ink-50">
         <div className="mx-auto w-full max-w-[1200px] px-6">
           <FadeIn className="text-center max-w-[720px] mx-auto mb-18">
-            <p className="text-[12px] font-semibold tracking-[0.14em] uppercase text-bloom-600 mb-3">Bloom</p>
+            <p className="text-[12px] font-semibold tracking-[0.14em] uppercase text-bloom-600 mb-3">Recomendación</p>
             <h2 className="font-[300] tracking-tight text-ink-800" style={{ fontSize: "clamp(2.5rem,4vw,4.5rem)", lineHeight: 1.05 }}>
-              Favoritos <span className="text-bloom-600">de la casa.</span>
+              El plato <span className="text-bloom-600">del día.</span>
             </h2>
           </FadeIn>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {destacados.map((p, i) => (
-              <FadeIn key={p.name + String(i)} delay={(i % 4) * 0.05}>
-                <div className="group bg-white rounded-3xl border border-black/[0.08] overflow-hidden transition-all duration-[450ms] hover:-translate-y-1 hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.10)]">
-                  <div className="relative aspect-square">
-                    <Image src={p.img} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 640px) 100vw, 25vw" />
+          <div className="max-w-4xl mx-auto">
+            <FadeIn>
+              <div className="group bg-white rounded-[2.5rem] p-4 sm:p-6 border border-black/[0.08] overflow-hidden transition-all duration-500 hover:shadow-[0_20px_60px_-16px_rgba(0,0,0,0.15)] flex flex-col md:flex-row items-center gap-8 md:gap-16">
+                <div className="relative w-full md:w-1/2 aspect-square md:aspect-[4/5] rounded-[2rem] overflow-hidden bg-gray-50">
+                  {platoDelDia.image_url ? (
+                    <Image src={platoDelDia.image_url} alt={platoDelDia.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 50vw" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-6xl">🍽️</div>
+                  )}
+                  <div className="absolute top-6 left-6">
+                    <span className="bg-bloom-600 text-white shadow-lg text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full">
+                      Destacado de hoy
+                    </span>
                   </div>
-                  <div className="p-6">
-                    <h3 className="text-[19px] font-medium tracking-tight text-ink-800 leading-snug">{p.name}</h3>
-                    <p className="text-[14px] text-ink-500 mt-1.5 mb-5 min-h-[42px] leading-relaxed">{p.desc}</p>
+                </div>
+                <div className="p-4 sm:p-0 md:w-1/2 md:pr-12 text-center md:text-left flex flex-col h-full justify-center">
+                  <h3 className="text-3xl md:text-4xl font-bold tracking-tight text-ink-800 leading-snug mb-4">{platoDelDia.name}</h3>
+                  <p className="text-lg text-ink-500 leading-relaxed mb-8">{platoDelDia.description || "Nuestra recomendación especial preparada hoy con ingredientes frescos."}</p>
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
+                    <span className="text-4xl font-black text-bloom-600">${platoDelDia.price?.toLocaleString() || "0"}</span>
                     <button
                       type="button"
-                      disabled={favoriteCategoryByName[p.name] === undefined}
-                      onClick={() => {
-                        const cat = favoriteCategoryByName[p.name];
-                        if (cat?.categoryId && cat.productId) {
-                          bloomChatRef.current?.openWithCategoryMessage({ categoryId: cat.categoryId, displayName: cat.displayName, productIds: [cat.productId], fromHomeFeatured: true });
-                        } else {
-                          toast.error("No encontramos este producto ahora. Probá desde el menú.");
-                        }
-                      }}
-                      className="w-full rounded-full border border-ink-300 text-ink-800 text-[13px] font-medium py-3 hover:bg-ink-800 hover:text-white hover:border-ink-800 transition-all duration-[180ms] disabled:cursor-not-allowed disabled:opacity-40"
+                      onClick={() => bloomChatRef.current?.openWithCategoryMessage({ categoryId: '', displayName: 'Sugerencias', productIds: [platoDelDia.id], fromHomeFeatured: true })}
+                      className="w-full sm:w-auto rounded-full bg-ink-800 text-white text-[15px] font-semibold px-10 py-4 hover:bg-black transition-colors duration-300"
                     >
-                      Sumar
+                      Lo quiero
                     </button>
                   </div>
                 </div>
-              </FadeIn>
-            ))}
+              </div>
+            </FadeIn>
           </div>
-          <div className="text-center mt-14">
+          <div className="text-center mt-20">
             <Link href="/menu" className="inline-flex items-center gap-2 text-[14px] font-medium text-ink-500 hover:text-ink-800 transition-colors">
               Ver menú completo <ArrowRight size={14} />
             </Link>

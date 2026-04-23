@@ -106,6 +106,8 @@ export default function SettingsPage() {
             price: Number(promoForm.price),
             image_url: promoForm.image_url,
             kind: 'promocion',
+            category: 'General',
+            current_stock: 0,
             active: true
         };
 
