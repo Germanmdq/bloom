@@ -52,14 +52,70 @@ export default function InventoryPage() {
 
     // Form States - Stock
     const [stockForm, setStockForm] = useState({
-        productId: "",
-        qty: "",
         type: 'purchase' as 'purchase' | 'waste' | 'adjustment',
         note: "",
-        supplierId: ""
+        supplierId: "",
+        items: [{ productId: "", qty: "", search: "", isOpen: false }]
     });
-    const [stockProductSearch, setStockProductSearch] = useState("");
-    const [isStockProductSearchOpen, setIsStockProductSearchOpen] = useState(false);
+
+    // Handlers
+    const handleAddStockItem = () => {
+        setStockForm(prev => ({
+            ...prev,
+            items: [...prev.items, { productId: "", qty: "", search: "", isOpen: false }]
+        }));
+    };
+
+    const handleRemoveStockItem = (index: number) => {
+        if (stockForm.items.length === 1) return;
+        setStockForm(prev => ({
+            ...prev,
+            items: prev.items.filter((_, i) => i !== index)
+        }));
+    };
+
+    const updateStockItem = (index: number, field: string, value: any) => {
+        setStockForm(prev => {
+            const newItems = [...prev.items];
+            newItems[index] = { ...newItems[index], [field]: value };
+            return { ...prev, items: newItems };
+        });
+    };
+
+    const handleStockSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const validItems = stockForm.items.filter(item => item.productId && item.qty);
+        if (validItems.length === 0) return;
+
+        try {
+            const movements = validItems.map(item => {
+                let finalDelta = parseFloat(item.qty);
+                if (stockForm.type === 'waste') finalDelta = -Math.abs(finalDelta);
+                if (stockForm.type === 'purchase') finalDelta = Math.abs(finalDelta);
+
+                return createMovement.mutateAsync({
+                    raw_product_id: item.productId,
+                    qty: finalDelta,
+                    reason: stockForm.type,
+                    ref_table: 'manual',
+                    note: stockForm.note || 'Movimiento manual',
+                    supplier_id: stockForm.supplierId || null
+                });
+            });
+
+            await Promise.all(movements);
+            setShowStockModal(false);
+            setStockForm({ 
+                type: 'purchase', 
+                note: "", 
+                supplierId: "", 
+                items: [{ productId: "", qty: "", search: "", isOpen: false }] 
+            });
+            alert("Operación registrada con éxito ✅ (" + validItems.length + " ítems)");
+        } catch (err: any) {
+            alert("Error: " + err.message);
+        }
+    };
 
     // Form States - Expenses
     const [expenseForm, setExpenseForm] = useState({
@@ -108,33 +164,6 @@ export default function InventoryPage() {
         s.name.toLowerCase().includes(supplierSearch.toLowerCase()) ||
         s.category?.toLowerCase().includes(supplierSearch.toLowerCase())
     ), [suppliers, supplierSearch]);
-
-    // Handlers
-    const handleStockSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!stockForm.productId || !stockForm.qty) return;
-
-        let finalDelta = parseFloat(stockForm.qty);
-        if (stockForm.type === 'waste') finalDelta = -Math.abs(finalDelta);
-        if (stockForm.type === 'purchase') finalDelta = Math.abs(finalDelta);
-
-        try {
-            await createMovement.mutateAsync({
-                raw_product_id: stockForm.productId,
-                qty: finalDelta,
-                reason: stockForm.type,
-                ref_table: 'manual',
-                note: stockForm.note || 'Movimiento manual',
-                supplier_id: stockForm.supplierId || null
-            });
-            setShowStockModal(false);
-            setStockForm({ productId: "", qty: "", type: 'purchase', note: "", supplierId: "" });
-            setStockProductSearch("");
-            alert("Movimiento registrado ✅");
-        } catch (err: any) {
-            alert("Error: " + err.message);
-        }
-    };
 
     const handleExpenseSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -264,7 +293,95 @@ export default function InventoryPage() {
             </AnimatePresence>
 
             {/* MODALS */}
-            {showStockModal && ( <div className="fixed inset-0 z-[100] flex items-center justify-center p-6"> <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowStockModal(false)} /> <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white/95 backdrop-blur-3xl p-10 rounded-[3rem] shadow-2xl w-full max-w-xl border border-white/50 overflow-visible"> <h2 className="text-3xl font-black mb-1 capitalize">Registro de {stockForm.type === 'purchase' ? 'Compra' : 'Merma'}</h2> <p className="text-sm font-bold text-gray-400 mb-8 uppercase tracking-widest font-mono">Gestión de Insumos</p> <form onSubmit={handleStockSubmit} className="space-y-6"> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <div className="relative"> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Insumo</label> <div className="relative"> <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} /> <input type="text" placeholder="Buscar..." value={stockProductSearch} onChange={(e) => { setStockProductSearch(e.target.value); setIsStockProductSearchOpen(true); if (!e.target.value) setStockForm({...stockForm, productId: ""}); }} onFocus={() => setIsStockProductSearchOpen(true)} className="w-full h-14 pl-12 pr-4 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" /> {isStockProductSearchOpen && stockProductSearch && ( <div className="absolute z-[110] w-full mt-2 bg-white rounded-2xl shadow-2xl max-h-48 overflow-y-auto border border-gray-100 p-2"> {rawOptions.filter((p: any) => p.name.toLowerCase().includes(stockProductSearch.toLowerCase())).map((p: any) => ( <div key={p.id} onClick={() => { setStockForm({...stockForm, productId: p.id}); setStockProductSearch(p.name); setIsStockProductSearchOpen(false); }} className="p-4 hover:bg-gray-50 rounded-xl cursor-pointer flex justify-between items-center transition-colors"> <span className="font-bold text-gray-900">{p.name}</span> <span className="text-[10px] text-gray-400 font-black uppercase font-mono">{p.unit}</span> </div> ))} </div> )} </div> </div> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Proveedor (Opcional)</label> <select value={stockForm.supplierId} onChange={(e) => setStockForm({...stockForm, supplierId: e.target.value})} className="w-full h-14 px-5 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none appearance-none cursor-pointer"> <option value="">Sin Proveedor</option> {suppliers.map((s: any) => ( <option key={s.id} value={s.id}>{s.name}</option> ))} </select> </div> </div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cantidad</label> <input type="number" step="0.01" value={stockForm.qty} onChange={(e) => setStockForm({...stockForm, qty: e.target.value})} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="0.00" required /> </div> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nota</label> <input type="text" value={stockForm.note} onChange={(e) => setStockForm({...stockForm, note: e.target.value})} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="Detalles..." /> </div> </div> <div className="flex gap-4 pt-6"> <button type="button" onClick={() => setShowStockModal(false)} className="flex-1 h-14 rounded-2xl font-black text-gray-400 bg-gray-100 hover:bg-gray-200 transition-all uppercase text-[10px] tracking-widest">Cerrar</button> <button type="submit" className={`flex-[2] h-14 rounded-2xl font-black text-white transition-all shadow-xl shadow-black/10 hover:scale-105 active:scale-95 ${stockForm.type === 'waste' ? 'bg-red-600' : 'bg-black'}`}> {stockForm.type === 'purchase' ? 'Confirmar Compra' : 'Confirmar Merma'}</button> </div> </form> </motion.div> </div> )}
+            {showStockModal && ( 
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6"> 
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowStockModal(false)} /> 
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white/95 backdrop-blur-3xl p-10 rounded-[3rem] shadow-2xl w-full max-w-4xl border border-white/50 overflow-visible max-h-[90vh] overflow-y-auto"> 
+                        <h2 className="text-3xl font-black mb-1 capitalize">Registro de {stockForm.type === 'purchase' ? 'Compra' : 'Movimiento'}</h2> 
+                        <p className="text-sm font-bold text-gray-400 mb-8 uppercase tracking-widest font-mono">Carga Masiva de Insumos</p> 
+                        
+                        <form onSubmit={handleStockSubmit} className="space-y-8"> 
+                            {/* Global Fields */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
+                                <div> 
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Proveedor (Opcional)</label> 
+                                    <select value={stockForm.supplierId} onChange={(e) => setStockForm({...stockForm, supplierId: e.target.value})} className="w-full h-14 px-5 rounded-2xl bg-white border-transparent focus:ring-2 ring-black font-bold outline-none appearance-none cursor-pointer"> 
+                                        <option value="">Sin Proveedor / Compra Directa</option> 
+                                        {suppliers.map((s: any) => ( <option key={s.id} value={s.id}>{s.name}</option> ))} 
+                                    </select> 
+                                </div> 
+                                <div> 
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Observaciones</label> 
+                                    <input type="text" value={stockForm.note} onChange={(e) => setStockForm({...stockForm, note: e.target.value})} className="w-full h-14 px-6 rounded-2xl bg-white border-transparent focus:ring-2 ring-black font-bold outline-none" placeholder="Ej: Factura #1234..." /> 
+                                </div> 
+                            </div>
+
+                            {/* Multi-items List */}
+                            <div className="space-y-4">
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Ítems a cargar</label>
+                                {stockForm.items.map((item, index) => (
+                                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end animate-in fade-in slide-in-from-left-2 transition-all">
+                                        <div className="md:col-span-1 border-t md:border-t-0 pt-4 md:pt-0">
+                                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400">{index + 1}</div>
+                                        </div>
+                                        <div className="md:col-span-6 relative">
+                                            <div className="relative">
+                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} /> 
+                                                <input type="text" placeholder="Buscar insumo..." value={item.search} 
+                                                    onChange={(e) => {
+                                                        updateStockItem(index, 'search', e.target.value);
+                                                        updateStockItem(index, 'isOpen', true);
+                                                        if (!e.target.value) updateStockItem(index, 'productId', "");
+                                                    }}
+                                                    onFocus={() => updateStockItem(index, 'isOpen', true)}
+                                                    className="w-full h-14 pl-12 pr-4 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none text-sm" 
+                                                />
+                                                {item.isOpen && item.search && (
+                                                    <div className="absolute z-[110] w-full mt-2 bg-white rounded-2xl shadow-2xl max-h-48 overflow-y-auto border border-gray-100 p-2">
+                                                        {rawOptions.filter((p: any) => p.name.toLowerCase().includes(item.search.toLowerCase())).map((p: any) => (
+                                                            <div key={p.id} onClick={() => {
+                                                                updateStockItem(index, 'productId', p.id);
+                                                                updateStockItem(index, 'search', p.name);
+                                                                updateStockItem(index, 'isOpen', false);
+                                                            }} className="p-4 hover:bg-gray-50 rounded-xl cursor-pointer flex justify-between items-center transition-colors">
+                                                                <span className="font-bold text-gray-900 text-sm">{p.name}</span>
+                                                                <span className="text-[10px] text-gray-400 font-black uppercase font-mono">{p.unit}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="md:col-span-3">
+                                            <input type="number" step="0.01" value={item.qty} 
+                                                onChange={(e) => updateStockItem(index, 'qty', e.target.value)}
+                                                className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none text-sm" 
+                                                placeholder="Cantidad" required 
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <button type="button" onClick={() => handleRemoveStockItem(index)} className="w-full h-14 rounded-2xl flex items-center justify-center text-red-400 hover:bg-red-50 transition-colors">
+                                                <X size={20} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                <button type="button" onClick={handleAddStockItem} className="w-full h-14 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 font-black text-[10px] uppercase tracking-widest hover:border-black hover:text-black transition-all flex items-center justify-center gap-2">
+                                    <Plus size={16} /> Agregar otro insumo
+                                </button>
+                            </div>
+
+                            <div className="flex gap-4 pt-6"> 
+                                <button type="button" onClick={() => setShowStockModal(false)} className="flex-1 h-16 rounded-2xl font-black text-gray-400 bg-gray-100 hover:bg-gray-200 transition-all uppercase text-[10px] tracking-widest">Cerrar</button> 
+                                <button type="submit" className={`flex-[2] h-16 rounded-2xl font-black text-white transition-all shadow-xl shadow-black/10 hover:scale-105 active:scale-95 ${stockForm.type === 'waste' ? 'bg-red-600' : 'bg-black'}`}> 
+                                    Confirmar Carga ({stockForm.items.filter(i => i.productId).length} ítems)
+                                </button> 
+                            </div> 
+                        </form> 
+                    </motion.div> 
+                </div> 
+            )}
 
             {showExpenseModal && ( <div className="fixed inset-0 z-[100] flex items-center justify-center p-6"> <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowExpenseModal(false)} /> <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white/95 backdrop-blur-3xl p-10 rounded-[3rem] shadow-2xl w-full max-w-xl border border-white/50"> <h2 className="text-3xl font-black mb-1 capitalize">Registrar Gasto</h2> <p className="text-sm font-bold text-gray-400 mb-8 uppercase tracking-widest font-mono">Salida de Caja</p> <form onSubmit={handleExpenseSubmit} className="space-y-6"> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Descripción del Gasto</label> <input type="text" required value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="Ej: Pago de servicios..." /> </div> <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Monto ($ Total)</label> <input type="number" required value={expenseForm.amount} onChange={e => setExpenseForm({ ...expenseForm, amount: e.target.value })} className="w-full h-14 px-6 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none" placeholder="0.00" /> </div> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Categoría</label> <select value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })} className="w-full h-14 px-5 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none appearance-none cursor-pointer"> <option value="Mercadería">Mercadería</option> <option value="Sueldos">Sueldos / Personal</option> <option value="Servicios">Servicios (Luz, Agua, Gas)</option> <option value="Alquiler">Alquiler</option> <option value="Reparaciones">Reparaciones</option> <option value="Impuestos">Impuestos</option> <option value="Publicidad">Publicidad</option> <option value="Seguros">Seguros</option> <option value="Otros">Otros</option> </select> </div> </div> <div> <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Proveedor Asociado</label> <select value={expenseForm.supplierId} onChange={(e) => setExpenseForm({...expenseForm, supplierId: e.target.value})} className="w-full h-14 px-5 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-2 ring-black font-bold outline-none appearance-none cursor-pointer"> <option value="">Proveedor Ocasional / Otros</option> {suppliers.map((s: any) => ( <option key={s.id} value={s.id}>{s.name}</option> ))} </select> </div> <div className="flex gap-4 pt-6"> <button type="button" onClick={() => setShowExpenseModal(false)} className="flex-1 h-14 rounded-2xl font-black text-gray-400 bg-gray-100 hover:bg-gray-200 transition-all uppercase text-[10px] tracking-widest">Cerrar</button> <button type="submit" className="flex-[2] h-14 rounded-2xl font-black text-white bg-red-600 transition-all shadow-xl shadow-red-500/20 hover:scale-105 active:scale-95">Confirmar Gasto</button> </div> </form> </motion.div> </div> )}
 
