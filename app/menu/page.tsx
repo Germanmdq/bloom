@@ -591,9 +591,6 @@ function PublicMenuPage() {
                                         ) : (
                                             cart.map(item => (
                                                 <div key={item.cartItemId} className="flex gap-4 group">
-                                                    <div className="w-20 h-20 bg-gray-100 rounded-2xl overflow-hidden shrink-0 relative">
-                                                        {item.image_url && <Image src={item.image_url} alt={item.name} fill className="object-cover" />}
-                                                    </div>
                                                     <div className="flex-1">
                                                         <div className="flex justify-between items-start mb-1">
                                                             <h4 className="font-bold text-gray-900 text-lg leading-none">{item.name}</h4>
