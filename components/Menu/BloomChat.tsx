@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { MessageCircle, X, Loader2, Check, ShoppingBag, Plus, Minus } from "lucide-react";
@@ -393,15 +392,6 @@ function ProductCard({
   return (
     <div className="flex w-full flex-col gap-4 rounded-3xl bg-white p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-black/[0.03] transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
       <div className="flex w-full gap-4">
-        {/* Product Image */}
-        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[1.25rem] bg-neutral-100 ring-1 ring-black/5">
-          {product.image_url ? (
-            <Image src={product.image_url} alt={product.name} fill className="object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-bloom-gold/10 text-bloom-600 font-bold text-[10px] uppercase tracking-widest">Bloom</div>
-          )}
-        </div>
-
         <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
           <div>
             <div className="flex justify-between items-start gap-2">
