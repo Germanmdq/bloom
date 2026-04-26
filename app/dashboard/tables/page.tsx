@@ -11,8 +11,8 @@ type WebOrder = {
     id: string;
     customer_name: string;
     customer_phone: string;
-    delivery_type: string;
-    delivery_info: string;
+    delivery_type?: string;
+    delivery_info?: string;
     items: any[];
     total: number;
     status: string;
@@ -86,7 +86,7 @@ export default function TablesPage() {
             // Usamos una selección más segura para evitar el error 400
             const { data, error } = await supabase
                 .from('orders')
-                .select('id, status, total, items, created_at, customer_name, customer_phone, customer_id, order_type')
+                .select('id, status, total, items, created_at, customer_name, customer_phone, customer_id, order_type, delivery_type, delivery_info')
                 .eq('status', 'pending')
                 .order('created_at', { ascending: true })
                 .limit(50);
