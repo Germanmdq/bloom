@@ -25,7 +25,6 @@ export default function InventarioPage() {
             .order("name");
         
         if (error) {
-            console.error("DEBUG INVENTARIO ERROR:", error);
             toast.error(`Error: ${error.message}`);
         } else {
             setProducts(data || []);
