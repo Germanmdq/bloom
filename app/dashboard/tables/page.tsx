@@ -103,7 +103,7 @@ export default function TablesPage() {
             // Usamos una selección más segura para evitar el error 400
             const { data, error } = await supabase
                 .from('orders')
-                .select('id, status, total, items, created_at, customer_name, customer_phone, customer_id, order_type, delivery_type, delivery_info')
+                .select('id, status, total, items, created_at, customer_name, customer_phone, customer_id, order_type, delivery_type, delivery_info, paid, payment_method')
                 .eq('status', 'pending')
                 .order('created_at', { ascending: true })
                 .limit(50);

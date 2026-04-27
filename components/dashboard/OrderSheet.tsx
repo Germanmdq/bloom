@@ -75,6 +75,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [customerSearchQuery, setCustomerSearchQuery] = useState("");
     const [customerResults, setCustomerResults] = useState<any[]>([]);
     const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+    const [webOrderIsPaid, setWebOrderIsPaid] = useState(false);
+    const [webOrderPaymentMethod, setWebOrderPaymentMethod] = useState<string | null>(null);
 
     const handleCustomerSearch = async (q: string) => {
         setCustomerSearchQuery(q);
@@ -196,6 +198,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const handleSelectWebOrder = (order: any) => {
         clearCart();
         setCurrentWebOrderId(order.id);
+        setWebOrderIsPaid(!!order.paid);
+        setWebOrderPaymentMethod(order.payment_method || null);
         if (order.customer_name) setCustomerName(order.customer_name);
         if (order.customer_phone) setCustomerPhone(order.customer_phone);
         if (order.delivery_info && order.delivery_type === 'delivery') setCustomerAddress(order.delivery_info);
@@ -612,9 +616,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     })()}
                                 </h2>
                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                                    cart.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'
+                                    webOrderIsPaid ? 'bg-green-100 text-green-700' : (cart.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400')
                                 }`}>
-                                    {cart.length > 0 ? 'Ocupada' : 'Libre'}
+                                    {webOrderIsPaid ? 'YA ABONADO' : (cart.length > 0 ? 'Ocupada' : 'Libre')}
                                 </span>
                             </div>
                             <p className="text-sm font-bold text-gray-400 mt-1">
@@ -998,11 +1002,16 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         )}
 
                         <button
-                            onClick={() => setShowPaymentModal(true)}
+                            onClick={() => webOrderIsPaid ? finishOrder() : setShowPaymentModal(true)}
                             disabled={finalTotal === 0 || isFinishing}
-                            className="w-full h-12 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:bg-gray-800 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            className={`w-full h-12 rounded-2xl font-bold text-sm active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                                webOrderIsPaid ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-900 text-white hover:bg-gray-800'
+                            }`}
                         >
-                            Cobrar ${finalTotal.toLocaleString()}
+                            {webOrderIsPaid 
+                                ? `Finalizar (Pago con ${webOrderPaymentMethod === 'MERCADO_PAGO' ? 'Mercado Pago' : 'Online'})` 
+                                : `Cobrar $${finalTotal.toLocaleString()}`
+                            }
                         </button>
 
                         <div className="grid grid-cols-2 gap-2">
