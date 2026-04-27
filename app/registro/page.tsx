@@ -130,6 +130,11 @@ const selectFieldClass = (hasError: boolean) =>
 
 export default function RegistroPage() {
   const router = useRouter();
+  const redirectAfter = (() => {
+    if (typeof window === "undefined") return "/cuenta";
+    const r = new URLSearchParams(window.location.search).get("redirect")?.trim();
+    return r && r.startsWith("/") && !r.startsWith("//") ? r : "/cuenta";
+  })();
   const supabase = createClient();
 
   const [step, setStep] = useState(1);
@@ -184,7 +189,7 @@ export default function RegistroPage() {
     }
     cuentaRedirectRef.current = window.setTimeout(() => {
       cuentaRedirectRef.current = null;
-      void router.push("/cuenta");
+      void router.push(redirectAfter);
     }, 1500);
   }, [router]);
 
