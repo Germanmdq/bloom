@@ -11,10 +11,10 @@ const links = [
     { href: "/dashboard/tables",   label: "Mesas",     icon: LayoutGrid },
     { href: "/dashboard/orders",   label: "Ventas",    icon: ListChecks },
     { href: "/dashboard/products", label: "Menú",      icon: Coffee },
+    { href: "/dashboard/inventario", label: "Inventario", icon: Package },
     { href: "/dashboard/clientes", label: "Clientes",  icon: Users },
     { href: "/dashboard/personal", label: "Personal",  icon: Briefcase },
     { href: "/dashboard/reports",  label: "Reporte Diario", icon: PieChart },
-    { href: "/dashboard/inventory", label: "Operaciones", icon: Package },
     { href: "/dashboard/history-stock", label: "Historial Stock", icon: HistoryIcon },
     { href: "/dashboard/kitchen",  label: "Cocina",    icon: CookingPot },
     { href: "/dashboard/whatsapp", label: "WhatsApp",  icon: MessageCircle },
@@ -41,7 +41,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
     const filteredLinks = links.filter(link => {
         if (HIDDEN_SECTIONS.includes(link.label)) return false;
-        if (link.label === "Reporte Diario" || link.label === "Operaciones" || link.label === "Historial Stock") return role === 'ADMIN';
+        if (link.label === "Reporte Diario" || link.label === "Historial Stock") return role === 'ADMIN';
         return true;
     });
 
