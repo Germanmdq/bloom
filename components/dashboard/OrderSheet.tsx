@@ -783,7 +783,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     if (promoProducts.length === 0) return null;
 
                                     return (
-                                        <div className="relative group overflow-hidden bg-[#2d4a3e] rounded-[32px] p-8 text-white shadow-2xl transition-all hover:scale-[1.01]">
+                                        <div 
+                                            className="relative group overflow-hidden bg-[#2d4a3e] rounded-[32px] p-8 text-white transition-all hover:scale-[1.01]"
+                                            style={{
+                                                boxShadow: '0 25px 80px -15px rgba(0,0,0,0.6), 0 10px 40px -10px rgba(0,0,0,0.4)',
+                                            }}
+                                        >
                                             {/* Glow Effect */}
                                             <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#E8A387]/10 rounded-full blur-[80px]" />
                                             <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-white/5 rounded-full blur-[60px]" />

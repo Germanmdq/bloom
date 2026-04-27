@@ -166,7 +166,10 @@ export const Card = ({
     <motion.button
       layoutId={layout ? `card-${card.title}` : undefined}
       onClick={onClick}
-      className="rounded-3xl bg-gray-100 dark:bg-neutral-900 h-80 w-56 md:h-[40rem] md:w-96 overflow-hidden flex flex-col items-start justify-start relative z-10"
+      className="rounded-3xl bg-gray-100 dark:bg-neutral-900 h-80 w-56 md:h-[40rem] md:w-96 overflow-hidden flex flex-col items-start justify-start relative z-10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+      style={{
+        boxShadow: '0 20px 50px -12px rgba(0,0,0,0.3), 0 10px 20px -10px rgba(0,0,0,0.2)',
+      }}
     >
       <div className="absolute h-full top-0 inset-x-0 bg-gradient-to-b from-black/50 via-transparent to-transparent z-30 pointer-events-none" />
       <div className="relative z-40 p-8">
