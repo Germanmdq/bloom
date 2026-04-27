@@ -40,7 +40,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
     if (!mounted) return null;
 
     const ticketContent = (
-        <div id="bloom-print-portal" className="fixed inset-0 z-[9999] bg-white flex flex-col font-mono text-black print:p-0 print:m-0">
+        <div id="bloom-print-portal" className="fixed inset-0 z-[9999] bg-white flex flex-col items-start overflow-y-auto">
             <style jsx global>{`
                 @media print {
                     @page { margin: 0; size: 72mm auto; }
@@ -52,15 +52,37 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                         left: 0 !important;
                         top: 0 !important;
                         background: white !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
                     }
                     .no-print { display: none !important; }
+                    .print-tail { display: block !important; height: 150mm !important; }
                 }
+                .no-print { display: flex; }
+                .print-tail { display: none; }
             `}</style>
 
-            <div className="w-full max-w-[72mm] mx-auto p-4 bg-white flex flex-col gap-2">
+            {/* UI de Pantalla (Botones Flotantes) */}
+            <div className="fixed top-4 right-4 z-[10000] flex gap-2 no-print">
+                <button 
+                    onClick={() => window.print()} 
+                    className="h-12 px-6 bg-black text-white font-bold rounded-xl shadow-2xl active:scale-95 transition-transform"
+                >
+                    Imprimir de nuevo
+                </button>
+                <button 
+                    onClick={onClose} 
+                    className="w-12 h-12 bg-white border border-gray-200 text-gray-800 font-bold rounded-xl shadow-2xl flex items-center justify-center hover:bg-gray-50 mb-4"
+                >
+                    <X size={24} />
+                </button>
+            </div>
+
+            {/* Contenido del Ticket */}
+            <div className="w-[72mm] p-4 bg-white flex flex-col gap-2 print:p-2">
                 <div className="text-center py-2">
-                    <h2 className="font-bold text-2xl tracking-tighter">BLOOM</h2>
-                    <p className="text-[10px] uppercase">Coffee & More</p>
+                    <h2 className="font-bold text-2xl tracking-tighter leading-none">BLOOM</h2>
+                    <p className="text-[10px] uppercase font-bold mt-1">Coffee & More</p>
                     <div className="border-b border-dashed border-black my-2" />
                     <div className="flex justify-between text-[11px] font-bold">
                         <span>Mesa: {tableId}</span>
@@ -75,7 +97,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                         <span className="text-right">TOTAL</span>
                     </div>
                     {cart.map((item, idx) => (
-                        <div key={idx} className="grid grid-cols-[1fr_20px_60px] text-[11px] gap-1 py-0.5 border-b border-gray-50">
+                        <div key={idx} className="grid grid-cols-[1fr_20px_60px] text-[11px] gap-1 py-0.5 border-b border-gray-50 leading-tight">
                             <span className="truncate">{item.name}</span>
                             <span className="text-center">{item.quantity}</span>
                             <span className="text-right font-bold">${(item.price * item.quantity).toLocaleString()}</span>
@@ -83,24 +105,24 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                     ))}
                 </div>
 
-                <div className="border-t border-black border-dashed pt-4 mt-2">
-                    <div className="flex justify-between font-black text-2xl tracking-tighter">
+                <div className="border-t-2 border-black pt-2 mt-1">
+                    <div className="flex justify-between font-black text-xl tracking-tighter">
                         <span>TOTAL</span>
                         <span>${total.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between text-[11px] font-bold opacity-70 mt-1">
+                    <div className="flex justify-between text-[10px] font-bold opacity-60 mt-0.5">
                         <span>{cart.reduce((s, i) => s + i.quantity, 0)} Items</span>
                         <span>Abonado</span>
                     </div>
                 </div>
 
-                {/* Bloque de espacio MASIVO para asegurar el avance de papel */}
-                <div className="h-[150mm] w-full" aria-hidden="true" />
-
-                <div className="mt-6 flex gap-2 print:hidden no-print">
-                    <button onClick={() => window.print()} className="flex-1 h-14 bg-black text-white font-bold rounded-2xl shadow-xl">Imprimir de nuevo</button>
-                    <button onClick={onClose} className="w-14 h-14 bg-gray-100 text-gray-500 rounded-2xl flex items-center justify-center">X</button>
+                <div className="text-center mt-6 opacity-80">
+                    <p className="text-[11px] font-bold">¡GRACIAS POR TU VISITA!</p>
+                    <p className="text-[9px]">bloommdp.com</p>
                 </div>
+
+                {/* Este espacio SOLO aparece en la impresión */}
+                <div className="print-tail h-[150mm] w-full" />
             </div>
         </div>
     );
