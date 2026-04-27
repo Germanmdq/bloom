@@ -79,7 +79,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
             </div>
 
             {/* Contenido del Ticket */}
-            <div className="w-[72mm] p-4 bg-white flex flex-col gap-2 print:p-2">
+            <div className="w-[72mm] p-4 bg-white flex flex-col gap-2 print:px-6 print:py-4">
                 <div className="text-center py-2">
                     <h2 className="font-bold text-2xl tracking-tighter leading-none">BLOOM</h2>
                     <p className="text-[10px] uppercase font-bold mt-1">Coffee & More</p>
