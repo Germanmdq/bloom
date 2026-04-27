@@ -16,6 +16,14 @@ interface ReceiptModalProps {
 
 export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, onClose }: ReceiptModalProps) {
     
+    // Auto-trigger print on mount
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            window.print();
+        }, 300); // Small delay to ensure styles are loaded
+        return () => clearTimeout(timer);
+    }, []);
+
     // Auto-close after printing (optional but good UX for POS)
     useEffect(() => {
         const handleAfterPrint = () => {
