@@ -395,24 +395,24 @@ function ProductCard({
   };
 
   return (
-    <div className="flex w-full flex-col gap-4 rounded-3xl bg-white p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-black/[0.03] transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
-      <div className="flex w-full gap-4">
-        <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
-          <div>
-            <div className="flex justify-between items-start gap-2">
-              <div className="flex flex-col">
-                {product.kind === 'oferta_del_dia' && (
-                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 mb-1">🔥 Oferta del día</span>
-                )}
-                <h4 className="font-bold text-neutral-900 leading-[1.1] text-base">{product.name}</h4>
-              </div>
+    <div className="flex w-full flex-col gap-4 rounded-3xl bg-white p-5 text-center items-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-black/[0.03] transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+      <div className="flex w-full flex-col items-center gap-4">
+        <div className="flex w-full flex-col items-center py-0.5">
+          <div className="flex flex-col items-center w-full">
+            <div className="flex flex-col items-center justify-center w-full gap-1">
+              {product.kind === 'oferta_del_dia' && (
+                <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 mb-1">🔥 Oferta del día</span>
+              )}
+              <h4 className="font-bold text-neutral-900 leading-[1.1] text-base">{product.name}</h4>
               {added && (
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm mt-1">
                   <Check className="h-3 w-3" strokeWidth={4} />
                 </span>
               )}
             </div>
-            <p className="line-clamp-2 text-[11px] text-neutral-400 mt-1.5 leading-snug font-medium">{product.description}</p>
+            {product.description && (
+              <p className="line-clamp-2 text-[11px] text-neutral-400 mt-1.5 leading-snug font-medium max-w-[80%] mx-auto">{product.description}</p>
+            )}
           </div>
           <div className="mt-2">
             <span className="font-bold text-bloom-700 text-lg tracking-tight">{formatArs(Number(product.price))}</span>
