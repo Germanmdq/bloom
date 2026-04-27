@@ -107,14 +107,16 @@ export async function POST(request: NextRequest) {
 
     const mpConfig = new MercadoPagoConfig({ accessToken, options: { timeout: 10000 } });
 
-    let externalRef: string | undefined;
-    let approved = false;
+    let debtMetadata: { type?: string; customer_id?: string; amount?: number } | null = null;
 
     if (topic === "payment" || topic === "payment.updated" || topic === "payment.created") {
       const paymentApi = new Payment(mpConfig);
       const p = await paymentApi.get({ id: resourceId });
       approved = p.status === "approved";
       externalRef = p.external_reference ?? undefined;
+      if (p.metadata?.type === "DEBT_PAYMENT") {
+        debtMetadata = p.metadata;
+      }
     } else if (topic === "merchant_order" || topic === "topic_merchant_order_wh") {
       const moApi = new MerchantOrder(mpConfig);
       const mo = await moApi.get({ merchantOrderId: resourceId });
@@ -128,6 +130,9 @@ export async function POST(request: NextRequest) {
         const p = await paymentApi.get({ id: resourceId });
         approved = p.status === "approved";
         externalRef = p.external_reference ?? undefined;
+        if (p.metadata?.type === "DEBT_PAYMENT") {
+          debtMetadata = p.metadata;
+        }
       } catch {
         try {
           const moApi = new MerchantOrder(mpConfig);
@@ -142,8 +147,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (approved && externalRef && /^[0-9a-f-]{36}$/i.test(externalRef)) {
-      await markOrderPaid(externalRef);
+    if (approved) {
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+      const supabaseAdmin = createClient(getSupabaseUrl(), serviceKey || "");
+
+      // Caso 1: Pago de Deuda Directo (desde la cuenta)
+      if (debtMetadata?.customer_id && debtMetadata.amount) {
+        const cid = debtMetadata.customer_id;
+        const amt = Number(debtMetadata.amount);
+        
+        console.log(`[Webhook] Procesando DEBT_PAYMENT para ${cid}: ${amt}`);
+        
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("balance")
+          .eq("id", cid)
+          .single();
+
+        if (profile) {
+          const newBalance = Math.max(0, Number(profile.balance ?? 0) - amt);
+          await supabaseAdmin
+            .from("profiles")
+            .update({ balance: newBalance })
+            .eq("id", cid);
+          console.log(`[Webhook] Balance actualizado: ${newBalance}`);
+        }
+      } 
+      // Caso 2: Pedido Normal (que puede o no tener deuda incluida)
+      else if (externalRef && /^[0-9a-f-]{36}$/i.test(externalRef)) {
+        await markOrderPaid(externalRef);
+      }
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });
