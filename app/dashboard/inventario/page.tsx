@@ -79,7 +79,7 @@ export default function InventarioPage() {
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 <AnimatePresence mode="popLayout">
                     {filteredProducts.map((p) => {
                         const isOutOfStock = p.stock <= 0;
@@ -88,57 +88,53 @@ export default function InventarioPage() {
                             <motion.div
                                 key={p.id}
                                 layout
-                                initial={{ opacity: 0, scale: 0.95 }}
+                                initial={{ opacity: 0, scale: 0.98 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-neutral-100 flex flex-col gap-6 relative overflow-hidden"
+                                exit={{ opacity: 0, scale: 0.98 }}
+                                className="bg-white rounded-[2rem] p-6 shadow-sm border border-neutral-100 flex flex-col justify-between h-[280px] hover:shadow-md transition-all group"
                             >
                                 <div className="space-y-1">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-[#2d4a3e] opacity-50">Producto</span>
-                                    <h3 className="text-xl font-black text-neutral-900 leading-tight">{p.name}</h3>
+                                    <div className="flex justify-between items-start">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#2d4a3e] opacity-40">Producto</span>
+                                        {isOutOfStock && <span className="bg-red-50 text-red-500 text-[8px] font-black px-2 py-0.5 rounded-full uppercase">Sin Stock</span>}
+                                    </div>
+                                    <h3 className="text-lg font-black text-neutral-900 line-clamp-2 leading-tight min-h-[3rem]">{p.name}</h3>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-neutral-50 rounded-3xl p-4 border border-neutral-100">
-                                        <p className="flex items-center gap-1.5 text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-1">
-                                            <TrendingUp size={12} /> Vendidos
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-neutral-50 rounded-2xl p-3 border border-neutral-50 group-hover:bg-neutral-100 transition-colors">
+                                        <p className="flex items-center gap-1 text-[8px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">
+                                            <TrendingUp size={10} /> Ventas
                                         </p>
-                                        <p className="text-2xl font-black text-[#2d4a3e]">{p.vendidos || 0}</p>
+                                        <p className="text-xl font-black text-[#2d4a3e]">{p.vendidos || 0}</p>
                                     </div>
-                                    <div className="bg-neutral-50 rounded-3xl p-4 border border-neutral-100">
-                                        <p className="flex items-center gap-1.5 text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-1">
-                                            <Package size={12} /> Stock Actual
+                                    <div className="bg-neutral-50 rounded-2xl p-3 border border-neutral-50 group-hover:bg-neutral-100 transition-colors">
+                                        <p className="flex items-center gap-1 text-[8px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">
+                                            <Package size={10} /> Stock
                                         </p>
-                                        <p className={`text-2xl font-black ${isOutOfStock ? 'text-red-500' : 'text-neutral-900'}`}>
+                                        <p className={`text-xl font-black ${isOutOfStock ? 'text-red-500' : 'text-neutral-900'}`}>
                                             {p.stock || 0}
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <p className="text-[10px] font-black uppercase text-neutral-400 tracking-widest px-1">Actualizar stock físico</p>
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between px-1">
+                                        <p className="text-[9px] font-black uppercase text-neutral-300 tracking-widest">Carga Manual</p>
+                                    </div>
                                     <div className="flex gap-2">
                                         <input 
                                             type="number"
                                             defaultValue={p.stock}
+                                            key={`${p.id}-${p.stock}`}
                                             onBlur={async (e) => {
                                                 const val = parseFloat(e.target.value);
                                                 if (!isNaN(val) && val !== p.stock) {
                                                     await handleUpdateStock(p.id, val);
                                                 }
                                             }}
-                                            className="flex-1 bg-neutral-100 border-2 border-transparent focus:border-[#2d4a3e]/30 rounded-2xl px-5 py-3.5 font-black text-xl outline-none transition-all"
+                                            className="w-full bg-neutral-50 border-2 border-transparent focus:border-[#2d4a3e]/20 rounded-xl px-4 py-3 font-black text-lg outline-none transition-all text-center"
                                         />
-                                        <button 
-                                            className="bg-[#2d4a3e] text-white px-5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center disabled:opacity-50"
-                                            disabled={updatingId === p.id}
-                                        >
-                                            {updatingId === p.id ? (
-                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            ) : (
-                                                <Save size={20} strokeWidth={3} />
-                                            )}
-                                        </button>
                                     </div>
                                 </div>
                             </motion.div>
