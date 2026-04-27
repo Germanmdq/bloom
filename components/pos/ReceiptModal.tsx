@@ -30,12 +30,22 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
 
     useEffect(() => {
         setMounted(true);
-        console.log("[ReceiptModal] Mounted, triggering print");
+        
+        // Listener para cerrar cuando la impresión termina o se cancela
+        const handleAfterPrint = () => {
+            onClose();
+        };
+        window.addEventListener('onafterprint', handleAfterPrint);
+
         const timer = setTimeout(() => {
             window.print();
-        }, 500);
-        return () => clearTimeout(timer);
-    }, []);
+        }, 300); // Un poco más rápido
+
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('onafterprint', handleAfterPrint);
+        };
+    }, [onClose]);
 
     if (!mounted) return null;
 
