@@ -108,24 +108,37 @@ export default function SettingsPage() {
     const handleSaveOffers = async () => {
         setIsSavingOffers(true);
         try {
+            // 1. Buscar una categoría válida para asignar (Promociones o General)
+            const { data: catData } = await supabase
+                .from('categories')
+                .select('id')
+                .ilike('name', '%promoción%')
+                .maybeSingle();
+            
+            const categoryId = catData?.id || null;
+
             for (const offer of dailyOffers) {
+                // Si no tiene nombre y no tiene ID, ignorar
                 if (!offer.name && !offer.id) continue;
 
-                const payload = {
+                const payload: any = {
                     name: offer.name || '',
                     price: Number(offer.price) || 0,
                     kind: 'oferta_del_dia',
                     active: !!offer.name,
-                    category_id: null
+                    category_id: categoryId // Asegurar categoría para evitar errores de base de datos
                 };
 
                 if (offer.id) {
-                    await supabase.from('products').update(payload).eq('id', offer.id);
+                    const { error } = await supabase.from('products').update(payload).eq('id', offer.id);
+                    if (error) throw error;
                 } else if (offer.name) {
-                    await supabase.from('products').insert([payload]);
+                    const { error } = await supabase.from('products').insert([payload]);
+                    if (error) throw error;
                 }
             }
-            // Recargar para tener IDs actualizados
+
+            // 2. Recargar para sincronizar IDs
             const { data: offersData } = await supabase
                 .from('products')
                 .select('*')
@@ -133,15 +146,16 @@ export default function SettingsPage() {
                 .order('created_at', { ascending: true });
             
             if (offersData) {
-                const newOffers = [{ id: null, name: '', price: '' }, { id: null, name: '', price: '' }, { id: null, name: '', price: '' }];
+                const refreshed = [{ id: null, name: '', price: '' }, { id: null, name: '', price: '' }, { id: null, name: '', price: '' }];
                 offersData.slice(0, 3).forEach((off, idx) => {
-                    newOffers[idx] = { id: off.id, name: off.name, price: off.price || '' };
+                    refreshed[idx] = { id: off.id, name: off.name, price: off.price || '' };
                 });
-                setDailyOffers(newOffers);
+                setDailyOffers(refreshed);
             }
-            alert("Ofertas actualizadas.");
+            alert("¡Ofertas guardadas con éxito!");
         } catch (e: any) {
-            alert("Error: " + e.message);
+            console.error("Error guardando ofertas:", e);
+            alert("Error al guardar: " + e.message);
         }
         setIsSavingOffers(false);
     };
