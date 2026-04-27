@@ -556,6 +556,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             await sendKitchenTicket.mutateAsync({
                 table_id: String(tableId),
                 items: cart,
+                notes: notes || "",
             });
 
             // ── LÓGICA DE ACTUALIZACIÓN DE INVENTARIO (BLOOM) ──
