@@ -523,20 +523,15 @@ function PublicMenuPage() {
                                         </p>
                                     </div>
 
-                                    <div className="w-full md:w-[320px] h-32 relative">
+                                    <div className="w-full md:w-[350px] h-32 relative">
                                         <AnimatePresence mode="popLayout">
                                             {promoProducts.map((p: any, idx: number) => idx === currentPromoIndex && (
                                                 <motion.button
                                                     key={p.id}
-                                                    initial={{ opacity: 0, x: 100 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    exit={{ opacity: 0, x: -100 }}
-                                                    transition={{ 
-                                                        type: "spring", 
-                                                        stiffness: 400, 
-                                                        damping: 40,
-                                                        mass: 1 
-                                                    }}
+                                                    initial={{ opacity: 0, scale: 0.98 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.98 }}
+                                                    transition={{ duration: 0.5, ease: "easeInOut" }}
                                                     onClick={() => {
                                                         const prod = products.find(prod => prod.id === p.id);
                                                         if (prod) {
@@ -544,15 +539,18 @@ function PublicMenuPage() {
                                                             toast.success(`Agregado: ${prod.name}`);
                                                         }
                                                     }}
-                                                    className="absolute inset-0 w-full bg-white text-black rounded-[2rem] p-8 shadow-2xl flex flex-col items-start gap-4 active:scale-95 transition-all group border border-white/20"
+                                                    className="absolute inset-0 w-full bg-white text-black rounded-[2rem] p-6 shadow-2xl flex flex-col justify-center gap-3 active:scale-95 transition-all group border border-white/20"
                                                 >
-                                                    <div className="flex justify-between w-full items-center">
-                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-900">{p.name}</span>
-                                                        <Plus size={16} className="text-gray-900 group-hover:scale-125 transition-transform" />
+                                                    <div className="w-full border-b border-gray-100 pb-2 flex justify-between items-center">
+                                                        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-black">{p.name}</span>
+                                                        <div className="w-2 h-2 bg-black rounded-full animate-pulse" />
                                                     </div>
-                                                    <div className="flex items-baseline gap-2">
-                                                        <span className="text-4xl font-black tracking-tighter">${Number(p.price).toLocaleString()}</span>
-                                                        <span className="text-[10px] font-black text-white bg-gray-900 px-3 py-1 rounded-full uppercase tracking-widest shadow-md">Lo quiero</span>
+                                                    
+                                                    <div className="flex items-center justify-between w-full">
+                                                        <span className="text-4xl font-black tracking-tighter text-black">${Number(p.price).toLocaleString()}</span>
+                                                        <span className="text-[10px] font-black text-white bg-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg flex items-center gap-2">
+                                                            Poner <Plus size={14} strokeWidth={3} />
+                                                        </span>
                                                     </div>
                                                 </motion.button>
                                             ))}
