@@ -94,16 +94,12 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                     </div>
                 </div>
 
-                {/* Gran espacio para la cuchilla */}
-                <div className="text-center mt-10 pb-40">
-                    <p className="text-[11px] font-black uppercase tracking-widest">¡GRACIAS POR TU VISITA!</p>
-                    <p className="text-[10px] mt-1">Esperamos verte pronto</p>
-                    <p className="text-[9px] opacity-60 mt-2">bloommdp.com</p>
-                    
-                    <div className="mt-6 flex gap-2 print:hidden no-print">
-                        <button onClick={() => window.print()} className="flex-1 h-14 bg-black text-white font-bold rounded-2xl shadow-xl">Imprimir de nuevo</button>
-                        <button onClick={onClose} className="w-14 h-14 bg-gray-100 text-gray-500 rounded-2xl flex items-center justify-center">X</button>
-                    </div>
+                {/* Bloque de espacio MASIVO para asegurar el avance de papel */}
+                <div className="h-[150mm] w-full" aria-hidden="true" />
+
+                <div className="mt-6 flex gap-2 print:hidden no-print">
+                    <button onClick={() => window.print()} className="flex-1 h-14 bg-black text-white font-bold rounded-2xl shadow-xl">Imprimir de nuevo</button>
+                    <button onClick={onClose} className="w-14 h-14 bg-gray-100 text-gray-500 rounded-2xl flex items-center justify-center">X</button>
                 </div>
             </div>
         </div>
