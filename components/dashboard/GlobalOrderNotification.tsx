@@ -49,8 +49,10 @@ export function GlobalOrderNotification() {
 
     const handleAccept = (notif: any) => {
         setNotifications(prev => prev.filter(n => n.id !== notif.id));
-        // Si no estamos en mesas, vamos para allá
-        if (pathname !== '/dashboard/tables') {
+        if (pathname === '/dashboard/tables') {
+            // Ya estamos en mesas: disparar evento para que refresque
+            window.dispatchEvent(new CustomEvent('bloom-refresh-tables'));
+        } else {
             router.push('/dashboard/tables');
         }
     };

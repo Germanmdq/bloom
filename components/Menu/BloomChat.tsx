@@ -802,7 +802,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         setSaveDefaultAddress(true);
 
         // Cargar saldo de cuenta corriente
-        const { data: prof } = await supabase.from("profiles").select("balance").eq("id", user.id).single();
+        const { data: prof, error: profErr } = await supabase.from("profiles").select("balance").eq("id", user.id).single();
+        console.log("[BloomChat] CC balance load:", { userId: user.id, prof, profErr });
         if (!cancelled && prof && Number(prof.balance) > 0) {
           setProfileBalance(Number(prof.balance));
           setPayDebtMonto(String(prof.balance));

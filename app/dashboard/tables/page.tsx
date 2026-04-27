@@ -76,8 +76,25 @@ export default function TablesPage() {
             })
             .subscribe();
 
+        // Listen to orders changes (web orders)
+        const ordersChannel = supabase
+            .channel('orders_realtime_tables')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+                fetchWebOrders();
+            })
+            .subscribe();
+
+        // Listener para refrescar desde la notificación "Ir a gestionar"
+        const handleRefreshEvent = () => {
+            fetchTables();
+            fetchWebOrders();
+        };
+        window.addEventListener('bloom-refresh-tables', handleRefreshEvent);
+
         return () => {
             supabase.removeChannel(tableChannel);
+            supabase.removeChannel(ordersChannel);
+            window.removeEventListener('bloom-refresh-tables', handleRefreshEvent);
         };
     }, []);
 
