@@ -49,20 +49,26 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                             margin: 0;
                             size: 80mm auto;
                         }
-                        /* Ocultar TODO lo que no sea el ticket */
+                        /* Reset de visibilidad */
                         html, body {
-                            background: white !important;
+                            visibility: hidden !important;
                             height: auto !important;
-                        }
-                        body > *:not(#bloom-ticket-content-root) {
-                            display: none !important;
+                            background: white !important;
                         }
                         #bloom-ticket-content-root {
+                            visibility: visible !important;
                             display: block !important;
-                            position: absolute;
-                            left: 0;
-                            top: 0;
+                            position: fixed !important;
+                            left: 0 !important;
+                            top: 0 !important;
                             width: 80mm !important;
+                            background: white !important;
+                            opacity: 1 !important;
+                            transform: none !important;
+                        }
+                        #bloom-ticket-content-root * {
+                            visibility: visible !important;
+                            opacity: 1 !important;
                         }
                         .print-hidden {
                             display: none !important;
