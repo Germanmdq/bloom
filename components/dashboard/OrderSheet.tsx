@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Search, Trash2, CreditCard, Check, Loader2, X, ChevronLeft } from 'lucide-react';
+import { Search, Trash2, CreditCard, Check, Loader2, X, ChevronLeft, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useQueryClient } from "@tanstack/react-query";
