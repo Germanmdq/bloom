@@ -501,64 +501,42 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     items: cart,
                 });
 
-                // ── LÓGICA DE DESCUENTO DE STOCK (INSUMOS) ──
+                // ── LÓGICA DE ACTUALIZACIÓN DE INVENTARIO (BLOOM) ──
                 try {
-                    for (const item of cart) {
-                        const { data: productInfo } = await supabase
-                            .from('products')
-                            .select('raw_product_id')
-                            .eq('id', item.id)
-                            .maybeSingle();
-
-                        if (productInfo?.raw_product_id) {
-                            const { data: rawProd } = await supabase
-                                .from('raw_products')
-                                .select('current_stock')
-                                .eq('id', productInfo.raw_product_id)
-                                .single();
-
-                            if (rawProd) {
-                                const newStock = Number(rawProd.current_stock ?? 0) - item.quantity;
-                                await supabase
-                                    .from('raw_products')
-                                    .update({ current_stock: newStock })
-                                    .eq('id', productInfo.raw_product_id);
-                            }
+                    const inventoryPromises = cart.map(async (item) => {
+                        const nombreLower = item.name.toLowerCase();
+                        let unidadesARestar = item.quantity;
+                        
+                        // REGLA ESPECIAL CAFÉ DOBLE (Descuenta 2 por cada unidad)
+                        if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
+                            unidadesARestar = item.quantity * 2;
                         }
-                    }
-                } catch (stockErr) {
-                    console.error("Error al descontar stock de insumos:", stockErr);
-                }
 
-                // ── LÓGICA DE ACTUALIZACIÓN DE PRODUCTOS (TOTAL VENDIDOS) ──
-                try {
-                    const updatePromises = cart.map(item => {
-                        // Usamos rpc de postgres para incrementar de forma atómica para evitar colisiones
-                        // Si no hay rpc, usamos una actualización simple
-                        return supabase.rpc('increment_product_sales', { 
-                            row_id: item.id, 
-                            amount: item.quantity 
-                        }).then(({ error: rpcError }) => {
-                            if (rpcError) {
-                                // Fallback a update estándar si el RPC no existe
-                                return supabase
-                                    .from('products')
-                                    .select('total_vendidos')
-                                    .eq('id', item.id)
-                                    .single()
-                                    .then(({ data: prod }) => {
-                                        const currentVal = prod?.total_vendidos || 0;
-                                        return supabase
-                                            .from('products')
-                                            .update({ total_vendidos: currentVal + item.quantity })
-                                            .eq('id', item.id);
-                                    });
-                            }
-                        });
+                        // Actualizar Stock y Vendidos de forma atómica en public.products
+                        // Obtenemos los valores actuales para asegurar precisión
+                        const { data: prod } = await supabase
+                            .from('products')
+                            .select('stock, vendidos')
+                            .eq('id', item.id)
+                            .single();
+
+                        if (prod) {
+                            const newStock = (prod.stock || 0) - unidadesARestar;
+                            const newVendidos = (prod.vendidos || 0) + item.quantity;
+
+                            return supabase
+                                .from('products')
+                                .update({ 
+                                    stock: newStock, 
+                                    vendidos: newVendidos 
+                                })
+                                .eq('id', item.id);
+                        }
                     });
-                    await Promise.all(updatePromises);
+
+                    await Promise.all(inventoryPromises);
                 } catch (err) {
-                    console.error("Error actualizando acumulados de venta:", err);
+                    console.error("Error actualizando inventario Bloom:", err);
                 }
                 
                 // If it's a web order, we mark it as completed and paid
