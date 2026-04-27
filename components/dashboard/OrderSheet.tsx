@@ -144,19 +144,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 setWebOrders([]);
             }
         } else {
-            // Estado de mesa + tickets QR (mismo pedido: la API /api/table-order intenta volcar el QR en salon_tables.items;
-            // si eso falla por RLS/red, hidratamos el carrito desde kitchen_tickets para que cobrar funcione igual).
             const [{ data: tableData, error: tableError }, { data: tickets }] = await Promise.all([
                 supabase.from("salon_tables").select("*").eq("id", tableId).single(),
-                supabase
-                    .from("kitchen_tickets")
-                    .select("*")
-                    .eq("table_id", tableId)
-                    .order("created_at", { ascending: true })
-                    .limit(30),
+                supabase.from("kitchen_tickets").select("*").eq("table_id", tableId).eq("status", "pending")
             ]);
-            if (tableData?.order_type) {
-                setOrderType(tableData.order_type as any);
+
+            if (tableData) {
+                if (tableData.order_type) setOrderType(tableData.order_type);
+                
+                const metaCust = tableData.items?.find((i: any) => i.id === 'meta-customer');
+                if (metaCust?.name) {
+                    setCustomerName(metaCust.name.replace('Cliente: ', ''));
+                }
             } else {
                 if (tableId >= 100 && tableId < 200) setOrderType('DELIVERY');
                 else if (tableId >= 200) setOrderType('TAKEAWAY');
@@ -1128,7 +1127,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     extraTotal={extraTotal}
                     cart={completedOrderData ? completedOrderData.cart : cart}
                     total={completedOrderData ? completedOrderData.total : total}
-                    customerName={customerName || (tables.find(t => t.id === tableId)?.items?.find((i: any) => i.id === 'meta-customer')?.name?.replace('Cliente: ', ''))}
+                    customerName={customerName}
                     onClose={() => {
                         setShowReceiptModal(false);
                         if (completedOrderData) {
