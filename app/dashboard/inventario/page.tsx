@@ -45,16 +45,10 @@ export default function InventarioPage() {
 
     /** 
      * Lógica de Venta 
-     * @param productId ID del producto vendido
-     * @param productName Nombre para saber si es la excepción del café
+     * @param product Objeto del producto
      */
     async function registrarVenta(product: any) {
-        if (product.stock <= 0) {
-            toast.error("¡Sin stock disponible!", {
-                icon: <AlertTriangle className="text-red-500" />
-            });
-            return;
-        }
+        // Quitamos la restricción de stock <= 0 por pedido del usuario
 
         // Definir cuánto resta de stock
         let unidadesARestar = 1;
@@ -63,12 +57,7 @@ export default function InventarioPage() {
             unidadesARestar = 2;
         }
 
-        if (product.stock < unidadesARestar) {
-            toast.error(`Stock insuficiente (${product.stock} disponibles)`);
-            return;
-        }
-
-        const newStock = product.stock - unidadesARestar;
+        const newStock = (product.stock || 0) - unidadesARestar;
         const newVendidos = (product.vendidos || 0) + 1;
 
         const { error } = await supabase
@@ -111,7 +100,7 @@ export default function InventarioPage() {
         <div className="p-6 max-w-5xl mx-auto space-y-8 pb-20">
             <header className="flex flex-col gap-2">
                 <h1 className="text-4xl font-black tracking-tight text-neutral-900">Control de Inventario</h1>
-                <p className="text-neutral-500 font-medium uppercase tracking-widest text-xs">Gestión rápida de stock y ventas directas</p>
+                <p className="text-neutral-500 font-medium uppercase tracking-widest text-xs">Conteo continuo de stock y ventas directas</p>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -126,7 +115,7 @@ export default function InventarioPage() {
                                 layout
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className={`relative overflow-hidden bg-white border-2 rounded-[2rem] p-6 transition-all shadow-sm ${isOutOfStock ? 'opacity-60 border-red-100 bg-red-50' : 'border-neutral-100 hover:border-[#2d4a3e]/30 hover:shadow-xl'}`}
+                                className={`relative overflow-hidden bg-white border-2 rounded-[2rem] p-6 transition-all shadow-sm ${isOutOfStock ? 'border-red-100' : 'border-neutral-100'} hover:border-[#2d4a3e]/30 hover:shadow-xl`}
                             >
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex flex-col">
@@ -165,10 +154,9 @@ export default function InventarioPage() {
 
                                     <button 
                                         onClick={() => registrarVenta(p)}
-                                        disabled={isOutOfStock}
-                                        className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-md active:scale-95 ${isOutOfStock ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-black text-white hover:bg-neutral-900'}`}
+                                        className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest bg-black text-white hover:bg-neutral-900 transition-all shadow-md active:scale-95"
                                     >
-                                        {isOutOfStock ? 'Sin Stock' : 'Vender Ítem'}
+                                        Vender Ítem
                                     </button>
                                 </div>
                             </motion.div>
