@@ -1128,6 +1128,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     extraTotal={extraTotal}
                     cart={completedOrderData ? completedOrderData.cart : cart}
                     total={completedOrderData ? completedOrderData.total : total}
+                    customerName={customerName || (tables.find(t => t.id === tableId)?.items?.find((i: any) => i.id === 'meta-customer')?.name?.replace('Cliente: ', ''))}
                     onClose={() => {
                         setShowReceiptModal(false);
                         if (completedOrderData) {

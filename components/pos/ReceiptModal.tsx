@@ -4,16 +4,6 @@ import { Printer, X } from "lucide-react";
 import { CartItem } from "@/lib/store/order-store";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-
-interface ReceiptModalProps {
-    tableId: number;
-    invoiceType: string;
-    extraTotal: number;
-    cart: CartItem[];
-    total: number;
-    onClose: () => void;
-}
-
 import { createPortal } from "react-dom";
 
 interface ReceiptModalProps {
@@ -22,10 +12,11 @@ interface ReceiptModalProps {
     extraTotal: number;
     cart: CartItem[];
     total: number;
+    customerName?: string;
     onClose: () => void;
 }
 
-export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, onClose }: ReceiptModalProps) {
+export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, customerName, onClose }: ReceiptModalProps) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -95,7 +86,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                     <p className="text-[10px] uppercase font-bold mt-1">Coffee & More</p>
                     <div className="border-b border-dashed border-black my-2" />
                     <div className="flex justify-between text-[11px] font-bold">
-                        <span>Mesa: {tableId}</span>
+                        <span>{customerName ? `Alias: ${customerName}` : `Mesa: ${tableId}`}</span>
                         <span>{new Date().toLocaleDateString()}</span>
                     </div>
                 </div>
@@ -131,10 +122,8 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                     <p className="text-[9px]">bloommdp.com</p>
                 </div>
 
-                {/* ESPACIO FORZADO: Ponemos un punto al final para obligar al avance */}
-                <div className="print-tail w-full flex flex-col justify-end" style={{ height: '150mm' }}>
-                    <span className="text-[1px] text-white">.</span> 
-                </div>
+                {/* ESPACIO FORZADO: Avance de papel al final */}
+                <div className="print-tail w-full" style={{ height: '140mm' }} />
             </div>
         </div>
     );
