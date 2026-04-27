@@ -116,13 +116,15 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                     </div>
                 </div>
 
-                <div className="text-center mt-6 opacity-80">
+                <div className="text-center mt-6 opacity-80 pb-4 border-b border-black border-dashed">
                     <p className="text-[11px] font-bold">¡GRACIAS POR TU VISITA!</p>
                     <p className="text-[9px]">bloommdp.com</p>
                 </div>
 
-                {/* Este espacio SOLO aparece en la impresión */}
-                <div className="print-tail h-[150mm] w-full" />
+                {/* ESPACIO FORZADO: Ponemos un punto al final para obligar al avance */}
+                <div className="print-tail w-full flex flex-col justify-end" style={{ height: '150mm' }}>
+                    <span className="text-[1px] text-white">.</span> 
+                </div>
             </div>
         </div>
     );
