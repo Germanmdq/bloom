@@ -78,8 +78,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [webOrderIsPaid, setWebOrderIsPaid] = useState(false);
     const [webOrderPaymentMethod, setWebOrderPaymentMethod] = useState<string | null>(null);
     const [completedOrderData, setCompletedOrderData] = useState<{ cart: any[], total: number } | null>(null);
-    const [webOrderIsPaid, setWebOrderIsPaid] = useState(false);
-    const [webOrderPaymentMethod, setWebOrderPaymentMethod] = useState<string | null>(null);
 
     const handleCustomerSearch = async (q: string) => {
         setCustomerSearchQuery(q);
