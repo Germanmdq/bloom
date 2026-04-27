@@ -108,6 +108,8 @@ export async function POST(request: NextRequest) {
     const mpConfig = new MercadoPagoConfig({ accessToken, options: { timeout: 10000 } });
 
     let debtMetadata: { type?: string; customer_id?: string; amount?: number | string } | null = null;
+    let externalRef: string | undefined;
+    let approved = false;
 
     if (topic === "payment" || topic === "payment.updated" || topic === "payment.created") {
       const paymentApi = new Payment(mpConfig);
