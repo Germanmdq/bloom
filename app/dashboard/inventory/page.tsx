@@ -182,7 +182,7 @@ export default function InventoryPage() {
             const result = await createProduct.mutateAsync({
                 name,
                 kind: 'raw',
-                category: 'General',
+                category_id: null,
                 current_stock: 0,
                 min_stock: 0,
                 active: true,
