@@ -609,7 +609,8 @@ export default function TablesPage() {
                             {sortedTables.map(table => {
                                 const styles = getCardStyles(table);
                                 const now = Date.now();
-                                const lastActive = table.updated_at ? new Date(table.updated_at).getTime() : now;
+                                const startTime = table.created_at || table.updated_at;
+                                const lastActive = startTime ? new Date(startTime).getTime() : now;
                                 let minutesElapsed = Math.floor((now - lastActive) / 60000);
                                 if (minutesElapsed < 0) minutesElapsed = 0;
                                 const displayTime = minutesElapsed > 1440 ? '--' : `${minutesElapsed} min`;
