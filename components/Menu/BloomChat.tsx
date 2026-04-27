@@ -548,6 +548,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   const [context, setContext] = useState<ChatContext | null>(null);
   const [contextKey, setContextKey] = useState(0);
   const [products, setProducts] = useState<ProductRow[]>([]);
+  const [dailyOffersList, setDailyOffersList] = useState<ProductRow[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [introText, setIntroText] = useState("");
 
@@ -725,19 +726,51 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       return;
     }
 
-    let cancelled = false;
-    const loadAll = async () => {
-      setLoadingProducts(true);
+  // Cargar OFERTAS DEL DÍA una vez al abrir el chat
+  useEffect(() => {
+    if (!open) return;
+    const fetchOffers = async () => {
       try {
-        // 1. Ofertas del Día (kind: oferta_del_dia)
-        const { data: offs } = await supabase
+        const { data } = await supabase
           .from("products")
           .select("id,name,description,price,kind,options,image_url")
           .eq("kind", "oferta_del_dia")
           .eq("active", true)
           .order("created_at", { ascending: true });
+        
+        if (data) {
+          const mapped = data.map(p => ({
+            id: p.id,
+            name: p.name,
+            description: p.description || null,
+            image_url: p.image_url || null,
+            price: Number(p.price),
+            kind: p.kind || null,
+            ...parseProductOptionsRow(p.options),
+          } as ProductRow));
+          setDailyOffersList(mapped);
+        }
+      } catch (e) {
+        console.error("Error loading daily offers:", e);
+      }
+    };
+    void fetchOffers();
+  }, [open, supabase]);
 
-        // 2. Productos de la Categoría
+  // Cargar PRODUCTOS DE LA CATEGORÍA
+  useEffect(() => {
+    if (!open || !context) return;
+    
+    // Si no hay categoría seleccionada, no cargar productos extra (solo mostrar ofertas arriba)
+    if (!context.categoryId && (!context.productIds || context.productIds.length === 0)) {
+      setProducts([]);
+      return;
+    }
+
+    let cancelled = false;
+    const loadCategoryProducts = async () => {
+      setLoadingProducts(true);
+      try {
         let q = supabase
           .from("products")
           .select("id,name,description,price,image_url,category_id,kind,options, categories(name)")
@@ -754,7 +787,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         if (cancelled) return;
         if (err) throw err;
 
-        const mapper = (list: any[]) => (list || []).map(p => ({
+        const mapped = (prods || []).map(p => ({
           id: p.id,
           name: p.name,
           description: p.description || null,
@@ -764,22 +797,17 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           ...parseProductOptionsRow(p.options),
         } as ProductRow));
 
-        const final = [...mapper(offs || []), ...mapper(prods || [])];
-        setProducts(final);
+        setProducts(mapped);
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
       } catch (e) {
-        console.error("Error loading products:", e);
-        toast.error("Error al cargar menú");
+        console.error("Error loading category products:", e);
       } finally {
         if (!cancelled) setLoadingProducts(false);
       }
     };
 
-    void loadAll();
-
-    return () => {
-      cancelled = true;
-    };
+    void loadCategoryProducts();
+    return () => { cancelled = true; };
   }, [open, context, supabase]);
 
   useEffect(() => {
@@ -1908,7 +1936,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     <p className="text-sm text-neutral-500">No hay productos activos en esta categoría por ahora.</p>
                   ) : (
                     <div className="flex w-full flex-col gap-3">
-                      {products.map((p) => (
+                      {[...dailyOffersList, ...products].map((p) => (
                         <ProductCard
                           key={`${productListKey}-${p.id}`}
                           product={p}
