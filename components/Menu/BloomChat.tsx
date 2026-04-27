@@ -320,12 +320,14 @@ function ProductCard({
   isLoggedIn,
   onEncargar,
   onLoginClick,
+  onAuthClick,
 }: {
   product: ProductRow;
   added: boolean;
   isLoggedIn: boolean;
   onEncargar: (observations: string, quantity: number, choice?: VariantChoice) => void;
   onLoginClick: () => void;
+  onAuthClick?: () => void;
 }) {
   const [observation, setObservation] = useState("");
   const [quantity, setQuantity] = useState(1);
@@ -393,15 +395,6 @@ function ProductCard({
   return (
     <div className="flex w-full flex-col gap-4 rounded-3xl bg-white p-5 text-left shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-black/[0.03] transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
       <div className="flex w-full gap-4">
-        {/* Product Image */}
-        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[1.25rem] bg-neutral-100 ring-1 ring-black/5">
-          {product.image_url ? (
-            <Image src={product.image_url} alt={product.name} fill className="object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-bloom-gold/10 text-bloom-600 font-bold text-[10px] uppercase tracking-widest">Bloom</div>
-          )}
-        </div>
-
         <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
           <div>
             <div className="flex justify-between items-start gap-2">
@@ -521,12 +514,18 @@ function ProductCard({
           )}
         </div>
       ) : (
-        <div className="border-t border-neutral-50 pt-5">
+        <div className="border-t border-neutral-50 pt-5 flex gap-2">
+          <button
+            onClick={onAuthClick ?? onLoginClick}
+            className="flex-1 py-3.5 rounded-2xl bg-neutral-900 text-white text-[11px] font-black uppercase tracking-[0.14em] shadow-xl active:scale-[0.98] transition-all"
+          >
+            Iniciar sesión
+          </button>
           <button
             onClick={onLoginClick}
-            className="w-full py-4 rounded-2xl bg-neutral-900 text-white text-[11px] font-black uppercase tracking-[0.14em] shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            className="flex-1 py-3.5 rounded-2xl bg-white border border-neutral-200 text-neutral-800 text-[11px] font-black uppercase tracking-[0.14em] active:scale-[0.98] transition-all"
           >
-            Iniciá sesión para pedir
+            Registrarse
           </button>
         </div>
       )}
@@ -609,7 +608,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     [cart, router],
   );
 
-  const persistCartAndGoToRegistro = useCallback(() => persistCartAndGo("/registro"), [persistCartAndGo]);
+  const persistCartAndGoToRegistro = useCallback(() => persistCartAndGo("/registro?redirect=/menu"), [persistCartAndGo]);
+  const persistCartAndGoToAuth = useCallback(() => persistCartAndGo("/auth?redirect=/menu"), [persistCartAndGo]);
 
   const cartCount = useMemo(() => cart.reduce((n, l) => n + l.quantity, 0), [cart]);
   const cartTotal = useMemo(() => cart.reduce((s, l) => s + l.price * l.quantity, 0), [cart]);
@@ -1905,6 +1905,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                           added={!productHasConfigurableOptions(p) && addedProductIds.has(p.id)}
                           onEncargar={(obs, qty, choice) => addLine(p, obs, qty, choice)}
                           onLoginClick={persistCartAndGoToRegistro}
+                          onAuthClick={persistCartAndGoToAuth}
                         />
                       ))}
                     </div>

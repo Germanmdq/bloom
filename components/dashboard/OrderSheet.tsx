@@ -199,8 +199,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         if (order.customer_name) setCustomerName(order.customer_name);
         if (order.customer_phone) setCustomerPhone(order.customer_phone);
         if (order.delivery_info && order.delivery_type === 'delivery') setCustomerAddress(order.delivery_info);
-        if (order.items && Array.isArray(order.items)) {
-            order.items.forEach((item: any) => {
+        if (order.items) {
+            const itemsArray = Array.isArray(order.items) 
+                ? order.items 
+                : (typeof order.items === 'string' ? JSON.parse(order.items) : []);
+                
+            itemsArray.forEach((item: any) => {
                 if (!item.is_meta && item.name) {
                     addToCart({
                         id: item.id || item.product_id || 'manual-' + Math.random(),

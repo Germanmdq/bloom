@@ -181,6 +181,8 @@ export default function CuentaPage() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [payAmount, setPayAmount] = useState("");
+  const [isPaying, setIsPaying] = useState(false);
 
   const loadData = useCallback(
     async (uid: string) => {
@@ -458,6 +460,62 @@ export default function CuentaPage() {
     }
   };
 
+  const handleDebtPayment = async (mode: 'TOTAL' | 'PARTIAL') => {
+    if (!user || !profile) return;
+    
+    const amountToPay = mode === 'TOTAL' ? profile.balance : parseFloat(payAmount);
+    
+    if (!amountToPay || amountToPay < 1) {
+        toast.error("Ingresá un monto válido (mínimo $1)");
+        return;
+    }
+
+    if (amountToPay > profile.balance) {
+        toast.error("El monto no puede superar la deuda total");
+        return;
+    }
+
+    setIsPaying(true);
+    try {
+        const res = await fetch('/api/payments/pay-debt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: amountToPay,
+                method: 'CASH', // Default or selector
+                notes: mode === 'TOTAL' ? 'Pago total de deuda' : 'Pago parcial de deuda'
+            })
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) throw new Error(result.error || "Error al procesar el pago");
+
+        toast.success("¡Pago procesado con éxito!");
+        
+        // 4. PRINT TICKET
+        try {
+            const { formatDebtPaymentTicket } = await import("@/lib/utils/esc-pos");
+            const ticketText = formatDebtPaymentTicket(result.data);
+            console.log("GENERATED TICKET FOR PRINTER:", ticketText);
+            
+            // Here we could trigger a browser print or send to a socket
+            // For now, let's show a simulated success in console
+            // and if there's a print utility, we call it.
+        } catch (printErr) {
+            console.error("Error generating ticket:", printErr);
+        }
+
+        // Refresh data
+        await loadData(user.id);
+        setPayAmount("");
+    } catch (err: any) {
+        toast.error(err.message);
+    } finally {
+        setIsPaying(false);
+    }
+  };
+
   const onAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -677,27 +735,77 @@ export default function CuentaPage() {
       </div>
 
       {profile && profile.balance > 0 && (
-        <div className={`${cardCls} border-2 border-red-200 bg-red-50 shadow-red-100 flex items-center justify-between gap-4`}>
-            <div className="flex-1">
-                <h2 className="flex items-center gap-2 text-base font-black text-red-900 leading-none mb-1.5">
-                    <TrendingUp className="h-5 w-5 text-red-600" />
-                    Cuenta Corriente
-                </h2>
-                <p className="text-sm text-red-800 leading-snug font-medium mb-2">
-                    Tenés un saldo pendiente de pago de <strong>{formatMoney(profile.balance)}</strong>. 
-                </p>
-                <button 
-                    onClick={() => setSection("pedidos")}
-                    className="text-xs font-bold uppercase tracking-wider text-red-700 underline underline-offset-4 hover:text-red-900 transition-colors"
-                >
-                    Ver detalle de pedidos
-                </button>
+        <div className={`${cardCls} border-2 border-red-200 bg-red-50 shadow-red-100 overflow-hidden`}>
+            <div className="flex items-center justify-between gap-4 p-5 pb-0">
+                <div className="flex-1">
+                    <h2 className="flex items-center gap-2 text-base font-black text-red-900 leading-none mb-1.5">
+                        <TrendingUp className="h-5 w-5 text-red-600" />
+                        Cuenta Corriente
+                    </h2>
+                    <p className="text-sm text-red-800 leading-snug font-medium mb-2">
+                        Tenés un saldo pendiente de pago de <strong>{formatMoney(profile.balance)}</strong>. 
+                    </p>
+                    <button 
+                        onClick={() => setSection("pedidos")}
+                        className="text-xs font-bold uppercase tracking-wider text-red-700 underline underline-offset-4 hover:text-red-900 transition-colors"
+                    >
+                        Ver detalle de pedidos
+                    </button>
+                </div>
+                <div className="text-right whitespace-nowrap">
+                    <p className="text-2xl font-black text-red-600 leading-none">-{formatMoney(profile.balance)}</p>
+                </div>
             </div>
-            <div className="text-right whitespace-nowrap">
-                <p className="text-2xl font-black text-red-600 leading-none">-{formatMoney(profile.balance)}</p>
+
+            {/* Payment Form */}
+            <div className="mt-5 border-t border-red-100 bg-white/50 p-5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-3">Módulo de Pago</p>
+                <div className="flex flex-col gap-3">
+                    <div className="flex gap-2">
+                        <input 
+                            type="number"
+                            placeholder="Monto a pagar..."
+                            value={payAmount}
+                            onChange={(e) => setPayAmount(e.target.value)}
+                            className="flex-1 h-12 px-4 rounded-xl border border-red-100 bg-white font-bold text-sm outline-none focus:ring-2 ring-red-500/20 transition-all"
+                        />
+                        <button 
+                            disabled={isPaying}
+                            onClick={() => handleDebtPayment('TOTAL')}
+                            className="h-12 px-6 bg-red-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-colors disabled:opacity-50"
+                        >
+                            Pagar Total
+                        </button>
+                    </div>
+                    <button 
+                        disabled={isPaying || !payAmount}
+                        onClick={() => handleDebtPayment('PARTIAL')}
+                        className="w-full h-12 bg-white border-2 border-red-600 text-red-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-50 transition-colors disabled:opacity-50 disabled:border-red-200 disabled:text-red-200"
+                    >
+                        {isPaying ? 'Procesando...' : 'Pagar Parcial'}
+                    </button>
+                </div>
+                <p className="mt-3 text-[9px] font-bold text-red-400 uppercase tracking-tighter text-center italic">
+                    Al confirmar, se generará un comprobante electrónico para la tiquetera.
+                </p>
             </div>
         </div>
       )}
+
+      {/* DEBUG: Solo para que el usuario pueda testear el banner si no tiene deuda */}
+      <div className="mt-10 p-4 border border-dashed border-neutral-300 rounded-xl text-center">
+          <p className="text-xs text-neutral-400 mb-2">Si no ves el banner de deuda arriba, es porque no tenés saldo pendiente.</p>
+          <button 
+              onClick={async () => {
+                  if (!user) return;
+                  await supabase.from('profiles').update({ balance: 500 }).eq('id', user.id);
+                  window.location.reload();
+              }}
+              className="text-[10px] font-black uppercase tracking-widest bg-neutral-100 text-neutral-600 px-3 py-2 rounded-lg hover:bg-neutral-200 transition-colors"
+          >
+              Simular Deuda ($500) para Testear
+          </button>
+      </div>
 
       {birthdayActive && (
         <div className={`${cardCls} border-2 border-amber-200 bg-amber-50 shadow-amber-100`}>
