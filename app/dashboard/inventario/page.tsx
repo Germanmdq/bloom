@@ -120,20 +120,26 @@ export default function InventarioPage() {
 
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between px-1">
-                                        <p className="text-[9px] font-black uppercase text-neutral-300 tracking-widest">Carga Manual</p>
+                                        <p className="text-[9px] font-black uppercase text-[#2d4a3e] tracking-widest">Cargar Mercadería (+)</p>
                                     </div>
                                     <div className="flex gap-2">
                                         <input 
                                             type="number"
-                                            defaultValue={p.stock}
-                                            key={`${p.id}-${p.stock}`}
-                                            onBlur={async (e) => {
-                                                const val = parseFloat(e.target.value);
-                                                if (!isNaN(val) && val !== p.stock) {
-                                                    await handleUpdateStock(p.id, val);
+                                            placeholder="Ej: 10"
+                                            onKeyDown={async (e) => {
+                                                if (e.key === 'Enter') {
+                                                    const input = e.target as HTMLInputElement;
+                                                    const val = parseFloat(input.value);
+                                                    if (!isNaN(val) && val !== 0) {
+                                                        const newStock = (p.stock || 0) + val;
+                                                        await handleUpdateStock(p.id, newStock);
+                                                        input.value = ""; // Borrar el número de abajo tras cargar
+                                                        // Actualizamos estado local inmediatamente para feedback visual
+                                                        setProducts(prev => prev.map(item => item.id === p.id ? { ...item, stock: newStock } : item));
+                                                    }
                                                 }
                                             }}
-                                            className="w-full bg-neutral-50 border-2 border-transparent focus:border-[#2d4a3e]/20 rounded-xl px-4 py-3 font-black text-lg outline-none transition-all text-center"
+                                            className="w-full bg-neutral-50 border-2 border-transparent focus:border-[#2d4a3e]/20 rounded-xl px-4 py-3 font-black text-lg outline-none transition-all text-center placeholder:text-neutral-200"
                                         />
                                     </div>
                                 </div>
