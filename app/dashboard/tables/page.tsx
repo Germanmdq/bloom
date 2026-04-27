@@ -632,11 +632,14 @@ export default function TablesPage() {
                                                 return (
                                                     <>
                                                         {/* Eliminado: Ya no mostramos el número si hay un nombre/alias */}
-                                                        <span className={`font-semibold leading-none tracking-tight break-words w-full ${styles.textColor} ${
-                                                            displayName.length > 12 ? 'text-[2.5rem]' :
-                                                            displayName.length > 8 ? 'text-[3.5rem]' : 
-                                                            displayName.length > 5 ? 'text-[5rem]' : 
-                                                            'text-[9rem]'
+                                                        <span className={`font-semibold leading-[0.9] tracking-tighter break-all w-full ${styles.textColor} ${
+                                                            displayName.length > 20 ? 'text-[1.8rem]' :
+                                                            displayName.length > 15 ? 'text-[2.5rem]' :
+                                                            displayName.length > 12 ? 'text-[3rem]' :
+                                                            displayName.length > 10 ? 'text-[4rem]' :
+                                                            displayName.length > 6  ? 'text-[6rem]' : 
+                                                            displayName.length > 4  ? 'text-[8rem]' : 
+                                                            'text-[10rem]'
                                                         }`}>
                                                             {displayName}
                                                         </span>
