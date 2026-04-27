@@ -83,21 +83,27 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                     ))}
                 </div>
 
-                <div className="border-t-2 border-black pt-2 mt-1">
-                    <div className="flex justify-between font-black text-xl">
+                <div className="border-t border-black border-dashed pt-4 mt-2">
+                    <div className="flex justify-between font-black text-2xl tracking-tighter">
                         <span>TOTAL</span>
                         <span>${total.toLocaleString()}</span>
                     </div>
+                    <div className="flex justify-between text-[11px] font-bold opacity-70 mt-1">
+                        <span>{cart.reduce((s, i) => s + i.quantity, 0)} Items</span>
+                        <span>Abonado</span>
+                    </div>
                 </div>
 
-                <div className="text-center mt-6 mb-24 opacity-80">
-                    <p className="text-[11px] font-bold">¡GRACIAS POR TU VISITA!</p>
-                    <p className="text-[9px]">bloommdp.com</p>
-                </div>
-
-                <div className="mt-4 flex gap-2 print:hidden no-print">
-                    <button onClick={() => window.print()} className="flex-1 h-12 bg-black text-white font-bold rounded-xl">Re-imprimir</button>
-                    <button onClick={onClose} className="w-12 h-12 bg-gray-100 rounded-xl">X</button>
+                {/* Gran espacio para la cuchilla */}
+                <div className="text-center mt-10 pb-40">
+                    <p className="text-[11px] font-black uppercase tracking-widest">¡GRACIAS POR TU VISITA!</p>
+                    <p className="text-[10px] mt-1">Esperamos verte pronto</p>
+                    <p className="text-[9px] opacity-60 mt-2">bloommdp.com</p>
+                    
+                    <div className="mt-6 flex gap-2 print:hidden no-print">
+                        <button onClick={() => window.print()} className="flex-1 h-14 bg-black text-white font-bold rounded-2xl shadow-xl">Imprimir de nuevo</button>
+                        <button onClick={onClose} className="w-14 h-14 bg-gray-100 text-gray-500 rounded-2xl flex items-center justify-center">X</button>
+                    </div>
                 </div>
             </div>
         </div>
