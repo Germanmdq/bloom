@@ -136,11 +136,11 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                     </div>
 
                     {/* Footer */}
-                    <div className="text-center mt-6 space-y-1">
+                    <div className="text-center mt-6 mb-20 space-y-1">
                         <p className="text-[10px] font-bold">¡GRACIAS POR TU VISITA!</p>
                         <p className="text-[9px] opacity-50">bloommdp.com</p>
                         <div className="flex justify-center mt-4">
-                            {/* Placeholder for QR if needed in future */}
+                            {/* Espacio extra para el corte de la ticketera */}
                         </div>
                     </div>
                 </div>
