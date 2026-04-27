@@ -79,6 +79,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [webOrderIsPaid, setWebOrderIsPaid] = useState(false);
     const [webOrderPaymentMethod, setWebOrderPaymentMethod] = useState<string | null>(null);
     const [completedOrderData, setCompletedOrderData] = useState<{ cart: any[], total: number } | null>(null);
+    const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
 
     const handleCustomerSearch = async (q: string) => {
         setCustomerSearchQuery(q);
@@ -113,6 +114,21 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const onMpOrderReady = useCallback((id: string | null) => {
         setMpPosOrderId(id);
     }, []);
+
+    // Auto-Slider para Promociones
+    useEffect(() => {
+        const promoProducts = products.filter((p: any) => 
+            p.name.toLowerCase().includes('promo') || 
+            p.name.toLowerCase().includes('oferta')
+        );
+        if (promoProducts.length <= 1) return;
+
+        const interval = setInterval(() => {
+            setCurrentPromoIndex(prev => (prev + 1) % promoProducts.length);
+        }, 4000);
+
+        return () => clearInterval(interval);
+    }, [products]);
 
     /** Sincronizar ID de pedido web si viene por prop */
     useEffect(() => {
@@ -780,17 +796,29 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                     </p>
                                                 </div>
 
-                                                <div className="flex gap-2">
-                                                    {promoProducts.slice(0, 3).map((p: any) => (
-                                                        <button
-                                                            key={p.id}
-                                                            onClick={() => addToCart({ id: p.id, name: p.name, price: Number(p.price), quantity: 1 })}
-                                                            className="h-20 w-32 bg-white/10 hover:bg-white text-white hover:text-black rounded-2xl p-3 border border-white/10 transition-all flex flex-col justify-between items-start text-left group"
-                                                        >
-                                                            <span className="text-[9px] font-black uppercase truncate w-full opacity-60 group-hover:opacity-100">{p.name}</span>
-                                                            <span className="text-lg font-black tracking-tighter">${Number(p.price).toLocaleString()}</span>
-                                                        </button>
-                                                    ))}
+                                                <div className="flex-1 flex justify-end">
+                                                    <AnimatePresence mode="wait">
+                                                        {promoProducts.map((p: any, idx: number) => idx === currentPromoIndex && (
+                                                            <motion.button
+                                                                key={p.id}
+                                                                initial={{ opacity: 0, x: 30, scale: 0.9 }}
+                                                                animate={{ opacity: 1, x: 0, scale: 1 }}
+                                                                exit={{ opacity: 0, x: -30, scale: 0.9 }}
+                                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                                onClick={() => addToCart({ id: p.id, name: p.name, price: Number(p.price), quantity: 1 })}
+                                                                className="h-24 w-full max-w-[240px] bg-white/10 hover:bg-white text-white hover:text-black rounded-[2rem] p-6 border border-white/10 transition-all flex flex-col justify-between items-start text-left group relative overflow-hidden"
+                                                            >
+                                                                {/* Accent Glow inside button */}
+                                                                <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 blur-2xl group-hover:bg-black/5" />
+                                                                
+                                                                <span className="text-[10px] font-black uppercase truncate w-full opacity-50 group-hover:opacity-100 tracking-widest">{p.name}</span>
+                                                                <div className="flex items-baseline gap-1 mt-auto">
+                                                                    <span className="text-3xl font-black tracking-tighter">${Number(p.price).toLocaleString()}</span>
+                                                                    <span className="text-[10px] font-bold opacity-40 group-hover:opacity-100">PROMO</span>
+                                                                </div>
+                                                            </motion.button>
+                                                        ))}
+                                                    </AnimatePresence>
                                                 </div>
                                             </div>
                                         </div>
