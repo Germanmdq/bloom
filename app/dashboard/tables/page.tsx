@@ -92,6 +92,19 @@ export default function TablesPage() {
             window.removeEventListener('bloom-refresh-tables', handleRefreshEvent);
         };
     }, []);
+    
+    // Keyboard Shortcuts (F1 y +)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // El signo "+" abre la mesa (si no hay modales abiertos)
+            if (e.key === '+' && !isNewTableModalOpen && !selectedTable) {
+                e.preventDefault();
+                setIsNewTableModalOpen(true);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isNewTableModalOpen, selectedTable]);
 
     async function fetchWebOrders() {
         try {
@@ -238,7 +251,7 @@ export default function TablesPage() {
     };
 
     const sortedTables = [...tables]
-        .filter(t => t.status === 'OCCUPIED' && t.id >= 1 && t.id <= 300)
+        .filter(t => t.status === 'OCCUPIED' && t.id >= 1 && t.id <= 1000)
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
