@@ -500,10 +500,10 @@ function PublicMenuPage() {
                         if (promoProducts.length === 0) return null;
 
                         return (
-                            <div className="mb-10 relative group overflow-hidden bg-black rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl transition-all border border-white/5">
-                                {/* Glow Effect */}
-                                <div className="absolute -top-24 -right-24 w-80 h-80 bg-[#C17154]/20 rounded-full blur-[100px]" />
-                                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#7a765a]/10 rounded-full blur-[80px]" />
+                            <div className="mb-10 relative group overflow-hidden bg-[#2d4a3e] rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl transition-all border border-white/5">
+                                {/* Glow Effect adapted for English Green */}
+                                <div className="absolute -top-24 -right-24 w-80 h-80 bg-[#E8A387]/20 rounded-full blur-[100px]" />
+                                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-white/5 rounded-full blur-[80px]" />
                                 
                                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                                     <div className="flex flex-col gap-2 text-center md:text-left">
