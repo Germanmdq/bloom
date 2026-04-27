@@ -560,7 +560,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             });
 
             // ── LÓGICA DE ACTUALIZACIÓN DE INVENTARIO (BLOOM) ──
-            // Se ejecuta ni bien se envía a cocina para que el stock sea real al instante
             try {
                 const inventoryPromises = cart.map(async (item) => {
                     const nombreLower = item.name.toLowerCase();
@@ -570,28 +569,41 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         unidadesARestar = item.quantity * 2;
                     }
 
-                    const { data: prod } = await supabase
+                    // Log para diagnóstico
+                    console.log(`📦 Intentando descontar stock: ${item.name} (ID: ${item.id}) - Cantidad: ${unidadesARestar}`);
+
+                    const { data: prod, error: fetchErr } = await supabase
                         .from('products')
                         .select('stock, vendidos')
                         .eq('id', item.id)
-                        .single();
+                        .maybeSingle();
+
+                    if (fetchErr) console.error("❌ Error buscando producto:", fetchErr);
 
                     if (prod) {
                         const newStock = (prod.stock || 0) - unidadesARestar;
                         const newVendidos = (prod.vendidos || 0) + item.quantity;
 
-                        return supabase
+                        const { error: updErr } = await supabase
                             .from('products')
                             .update({ 
                                 stock: newStock, 
                                 vendidos: newVendidos 
                             })
                             .eq('id', item.id);
+                        
+                        if (!updErr) {
+                            console.log(`✅ Stock actualizado para ${item.name}: ${newStock}`);
+                        } else {
+                            console.error(`❌ Error actualizando stock para ${item.name}:`, updErr);
+                        }
+                    } else {
+                        console.warn(`⚠️ No se encontró el producto ${item.name} en la BD para descontar stock.`);
                     }
                 });
                 await Promise.all(inventoryPromises);
             } catch (err) {
-                console.error("Error actualizando inventario Bloom al enviar a cocina:", err);
+                console.error("Error crítico en inventario:", err);
             }
 
             setFeedback({ message: "Enviado a cocina", type: 'success' });
