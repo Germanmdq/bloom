@@ -176,7 +176,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             if (status === "OCCUPIED" && persisted.length > 0) {
                 persisted.forEach((item: any) => {
                     if (item.id === 'meta-customer') {
-                        setCustomerName(item.name || "");
+                        const rawName = item.name || "";
+                        const cleanName = rawName.replace(/^Cliente:\s*/, "");
+                        setCustomerName(cleanName);
                         setCustomerAddress(item.address || "");
                         setCustomerPhone(item.phone || "");
                         if (item.customer_id) setSelectedCustomerId(item.customer_id);
