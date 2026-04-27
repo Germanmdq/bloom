@@ -27,18 +27,22 @@ export default function InventarioPage() {
 
     async function fetchInventory() {
         setLoading(true);
-        // Traemos productos de tipo 'menu'
+        // Traemos productos de la tabla 'products'
+        // NOTA: Quitamos el filtro de 'active' temporalmente para asegurar que veas tu menú
         const { data, error } = await supabase
             .from("products")
             .select("id, name, stock, vendidos")
-            .eq("active", true)
             .order("name");
         
         if (error) {
-            console.error(error);
-            toast.error("Error al cargar inventario");
+            console.error("DEBUG INVENTARIO - FETCH ERROR:", error);
+            toast.error(`Error de base de datos: ${error.message}`);
         } else {
+            console.log("DEBUG INVENTARIO - DATA:", data);
             setProducts(data || []);
+            if (data?.length === 0) {
+                toast.warning("No se encontraron productos en la base de datos.");
+            }
         }
         setLoading(false);
     }
