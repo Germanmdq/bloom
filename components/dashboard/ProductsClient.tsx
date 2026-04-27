@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence } from "framer-motion";
-import { Search, Plus, Tag, ChevronRight, X, DollarSign, Flame } from "lucide-react";
+import { Search, Plus, Tag, ChevronRight, X, DollarSign, Flame, Edit2 } from "lucide-react";
 
 function formatName(name: string): string {
     if (!name) return "";
@@ -12,9 +12,10 @@ function formatName(name: string): string {
 interface ProductsClientProps {
     initialProducts: any[];
     initialCategories: any[];
+    rawProducts?: any[];
 }
 
-export default function ProductsClient({ initialProducts, initialCategories }: ProductsClientProps) {
+export default function ProductsClient({ initialProducts, initialCategories, rawProducts = [] }: ProductsClientProps) {
     const [products, setProducts] = useState<any[]>(initialProducts);
     const [categories, setCategories] = useState<any[]>(initialCategories);
     const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ export default function ProductsClient({ initialProducts, initialCategories }: P
     const [isQuickPricing, setIsQuickPricing] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [currentProduct, setCurrentProduct] = useState<any>({
-        id: "", name: "", description: "", price: "", category_id: "", image_url: ""
+        id: "", name: "", description: "", price: "", category_id: "", raw_product_id: ""
     });
     const [isAddingCategory, setIsAddingCategory] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState("");
@@ -45,6 +46,7 @@ export default function ProductsClient({ initialProducts, initialCategories }: P
             description: currentProduct.description,
             price: parseFloat(currentProduct.price),
             category_id: currentProduct.category_id,
+            raw_product_id: currentProduct.raw_product_id || null,
         };
         if (currentProduct.id) {
             await supabase.from('products').update(productData).eq('id', currentProduct.id);
@@ -211,13 +213,23 @@ export default function ProductsClient({ initialProducts, initialCategories }: P
                                 onChange={e => setCurrentProduct({ ...currentProduct, price: e.target.value })}
                                 className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold"
                             />
-                            <select
-                                value={currentProduct.category_id}
-                                onChange={e => setCurrentProduct({ ...currentProduct, category_id: e.target.value })}
-                                className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold"
-                            >
-                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
+                            
+                            <div className="space-y-1.5 px-1">
+                                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Vincular para descontar Stock</label>
+                                <select
+                                    value={currentProduct.raw_product_id || ""}
+                                    onChange={e => setCurrentProduct({ ...currentProduct, raw_product_id: e.target.value })}
+                                    className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold text-sm appearance-none cursor-pointer"
+                                >
+                                    <option value="">No descuenta stock automáticamente</option>
+                                    {rawProducts.map((rp: any) => (
+                                        <option key={rp.id} value={rp.id}>
+                                            {rp.name} (Stock: {rp.current_stock} {rp.unit})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                             <div className="flex gap-3">
                                 <button type="button" onClick={() => setIsEditing(false)} className="flex-1 py-4 bg-gray-100 rounded-2xl font-bold">Cancelar</button>
                                 <button type="submit" disabled={loading} className="flex-1 py-4 bg-black text-white rounded-2xl font-black">

@@ -40,10 +40,10 @@ async function markOrderPaid(orderId: string) {
   }
   const supabase = createClient(getSupabaseUrl(), serviceKey);
 
-  // Leer el pedido para ver si tiene pago de deuda CC
+  // Leer el pedido para ver si tiene productos vinculados a stock e insumos
   const { data: orderData } = await supabase
     .from("orders")
-    .select("customer_id, debt_payment_amount")
+    .select("customer_id, debt_payment_amount, items")
     .eq("id", orderId)
     .maybeSingle();
 
@@ -61,6 +61,44 @@ async function markOrderPaid(orderId: string) {
     console.error("[payments/webhook] update", error);
     return false;
   }
+
+  // --- LÓGICA DE DESCUENTO DE STOCK ---
+  try {
+    const items = Array.isArray(orderData?.items) ? orderData.items : [];
+    for (const item of items as any[]) {
+      const productName = item.name;
+      const quantity = Number(item.quantity || 1);
+
+      // Buscamos el producto en la DB para ver si tiene un insumo vinculado
+      const { data: prod } = await supabase
+        .from("products")
+        .select("raw_product_id")
+        .eq("name", productName)
+        .maybeSingle();
+
+      if (prod?.raw_product_id) {
+        // Descontamos del stock del insumo (raw_product)
+        const { data: rawProd } = await supabase
+          .from("raw_products")
+          .select("current_stock")
+          .eq("id", prod.raw_product_id)
+          .single();
+
+        if (rawProd) {
+          const newStock = Number(rawProd.current_stock ?? 0) - quantity;
+          await supabase
+            .from("raw_products")
+            .update({ current_stock: newStock })
+            .eq("id", prod.raw_product_id);
+          
+          console.log(`[Webhook] Stock descontado: ${productName} -> Insumo ID: ${prod.raw_product_id}. Nuevo stock: ${newStock}`);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[Webhook] Error al descontar stock:", err);
+  }
+  // -------------------------------------
 
   // Reducir saldo de cuenta corriente si corresponde
   const debtAmount = Number(orderData?.debt_payment_amount ?? 0);

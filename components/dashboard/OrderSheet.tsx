@@ -479,6 +479,35 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     items: cart,
                 });
 
+                // ── LÓGICA DE DESCUENTO DE STOCK (INSUMOS) ──
+                try {
+                    for (const item of cart) {
+                        const { data: productInfo } = await supabase
+                            .from('products')
+                            .select('raw_product_id')
+                            .eq('id', item.id)
+                            .maybeSingle();
+
+                        if (productInfo?.raw_product_id) {
+                            const { data: rawProd } = await supabase
+                                .from('raw_products')
+                                .select('current_stock')
+                                .eq('id', productInfo.raw_product_id)
+                                .single();
+
+                            if (rawProd) {
+                                const newStock = Number(rawProd.current_stock ?? 0) - item.quantity;
+                                await supabase
+                                    .from('raw_products')
+                                    .update({ current_stock: newStock })
+                                    .eq('id', productInfo.raw_product_id);
+                            }
+                        }
+                    }
+                } catch (stockErr) {
+                    console.error("Error al descontar stock de insumos:", stockErr);
+                }
+
                 // ── LÓGICA DE ACTUALIZACIÓN DE PRODUCTOS (TOTAL VENDIDOS) ──
                 try {
                     const updatePromises = cart.map(item => {
