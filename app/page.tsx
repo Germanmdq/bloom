@@ -305,8 +305,8 @@ export default function Home() {
               { Icon: Star,            title: "Regalos en fechas especiales",  desc: "En tu cumpleaños y fechas clave tenemos una sorpresa para vos." },
               { Icon: Cookie,          title: "Descuentos exclusivos",         desc: "Promociones y precios especiales sólo para socios del Club." },
             ] as const).map((card, i) => (
-              <FadeIn key={card.title} delay={i * 0.06}>
-                <div className="flex flex-col gap-5 rounded-3xl p-10" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <FadeIn key={card.title} delay={i * 0.06} className="h-full">
+                <div className="flex flex-col gap-5 rounded-3xl p-10 h-full" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <card.Icon size={28} strokeWidth={1.5} style={{ color: "#c4b896" }} aria-hidden />
                   <h3 className="text-[22px] font-medium tracking-tight text-white leading-snug">{card.title}</h3>
                   <p className="text-[15px] leading-relaxed" style={{ color: "rgba(242,240,230,.75)" }}>{card.desc}</p>
