@@ -108,7 +108,6 @@ export default function SettingsPage() {
     const handleSaveOffers = async () => {
         setIsSavingOffers(true);
         try {
-            // 1. Buscar una categoría válida para asignar (Promociones o General)
             const { data: catData } = await supabase
                 .from('categories')
                 .select('id')
@@ -118,7 +117,6 @@ export default function SettingsPage() {
             const categoryId = catData?.id || null;
 
             for (const offer of dailyOffers) {
-                // Si no tiene nombre y no tiene ID, ignorar
                 if (!offer.name && !offer.id) continue;
 
                 const payload: any = {
@@ -126,19 +124,17 @@ export default function SettingsPage() {
                     price: Number(offer.price) || 0,
                     kind: 'oferta_del_dia',
                     active: !!offer.name,
-                    category_id: categoryId // Asegurar categoría para evitar errores de base de datos
+                    category_id: categoryId
                 };
 
                 if (offer.id) {
-                    const { error } = await supabase.from('products').update(payload).eq('id', offer.id);
-                    if (error) throw error;
+                    await supabase.from('products').update(payload).eq('id', offer.id);
                 } else if (offer.name) {
-                    const { error } = await supabase.from('products').insert([payload]);
-                    if (error) throw error;
+                    await supabase.from('products').insert([payload]);
                 }
             }
-
-            // 2. Recargar para sincronizar IDs
+            
+            // Recarga completa
             const { data: offersData } = await supabase
                 .from('products')
                 .select('*')
@@ -152,12 +148,30 @@ export default function SettingsPage() {
                 });
                 setDailyOffers(refreshed);
             }
-            alert("¡Ofertas guardadas con éxito!");
+            alert("¡Ofertas guardadas!");
         } catch (e: any) {
-            console.error("Error guardando ofertas:", e);
-            alert("Error al guardar: " + e.message);
+            alert("Error: " + e.message);
         }
         setIsSavingOffers(false);
+    };
+
+    const handleDeleteOffer = async (id: string, idx: number) => {
+        if (!id) {
+            const newOffers = [...dailyOffers];
+            newOffers[idx] = { id: null, name: '', price: '' };
+            setDailyOffers(newOffers);
+            return;
+        }
+
+        if (confirm("¿Seguro que quieres eliminar esta oferta?")) {
+            const { error } = await supabase.from('products').delete().eq('id', id);
+            if (error) alert(error.message);
+            else {
+                const newOffers = [...dailyOffers];
+                newOffers[idx] = { id: null, name: '', price: '' };
+                setDailyOffers(newOffers);
+            }
+        }
     };
 
     const handleSavePlatoDia = async (productId: string) => {
@@ -447,6 +461,15 @@ export default function SettingsPage() {
                                         placeholder="0"
                                         className="w-full h-12 px-4 rounded-xl bg-white border-transparent focus:ring-2 ring-amber-500 font-bold outline-none placeholder:text-gray-200"
                                     />
+                                </div>
+                                <div className="flex items-end pb-1">
+                                    <button 
+                                        onClick={() => handleDeleteOffer(offer.id, idx)}
+                                        className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors"
+                                        title="Eliminar oferta"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
                                 </div>
                             </div>
                         ))}

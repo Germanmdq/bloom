@@ -726,66 +726,56 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     }
 
     let cancelled = false;
-    (async () => {
+    const loadAll = async () => {
       setLoadingProducts(true);
       try {
-        // 1. Cargar Ofertas del Día (Siempre van arriba)
-        const { data: offersData } = await supabase
+        // 1. Ofertas del Día (kind: oferta_del_dia)
+        const { data: offs } = await supabase
           .from("products")
-          .select("id,name,description,price,kind,options")
+          .select("id,name,description,price,kind,options,image_url")
           .eq("kind", "oferta_del_dia")
           .eq("active", true)
           .order("created_at", { ascending: true });
 
-        // 2. Cargar productos de la categoría/scope
+        // 2. Productos de la Categoría
         let q = supabase
           .from("products")
           .select("id,name,description,price,image_url,category_id,kind,options, categories(name)")
           .eq("active", true)
-          .neq("kind", "oferta_del_dia"); // Evitar duplicados si el dueño les puso categoría
-          
+          .neq("kind", "oferta_del_dia");
+
         if (context.productIds?.length) {
           q = q.in("id", context.productIds);
         } else if (context.categoryId) {
           q = q.eq("category_id", context.categoryId);
         }
-        
-        const { data, error } = await q.order("name");
+
+        const { data: prods, error: err } = await q.order("name");
         if (cancelled) return;
-        if (error) {
-          console.error("[BloomChat] products", error);
-          toast.error("No se pudieron cargar los productos");
-          setProducts([]);
-          return;
-        }
+        if (err) throw err;
 
-        const parseRows = (list: any[]) => list.map((raw: any) => {
-          const c = raw.categories as { name?: string } | { name?: string }[] | null | undefined;
-          const categoryName = Array.isArray(c)
-            ? typeof c[0]?.name === "string" ? c[0].name : null
-            : typeof c?.name === "string" ? c.name : null;
-            
-          return {
-            id: raw.id,
-            name: raw.name,
-            description: raw.description || null,
-            image_url: raw.image_url || null,
-            price: Number(raw.price),
-            kind: raw.kind || null,
-            category_name: categoryName,
-            ...parseProductOptionsRow(raw.options),
-          } as ProductRow;
-        });
+        const mapper = (list: any[]) => (list || []).map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description || null,
+          image_url: p.image_url || null,
+          price: Number(p.price),
+          kind: p.kind || null,
+          ...parseProductOptionsRow(p.options),
+        } as ProductRow));
 
-        const catProds = parseRows(data || []);
-        const dailyOffs = parseRows(offersData || []);
-
-        setProducts([...dailyOffs, ...catProds]);
+        const final = [...mapper(offs || []), ...mapper(prods || [])];
+        setProducts(final);
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
+      } catch (e) {
+        console.error("Error loading products:", e);
+        toast.error("Error al cargar menú");
       } finally {
         if (!cancelled) setLoadingProducts(false);
       }
-    })();
+    };
+
+    void loadAll();
 
     return () => {
       cancelled = true;
