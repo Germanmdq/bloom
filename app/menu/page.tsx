@@ -523,15 +523,20 @@ function PublicMenuPage() {
                                         </p>
                                     </div>
 
-                                    <div className="w-full md:w-auto overflow-hidden">
-                                        <AnimatePresence mode="wait">
+                                    <div className="w-full md:w-[320px] h-32 relative">
+                                        <AnimatePresence mode="popLayout">
                                             {promoProducts.map((p: any, idx: number) => idx === currentPromoIndex && (
                                                 <motion.button
                                                     key={p.id}
-                                                    initial={{ opacity: 0, x: 40, scale: 0.95 }}
-                                                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, x: -40, scale: 0.95 }}
-                                                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                                    initial={{ opacity: 0, x: 100 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    exit={{ opacity: 0, x: -100 }}
+                                                    transition={{ 
+                                                        type: "spring", 
+                                                        stiffness: 400, 
+                                                        damping: 40,
+                                                        mass: 1 
+                                                    }}
                                                     onClick={() => {
                                                         const prod = products.find(prod => prod.id === p.id);
                                                         if (prod) {
@@ -539,7 +544,7 @@ function PublicMenuPage() {
                                                             toast.success(`Agregado: ${prod.name}`);
                                                         }
                                                     }}
-                                                    className="w-full md:w-[320px] bg-white text-black rounded-[2rem] p-8 shadow-2xl flex flex-col items-start gap-4 active:scale-95 transition-all group relative border border-white/20"
+                                                    className="absolute inset-0 w-full bg-white text-black rounded-[2rem] p-8 shadow-2xl flex flex-col items-start gap-4 active:scale-95 transition-all group border border-white/20"
                                                 >
                                                     <div className="flex justify-between w-full items-center">
                                                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-900">{p.name}</span>

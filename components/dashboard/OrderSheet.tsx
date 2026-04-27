@@ -806,25 +806,29 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                     </p>
                                                 </div>
 
-                                                <div className="flex-1 flex justify-end">
-                                                    <AnimatePresence mode="wait">
+                                                <div className="flex-1 flex justify-end h-24 relative">
+                                                    <AnimatePresence mode="popLayout">
                                                         {promoProducts.map((p: any, idx: number) => idx === currentPromoIndex && (
                                                             <motion.button
                                                                 key={p.id}
-                                                                initial={{ opacity: 0, x: 30, scale: 0.9 }}
-                                                                animate={{ opacity: 1, x: 0, scale: 1 }}
-                                                                exit={{ opacity: 0, x: -30, scale: 0.9 }}
-                                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                                initial={{ opacity: 0, x: 80 }}
+                                                                animate={{ opacity: 1, x: 0 }}
+                                                                exit={{ opacity: 0, x: -80 }}
+                                                                transition={{ 
+                                                                    type: "spring", 
+                                                                    stiffness: 400, 
+                                                                    damping: 40
+                                                                }}
                                                                 onClick={() => addToCart({ id: p.id, name: p.name, price: Number(p.price), quantity: 1 })}
-                                                                className="h-24 w-full max-w-[240px] bg-white/10 hover:bg-white text-white hover:text-black rounded-[2rem] p-6 border border-white/10 transition-all flex flex-col justify-between items-start text-left group relative overflow-hidden"
+                                                                className="absolute right-0 h-24 w-full max-w-[240px] bg-white text-black rounded-[2rem] p-6 shadow-2xl transition-all flex flex-col justify-between items-start text-left group overflow-hidden border border-white/20"
                                                             >
                                                                 {/* Accent Glow inside button */}
-                                                                <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 blur-2xl group-hover:bg-black/5" />
+                                                                <div className="absolute top-0 right-0 w-20 h-20 bg-black/5 blur-2xl" />
                                                                 
-                                                                <span className="text-[10px] font-black uppercase truncate w-full opacity-50 group-hover:opacity-100 tracking-widest">{p.name}</span>
+                                                                <span className="text-[10px] font-black uppercase truncate w-full tracking-widest text-gray-900">{p.name}</span>
                                                                 <div className="flex items-baseline gap-1 mt-auto">
                                                                     <span className="text-3xl font-black tracking-tighter">${Number(p.price).toLocaleString()}</span>
-                                                                    <span className="text-[10px] font-bold opacity-40 group-hover:opacity-100">PROMO</span>
+                                                                    <span className="text-[10px] font-black text-white bg-gray-900 px-2 py-0.5 rounded-full">OFERTA</span>
                                                                 </div>
                                                             </motion.button>
                                                         ))}
