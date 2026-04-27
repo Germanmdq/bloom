@@ -501,8 +501,30 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     items: cart,
                 });
 
-                // Nota: El descuento de stock de Bloom ahora se maneja en sendToKitchen
-                // para que sea instantáneo ni bien se pide el producto.
+                // ── LÓGICA DE INVENTARIO UNIVERSAL (BLOOM) ──
+                try {
+                    for (const item of cart) {
+                        // Solo descontamos si no se descontó antes (ej: al enviar a cocina)
+                        if ((item as any).stock_processed) continue;
+
+                        const nombreLower = item.name.toLowerCase();
+                        let unidadesARestar = item.quantity;
+                        
+                        if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
+                            unidadesARestar = item.quantity * 2;
+                        }
+
+                        const { data: prod } = await supabase.from('products').select('stock, vendidos').eq('id', item.id).maybeSingle();
+                        if (prod) {
+                            await supabase.from('products').update({ 
+                                stock: (prod.stock || 0) - unidadesARestar, 
+                                vendidos: (prod.vendidos || 0) + item.quantity 
+                            }).eq('id', item.id);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error en inventario (FinishOrder):", err);
+                }
                 
                 // If it's a web order, we mark it as completed and paid
                 if (webOrderId || currentWebOrderId) {
@@ -601,11 +623,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             console.error(`❌ Error actualizando ${item.name}:`, updateError);
                         } else {
                             console.log(`✅ ${item.name} actualizado. Stock: ${nuevoStock}`);
+                            // Marcamos el item como procesado para no restarlo de nuevo al cobrar
+                            (item as any).stock_processed = true;
                         }
                     } else {
                         console.warn(`⚠️ El producto "${item.name}" no tiene ID de base de datos válido. No se puede restar stock.`);
                     }
                 }
+                
+                // Actualizamos la mesa con los items marcados como procesados
+                await supabase.from("salon_tables")
+                    .update({ items: cart })
+                    .eq("id", tableId);
+
             } catch (err) {
                 console.error("❌ Fallo crítico en sistema de inventario:", err);
             }
