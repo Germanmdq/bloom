@@ -157,46 +157,27 @@ export default function TablesPage() {
 
         if (!id) {
             const parsed = parseInt(newTableIdInput);
-            if (newTableType === 'LOCAL') {
-                if (isNaN(parsed) || parsed < 1 || parsed > 99) {
-                    alert("Por favor ingresa un número de mesa válido (1-99).");
-                    return;
-                }
+            if (!isNaN(parsed)) {
                 targetId = parsed;
+            } else if (newTableName || newTableCustomerId) {
+                // SI NO HAY NÚMERO PERO SÍ NOMBRE, ASIGNAMOS UN ID VIRTUAL
+                // Buscamos el ID virtual más alto ocupado actualmente (>= 301)
+                const virtualTables = tables.filter(t => t.id >= 301).sort((a, b) => b.id - a.id);
+                const nextVirtualId = virtualTables.length > 0 ? virtualTables[0].id + 1 : 301;
+                targetId = nextVirtualId;
+            } else if (newTableType === 'LOCAL') {
+                alert("Por favor ingresa un número de mesa o un nombre/alias.");
+                return;
             } else if (newTableType === 'DELIVERY') {
-                if (!isNaN(parsed)) {
-                    targetId = parsed;
-                } else {
-                    const freeDeliveryTables = tables
-                        .filter(t => t.id >= 100 && t.id < 200 && t.status === 'FREE')
-                        .sort((a, b) => a.id - b.id);
-                    if (freeDeliveryTables.length > 0) {
-                        targetId = freeDeliveryTables[0].id;
-                    } else {
-                        // Si no hay ninguna mesa de delivery ocupada ni libre, empezamos por la 101
-                        const highestDelivery = tables
-                            .filter(t => t.id >= 100 && t.id < 200)
-                            .sort((a, b) => b.id - a.id)[0]?.id || 100;
-                        targetId = highestDelivery + 1;
-                    }
-                }
+                const freeDeliveryTables = tables
+                    .filter(t => t.id >= 100 && t.id < 200 && t.status === 'FREE')
+                    .sort((a, b) => a.id - b.id);
+                targetId = freeDeliveryTables.length > 0 ? freeDeliveryTables[0].id : (tables.filter(t => t.id >= 100 && t.id < 200).sort((a, b) => b.id - a.id)[0]?.id || 100) + 1;
             } else if (newTableType === 'TAKEAWAY') {
-                if (!isNaN(parsed)) {
-                    targetId = parsed;
-                } else {
-                    const freeTakeawayTables = tables
-                        .filter(t => t.id >= 200 && t.id < 300 && t.status === 'FREE')
-                        .sort((a, b) => a.id - b.id);
-                    if (freeTakeawayTables.length > 0) {
-                        targetId = freeTakeawayTables[0].id;
-                    } else {
-                        // Si no hay ninguna mesa de retiro, empezamos por la 201
-                        const highestTakeaway = tables
-                            .filter(t => t.id >= 200 && t.id < 300)
-                            .sort((a, b) => b.id - a.id)[0]?.id || 200;
-                        targetId = highestTakeaway + 1;
-                    }
-                }
+                const freeTakeawayTables = tables
+                    .filter(t => t.id >= 200 && t.id < 300 && t.status === 'FREE')
+                    .sort((a, b) => a.id - b.id);
+                targetId = freeTakeawayTables.length > 0 ? freeTakeawayTables[0].id : (tables.filter(t => t.id >= 200 && t.id < 300).sort((a, b) => b.id - a.id)[0]?.id || 200) + 1;
             }
         }
 
@@ -222,7 +203,7 @@ export default function TablesPage() {
                 order_type: finalOrderType,
                 items: (newTableName || newTableCustomerId) ? [{
                     id: 'meta-customer',
-                    name: `Cliente: ${newTableName}`,
+                    name: `Cliente: ${newTableName || 'Alias'}`,
                     customer_id: newTableCustomerId,
                     price: 0,
                     quantity: 1,
@@ -642,13 +623,14 @@ export default function TablesPage() {
                                                 
                                                 return (
                                                     <>
-                                                        {hasName && (
+                                                        {hasName && table.id < 301 && (
                                                             <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-40 ${styles.textColor}`}>
                                                                 Mesa {table.id}
                                                             </span>
                                                         )}
                                                         <span className={`font-semibold leading-none tracking-tight break-words w-full ${styles.textColor} ${
-                                                            displayName.length > 8 ? 'text-[3rem]' : 
+                                                            displayName.length > 12 ? 'text-[2.5rem]' :
+                                                            displayName.length > 8 ? 'text-[3.5rem]' : 
                                                             displayName.length > 5 ? 'text-[5rem]' : 
                                                             'text-[9rem]'
                                                         }`}>
