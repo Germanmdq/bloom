@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import { motion, AnimatePresence } from "framer-motion";
+import { User as UserIcon, ChevronDown, LogOut, Settings } from "lucide-react";
 
 type Props = {
   className?: string;
@@ -15,7 +17,9 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
   const supabase = createClient();
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const sessionCheckedRef = useRef(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,7 +33,20 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
       if (!sessionCheckedRef.current) return;
       setUser(session?.user ?? null);
     });
-    return () => { cancelled = true; subscription.unsubscribe(); };
+
+    // Close on click outside
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => { 
+      cancelled = true; 
+      subscription.unsubscribe();
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, [supabase]);
 
   const dark = tone === "onDark";
@@ -38,12 +55,51 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
 
   if (user) {
     return (
-      <button
-        onClick={async () => { await supabase.auth.signOut(); onAfterNavigate?.(); }}
-        className={`text-[13px] font-medium transition-colors ${dark ? "text-white/80 hover:text-white" : "text-neutral-500 hover:text-neutral-900"} ${className}`}
-      >
-        Cerrar sesión
-      </button>
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`flex items-center gap-1.5 text-[13px] font-medium transition-colors ${dark ? "text-white/80 hover:text-white" : "text-neutral-500 hover:text-neutral-900"} ${className}`}
+        >
+          <div className="w-6 h-6 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500">
+            <UserIcon size={12} />
+          </div>
+          <span>Mi cuenta</span>
+          <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
+        </button>
+        
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute right-0 mt-3 w-48 overflow-hidden rounded-2xl border border-black/[0.05] bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] z-[100] py-1.5"
+            >
+               <Link
+                href="/cuenta"
+                onClick={() => { setIsOpen(false); onAfterNavigate?.(); }}
+                className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+                >
+                    <Settings size={14} className="text-neutral-400" />
+                    Ver mi cuenta
+                </Link>
+                <div className="h-px bg-neutral-50 mx-3 my-1" />
+                <button
+                onClick={async () => { 
+                    setIsOpen(false);
+                    await supabase.auth.signOut(); 
+                    onAfterNavigate?.(); 
+                }}
+                className="flex items-center gap-2.5 w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors"
+                >
+                    <LogOut size={14} />
+                    Cerrar sesión
+                </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     );
   }
 
