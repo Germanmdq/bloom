@@ -232,96 +232,49 @@ export default function ReportsPage() {
                         </div>
                     </div>
 
-                    {/* Expenses and inventory Section */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        {/* Top Gastos - Izquierda (4 columnas) */}
-                        <div className="lg:col-span-4 space-y-8">
-                            <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-red-500">
-                                        <Receipt size={20} />
-                                    </div>
-                                    <h3 className="text-lg font-black text-gray-900 tracking-tight uppercase">Top Gastos</h3>
-                                </div>
-                                <div className="space-y-3">
-                                    {Object.entries(stats.expensesByCategory).length === 0 ? (
-                                        <div className="py-10 text-center">
-                                            <p className="text-gray-300 font-bold uppercase text-[9px] tracking-widest leading-relaxed">
-                                                Sin gastos cargados<br/>en este período
-                                            </p>
+                    {/* Units Sold Section - Full Width Grid */}
+                    <div className="w-full">
+                         <div className="flex items-center gap-3 mb-8 ml-2">
+                            <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-500">
+                                <ShoppingBag size={20} />
+                            </div>
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Unidades Vendidas</h3>
+                        </div>
+
+                        {Object.keys(stats.productsByCategory).length === 0 ? (
+                            <div className="bg-white p-20 rounded-[3rem] border border-gray-100 text-center">
+                                <Package size={40} className="mx-auto text-gray-100 mb-4" />
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay ventas registradas</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
+                                {Object.entries(stats.productsByCategory).map(([category, items]) => (
+                                    <motion.div 
+                                        key={category} 
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col hover:border-gray-200 transition-all"
+                                    >
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h4 className="text-lg font-black text-gray-900 uppercase tracking-tighter truncate pr-4">{category}</h4>
+                                            <span className="bg-gray-100 text-gray-900 px-3 py-1 rounded-full text-[10px] font-black shrink-0">
+                                                {Object.values(items).reduce((a, b) => a + b, 0)} U.
+                                            </span>
                                         </div>
-                                    ) : (
-                                        Object.entries(stats.expensesByCategory)
-                                            .sort((a,b) => b[1] - a[1])
-                                            .map(([cat, amount]) => (
-                                                <div key={cat} className="flex justify-between items-center p-3.5 bg-gray-50/50 rounded-2xl border border-gray-100/50">
-                                                    <span className="text-xs font-bold text-gray-600">{cat}</span>
-                                                    <span className="text-xs font-black text-red-500">-${amount.toLocaleString()}</span>
-                                                </div>
-                                            ))
-                                    )}
-                                </div>
+                                        <div className="space-y-3">
+                                            {Object.entries(items)
+                                                .sort((a, b) => b[1] - a[1])
+                                                .map(([name, qty]) => (
+                                                    <div key={name} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0 border-dashed">
+                                                        <span className="text-xs font-bold text-gray-500 truncate pr-4">{name}</span>
+                                                        <span className="font-black text-gray-900 text-xs shrink-0">x{qty}</span>
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    </motion.div>
+                                ))}
                             </div>
-                            
-                            <div className="bg-gray-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden">
-                                <h4 className="text-sm font-black uppercase tracking-tight mb-3">Sincronización</h4>
-                                <p className="text-[11px] text-gray-400 font-bold leading-relaxed mb-4">
-                                    Datos actualizados en tiempo real. Recordá cargar gastos para un balance exacto.
-                                </p>
-                                <div className="flex items-center gap-2 text-green-400 relative z-10">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                                    <span className="text-[9px] font-black uppercase tracking-widest">En línea</span>
-                                </div>
-                                <div className="absolute -bottom-6 -right-6 opacity-10 rotate-12">
-                                    <RefreshCcw size={100} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Unidades Vendidas - Derecha (8 columnas) */}
-                        <div className="lg:col-span-8">
-                             <div className="flex items-center gap-3 mb-6 ml-2">
-                                <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-500">
-                                    <ShoppingBag size={20} />
-                                </div>
-                                <h3 className="text-lg font-black text-gray-900 tracking-tight uppercase">Unidades Vendidas</h3>
-                            </div>
-
-                            {Object.keys(stats.productsByCategory).length === 0 ? (
-                                <div className="bg-white p-20 rounded-[3rem] border border-gray-100 text-center">
-                                    <Package size={40} className="mx-auto text-gray-100 mb-4" />
-                                    <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">No hay ventas registradas</p>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 pb-20">
-                                    {Object.entries(stats.productsByCategory).map(([category, items]) => (
-                                        <motion.div 
-                                            key={category} 
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col hover:border-gray-200 transition-all"
-                                        >
-                                            <div className="flex items-center justify-between mb-5">
-                                                <h4 className="text-sm font-black text-gray-900 uppercase tracking-tighter truncate pr-2">{category}</h4>
-                                                <span className="bg-gray-100 text-gray-900 px-2.5 py-1 rounded-lg text-[9px] font-black shrink-0">
-                                                    {Object.values(items).reduce((a, b) => a + b, 0)} U.
-                                                </span>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {Object.entries(items)
-                                                    .sort((a, b) => b[1] - a[1])
-                                                    .map(([name, qty]) => (
-                                                        <div key={name} className="flex justify-between items-center py-1.5 border-b border-gray-50 last:border-0 border-dashed">
-                                                            <span className="text-[11px] font-bold text-gray-500 truncate pr-4">{name}</span>
-                                                            <span className="font-black text-gray-900 text-[11px] shrink-0">x{qty}</span>
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        )}
                     </div>
                 </div>
             )}
