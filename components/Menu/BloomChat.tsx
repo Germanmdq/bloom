@@ -24,6 +24,8 @@ type ProductRow = {
   category_id: string | null;
   /** Nombre de categoría (join) para sugerencias post-encargo */
   category_name?: string | null;
+  /** Categoría interna (promocion, plato_del_dia, oferta_del_dia) */
+  kind?: string | null;
   /** Lista plana desde `products.options.variants` (ej. gaseosas). */
   variants?: string[];
   /** Grupos desde `products.options.groups` (platos, pastas, etc.). */
@@ -398,7 +400,12 @@ function ProductCard({
         <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
           <div>
             <div className="flex justify-between items-start gap-2">
-              <h4 className="font-bold text-neutral-900 leading-[1.1] text-base">{product.name}</h4>
+              <div className="flex flex-col">
+                {product.kind === 'oferta_del_dia' && (
+                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 mb-1">🔥 Oferta del día</span>
+                )}
+                <h4 className="font-bold text-neutral-900 leading-[1.1] text-base">{product.name}</h4>
+              </div>
               {added && (
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
                   <Check className="h-3 w-3" strokeWidth={4} />
@@ -722,45 +729,58 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     (async () => {
       setLoadingProducts(true);
       try {
+        // 1. Cargar Ofertas del Día (Siempre van arriba)
+        const { data: offersData } = await supabase
+          .from("products")
+          .select("id,name,description,price,kind,options")
+          .eq("kind", "oferta_del_dia")
+          .eq("active", true)
+          .order("created_at", { ascending: true });
+
+        // 2. Cargar productos de la categoría/scope
         let q = supabase
           .from("products")
-          .select("id,name,description,price,image_url,category_id,options, categories(name)")
-          .eq("active", true);
+          .select("id,name,description,price,image_url,category_id,kind,options, categories(name)")
+          .eq("active", true)
+          .neq("kind", "oferta_del_dia"); // Evitar duplicados si el dueño les puso categoría
+          
         if (context.productIds?.length) {
           q = q.in("id", context.productIds);
         } else if (context.categoryId) {
           q = q.eq("category_id", context.categoryId);
         }
+        
         const { data, error } = await q.order("name");
         if (cancelled) return;
         if (error) {
           console.error("[BloomChat] products", error);
           toast.error("No se pudieron cargar los productos");
           setProducts([]);
-          if (scrollRef.current) scrollRef.current.scrollTop = 0;
           return;
         }
-        const rows = (data ?? []).map((raw: Record<string, unknown>) => {
+
+        const parseRows = (list: any[]) => list.map((raw: any) => {
           const c = raw.categories as { name?: string } | { name?: string }[] | null | undefined;
           const categoryName = Array.isArray(c)
-            ? typeof c[0]?.name === "string"
-              ? c[0].name
-              : null
-            : typeof c?.name === "string"
-              ? c.name
-              : null;
+            ? typeof c[0]?.name === "string" ? c[0].name : null
+            : typeof c?.name === "string" ? c.name : null;
+            
           return {
-            id: raw.id as string,
-            name: raw.name as string,
-            description: (raw.description as string | null) ?? null,
-            image_url: (raw.image_url as string | null) ?? null,
+            id: raw.id,
+            name: raw.name,
+            description: raw.description || null,
+            image_url: raw.image_url || null,
             price: Number(raw.price),
-            category_id: (raw.category_id as string | null) ?? null,
+            kind: raw.kind || null,
             category_name: categoryName,
             ...parseProductOptionsRow(raw.options),
           } as ProductRow;
         });
-        setProducts(rows);
+
+        const catProds = parseRows(data || []);
+        const dailyOffs = parseRows(offersData || []);
+
+        setProducts([...dailyOffs, ...catProds]);
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
       } finally {
         if (!cancelled) setLoadingProducts(false);

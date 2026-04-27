@@ -15,6 +15,15 @@ export default function SettingsPage() {
     const [barra, setBarra] = useState(3);
     const [f1Action, setF1Action] = useState<ComparisonType>('yesterday');
     const [f2Action, setF2Action] = useState<ComparisonType>('last_week');
+
+    // Ofertas del Día States
+    const [dailyOffers, setDailyOffers] = useState<any[]>([
+        { id: null, name: '', price: '' },
+        { id: null, name: '', price: '' },
+        { id: null, name: '', price: '' }
+    ]);
+    const [isSavingOffers, setIsSavingOffers] = useState(false);
+
     const [platoDiaProducts, setPlatoDiaProducts] = useState<any[]>([]);
     const [selectedPlatoDia, setSelectedPlatoDia] = useState<string | null>(null);
     const [savingPlatoDia, setSavingPlatoDia] = useState(false);
@@ -27,7 +36,6 @@ export default function SettingsPage() {
 
     useEffect(() => {
         const loadSettings = async () => {
-            // Intento de carga robusto para evitar errores de esquema (400)
             try {
                 const { data, error } = await supabase
                     .from("app_settings")
@@ -68,6 +76,22 @@ export default function SettingsPage() {
                     if (featured) setSelectedPlatoDia(featured.id);
                 }
             }
+
+            // Load Ofertas del Día
+            const { data: offersData } = await supabase
+                .from('products')
+                .select('*')
+                .eq('kind', 'oferta_del_dia')
+                .order('created_at', { ascending: true });
+            
+            if (offersData && offersData.length > 0) {
+                const newOffers = [{ id: null, name: '', price: '' }, { id: null, name: '', price: '' }, { id: null, name: '', price: '' }];
+                offersData.slice(0, 3).forEach((off, idx) => {
+                    newOffers[idx] = { id: off.id, name: off.name, price: off.price || '' };
+                });
+                setDailyOffers(newOffers);
+            }
+
             // Load Promociones
             const { data: promoData } = await supabase
                 .from('products')
@@ -80,6 +104,47 @@ export default function SettingsPage() {
         };
         loadSettings();
     }, []);
+
+    const handleSaveOffers = async () => {
+        setIsSavingOffers(true);
+        try {
+            for (const offer of dailyOffers) {
+                if (!offer.name && !offer.id) continue;
+
+                const payload = {
+                    name: offer.name || '',
+                    price: Number(offer.price) || 0,
+                    kind: 'oferta_del_dia',
+                    active: !!offer.name,
+                    category_id: null
+                };
+
+                if (offer.id) {
+                    await supabase.from('products').update(payload).eq('id', offer.id);
+                } else if (offer.name) {
+                    await supabase.from('products').insert([payload]);
+                }
+            }
+            // Recargar para tener IDs actualizados
+            const { data: offersData } = await supabase
+                .from('products')
+                .select('*')
+                .eq('kind', 'oferta_del_dia')
+                .order('created_at', { ascending: true });
+            
+            if (offersData) {
+                const newOffers = [{ id: null, name: '', price: '' }, { id: null, name: '', price: '' }, { id: null, name: '', price: '' }];
+                offersData.slice(0, 3).forEach((off, idx) => {
+                    newOffers[idx] = { id: off.id, name: off.name, price: off.price || '' };
+                });
+                setDailyOffers(newOffers);
+            }
+            alert("Ofertas actualizadas.");
+        } catch (e: any) {
+            alert("Error: " + e.message);
+        }
+        setIsSavingOffers(false);
+    };
 
     const handleSavePlatoDia = async (productId: string) => {
         setSavingPlatoDia(true);
@@ -316,6 +381,61 @@ export default function SettingsPage() {
                                 </button>
                             );
                         })}
+                    </div>
+                </section>
+
+                {/* OFERTAS DEL DÍA */}
+                <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
+                            <Megaphone size={24} />
+                        </div>
+                        <div className="flex-1">
+                            <h2 className="text-xl font-black text-gray-900">Ofertas del Día</h2>
+                            <p className="text-xs text-gray-400 font-medium mt-0.5">Aparecerán resaltadas arriba de todo en el menú del cliente (solo texto)</p>
+                        </div>
+                        <button 
+                            onClick={handleSaveOffers} 
+                            disabled={isSavingOffers}
+                            className="bg-amber-500 text-white rounded-xl px-6 py-2 text-sm font-black hover:bg-amber-600 transition-all disabled:opacity-50"
+                        >
+                            {isSavingOffers ? "Guardando..." : "Actualizar Ofertas"}
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
+                        {dailyOffers.map((offer, idx) => (
+                            <div key={idx} className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                <div className="flex-1">
+                                    <label className="block text-[10px] font-black uppercase text-gray-400 mb-1 ml-1">Título de la Oferta {idx + 1}</label>
+                                    <input 
+                                        type="text" 
+                                        value={offer.name} 
+                                        onChange={(e) => {
+                                            const newOffers = [...dailyOffers];
+                                            newOffers[idx].name = e.target.value;
+                                            setDailyOffers(newOffers);
+                                        }}
+                                        placeholder="Ej: Promo Café + Tostado"
+                                        className="w-full h-12 px-4 rounded-xl bg-white border-transparent focus:ring-2 ring-amber-500 font-bold outline-none placeholder:text-gray-200"
+                                    />
+                                </div>
+                                <div className="w-full sm:w-32">
+                                    <label className="block text-[10px] font-black uppercase text-gray-400 mb-1 ml-1">Precio ($)</label>
+                                    <input 
+                                        type="number" 
+                                        value={offer.price} 
+                                        onChange={(e) => {
+                                            const newOffers = [...dailyOffers];
+                                            newOffers[idx].price = e.target.value;
+                                            setDailyOffers(newOffers);
+                                        }}
+                                        placeholder="0"
+                                        className="w-full h-12 px-4 rounded-xl bg-white border-transparent focus:ring-2 ring-amber-500 font-bold outline-none placeholder:text-gray-200"
+                                    />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </section>
 
