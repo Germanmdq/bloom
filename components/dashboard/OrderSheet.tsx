@@ -32,9 +32,10 @@ type OrderSheetProps = {
     webOrderId?: string;
     /** Pass the full order object to skip the fetch and load the cart instantly */
     webOrderData?: any;
+    initialShowPayment?: boolean;
 };
 
-export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webOrderData }: OrderSheetProps) {
+export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webOrderData, initialShowPayment }: OrderSheetProps) {
     const {
         cart, addToCart, removeFromCart, clearCart,
         paymentMethod, setPaymentMethod, notes, setNotes,
@@ -96,6 +97,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     };
 
     const isWebTable = tableId === WEB_ORDER_TABLE_RETIRO || tableId === WEB_ORDER_TABLE_DELIVERY;
+
+    useEffect(() => {
+        if (initialShowPayment && cart.length > 0) {
+            setShowPaymentModal(true);
+        }
+    }, [initialShowPayment, cart.length]);
 
     useEffect(() => {
         fetch("/api/delivery-persons").then(r => r.json()).then(data => {

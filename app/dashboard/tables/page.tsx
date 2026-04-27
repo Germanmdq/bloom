@@ -25,6 +25,9 @@ export default function TablesPage() {
     const [tables, setTables] = useState<Table[]>([]);
     const [tableSearch, setTableSearch] = useState("");
     const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+    const [isQuickPayOpen, setIsQuickPayOpen] = useState(false);
+    const [quickPayInput, setQuickPayInput] = useState("");
+    const [autoOpenPayment, setAutoOpenPayment] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +97,7 @@ export default function TablesPage() {
         };
     }, []);
     
-    // Keyboard Shortcuts (F1, +, Esc)
+    // Keyboard Shortcuts (F1, F5, +, Esc)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Esc cierra todo
@@ -102,21 +105,30 @@ export default function TablesPage() {
                 if (selectedTable) setSelectedTable(null);
                 if (isNewTableModalOpen) setIsNewTableModalOpen(false);
                 if (selectedWebOrder) setSelectedWebOrder(null);
+                if (isQuickPayOpen) setIsQuickPayOpen(false);
             }
             // F1 enfoca el buscador
             if (e.key === 'F1') {
                 e.preventDefault();
                 document.getElementById('table-search')?.focus();
             }
+            // F5 Cobro Rápido
+            if (e.key === 'F5') {
+                e.preventDefault();
+                if (!selectedTable) {
+                    setIsQuickPayOpen(true);
+                    setQuickPayInput("");
+                }
+            }
             // El signo "+" abre la mesa (si no hay modales abiertos)
-            if (e.key === '+' && !isNewTableModalOpen && !selectedTable) {
+            if (e.key === '+' && !isNewTableModalOpen && !selectedTable && !isQuickPayOpen) {
                 e.preventDefault();
                 setIsNewTableModalOpen(true);
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isNewTableModalOpen, selectedTable, selectedWebOrder]);
+    }, [isNewTableModalOpen, selectedTable, selectedWebOrder, isQuickPayOpen]);
 
     async function fetchWebOrders() {
         try {
@@ -250,6 +262,28 @@ export default function TablesPage() {
         }
     };
 
+    const handleQuickPayConfirm = () => {
+        if (!quickPayInput) return;
+        const search = quickPayInput.toLowerCase();
+        
+        // Buscar mesa ocupada que coincida con el ID o el Nombre
+        const target = tables.find(t => {
+            if (t.status !== 'OCCUPIED') return false;
+            const metaCust = t.items?.find((i: any) => i.id === 'meta-customer');
+            const name = metaCust?.name?.toLowerCase() || "";
+            return t.id.toString() === search || name.includes(search);
+        });
+
+        if (target) {
+            setAutoOpenPayment(true);
+            setSelectedTable(target);
+            setIsQuickPayOpen(false);
+            setQuickPayInput("");
+        } else {
+            alert("No se encontró una mesa ocupada con ese nombre o número.");
+        }
+    };
+
     const handleQuickOpen = (val: string) => {
         const num = parseInt(val);
         if (isNaN(num)) return;
@@ -344,7 +378,8 @@ export default function TablesPage() {
                         <div className="bg-white/90 backdrop-blur-2xl w-full h-full rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50 overflow-hidden flex flex-col">
                             <OrderSheet
                                 tableId={selectedTable.id}
-                                onClose={() => { setSelectedTable(null); fetchTables(); }}
+                                initialShowPayment={autoOpenPayment}
+                                onClose={() => { setSelectedTable(null); setAutoOpenPayment(false); fetchTables(); }}
                                 onOrderComplete={() => handleOrderComplete()}
                             />
                         </div>
@@ -353,6 +388,53 @@ export default function TablesPage() {
             )}
 
             {/* New Table Modal */}
+            {/* Quick Pay Modal (F5) */}
+            {isQuickPayOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsQuickPayOpen(false)} />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border border-white/20"
+                    >
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center">
+                                <span className="text-white font-black text-xl">$</span>
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-black text-gray-900 leading-tight">Cobro Rápido</h2>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ingrese Mesa o Nombre</p>
+                            </div>
+                        </div>
+
+                        <input
+                            autoFocus
+                            type="text"
+                            placeholder="Ej: 5 o Germán..."
+                            value={quickPayInput}
+                            onChange={(e) => setQuickPayInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleQuickPayConfirm(); }}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 font-black text-lg outline-none focus:ring-2 ring-black/5 mb-6"
+                        />
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setIsQuickPayOpen(false)}
+                                className="flex-1 py-4 font-bold text-gray-500 hover:bg-gray-100 rounded-2xl transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleQuickPayConfirm}
+                                className="flex-1 py-4 font-bold text-white bg-black hover:scale-105 active:scale-95 rounded-2xl transition-all shadow-xl"
+                            >
+                                Seleccionar Mesa
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
             {isNewTableModalOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div
