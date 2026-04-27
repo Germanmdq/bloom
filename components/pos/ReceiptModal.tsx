@@ -49,74 +49,71 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                             margin: 0;
                             size: 80mm auto;
                         }
-                        /* Reset de visibilidad */
+                        /* Limpieza total de lo que no es ticket */
                         html, body {
-                            visibility: hidden !important;
-                            height: auto !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
                             background: white !important;
                         }
-                        #bloom-ticket-content-root {
-                            visibility: visible !important;
+                        body > * {
+                            display: none !important;
+                        }
+                        #bloom-ticket-printable {
                             display: block !important;
-                            position: fixed !important;
-                            left: 0 !important;
-                            top: 0 !important;
-                            width: 80mm !important;
+                            width: 72mm !important;
+                            padding: 4mm !important;
+                            margin: 0 !important;
                             background: white !important;
-                            opacity: 1 !important;
-                            transform: none !important;
                         }
-                        #bloom-ticket-content-root * {
-                            visibility: visible !important;
-                            opacity: 1 !important;
-                        }
-                        .print-hidden {
+                        .print-no-show {
                             display: none !important;
                         }
                     }
                 `}</style>
 
-                <div id="bloom-ticket-content-root" className="p-4 sm:p-6 flex flex-col gap-4 bg-white">
+                <div id="bloom-ticket-printable" className="flex flex-col gap-3 bg-white text-black font-mono">
                     {/* Header */}
                     <div className="text-center space-y-1">
-                        <div className="flex justify-center mb-2">
+                        <div className="flex justify-center mb-1">
                             <Image 
                                 src="/images/bloom-logo.png" 
                                 alt="Bloom" 
-                                width={120} 
-                                height={40} 
+                                width={110} 
+                                height={35} 
                                 className="grayscale brightness-0"
                             />
                         </div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest leading-none">Coffee & More</p>
-                        <p className="text-[10px] opacity-70">Almirante Brown 2005, Mar del Plata</p>
-                        <div className="h-px w-full border-b border-dashed border-black/30 my-3" />
-                        <div className="flex justify-between items-center text-[11px] font-bold">
+                        <p className="text-[10px] font-bold uppercase">Coffee & More</p>
+                        <p className="text-[9px] opacity-70">Almirante Brown 2005, Mar del Plata</p>
+                        
+                        <div className="border-b border-dashed border-black/40 my-2" />
+                        
+                        <div className="flex justify-between text-[10px] font-bold">
                             <span>Mesa: {tableId}</span>
-                            <span>{new Date().toLocaleDateString()} {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>{new Date().toLocaleDateString()}</span>
                         </div>
-                        <p className="text-[10px] font-bold text-left mt-1">{invoiceType}</p>
+                        <p className="text-[9px] font-bold text-left">{invoiceType}</p>
                     </div>
 
-                    {/* Items Table */}
-                    <div className="flex-1 space-y-2.5 my-2">
-                        <div className="grid grid-cols-[1fr_30px_60px] text-[10px] font-black border-b border-black pb-1 uppercase tracking-tighter">
-                            <span>Producto</span>
-                            <span className="text-center">Cant</span>
-                            <span className="text-right">Total</span>
+                    {/* Items Table - REDUCIDO el ancho para que entre todo */}
+                    <div className="space-y-1.5 my-1">
+                        <div className="grid grid-cols-[1fr_25px_50px] text-[9px] font-black border-b border-black pb-0.5 uppercase">
+                            <span>P RODUCTO</span>
+                            <span className="text-center">C</span>
+                            <span className="text-right">TOTAL</span>
                         </div>
                         
                         {extraTotal > 0 && (
-                            <div className="grid grid-cols-[1fr_30px_60px] text-[11px] gap-1">
-                                <span className="truncate">Cargos Previos</span>
+                            <div className="grid grid-cols-[1fr_25px_50px] text-[10px] gap-1">
+                                <span className="truncate italic">Cargos Previos</span>
                                 <span className="text-center">1</span>
                                 <span className="text-right">${extraTotal.toLocaleString()}</span>
                             </div>
                         )}
                         
                         {cart.map((item, idx) => (
-                            <div key={idx} className="grid grid-cols-[1fr_30px_60px] text-[11px] leading-tight gap-1">
-                                <span className="font-medium break-words">{item.name}</span>
+                            <div key={idx} className="grid grid-cols-[1fr_25px_50px] text-[10px] leading-tight gap-1">
+                                <span className="font-medium pr-1">{item.name}</span>
                                 <span className="text-center opacity-70">{item.quantity}</span>
                                 <span className="text-right font-bold">${(item.price * item.quantity).toLocaleString()}</span>
                             </div>
@@ -124,24 +121,21 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                     </div>
 
                     {/* Totals */}
-                    <div className="border-t-2 border-black border-double pt-3 mt-2 space-y-1">
-                        <div className="flex justify-between font-black text-lg tracking-tighter">
+                    <div className="border-t-2 border-black border-double pt-2 mt-1">
+                        <div className="flex justify-between font-black text-base">
                             <span>TOTAL</span>
                             <span>${total.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between text-[10px] font-bold opacity-60">
-                            <span>Items: {cart.reduce((s, i) => s + i.quantity, 0)}</span>
+                        <div className="flex justify-between text-[9px] font-bold opacity-60">
+                            <span>{cart.reduce((s, i) => s + i.quantity, 0)} Items</span>
                             <span>Abonado</span>
                         </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="text-center mt-6 mb-20 space-y-1">
-                        <p className="text-[10px] font-bold">¡GRACIAS POR TU VISITA!</p>
-                        <p className="text-[9px] opacity-50">bloommdp.com</p>
-                        <div className="flex justify-center mt-4">
-                            {/* Espacio extra para el corte de la ticketera */}
-                        </div>
+                    <div className="text-center mt-4 mb-20 space-y-1">
+                        <p className="text-[10px] font-bold uppercase">¡Gracias por tu visita!</p>
+                        <p className="text-[8px]">bloommdp.com</p>
                     </div>
                 </div>
 
