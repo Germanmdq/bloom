@@ -769,12 +769,17 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <div className="flex flex-col gap-4">
                                 {/* SECCIÓN: OFERTA DEL DÍA (Apple Pro Style) */}
                                 {(() => {
-                                    const promoProducts = products.filter((p: any) => 
+                                    let promoProducts = products.filter((p: any) => 
                                         p.name.toLowerCase().includes('promo') || 
                                         p.name.toLowerCase().includes('oferta') ||
                                         p.name.toLowerCase().includes('especial')
                                     );
                                     
+                                    // Si no hay promos, para probar mostramos 3 cualquiera
+                                    if (promoProducts.length === 0 && products.length > 0) {
+                                        promoProducts = [...products].sort(() => 0.5 - Math.random()).slice(0, 3);
+                                    }
+
                                     if (promoProducts.length === 0) return null;
 
                                     return (
