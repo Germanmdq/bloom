@@ -1732,13 +1732,13 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   </label>
                 </fieldset>
 
-                {/* Cuenta Corriente – pago de deuda */}
+                {/* Cuenta Corriente – pago de saldo pendiente */}
                 {paymentMethod === "mercadopago" && profileBalance > 0 && (
-                  <div className="mt-4 rounded-xl border-2 border-red-200 bg-red-50 p-4 shadow-sm">
-                    <h3 className="text-sm font-black text-red-900 mb-1.5 flex items-center gap-2">
-                      📋 Deuda Pendiente: {formatArs(profileBalance)}
+                  <div className="mt-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+                    <h3 className="text-sm font-black text-emerald-900 mb-1.5 flex items-center gap-2">
+                       Saldo Pendiente: {formatArs(profileBalance)}
                     </h3>
-                    <p className="text-xs text-red-800/80 mb-3 leading-relaxed">
+                    <p className="text-xs text-emerald-800/80 mb-3 leading-relaxed">
                       Tu cuenta corriente tiene un saldo pendiente. Podés sumarlo a este pago.
                     </p>
                     <label className="flex items-center gap-2 cursor-pointer mb-2">
@@ -1746,10 +1746,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                         type="checkbox"
                         checked={payDebt}
                         onChange={(e) => setPayDebt(e.target.checked)}
-                        className="accent-red-600 w-4 h-4 rounded"
+                        className="accent-emerald-600 w-4 h-4 rounded"
                       />
-                      <span className="text-sm font-bold text-red-900">
-                        Sí, quiero abonar mi deuda
+                      <span className="text-sm font-bold text-emerald-900">
+                        Sí, quiero abonar mi saldo pendiente
                       </span>
                     </label>
                     {payDebt && (
@@ -1761,9 +1761,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                             value="total"
                             checked={payDebtType === "total"}
                             onChange={() => { setPayDebtType("total"); setPayDebtMonto(String(profileBalance)); }}
-                            className="accent-red-600"
+                            className="accent-emerald-600"
                           />
-                          <span className="text-sm font-medium text-red-900">
+                          <span className="text-sm font-medium text-emerald-900">
                             Total ({formatArs(profileBalance)})
                           </span>
                         </label>
@@ -1774,9 +1774,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                             value="parcial"
                             checked={payDebtType === "parcial"}
                             onChange={() => setPayDebtType("parcial")}
-                            className="accent-red-600"
+                            className="accent-emerald-600"
                           />
-                          <span className="text-sm font-medium text-red-900">Monto parcial</span>
+                          <span className="text-sm font-medium text-emerald-900">Monto parcial</span>
                         </label>
                         {payDebtType === "parcial" && (
                           <div className="mt-1.5">
@@ -1786,14 +1786,14 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                               max={profileBalance}
                               value={payDebtMonto}
                               onChange={(e) => setPayDebtMonto(e.target.value)}
-                              className="w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-900 outline-none focus:ring-2 focus:ring-red-400/30"
+                              className="w-full rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-900 outline-none focus:ring-2 focus:ring-emerald-400/30"
                               placeholder="Monto a abonar..."
                             />
                           </div>
                         )}
-                        <p className="text-[11px] text-red-700/60 font-medium mt-1">
+                        <p className="text-[11px] text-emerald-700/60 font-medium mt-1">
                           Total del pago:{" "}
-                          <strong className="text-red-900">
+                          <strong className="text-emerald-900">
                             {formatArs(
                               cartTotal +
                                 (payDebtType === "total"
