@@ -3,7 +3,7 @@
 import { Printer, X } from "lucide-react";
 import { CartItem } from "@/lib/store/order-store";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface ReceiptModalProps {
     tableId: number;
