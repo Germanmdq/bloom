@@ -213,6 +213,12 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
                                 onChange={e => setCurrentProduct({ ...currentProduct, price: e.target.value })}
                                 className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold"
                             />
+                            <select
+                                value={currentProduct.category_id}
+                                onChange={e => setCurrentProduct({ ...currentProduct, category_id: e.target.value })}
+                                className="w-full bg-gray-50 p-4 rounded-2xl outline-none font-bold"
+                            >
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                             
                             <div className="space-y-1.5 px-1">
