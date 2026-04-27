@@ -860,7 +860,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     );
                                 })}
                             </div>
-                        ) : displayProducts.length === 0 ? (
+                        </div>
+                    ) : displayProducts.length === 0 ? (
                             <div className="h-full flex items-center justify-center text-gray-300 text-sm font-medium">
                                 Sin resultados
                             </div>
