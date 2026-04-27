@@ -501,7 +501,7 @@ function PublicMenuPage() {
 
                         return (
                             <div 
-                                className="mb-10 relative group overflow-hidden bg-[#2d4a3e] rounded-[2.5rem] p-8 md:p-12 text-white transition-all border border-white/5 active:scale-[0.99]"
+                                className="mb-10 relative group overflow-hidden bg-[#2d4a3e] rounded-t-[2.5rem] rounded-br-[2.5rem] rounded-bl-none p-8 md:p-12 text-white transition-all border border-white/5 active:scale-[0.99]"
                                 style={{
                                     boxShadow: '0 25px 80px -15px rgba(0,0,0,0.6), 0 10px 40px -10px rgba(0,0,0,0.4)',
                                 }}
@@ -542,12 +542,12 @@ function PublicMenuPage() {
                                                     className="w-full md:w-[320px] bg-white text-black rounded-[2rem] p-8 shadow-2xl flex flex-col items-start gap-4 active:scale-95 transition-all group relative border border-white/20"
                                                 >
                                                     <div className="flex justify-between w-full items-center">
-                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">{p.name}</span>
-                                                        <Plus size={16} className="text-gray-400 group-hover:text-black transition-colors" />
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-900">{p.name}</span>
+                                                        <Plus size={16} className="text-gray-900 group-hover:scale-125 transition-transform" />
                                                     </div>
                                                     <div className="flex items-baseline gap-2">
                                                         <span className="text-4xl font-black tracking-tighter">${Number(p.price).toLocaleString()}</span>
-                                                        <span className="text-[10px] font-black text-white bg-black px-2.5 py-1 rounded-full uppercase tracking-widest">Lo quiero</span>
+                                                        <span className="text-[10px] font-black text-white bg-gray-900 px-3 py-1 rounded-full uppercase tracking-widest shadow-md">Lo quiero</span>
                                                     </div>
                                                 </motion.button>
                                             ))}
