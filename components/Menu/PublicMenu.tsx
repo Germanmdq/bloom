@@ -15,6 +15,7 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [address, setAddress] = useState("");
     const [customerName, setCustomerName] = useState("");
+    const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
 
     const addToCart = (product: any) => {
         setCart(prev => {
@@ -60,6 +61,26 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
         };
     }, [removeFromCart]);
 
+    // Auto-Slider para Promociones
+    useEffect(() => {
+        let promoProducts = products.filter((p: any) => 
+            p.name.toLowerCase().includes('promo') || 
+            p.name.toLowerCase().includes('oferta')
+        );
+        
+        if (promoProducts.length === 0 && products.length > 0) {
+            promoProducts = [...products].slice(0, 3);
+        }
+
+        if (promoProducts.length <= 1) return;
+
+        const interval = setInterval(() => {
+            setCurrentPromoIndex(prev => (prev + 1) % promoProducts.length);
+        }, 4000);
+
+        return () => clearInterval(interval);
+    }, [products]);
+
     const handleCheckout = () => {
         if (!address) {
             alert("Por favor ingresa tu dirección para el delivery.");
@@ -88,7 +109,61 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
     };
 
     return (
-        <div className="pb-32">
+        <div className="pb-32 px-4">
+            {/* SECCIÓN: OFERTA DEL DÍA (Misma estética Apple Pro) */}
+            {(() => {
+                let promoProducts = products.filter((p: any) => 
+                    p.name.toLowerCase().includes('promo') || 
+                    p.name.toLowerCase().includes('oferta')
+                );
+                
+                if (promoProducts.length === 0 && products.length > 0) {
+                    promoProducts = [...products].slice(0, 3);
+                }
+
+                if (promoProducts.length === 0) return null;
+
+                return (
+                    <div className="mb-10 mt-6 relative group overflow-hidden bg-[#3E2723] rounded-[2.5rem] p-8 text-white shadow-2xl transition-all border border-white/10">
+                        {/* Glow effect matching Bloom brand tones (Cafe/Earthy) */}
+                        <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#E8A387]/10 rounded-full blur-[80px]" />
+                        
+                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex flex-col gap-1 text-center md:text-left">
+                                <span className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.15em] text-[#E8A387] border border-white/5 mx-auto md:mx-0 w-fit">
+                                    Destacado de hoy
+                                </span>
+                                <h4 className="text-3xl font-black tracking-tighter leading-tight mt-2">Oferta del día</h4>
+                                <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
+                                    Promociones exclusivas por tiempo limitado
+                                </p>
+                            </div>
+
+                            <div className="w-full md:w-auto overflow-hidden">
+                                <AnimatePresence mode="wait">
+                                    {promoProducts.map((p: any, idx: number) => idx === currentPromoIndex && (
+                                        <motion.button
+                                            key={p.id}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            onClick={() => addToCart(p)}
+                                            className="w-full md:w-64 bg-white text-[#3E2723] rounded-3xl p-5 shadow-xl flex flex-col items-start gap-1 active:scale-95 transition-all group"
+                                        >
+                                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40">{p.name}</span>
+                                            <div className="flex items-baseline gap-2 w-full">
+                                                <span className="text-2xl font-black tracking-tighter">${p.price.toLocaleString('es-AR')}</span>
+                                                <span className="text-[10px] font-black bg-[#E8A387]/20 text-[#C17154] px-2 py-0.5 rounded-full ml-auto">PEDIR AHORA</span>
+                                            </div>
+                                        </motion.button>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {categories?.map((category: any) => {
                 const catProducts = products?.filter((p: any) => p.category_id === category.id);
                 if (!catProducts || catProducts.length === 0) return null;
