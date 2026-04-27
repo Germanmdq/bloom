@@ -18,9 +18,10 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
     
     // Auto-trigger print on mount
     useEffect(() => {
+        console.log("[ReceiptModal] Auto-triggering window.print()");
         const timer = setTimeout(() => {
             window.print();
-        }, 300); // Small delay to ensure styles are loaded
+        }, 800); // Increased delay to ensure window focus and rendering
         return () => clearTimeout(timer);
     }, []);
 
