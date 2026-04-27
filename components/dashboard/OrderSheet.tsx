@@ -559,51 +559,55 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 notes: notes || "",
             });
 
-            // ── LÓGICA DE ACTUALIZACIÓN DE INVENTARIO (BLOOM) ──
+            // ── LÓGICA DE INVENTARIO DEFINITIVA (BLOOM) ──
             try {
-                const inventoryPromises = cart.map(async (item) => {
+                for (const item of cart) {
                     const nombreLower = item.name.toLowerCase();
                     let unidadesARestar = item.quantity;
                     
+                    // REGLA DE ORO: Café Doble = -2 Stock
                     if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
                         unidadesARestar = item.quantity * 2;
                     }
 
-                    // Log para diagnóstico
-                    console.log(`📦 Intentando descontar stock: ${item.name} (ID: ${item.id}) - Cantidad: ${unidadesARestar}`);
+                    console.log(`🚀 PROCESANDO STOCK: ${item.name} (${unidadesARestar} unidades)`);
 
-                    const { data: prod, error: fetchErr } = await supabase
+                    // 1. Obtener datos actuales del producto
+                    const { data: currentProd, error: fetchError } = await supabase
                         .from('products')
                         .select('stock, vendidos')
                         .eq('id', item.id)
                         .maybeSingle();
 
-                    if (fetchErr) console.error("❌ Error buscando producto:", fetchErr);
+                    if (fetchError) {
+                        console.error(`❌ Error al buscar ${item.name}:`, fetchError);
+                        continue;
+                    }
 
-                    if (prod) {
-                        const newStock = (prod.stock || 0) - unidadesARestar;
-                        const newVendidos = (prod.vendidos || 0) + item.quantity;
+                    if (currentProd) {
+                        const nuevoStock = (currentProd.stock || 0) - unidadesARestar;
+                        const nuevosVendidos = (currentProd.vendidos || 0) + item.quantity;
 
-                        const { error: updErr } = await supabase
+                        // 2. Aplicar descuento
+                        const { error: updateError } = await supabase
                             .from('products')
                             .update({ 
-                                stock: newStock, 
-                                vendidos: newVendidos 
+                                stock: nuevoStock, 
+                                vendidos: nuevosVendidos 
                             })
                             .eq('id', item.id);
-                        
-                        if (!updErr) {
-                            console.log(`✅ Stock actualizado para ${item.name}: ${newStock}`);
+
+                        if (updateError) {
+                            console.error(`❌ Error actualizando ${item.name}:`, updateError);
                         } else {
-                            console.error(`❌ Error actualizando stock para ${item.name}:`, updErr);
+                            console.log(`✅ ${item.name} actualizado. Stock: ${nuevoStock}`);
                         }
                     } else {
-                        console.warn(`⚠️ No se encontró el producto ${item.name} en la BD para descontar stock.`);
+                        console.warn(`⚠️ El producto "${item.name}" no tiene ID de base de datos válido. No se puede restar stock.`);
                     }
-                });
-                await Promise.all(inventoryPromises);
+                }
             } catch (err) {
-                console.error("Error crítico en inventario:", err);
+                console.error("❌ Fallo crítico en sistema de inventario:", err);
             }
 
             setFeedback({ message: "Enviado a cocina", type: 'success' });
