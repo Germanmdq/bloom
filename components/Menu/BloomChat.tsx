@@ -395,10 +395,8 @@ function ProductCard({
       <div className="flex w-full gap-4">
         {/* Product Image */}
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[1.25rem] bg-neutral-100 ring-1 ring-black/5">
-          {product.image_url ? (
+          {product.image_url && (
             <Image src={product.image_url} alt={product.name} fill className="object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-bloom-gold/10 text-bloom-600 font-bold text-[10px] uppercase tracking-widest">Bloom</div>
           )}
         </div>
 

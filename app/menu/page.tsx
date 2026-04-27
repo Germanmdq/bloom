@@ -110,6 +110,12 @@ function PublicMenuPage() {
 
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+    // Cuenta corriente
+    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [userBalance, setUserBalance] = useState(0);
+    const [debtPayMode, setDebtPayMode] = useState<'none' | 'total' | 'partial'>('none');
+    const [debtPartialAmount, setDebtPartialAmount] = useState('');
+
     // FETCH DATA — deps fijas [] (evita warning “dependency array changed size” con HMR/hidratación)
     useEffect(() => {
         const fetchMenu = async () => {
@@ -161,6 +167,24 @@ function PublicMenuPage() {
             setLoading(false);
         };
         fetchMenu();
+    }, []);
+
+    useEffect(() => {
+        const loadUserSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+                setCurrentUser(session.user);
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('balance')
+                    .eq('id', session.user.id)
+                    .single();
+                if (profile && profile.balance > 0) {
+                    setUserBalance(Number(profile.balance));
+                }
+            }
+        };
+        loadUserSession();
     }, []);
 
     const platoDiaProduct = products.find(p => p.kind === 'plato_del_dia');
@@ -226,12 +250,40 @@ function PublicMenuPage() {
     const handleMercadoPagoCheckout = async () => {
         if (!tableId && !showCheckoutForm) { setCartStep('form'); return; }
         if (!tableId && !validateCheckoutForm()) return;
+
+        if (debtPayMode === 'partial') {
+            const amt = parseFloat(debtPartialAmount);
+            if (!amt || amt < 1) { toast.error('Ingresá un monto válido para abonar'); return; }
+            if (amt > userBalance) { toast.error('El monto no puede superar la deuda'); return; }
+        }
+
         setIsPaying(true);
         try {
+            if (debtPayMode !== 'none' && userBalance > 0) {
+                const amtToPay = debtPayMode === 'total' ? userBalance : parseFloat(debtPartialAmount);
+                const res = await fetch('/api/payments/pay-debt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: amtToPay,
+                        method: 'CASH',
+                        notes: debtPayMode === 'total' ? 'Pago total al confirmar pedido' : 'Pago parcial al confirmar pedido',
+                    }),
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'Error al procesar el pago de la deuda');
+                }
+                const remaining = userBalance - amtToPay;
+                setUserBalance(remaining > 0 ? remaining : 0);
+                setDebtPayMode('none');
+                setDebtPartialAmount('');
+                toast.success(`Deuda abonada: ${formatCurrency(amtToPay)}`);
+            }
             await saveWebOrder(cart, checkoutInfo);
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Error al confirmar el pedido, intentá de nuevo");
+            toast.error(error.message || "Error al confirmar el pedido, intentá de nuevo");
         } finally {
             setIsPaying(false);
         }
@@ -684,9 +736,47 @@ function PublicMenuPage() {
                                     <span className="text-3xl font-black text-gray-900 tracking-tighter">{formatCurrency(cartTotal)}</span>
                                 </div>
 
+                                {/* Cuenta corriente — solo si el usuario tiene saldo pendiente */}
+                                {!tableId && currentUser && userBalance > 0 && (
+                                    <div className="rounded-2xl border border-red-100 bg-red-50 p-4 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-sm font-black text-red-900">Cuenta Corriente</p>
+                                            <span className="text-sm font-black text-red-600">{formatCurrency(userBalance)}</span>
+                                        </div>
+                                        <p className="text-xs text-red-700">Tenés un saldo pendiente. ¿Querés abonarlo ahora?</p>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setDebtPayMode(p => p === 'total' ? 'none' : 'total')}
+                                                className={`flex-1 py-2 rounded-xl text-xs font-black transition-colors ${debtPayMode === 'total' ? 'bg-red-600 text-white' : 'bg-white border border-red-200 text-red-700 hover:bg-red-50'}`}
+                                            >
+                                                Pagar total
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setDebtPayMode(p => p === 'partial' ? 'none' : 'partial'); setDebtPartialAmount(''); }}
+                                                className={`flex-1 py-2 rounded-xl text-xs font-black transition-colors ${debtPayMode === 'partial' ? 'bg-red-600 text-white' : 'bg-white border border-red-200 text-red-700 hover:bg-red-50'}`}
+                                            >
+                                                Pagar parcial
+                                            </button>
+                                        </div>
+                                        {debtPayMode === 'partial' && (
+                                            <input
+                                                type="number"
+                                                placeholder="Monto a abonar..."
+                                                value={debtPartialAmount}
+                                                onChange={e => setDebtPartialAmount(e.target.value)}
+                                                min="1"
+                                                max={userBalance}
+                                                className="w-full px-3 py-2 rounded-xl border border-red-200 bg-white text-sm font-medium outline-none focus:ring-2 focus:ring-red-500/20 placeholder:text-red-300"
+                                            />
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="space-y-3">
-                                    {/* Prompt login */}
-                                    {!tableId && (
+                                    {/* Prompt login — solo si no hay sesión */}
+                                    {!tableId && !currentUser && (
                                         <div className="bg-neutral-50 rounded-2xl p-4 border border-black/5 flex flex-col items-center gap-3">
                                           <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest text-center leading-tight">
                                             Identificate para continuar con tu encargo
