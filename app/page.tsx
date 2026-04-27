@@ -327,32 +327,45 @@ export default function IconHome() {
         </div>
       </section>
 
-      <section className="py-24 md:py-32 bg-white">
-        <div className="mx-auto w-full max-w-[1200px] px-6">
-          <FadeIn className="text-center max-w-[640px] mx-auto mb-16">
-            <p className="text-[12px] font-semibold tracking-[0.14em] uppercase text-bloom-600 mb-3">Nuestra carta</p>
-            <h2 className="font-[300] tracking-tight text-ink-800" style={{ fontSize: "clamp(2.5rem,4vw,4.5rem)", lineHeight: 1.05 }}>
-              Elegí por <span className="text-bloom-600">categoría.</span>
-            </h2>
-          </FadeIn>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {categoryCards.map((c, i) => {
+      <section className="py-24 md:py-32 bg-white overflow-hidden">
+        <style>{`
+          @keyframes bloom-marquee {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .bloom-marquee { animation: bloom-marquee 20s linear infinite; }
+          .bloom-marquee:hover { animation-play-state: paused; }
+        `}</style>
+
+        <FadeIn className="text-center max-w-[640px] mx-auto mb-14 px-6">
+          <p className="text-[12px] font-semibold tracking-[0.14em] uppercase text-bloom-600 mb-3">Nuestra carta</p>
+          <h2 className="font-[300] tracking-tight text-ink-800" style={{ fontSize: "clamp(2.5rem,4vw,4.5rem)", lineHeight: 1.05 }}>
+            Elegí por <span className="text-bloom-600">categoría.</span>
+          </h2>
+        </FadeIn>
+
+        <div className="relative">
+          {/* Fade edges */}
+          <div className="pointer-events-none absolute left-0 inset-y-0 w-28 bg-gradient-to-r from-white to-transparent z-10" />
+          <div className="pointer-events-none absolute right-0 inset-y-0 w-28 bg-gradient-to-l from-white to-transparent z-10" />
+
+          <div className="bloom-marquee flex gap-5 py-4" style={{ width: "max-content", paddingLeft: "24px" }}>
+            {[...categoryCards, ...categoryCards].map((c, i) => {
               const Icon = c.Icon;
               return (
-              <FadeIn key={c.title} delay={i * 0.05} className="h-full">
                 <Link
+                  key={i}
                   href={c.href}
-                  className={`group flex flex-col h-full min-h-[220px] rounded-3xl bg-gradient-to-br border p-7 sm:p-8 transition-all duration-[350ms] hover:-translate-y-1.5 hover:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.13)] ${c.color}`}
+                  className={`group flex-shrink-0 w-72 h-56 flex flex-col rounded-[28px] bg-gradient-to-br border p-7 shadow-[0_8px_28px_-6px_rgba(0,0,0,0.10)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_24px_52px_-8px_rgba(0,0,0,0.18)] ${c.color}`}
                 >
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 ${c.iconBg}`}>
-                    <Icon className={c.iconColor} size={28} strokeWidth={1.75} aria-hidden />
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${c.iconBg}`}>
+                    <Icon className={c.iconColor} size={30} strokeWidth={1.75} aria-hidden />
                   </div>
                   <div className="mt-auto">
-                    <h3 className="text-[18px] sm:text-[20px] font-bold tracking-tight text-ink-800">{c.title}</h3>
+                    <h3 className="text-[19px] font-bold tracking-tight text-ink-800">{c.title}</h3>
                     <p className="text-[13px] text-ink-500 mt-1">{c.hint}</p>
                   </div>
                 </Link>
-              </FadeIn>
               );
             })}
           </div>
