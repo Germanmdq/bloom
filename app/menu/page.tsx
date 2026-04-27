@@ -109,6 +109,7 @@ function PublicMenuPage() {
     const [checkoutErrors, setCheckoutErrors] = useState<Record<string, string>>({});
 
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
+    const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
 
     // Cuenta corriente
     const [currentUser, setCurrentUser] = useState<any>(null);
@@ -168,6 +169,24 @@ function PublicMenuPage() {
         };
         fetchMenu();
     }, []);
+
+    // Auto-Slider para Promociones
+    useEffect(() => {
+        let promoProducts = products.filter((p: any) => 
+            p.name.toLowerCase().includes('promo') || 
+            p.name.toLowerCase().includes('oferta')
+        );
+        if (promoProducts.length === 0 && products.length > 0) {
+            promoProducts = [...products].slice(0, 3);
+        }
+        if (promoProducts.length <= 1) return;
+
+        const interval = setInterval(() => {
+            setCurrentPromoIndex(prev => (prev + 1) % promoProducts.length);
+        }, 4000);
+
+        return () => clearInterval(interval);
+    }, [products]);
 
     useEffect(() => {
         const loadUserSession = async () => {
@@ -467,6 +486,73 @@ function PublicMenuPage() {
 
             <div id="menu-categories" className="w-full py-8 scroll-mt-28">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 mb-4">
+                    {/* SECCIÓN: OFERTA DEL DÍA (Apple Pro Style) */}
+                    {(() => {
+                        let promoProducts = products.filter((p: any) => 
+                            p.name.toLowerCase().includes('promo') || 
+                            p.name.toLowerCase().includes('oferta')
+                        );
+                        
+                        if (promoProducts.length === 0 && products.length > 0) {
+                            promoProducts = [...products].sort(() => 0.5 - Math.random()).slice(0, 3);
+                        }
+
+                        if (promoProducts.length === 0) return null;
+
+                        return (
+                            <div className="mb-10 relative group overflow-hidden bg-black rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl transition-all border border-white/5">
+                                {/* Glow Effect */}
+                                <div className="absolute -top-24 -right-24 w-80 h-80 bg-[#C17154]/20 rounded-full blur-[100px]" />
+                                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#7a765a]/10 rounded-full blur-[80px]" />
+                                
+                                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                                    <div className="flex flex-col gap-2 text-center md:text-left">
+                                        <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
+                                            <span className="bg-white/10 backdrop-blur-xl px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-white/80 border border-white/5">
+                                                ★ Recomendado Bloom
+                                            </span>
+                                        </div>
+                                        <h4 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">Oferta del día</h4>
+                                        <p className="text-white/40 text-xs md:text-sm font-bold uppercase tracking-widest leading-relaxed max-w-xs">
+                                            Selección exclusiva de nuestra cocina para hoy
+                                        </p>
+                                    </div>
+
+                                    <div className="w-full md:w-auto overflow-hidden">
+                                        <AnimatePresence mode="wait">
+                                            {promoProducts.map((p: any, idx: number) => idx === currentPromoIndex && (
+                                                <motion.button
+                                                    key={p.id}
+                                                    initial={{ opacity: 0, x: 40, scale: 0.95 }}
+                                                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, x: -40, scale: 0.95 }}
+                                                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                                    onClick={() => {
+                                                        const prod = products.find(prod => prod.id === p.id);
+                                                        if (prod) {
+                                                            setCart(prev => [...prev, { ...prod, cartItemId: `${prod.id}-${Date.now()}`, quantity: 1 }]);
+                                                            toast.success(`Agregado: ${prod.name}`);
+                                                        }
+                                                    }}
+                                                    className="w-full md:w-[320px] bg-white text-black rounded-[2rem] p-8 shadow-2xl flex flex-col items-start gap-4 active:scale-95 transition-all group relative border border-white/20"
+                                                >
+                                                    <div className="flex justify-between w-full items-center">
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">{p.name}</span>
+                                                        <Plus size={16} className="text-gray-400 group-hover:text-black transition-colors" />
+                                                    </div>
+                                                    <div className="flex items-baseline gap-2">
+                                                        <span className="text-4xl font-black tracking-tighter">${Number(p.price).toLocaleString()}</span>
+                                                        <span className="text-[10px] font-black text-white bg-black px-2.5 py-1 rounded-full uppercase tracking-widest">Lo quiero</span>
+                                                    </div>
+                                                </motion.button>
+                                            ))}
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
+
                     <p className="font-bold uppercase tracking-[0.15em] text-[10px] mb-1" style={{ color: fk.primary }}>
                         Lo más pedido
                     </p>
