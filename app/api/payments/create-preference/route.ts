@@ -11,6 +11,8 @@ type CreatePreferenceBody = {
   items?: Array<{ title: string; quantity: number; unit_price: number }>;
   customer?: { name?: string; phone?: string };
   order_id: string;
+  /** Monto de deuda CC incluido en el pago. */
+  debt_payment_amount?: number;
 };
 
 type OrderRow = {
@@ -102,13 +104,28 @@ export async function POST(req: Request) {
       });
     }
 
-    const sumDb = mpItems.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+    const sumItemsDb = mpItems.reduce((s, i) => s + i.unit_price * i.quantity, 0);
     const totalDb = Number(row.total);
-    if (Math.abs(sumDb - totalDb) > 0.05) {
+    const debtAmount = Number(body.debt_payment_amount ?? 0);
+
+    // Si hay deuda incluida, agregar ítem de pago CC a MercadoPago
+    if (debtAmount > 0) {
+      mpItems.push({
+        id: String(mpItems.length + 1),
+        title: "Pago Cuenta Corriente",
+        quantity: 1,
+        unit_price: debtAmount,
+        currency_id: "ARS",
+      });
+    }
+
+    const sumAll = mpItems.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+    if (Math.abs(sumAll - totalDb) > 0.05) {
       return NextResponse.json({ error: "Total del pedido inconsistente" }, { status: 400 });
     }
 
-    if (body.items?.length) {
+    // Validación ítems del body (sin contar deuda) solo si no tiene deuda
+    if (body.items?.length && debtAmount <= 0) {
       const sumReq = body.items.reduce((s, i) => s + Number(i.unit_price) * Number(i.quantity), 0);
       if (Math.abs(sumReq - totalDb) > 0.05) {
         return NextResponse.json({ error: "Los ítems enviados no coinciden con el pedido" }, { status: 400 });

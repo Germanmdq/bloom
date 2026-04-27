@@ -567,6 +567,13 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
   >("cash_on_delivery");
   const [submittingOrder, setSubmittingOrder] = useState(false);
 
+  /** Cuenta corriente – saldo pendiente del cliente logueado. */
+  const [profileBalance, setProfileBalance] = useState<number>(0);
+  /** El cliente eligió incluir pago de deuda CC en el checkout MP. */
+  const [payDebt, setPayDebt] = useState(false);
+  const [payDebtType, setPayDebtType] = useState<"total" | "parcial">("total");
+  const [payDebtMonto, setPayDebtMonto] = useState("");
+
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showHistoryLink, setShowHistoryLink] = useState(false);
   const [softAuthHintVisible, setSoftAuthHintVisible] = useState(false);
@@ -793,6 +800,15 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           setCheckoutAddressExtra("");
         }
         setSaveDefaultAddress(true);
+
+        // Cargar saldo de cuenta corriente
+        const { data: prof } = await supabase.from("profiles").select("balance").eq("id", user.id).single();
+        if (!cancelled && prof && Number(prof.balance) > 0) {
+          setProfileBalance(Number(prof.balance));
+          setPayDebtMonto(String(prof.balance));
+        } else if (!cancelled) {
+          setProfileBalance(0);
+        }
       } else {
         setEncargoCheckoutUnlocked(false);
         setEncargoLoggedInPrefill(false);
@@ -800,6 +816,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         setDeliveryCustomAddressMode(true);
         setCheckoutAddressLine("");
         setCheckoutAddressExtra("");
+        setProfileBalance(0);
       }
     })();
     return () => {
@@ -840,6 +857,15 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           setCheckoutAddressLine("");
           setCheckoutAddressExtra("");
         }
+        // Cargar saldo CC tras cambio de auth
+        supabase.from("profiles").select("balance").eq("id", user.id).single().then(({ data: prof }) => {
+          if (prof && Number(prof.balance) > 0) {
+            setProfileBalance(Number(prof.balance));
+            setPayDebtMonto(String(prof.balance));
+          } else {
+            setProfileBalance(0);
+          }
+        });
       } else {
         setEncargoCheckoutUnlocked(false);
         setEncargoLoggedInPrefill(false);
@@ -847,6 +873,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         setDeliveryCustomAddressMode(true);
         setCheckoutAddressLine("");
         setCheckoutAddressExtra("");
+        setProfileBalance(0);
       }
     });
     return () => subscription.unsubscribe();
@@ -893,6 +920,15 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       setAddressConfirmation("yes");
       setEncargoCheckoutUnlocked(true);
       setEncargoLoggedInPrefill(true);
+      // Cargar saldo CC tras restaurar checkout
+      supabase.from("profiles").select("balance").eq("id", session.user.id).single().then(({ data: prof }) => {
+        if (prof && Number(prof.balance) > 0) {
+          setProfileBalance(Number(prof.balance));
+          setPayDebtMonto(String(prof.balance));
+        } else {
+          setProfileBalance(0);
+        }
+      });
       setSoftAuthHintVisible(false);
       setOpen(true);
       setEncargoOpen(true);
@@ -961,6 +997,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     setEncargoLoggedInPrefill(false);
     setCheckoutSubmitAttempted(false);
     setUpsellVariant(null);
+    setPayDebt(false);
+    setPayDebtType("total");
+    setPayDebtMonto("");
   }, []);
 
   /** Cambiar categoría / «Ver categorías»: solo cierra overlays y upsell; mantiene carrito y contexto de checkout. */
@@ -1031,6 +1070,22 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     }
 
     setSubmittingOrder(true);
+
+    // Calcular monto de deuda a incluir (solo con MercadoPago)
+    let debtAmount = 0;
+    if (paymentMethod === "mercadopago" && profileBalance > 0 && payDebt) {
+      if (payDebtType === "total") {
+        debtAmount = profileBalance;
+      } else {
+        const parsed = parseFloat(payDebtMonto);
+        if (!isNaN(parsed) && parsed > 0 && parsed <= profileBalance) {
+          debtAmount = parsed;
+        } else if (!isNaN(parsed) && parsed > profileBalance) {
+          debtAmount = profileBalance;
+        }
+      }
+    }
+
     try {
       const {
         data: { session },
@@ -1053,6 +1108,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           customer_phone: phone,
           delivery_type: deliveryType,
           payment_method: paymentMethod,
+          ...(debtAmount > 0 ? { debt_payment_amount: debtAmount } : {}),
           ...(deliveryType === "delivery"
             ? {
                 delivery_address: address,
@@ -1092,17 +1148,23 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           return;
         }
 
+        const mpItems = cart.map((c) => ({
+              title: c.name,
+              quantity: c.quantity,
+              unit_price: c.price,
+            }));
+        if (debtAmount > 0) {
+          mpItems.push({ title: "Pago Cuenta Corriente", quantity: 1, unit_price: debtAmount });
+        }
+
         const prefRes = await fetch("/api/payments/create-preference", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             order_id: orderId,
-            items: cart.map((c) => ({
-              title: c.name,
-              quantity: c.quantity,
-              unit_price: c.price,
-            })),
+            items: mpItems,
             customer: { name, phone },
+            ...(debtAmount > 0 ? { debt_payment_amount: debtAmount } : {}),
           }),
         });
         const prefData = (await prefRes.json().catch(() => ({}))) as {
@@ -1126,6 +1188,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
         setAddressConfirmation("yes");
         setDeliveryType("local");
         setPaymentMethod("cash_on_delivery");
+        setPayDebt(false);
+        setPayDebtType("total");
+        setPayDebtMonto("");
         setContextKey((k) => k + 1);
         window.location.assign(prefData.init_point);
         return;
@@ -1149,6 +1214,9 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
       setAddressConfirmation("yes");
       setDeliveryType("local");
       setPaymentMethod("cash_on_delivery");
+      setPayDebt(false);
+      setPayDebtType("total");
+      setPayDebtMonto("");
       setContextKey((k) => k + 1);
       toast.success("Listo");
     } catch (e) {
@@ -1174,6 +1242,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     deliveryZoneCheckedFor,
     deliveryGeoBlocksConfirm,
     deliveryCustomAddressMode,
+    profileBalance,
+    payDebt,
+    payDebtType,
+    payDebtMonto,
   ]);
 
   const openFabChat = useCallback(() => {
@@ -1630,6 +1702,81 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     <span className="text-sm font-medium">💵 Pago contra entrega</span>
                   </label>
                 </fieldset>
+
+                {/* Cuenta Corriente – pago de deuda */}
+                {paymentMethod === "mercadopago" && profileBalance > 0 && (
+                  <div className="mt-4 rounded-xl border-2 border-red-200 bg-red-50 p-4 shadow-sm">
+                    <h3 className="text-sm font-black text-red-900 mb-1.5 flex items-center gap-2">
+                      📋 Deuda Pendiente: {formatArs(profileBalance)}
+                    </h3>
+                    <p className="text-xs text-red-800/80 mb-3 leading-relaxed">
+                      Tu cuenta corriente tiene un saldo pendiente. Podés sumarlo a este pago.
+                    </p>
+                    <label className="flex items-center gap-2 cursor-pointer mb-2">
+                      <input
+                        type="checkbox"
+                        checked={payDebt}
+                        onChange={(e) => setPayDebt(e.target.checked)}
+                        className="accent-red-600 w-4 h-4 rounded"
+                      />
+                      <span className="text-sm font-bold text-red-900">
+                        Sí, quiero abonar mi deuda
+                      </span>
+                    </label>
+                    {payDebt && (
+                      <div className="pl-6 space-y-2 mt-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="debtType"
+                            value="total"
+                            checked={payDebtType === "total"}
+                            onChange={() => { setPayDebtType("total"); setPayDebtMonto(String(profileBalance)); }}
+                            className="accent-red-600"
+                          />
+                          <span className="text-sm font-medium text-red-900">
+                            Total ({formatArs(profileBalance)})
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="debtType"
+                            value="parcial"
+                            checked={payDebtType === "parcial"}
+                            onChange={() => setPayDebtType("parcial")}
+                            className="accent-red-600"
+                          />
+                          <span className="text-sm font-medium text-red-900">Monto parcial</span>
+                        </label>
+                        {payDebtType === "parcial" && (
+                          <div className="mt-1.5">
+                            <input
+                              type="number"
+                              min={1}
+                              max={profileBalance}
+                              value={payDebtMonto}
+                              onChange={(e) => setPayDebtMonto(e.target.value)}
+                              className="w-full rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-900 outline-none focus:ring-2 focus:ring-red-400/30"
+                              placeholder="Monto a abonar..."
+                            />
+                          </div>
+                        )}
+                        <p className="text-[11px] text-red-700/60 font-medium mt-1">
+                          Total del pago:{" "}
+                          <strong className="text-red-900">
+                            {formatArs(
+                              cartTotal +
+                                (payDebtType === "total"
+                                  ? profileBalance
+                                  : Math.min(parseFloat(payDebtMonto) || 0, profileBalance))
+                            )}
+                          </strong>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               )}
             </div>

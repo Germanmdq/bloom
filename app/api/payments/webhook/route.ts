@@ -39,6 +39,14 @@ async function markOrderPaid(orderId: string) {
     return false;
   }
   const supabase = createClient(getSupabaseUrl(), serviceKey);
+
+  // Leer el pedido para ver si tiene pago de deuda CC
+  const { data: orderData } = await supabase
+    .from("orders")
+    .select("customer_id, debt_payment_amount")
+    .eq("id", orderId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("orders")
     .update({
@@ -53,6 +61,27 @@ async function markOrderPaid(orderId: string) {
     console.error("[payments/webhook] update", error);
     return false;
   }
+
+  // Reducir saldo de cuenta corriente si corresponde
+  const debtAmount = Number(orderData?.debt_payment_amount ?? 0);
+  const customerId = orderData?.customer_id as string | null;
+  if (debtAmount > 0 && customerId) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("balance")
+      .eq("id", customerId)
+      .single();
+    if (profile) {
+      const currentBalance = Number(profile.balance ?? 0);
+      const newBalance = Math.max(0, currentBalance - debtAmount);
+      const { error: balErr } = await supabase
+        .from("profiles")
+        .update({ balance: newBalance })
+        .eq("id", customerId);
+      if (balErr) console.error("[payments/webhook] balance update", balErr);
+    }
+  }
+
   return true;
 }
 

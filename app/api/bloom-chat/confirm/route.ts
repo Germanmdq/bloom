@@ -21,6 +21,8 @@ type ConfirmBody = {
   address_confirmed?: boolean;
   /** Web encargo: contra entrega → CASH; transferencia → BANK_TRANSFER; MP → MERCADO_PAGO + pending_payment */
   payment_method?: "cash_on_delivery" | "bank_transfer" | "mercadopago";
+  /** Monto de deuda de cuenta corriente incluido en el pago MP. */
+  debt_payment_amount?: number;
   access_token?: string;
 };
 
@@ -64,6 +66,8 @@ export async function POST(request: NextRequest) {
     }
 
     const total = items.reduce((acc, i) => acc + Number(i.price) * Number(i.quantity), 0);
+    const debtPayment = Number(body.debt_payment_amount ?? 0);
+    const orderTotal = debtPayment > 0 ? total + debtPayment : total;
     const itemsJson = items.map((i) => ({
       product_id: i.product_id,
       name: i.name,
@@ -111,12 +115,13 @@ export async function POST(request: NextRequest) {
       delivery_type: deliveryType,
       delivery_info: deliveryInfo,
       items: itemsJson,
-      total,
+      total: orderTotal,
       status: orderStatus,
       order_type: "web",
       paid: false,
       payment_method: paymentMethodDb,
       ...(paymentNotes ? { payment_notes: paymentNotes } : {}),
+      ...(debtPayment > 0 ? { debt_payment_amount: debtPayment } : {}),
     };
 
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
@@ -137,9 +142,10 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       const msg = error.message?.toLowerCase() ?? "";
-      if (msg.includes("payment_notes") || msg.includes("column")) {
+      if (msg.includes("payment_notes") || msg.includes("debt_payment_amount") || msg.includes("column")) {
         const rest = { ...insertRow };
         delete rest.payment_notes;
+        delete rest.debt_payment_amount;
         const second = await db.from("orders").insert(rest).select("id").maybeSingle();
         inserted = second.data;
         error = second.error;
