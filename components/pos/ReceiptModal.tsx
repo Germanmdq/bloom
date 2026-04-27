@@ -47,46 +47,41 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                     @media print {
                         @page {
                             margin: 0;
-                            size: 80mm auto;
+                            size: 72mm auto;
                         }
-                        /* Limpieza total de lo que no es ticket */
+                        /* Ocultar TODO menos el ticket */
                         html, body {
                             margin: 0 !important;
                             padding: 0 !important;
+                            visibility: hidden !important;
+                            height: auto !important;
                             background: white !important;
                         }
-                        body > * {
-                            display: none !important;
-                        }
-                        #bloom-ticket-printable {
+                        #bloom-ticket-printable-root {
+                            visibility: visible !important;
                             display: block !important;
+                            position: absolute !important;
+                            left: 0 !important;
+                            top: 0 !important;
                             width: 72mm !important;
-                            padding: 4mm !important;
-                            margin: 0 !important;
+                            padding: 2mm !important;
+                            box-sizing: border-box !important;
                             background: white !important;
                         }
-                        .print-no-show {
-                            display: none !important;
+                        #bloom-ticket-printable-root * {
+                            visibility: visible !important;
                         }
                     }
                 `}</style>
 
-                <div id="bloom-ticket-printable" className="flex flex-col gap-3 bg-white text-black font-mono">
+                <div id="bloom-ticket-printable-root" className="flex flex-col gap-2 bg-white text-black font-mono leading-tight">
                     {/* Header */}
-                    <div className="text-center space-y-1">
-                        <div className="flex justify-center mb-1">
-                            <Image 
-                                src="/images/bloom-logo.png" 
-                                alt="Bloom" 
-                                width={110} 
-                                height={35} 
-                                className="grayscale brightness-0"
-                            />
-                        </div>
+                    <div className="text-center space-y-0.5">
+                        <h2 className="font-black text-lg tracking-tighter">BLOOM</h2>
                         <p className="text-[10px] font-bold uppercase">Coffee & More</p>
-                        <p className="text-[9px] opacity-70">Almirante Brown 2005, Mar del Plata</p>
+                        <p className="text-[9px] opacity-80">Almirante Brown 2005, Mar del Plata</p>
                         
-                        <div className="border-b border-dashed border-black/40 my-2" />
+                        <div className="border-b border-dashed border-black my-2" />
                         
                         <div className="flex justify-between text-[10px] font-bold">
                             <span>Mesa: {tableId}</span>
@@ -95,16 +90,16 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                         <p className="text-[9px] font-bold text-left">{invoiceType}</p>
                     </div>
 
-                    {/* Items Table - REDUCIDO el ancho para que entre todo */}
-                    <div className="space-y-1.5 my-1">
-                        <div className="grid grid-cols-[1fr_25px_50px] text-[9px] font-black border-b border-black pb-0.5 uppercase">
-                            <span>P RODUCTO</span>
+                    {/* Items Table */}
+                    <div className="space-y-1 my-1">
+                        <div className="grid grid-cols-[1fr_20px_50px] text-[9px] font-black border-b border-black pb-0.5 uppercase">
+                            <span>PRODUCTO</span>
                             <span className="text-center">C</span>
                             <span className="text-right">TOTAL</span>
                         </div>
                         
                         {extraTotal > 0 && (
-                            <div className="grid grid-cols-[1fr_25px_50px] text-[10px] gap-1">
+                            <div className="grid grid-cols-[1fr_20px_50px] text-[10px] gap-1">
                                 <span className="truncate italic">Cargos Previos</span>
                                 <span className="text-center">1</span>
                                 <span className="text-right">${extraTotal.toLocaleString()}</span>
@@ -112,7 +107,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                         )}
                         
                         {cart.map((item, idx) => (
-                            <div key={idx} className="grid grid-cols-[1fr_25px_50px] text-[10px] leading-tight gap-1">
+                            <div key={idx} className="grid grid-cols-[1fr_20px_50px] text-[10px] leading-tight gap-1">
                                 <span className="font-medium pr-1">{item.name}</span>
                                 <span className="text-center opacity-70">{item.quantity}</span>
                                 <span className="text-right font-bold">${(item.price * item.quantity).toLocaleString()}</span>
@@ -121,21 +116,21 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                     </div>
 
                     {/* Totals */}
-                    <div className="border-t-2 border-black border-double pt-2 mt-1">
-                        <div className="flex justify-between font-black text-base">
+                    <div className="border-t border-black pt-1.5 mt-1">
+                        <div className="flex justify-between font-black text-base tracking-tighter">
                             <span>TOTAL</span>
                             <span>${total.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between text-[9px] font-bold opacity-60">
+                        <div className="flex justify-between text-[9px] font-bold opacity-70">
                             <span>{cart.reduce((s, i) => s + i.quantity, 0)} Items</span>
                             <span>Abonado</span>
                         </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="text-center mt-4 mb-20 space-y-1">
-                        <p className="text-[10px] font-bold uppercase">¡Gracias por tu visita!</p>
-                        <p className="text-[8px]">bloommdp.com</p>
+                    <div className="text-center mt-4 mb-20">
+                        <p className="text-[11px] font-bold uppercase">¡Gracias por tu visita!</p>
+                        <p className="text-[9px]">bloommdp.com</p>
                     </div>
                 </div>
 
