@@ -2,24 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Plus, Minus, Package, TrendingUp, AlertTriangle } from "lucide-react";
+import { Package, TrendingUp, Save, Search } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-
-/**
- * LÓGICA DE INVENTARIO BLOOM
- * Reglas:
- * 1. Solo gestión de stock de ítems existentes.
- * 2. Venta Directa (+1 Vendido, -X Stock).
- * 3. Excepción: Café/Cortado Doble -> -2 Stock Cafe, +1 Vendido.
- * 4. Control Manual: Botón +1 para subir stock mercadería.
- * 5. Seguridad: No permite vender si stock es 0.
- */
 
 export default function InventarioPage() {
     const supabase = createClient();
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchInventory();
@@ -27,141 +19,127 @@ export default function InventarioPage() {
 
     async function fetchInventory() {
         setLoading(true);
-        // Traemos productos de la tabla 'products'
-        // NOTA: Quitamos el filtro de 'active' temporalmente para asegurar que veas tu menú
         const { data, error } = await supabase
             .from("products")
             .select("id, name, stock, vendidos")
             .order("name");
         
         if (error) {
-            console.error("DEBUG INVENTARIO - FETCH ERROR:", error);
-            toast.error(`Error de base de datos: ${error.message}`);
+            console.error("DEBUG INVENTARIO ERROR:", error);
+            toast.error(`Error: ${error.message}`);
         } else {
-            console.log("DEBUG INVENTARIO - DATA:", data);
             setProducts(data || []);
-            if (data?.length === 0) {
-                toast.warning("No se encontraron productos en la base de datos.");
-            }
         }
         setLoading(false);
     }
 
-    /** 
-     * Lógica de Venta 
-     * @param product Objeto del producto
-     */
-    async function registrarVenta(product: any) {
-        // Quitamos la restricción de stock <= 0 por pedido del usuario
-
-        // Definir cuánto resta de stock
-        let unidadesARestar = 1;
-        const nombreLower = product.name.toLowerCase();
-        if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
-            unidadesARestar = 2;
-        }
-
-        const newStock = (product.stock || 0) - unidadesARestar;
-        const newVendidos = (product.vendidos || 0) + 1;
-
-        const { error } = await supabase
-            .from("products")
-            .update({ stock: newStock, vendidos: newVendidos })
-            .eq("id", product.id);
-
-        if (error) {
-            toast.error("Error al registrar venta");
-        } else {
-            setProducts(prev => prev.map(p => p.id === product.id ? { ...p, stock: newStock, vendidos: newVendidos } : p));
-            toast.success(`Venta registrada: ${product.name}`);
-        }
-    }
-
-    /** Lógica de carga de mercadería (+1 Manual) */
-    async function sumarStockManual(product: any) {
-        const newStock = (product.stock || 0) + 1;
-        
+    /** Actualizar stock con el número ingresado */
+    async function handleUpdateStock(id: string, newStock: number) {
+        setUpdatingId(id);
         const { error } = await supabase
             .from("products")
             .update({ stock: newStock })
-            .eq("id", product.id);
+            .eq("id", id);
 
         if (error) {
-            toast.error("Error al actualizar stock");
+            toast.error("No se pudo actualizar el stock");
         } else {
-            setProducts(prev => prev.map(p => p.id === product.id ? { ...p, stock: newStock } : p));
-            toast.info(`Stock actualizado: ${product.name} (+1)`);
+            toast.success("Stock actualizado correctamente");
         }
+        setUpdatingId(null);
     }
 
+    const filteredProducts = products.filter(p => 
+        p.name.toLowerCase().includes(search.toLowerCase())
+    );
+
     if (loading) return (
-        <div className="p-8 flex justify-center items-center h-screen">
+        <div className="p-8 flex justify-center items-center h-screen bg-[#f7f5ef]">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-[#2d4a3e]" />
         </div>
     );
 
     return (
-        <div className="p-6 max-w-5xl mx-auto space-y-8 pb-20">
-            <header className="flex flex-col gap-2">
-                <h1 className="text-4xl font-black tracking-tight text-neutral-900">Control de Inventario</h1>
-                <p className="text-neutral-500 font-medium uppercase tracking-widest text-xs">Conteo continuo de stock y ventas directas</p>
+        <div className="p-6 max-w-6xl mx-auto space-y-8 pb-32 min-h-screen bg-[#f7f5ef]">
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-[2.5rem] shadow-sm border border-neutral-100">
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black tracking-tight text-neutral-900 leading-none">Gestión de Stock</h1>
+                    <p className="text-neutral-400 font-bold uppercase tracking-[0.2em] text-[10px]">Control centralizado de mercadería y ventas</p>
+                </div>
+                
+                <div className="relative w-full md:w-80">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                    <input 
+                        type="text" 
+                        placeholder="Buscar producto..." 
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full pl-12 pr-6 py-4 bg-neutral-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-[#2d4a3e]/20 outline-none transition-all shadow-inner"
+                    />
+                </div>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <AnimatePresence>
-                    {products.map((p) => {
-                        const isLowStock = p.stock <= 5;
+                <AnimatePresence mode="popLayout">
+                    {filteredProducts.map((p) => {
                         const isOutOfStock = p.stock <= 0;
 
                         return (
                             <motion.div
                                 key={p.id}
                                 layout
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className={`relative overflow-hidden bg-white border-2 rounded-[2rem] p-6 transition-all shadow-sm ${isOutOfStock ? 'border-red-100' : 'border-neutral-100'} hover:border-[#2d4a3e]/30 hover:shadow-xl`}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-neutral-100 flex flex-col gap-6 relative overflow-hidden"
                             >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2d4a3e]/60 mb-1">Carga Directa</span>
-                                        <h3 className="text-xl font-bold text-neutral-900 leading-tight">{p.name}</h3>
-                                    </div>
-                                    <button 
-                                        onClick={() => sumarStockManual(p)}
-                                        className="bg-[#2d4a3e] text-white p-2.5 rounded-2xl hover:scale-110 active:scale-90 transition-all shadow-lg"
-                                        title="Recibir mercadería (+1 Stock)"
-                                    >
-                                        <Plus size={20} strokeWidth={3} />
-                                    </button>
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-[#2d4a3e] opacity-50">Producto</span>
+                                    <h3 className="text-xl font-black text-neutral-900 leading-tight">{p.name}</h3>
                                 </div>
 
-                                <div className="flex flex-col gap-4 mt-6">
-                                    <div className="flex justify-around items-center bg-neutral-50 rounded-2xl py-4 border border-neutral-100">
-                                        <div className="flex flex-col items-center">
-                                            <span className="flex items-center gap-1.5 text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">
-                                                <Package size={12} /> Stock
-                                            </span>
-                                            <span className={`text-4xl font-black tracking-tighter ${isOutOfStock ? 'text-red-600' : isLowStock ? 'text-orange-500' : 'text-neutral-900'}`}>
-                                                {p.stock || 0}
-                                            </span>
-                                        </div>
-                                        <div className="w-[1px] h-10 bg-neutral-200" />
-                                        <div className="flex flex-col items-center">
-                                            <span className="flex items-center gap-1.5 text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">
-                                                <TrendingUp size={12} /> Vendidos
-                                            </span>
-                                            <span className="text-4xl font-black tracking-tighter text-[#2d4a3e]">
-                                                {p.vendidos || 0}
-                                            </span>
-                                        </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-neutral-50 rounded-3xl p-4 border border-neutral-100">
+                                        <p className="flex items-center gap-1.5 text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-1">
+                                            <TrendingUp size={12} /> Vendidos
+                                        </p>
+                                        <p className="text-2xl font-black text-[#2d4a3e]">{p.vendidos || 0}</p>
                                     </div>
+                                    <div className="bg-neutral-50 rounded-3xl p-4 border border-neutral-100">
+                                        <p className="flex items-center gap-1.5 text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-1">
+                                            <Package size={12} /> Stock Actual
+                                        </p>
+                                        <p className={`text-2xl font-black ${isOutOfStock ? 'text-red-500' : 'text-neutral-900'}`}>
+                                            {p.stock || 0}
+                                        </p>
+                                    </div>
+                                </div>
 
-                                    <button 
-                                        onClick={() => registrarVenta(p)}
-                                        className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest bg-black text-white hover:bg-neutral-900 transition-all shadow-md active:scale-95"
-                                    >
-                                        Vender Ítem
-                                    </button>
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-black uppercase text-neutral-400 tracking-widest px-1">Actualizar stock físico</p>
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="number"
+                                            defaultValue={p.stock}
+                                            onBlur={async (e) => {
+                                                const val = parseFloat(e.target.value);
+                                                if (!isNaN(val) && val !== p.stock) {
+                                                    await handleUpdateStock(p.id, val);
+                                                }
+                                            }}
+                                            className="flex-1 bg-neutral-100 border-2 border-transparent focus:border-[#2d4a3e]/30 rounded-2xl px-5 py-3.5 font-black text-xl outline-none transition-all"
+                                        />
+                                        <button 
+                                            className="bg-[#2d4a3e] text-white px-5 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center disabled:opacity-50"
+                                            disabled={updatingId === p.id}
+                                        >
+                                            {updatingId === p.id ? (
+                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            ) : (
+                                                <Save size={20} strokeWidth={3} />
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             </motion.div>
                         );
