@@ -49,87 +49,74 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                             margin: 0;
                             size: 72mm auto;
                         }
-                        /* Ocultar TODO menos el ticket */
-                        html, body {
-                            margin: 0 !important;
-                            padding: 0 !important;
-                            visibility: hidden !important;
-                            height: auto !important;
-                            background: white !important;
+                        /* Ocultar el resto de la interfaz de forma radical */
+                        body > * {
+                            display: none !important;
                         }
-                        #bloom-ticket-printable-root {
-                            visibility: visible !important;
+                        #bloom-print-container {
                             display: block !important;
                             position: absolute !important;
                             left: 0 !important;
                             top: 0 !important;
-                            width: 72mm !important;
-                            padding: 2mm !important;
-                            box-sizing: border-box !important;
+                            width: 68mm !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
                             background: white !important;
+                            color: black !important;
                         }
-                        #bloom-ticket-printable-root * {
-                            visibility: visible !important;
+                        .print-hidden {
+                            display: none !important;
                         }
                     }
                 `}</style>
 
-                <div id="bloom-ticket-printable-root" className="flex flex-col gap-2 bg-white text-black font-mono leading-tight">
+                {/* El contenedor que Chrome va a ver como "único" al imprimir */}
+                <div id="bloom-print-container" className="flex flex-col bg-white text-black font-mono p-1 leading-tight">
                     {/* Header */}
-                    <div className="text-center space-y-0.5">
-                        <h2 className="font-black text-lg tracking-tighter">BLOOM</h2>
-                        <p className="text-[10px] font-bold uppercase">Coffee & More</p>
-                        <p className="text-[9px] opacity-80">Almirante Brown 2005, Mar del Plata</p>
+                    <div className="text-center py-2">
+                        <h2 className="font-bold text-xl tracking-tighter">BLOOM</h2>
+                        <p className="text-[10px] uppercase">Coffee & More</p>
+                        <p className="text-[9px] opacity-80">Almirante Brown 2005</p>
                         
                         <div className="border-b border-dashed border-black my-2" />
                         
-                        <div className="flex justify-between text-[10px] font-bold">
-                            <span>Mesa: {tableId}</span>
+                        <div className="flex justify-between text-[10px] items-center">
+                            <span className="font-bold">Mesa: {tableId}</span>
                             <span>{new Date().toLocaleDateString()}</span>
                         </div>
-                        <p className="text-[9px] font-bold text-left">{invoiceType}</p>
                     </div>
 
                     {/* Items Table */}
-                    <div className="space-y-1 my-1">
-                        <div className="grid grid-cols-[1fr_20px_50px] text-[9px] font-black border-b border-black pb-0.5 uppercase">
-                            <span>PRODUCTO</span>
+                    <div className="space-y-1 my-2">
+                        <div className="grid grid-cols-[1fr_20px_50px] text-[9px] border-b border-black pb-0.5 font-black uppercase">
+                            <span>Producto</span>
                             <span className="text-center">C</span>
-                            <span className="text-right">TOTAL</span>
+                            <span className="text-right">Total</span>
                         </div>
                         
-                        {extraTotal > 0 && (
-                            <div className="grid grid-cols-[1fr_20px_50px] text-[10px] gap-1">
-                                <span className="truncate italic">Cargos Previos</span>
-                                <span className="text-center">1</span>
-                                <span className="text-right">${extraTotal.toLocaleString()}</span>
-                            </div>
-                        )}
-                        
                         {cart.map((item, idx) => (
-                            <div key={idx} className="grid grid-cols-[1fr_20px_50px] text-[10px] leading-tight gap-1">
-                                <span className="font-medium pr-1">{item.name}</span>
-                                <span className="text-center opacity-70">{item.quantity}</span>
-                                <span className="text-right font-bold">${(item.price * item.quantity).toLocaleString()}</span>
+                            <div key={idx} className="grid grid-cols-[1fr_20px_50px] text-[10px] gap-1 leading-none py-0.5">
+                                <span className="truncate">{item.name}</span>
+                                <span className="text-center">{item.quantity}</span>
+                                <span className="text-right">${(item.price * item.quantity).toLocaleString()}</span>
                             </div>
                         ))}
                     </div>
 
                     {/* Totals */}
-                    <div className="border-t border-black pt-1.5 mt-1">
-                        <div className="flex justify-between font-black text-base tracking-tighter">
+                    <div className="border-t border-black pt-2 mt-1">
+                        <div className="flex justify-between font-black text-lg">
                             <span>TOTAL</span>
                             <span>${total.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between text-[9px] font-bold opacity-70">
-                            <span>{cart.reduce((s, i) => s + i.quantity, 0)} Items</span>
-                            <span>Abonado</span>
-                        </div>
+                        <p className="text-[9px] opacity-70">
+                            {cart.reduce((s, i) => s + i.quantity, 0)} items abonados
+                        </p>
                     </div>
 
                     {/* Footer */}
-                    <div className="text-center mt-4 mb-20">
-                        <p className="text-[11px] font-bold uppercase">¡Gracias por tu visita!</p>
+                    <div className="text-center mt-6 mb-24">
+                        <p className="text-[11px] font-bold">¡GRACIAS POR TU VISITA!</p>
                         <p className="text-[9px]">bloommdp.com</p>
                     </div>
                 </div>
