@@ -77,6 +77,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
     const [webOrderIsPaid, setWebOrderIsPaid] = useState(false);
     const [webOrderPaymentMethod, setWebOrderPaymentMethod] = useState<string | null>(null);
+    const [completedOrderData, setCompletedOrderData] = useState<{ cart: any[], total: number } | null>(null);
+    const [webOrderIsPaid, setWebOrderIsPaid] = useState(false);
+    const [webOrderPaymentMethod, setWebOrderPaymentMethod] = useState<string | null>(null);
 
     const handleCustomerSearch = async (q: string) => {
         setCustomerSearchQuery(q);
@@ -515,17 +518,17 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                 await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
             }
+            // Guardar datos para impresión post-cobro antes de limpiar el carrito
+            setCompletedOrderData({ cart: [...cart], total: finalTotal });
             setFeedback({ message: "¡Venta registrada!", type: "success" });
+            
             setTimeout(() => {
                 setFeedback(null);
                 clearCart();
                 finishingRef.current = false;
                 setIsFinishing(false);
-                
-                // Always close and go back to tables grid
-                if (onOrderComplete) onOrderComplete();
-                onClose();
-            }, 1000); // 1s is enough for the feedback to be seen
+                // No cerramos automáticamente, dejamos que el usuario decida imprimir o salir
+            }, 800);
         } catch (error: any) {
             finishingRef.current = false;
             setIsFinishing(false);
@@ -1033,15 +1036,59 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 </div>
             </div>
 
+            {/* ── PANTALLA DE ÉXITO Y TICKET POST-COBRO ── */}
+            <AnimatePresence>
+                {completedOrderData && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-[120] bg-white flex flex-col items-center justify-center p-8 text-center"
+                    >
+                        <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
+                            <Check size={40} className="text-emerald-500" strokeWidth={3} />
+                        </div>
+                        <h3 className="text-2xl font-black text-gray-900 mb-2">¡Venta Finalizada!</h3>
+                        <p className="text-gray-500 mb-8">El pedido de la <strong>Mesa {tableId}</strong> fue registrado con éxito.</p>
+                        
+                        <div className="flex flex-col gap-3 w-full max-w-xs">
+                            <button
+                                onClick={() => setShowReceiptModal(true)}
+                                className="w-full h-14 bg-black text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-neutral-800 transition-all active:scale-95 shadow-xl shadow-black/10"
+                            >
+                                <Printer size={20} /> Imprimir Ticket
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setCompletedOrderData(null);
+                                    if (onOrderComplete) onOrderComplete();
+                                    onClose();
+                                }}
+                                className="w-full h-12 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all active:scale-95"
+                            >
+                                Finalizar y Cerrar
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* ── MODALES ── */}
             {showReceiptModal && (
                 <ReceiptModal
                     tableId={tableId}
                     invoiceType={invoiceType}
                     extraTotal={extraTotal}
-                    cart={cart}
-                    total={total}
-                    onClose={() => setShowReceiptModal(false)}
+                    cart={completedOrderData ? completedOrderData.cart : cart}
+                    total={completedOrderData ? completedOrderData.total : total}
+                    onClose={() => {
+                        setShowReceiptModal(false);
+                        if (completedOrderData) {
+                            setCompletedOrderData(null);
+                            if (onOrderComplete) onOrderComplete();
+                            onClose();
+                        }
+                    }}
                 />
             )}
 
