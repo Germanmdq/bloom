@@ -3,7 +3,7 @@
 /** Tipografía: Inter desde `app/layout.tsx` (variable `--font-inter`). Esta página no importa `next/font`; el `<main>` usa `font-sans`. */
 
 import Link from "next/link";
-import IconPhoto from "next/image";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   IconArrowRight,
@@ -16,15 +16,15 @@ import {
   IconStar,
   IconTruck,
   IconToolsKitchen,
-  IconGlassFull,
-  type Icon,
 } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 import { SiteHeader } from "@/components/SiteHeader";
 import { BloomChat, type BloomChatHandle } from "@/components/Menu/BloomChat";
+import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
 
 /** Video de fondo del hero: colocar el archivo en /public/videos/ (p. ej. hero-bloom.mp4). */
 const HERO_VIDEO_SRC = "/videos/hero-bloom.mp4";
@@ -48,11 +48,11 @@ const CONTACT = {
   hours: "Lun–Dom · 08:00–22:00",
 };
 
-const categoryCards: { title: string; hint: string; href: string; Icon: Icon; color: string; iconBg: string; iconColor: string }[] = [
-  { title: "Cafetería",  hint: "Cafés y bebidas calientes", href: "/menu?cat=Cafetería",       Icon: IconCoffee,         color: "from-amber-50 to-orange-50   border-amber-200/60",  iconBg: "bg-amber-100",   iconColor: "text-amber-600" },
-  { title: "Comidas",   hint: "Platos del día y más",       href: "/menu?cat=Platos%20Diarios", Icon: IconToolsKitchen, color: "from-red-50 to-rose-50       border-red-200/60",    iconBg: "bg-red-100",     iconColor: "text-red-600"   },
-  { title: "Bebidas",   hint: "Bebidas frías",               href: "/menu?cat=Bebidas",          Icon: IconGlassFull,     color: "from-blue-50 to-cyan-50      border-blue-200/60",   iconBg: "bg-blue-100",    iconColor: "text-blue-600"  },
-  { title: "Pastelería",hint: "Dulces y panificados",        href: "/menu?cat=Pastelería",       Icon: IconCookie,         color: "from-pink-50 to-fuchsia-50   border-pink-200/60",   iconBg: "bg-pink-100",    iconColor: "text-pink-600"  },
+const categoryCards = [
+  { title: "Cafetería",  hint: "Cafés y bebidas calientes", href: "/menu?cat=Cafetería",        src: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1200&q=85" },
+  { title: "Comidas",    hint: "Platos del día y más",      href: "/menu?cat=Platos%20Diarios", src: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=85" },
+  { title: "Bebidas",    hint: "Bebidas frías",              href: "/menu?cat=Bebidas",          src: "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=1200&q=85" },
+  { title: "Pastelería", hint: "Dulces y panificados",       href: "/menu?cat=Pastelería",       src: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=1200&q=85" },
 ];
 
 const destacados: { name: string; desc: string; img: string; nameHint: string }[] = [
@@ -102,7 +102,8 @@ const FadeIn = ({
   </motion.div>
 );
 
-export default function IconHome() {
+export default function HomePage() {
+  const router = useRouter();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [heroVideoReady, setHeroVideoReady] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -229,7 +230,7 @@ export default function IconHome() {
               aria-label="Cargando"
             >
               <div className="relative h-28 w-full max-w-[300px] sm:h-36">
-                <IconPhoto
+                <Image
                   src={HERO_LOGO_SRC}
                   alt="Bloom"
                   fill
@@ -259,7 +260,7 @@ export default function IconHome() {
             className="w-full max-w-[860px] text-white pb-[max(0.5rem,env(safe-area-inset-bottom))]"
           >
             <p className="text-[11px] sm:text-[12px] font-semibold tracking-[0.2em] uppercase mb-5" style={{ color: "#c4b896" }}>
-              Bloom · IconCoffee &amp; More
+              Bloom · Coffee &amp; More
             </p>
             <h1 className="font-[200] leading-[1.02] tracking-[-0.035em] mb-8 [text-shadow:0_4px_36px_rgba(0,0,0,0.4)]"
               style={{ fontSize: "clamp(3.5rem,8vw,8rem)" }}>
@@ -327,49 +328,24 @@ export default function IconHome() {
         </div>
       </section>
 
-      <section className="py-24 md:py-32 bg-white overflow-hidden">
-        <style>{`
-          @keyframes bloom-marquee {
-            0%   { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-          .bloom-marquee { animation: bloom-marquee 20s linear infinite; }
-          .bloom-marquee:hover { animation-play-state: paused; }
-        `}</style>
-
-        <FadeIn className="text-center max-w-[640px] mx-auto mb-14 px-6">
+      <section className="py-24 md:py-32 bg-white">
+        <FadeIn className="text-center max-w-[640px] mx-auto mb-6 px-6">
           <p className="text-[12px] font-semibold tracking-[0.14em] uppercase text-bloom-600 mb-3">Nuestra carta</p>
           <h2 className="font-[300] tracking-tight text-ink-800" style={{ fontSize: "clamp(2.5rem,4vw,4.5rem)", lineHeight: 1.05 }}>
             Elegí por <span className="text-bloom-600">categoría.</span>
           </h2>
         </FadeIn>
 
-        <div className="relative">
-          {/* Fade edges */}
-          <div className="pointer-events-none absolute left-0 inset-y-0 w-28 bg-gradient-to-r from-white to-transparent z-10" />
-          <div className="pointer-events-none absolute right-0 inset-y-0 w-28 bg-gradient-to-l from-white to-transparent z-10" />
-
-          <div className="bloom-marquee flex gap-5 py-4" style={{ width: "max-content", paddingLeft: "24px" }}>
-            {[...categoryCards, ...categoryCards].map((c, i) => {
-              const Icon = c.Icon;
-              return (
-                <Link
-                  key={i}
-                  href={c.href}
-                  className={`group flex-shrink-0 w-72 h-56 flex flex-col rounded-[28px] bg-gradient-to-br border p-7 shadow-[0_8px_28px_-6px_rgba(0,0,0,0.10)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_24px_52px_-8px_rgba(0,0,0,0.18)] ${c.color}`}
-                >
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${c.iconBg}`}>
-                    <Icon className={c.iconColor} size={30} strokeWidth={1.75} aria-hidden />
-                  </div>
-                  <div className="mt-auto">
-                    <h3 className="text-[19px] font-bold tracking-tight text-ink-800">{c.title}</h3>
-                    <p className="text-[13px] text-ink-500 mt-1">{c.hint}</p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+        <Carousel
+          items={categoryCards.map((c, index) => (
+            <Card
+              key={c.href}
+              index={index}
+              card={{ src: c.src, title: c.title, category: c.hint, content: null }}
+              onClick={() => router.push(c.href)}
+            />
+          ))}
+        />
       </section>
 
       {platoDelDia && (
@@ -386,7 +362,7 @@ export default function IconHome() {
               <div className="group bg-white rounded-[2.5rem] p-4 sm:p-6 border border-black/[0.08] overflow-hidden transition-all duration-500 hover:shadow-[0_20px_60px_-16px_rgba(0,0,0,0.15)] flex flex-col md:flex-row items-center gap-8 md:gap-16">
                 <div className="relative w-full md:w-1/2 aspect-square md:aspect-[4/5] rounded-[2rem] overflow-hidden bg-gray-50">
                   {platoDelDia.image_url ? (
-                    <IconPhoto src={platoDelDia.image_url} alt={platoDelDia.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 50vw" />
+                    <Image src={platoDelDia.image_url} alt={platoDelDia.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 768px) 100vw, 50vw" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-6xl">🍽️</div>
                   )}
@@ -443,7 +419,7 @@ export default function IconHome() {
                     <div className="group h-full flex flex-col bg-white rounded-[2rem] border border-black/[0.06] overflow-hidden transition-all duration-[450ms] hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_rgba(79,70,229,0.15)] hover:border-indigo-100">
                       <div className="relative aspect-[4/3] bg-gray-50 overflow-hidden">
                         {promo.image_url ? (
-                          <IconPhoto src={promo.image_url} alt={promo.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 640px) 100vw, 33vw" />
+                          <Image src={promo.image_url} alt={promo.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" sizes="(max-width: 640px) 100vw, 33vw" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-indigo-50">
                             <IconStar size={40} className="text-indigo-200" />
@@ -509,7 +485,7 @@ export default function IconHome() {
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
             <FadeIn className="lg:w-1/2 relative w-full max-w-lg mx-auto">
               <div className="relative aspect-square rounded-3xl overflow-hidden shadow-[0_28px_64px_-12px_rgba(0,0,0,0.55),0_12px_36px_-6px_rgba(0,0,0,0.35)] ring-1 ring-white/10">
-                <IconPhoto
+                <Image
                   src={U.sobreBloom}
                   alt="Vasos Bloom IconCoffee & More y pastelería sobre mantel verde"
                   fill
@@ -578,7 +554,7 @@ export default function IconHome() {
         <div className="container mx-auto px-4 flex flex-col lg:flex-row items-center gap-12">
           <div className="lg:w-1/2 relative w-full">
             <div className="relative w-full max-w-lg mx-auto aspect-[4/3] rounded-3xl overflow-hidden shadow-[0_24px_56px_-12px_rgba(61,59,47,0.28),0_8px_24px_rgba(61,59,47,0.12)] ring-1 ring-black/[0.06]">
-              <IconPhoto src={U.delivery} alt="Delivery Bloom" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+              <Image src={U.delivery} alt="Delivery Bloom" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
             </div>
           </div>
           <FadeIn className="lg:w-1/2 text-center lg:text-left">
@@ -632,7 +608,7 @@ export default function IconHome() {
         <div className="mx-auto w-full max-w-[1200px] px-6 pt-16 pb-8">
           <div className="grid grid-cols-2 md:grid-cols-[1.4fr_repeat(3,1fr)] gap-12 mb-14">
             <div className="col-span-2 md:col-span-1">
-              <IconPhoto src={HERO_LOGO_SRC} alt="Bloom" width={140} height={46} className="h-9 w-auto object-contain" />
+              <Image src={HERO_LOGO_SRC} alt="Bloom" width={140} height={46} className="h-9 w-auto object-contain" />
               <p className="mt-4 text-[13px] leading-relaxed max-w-[280px]" style={{ color: "#86868b" }}>
                 Cafetería de especialidad y pastelería. Café clásico, comidas caseras y experiencia familiar en Mar del Plata.
               </p>
