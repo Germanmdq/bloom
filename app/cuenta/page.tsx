@@ -792,21 +792,6 @@ export default function CuentaPage() {
         </div>
       )}
 
-      {/* DEBUG: Solo para que el usuario pueda testear el banner si no tiene deuda */}
-      <div className="mt-10 p-4 border border-dashed border-neutral-300 rounded-xl text-center">
-          <p className="text-xs text-neutral-400 mb-2">Si no ves el banner de deuda arriba, es porque no tenés saldo pendiente.</p>
-          <button 
-              onClick={async () => {
-                  if (!user) return;
-                  await supabase.from('profiles').update({ balance: 500 }).eq('id', user.id);
-                  window.location.reload();
-              }}
-              className="text-[10px] font-black uppercase tracking-widest bg-neutral-100 text-neutral-600 px-3 py-2 rounded-lg hover:bg-neutral-200 transition-colors"
-          >
-              Simular Deuda ($500) para Testear
-          </button>
-      </div>
-
       {birthdayActive && (
         <div className={`${cardCls} border-2 border-amber-200 bg-amber-50 shadow-amber-100`}>
             <h2 className="flex items-center gap-2 text-base font-bold text-amber-900">
