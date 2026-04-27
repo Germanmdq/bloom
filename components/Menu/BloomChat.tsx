@@ -503,18 +503,21 @@ function ProductCard({
                   className="w-full rounded-2xl bg-neutral-50 border-none px-4 py-3 text-xs font-medium focus:ring-2 focus:ring-neutral-100 outline-none placeholder:text-neutral-300"
                 />
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 bg-neutral-50 p-1.5 rounded-2xl ring-1 ring-black/[0.03]">
-                  <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all text-neutral-400 hover:text-neutral-900"><Minus size={16} /></button>
-                  <span className="w-8 text-center font-bold text-sm text-neutral-900">{quantity}</span>
-                  <button onClick={() => setQuantity(q => q + 1)} className="w-9 h-9 flex items-center justify-center hover:bg-white hover:shadow-sm rounded-xl transition-all text-neutral-400 hover:text-neutral-900"><Plus size={16} /></button>
+              <div className="flex flex-col gap-3 w-full">
+                <div className="flex items-center justify-between bg-neutral-50 p-2 rounded-2xl ring-1 ring-black/[0.03] w-full h-14">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 ml-4">Cantidad</span>
+                  <div className="flex items-center gap-4 mr-2">
+                    <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center bg-white shadow-sm rounded-xl transition-all text-neutral-400 hover:text-neutral-900 border border-neutral-100"><Minus size={18} /></button>
+                    <span className="w-6 text-center font-bold text-base text-neutral-900">{quantity}</span>
+                    <button onClick={() => setQuantity(q => q + 1)} className="w-10 h-10 flex items-center justify-center bg-white shadow-sm rounded-xl transition-all text-neutral-400 hover:text-neutral-900 border border-neutral-100"><Plus size={18} /></button>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={handleEncargarClick}
-                  className="flex-1 py-4 rounded-2xl bg-[#7a765a] text-white text-[11px] font-black uppercase tracking-[0.14em] shadow-[0_10px_25px_-5px_rgba(122,118,90,0.4)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 hover:bg-[#6b674e]"
+                  className="w-full h-14 rounded-2xl bg-[#7a765a] text-white text-xs font-black uppercase tracking-[0.2em] shadow-[0_10px_25px_-5px_rgba(122,118,90,0.4)] active:scale-[0.98] transition-all flex items-center justify-center gap-3 hover:bg-[#6b674e]"
                 >
-                  <ShoppingBag size={16} /> {added ? "Sumar más" : "Agregar"}
+                  <ShoppingBag size={18} /> {added ? "SUMAR AL ENCARGO" : "AGREGAR AL ENCARGO"}
                 </button>
               </div>
             </div>
