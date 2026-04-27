@@ -49,24 +49,28 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, on
                             margin: 0;
                             size: 80mm auto;
                         }
-                        body * {
-                            visibility: hidden;
+                        /* Ocultar TODO lo que no sea el ticket */
+                        html, body {
+                            background: white !important;
+                            height: auto !important;
                         }
-                        #bloom-ticket-content, #bloom-ticket-content * {
-                            visibility: visible;
+                        body > *:not(#bloom-ticket-content-root) {
+                            display: none !important;
                         }
-                        #bloom-ticket-content {
+                        #bloom-ticket-content-root {
+                            display: block !important;
                             position: absolute;
                             left: 0;
                             top: 0;
                             width: 80mm !important;
-                            padding: 10px !important;
-                            background: white !important;
+                        }
+                        .print-hidden {
+                            display: none !important;
                         }
                     }
                 `}</style>
 
-                <div id="bloom-ticket-content" className="p-6 flex flex-col gap-4">
+                <div id="bloom-ticket-content-root" className="p-4 sm:p-6 flex flex-col gap-4 bg-white">
                     {/* Header */}
                     <div className="text-center space-y-1">
                         <div className="flex justify-center mb-2">
