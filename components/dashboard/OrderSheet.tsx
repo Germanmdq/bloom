@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { IconSearch, IconTrash, IconCreditCard, IconCheck, IconLoader2, IconX, IconChevronLeft, IconPrinter } from "@tabler/icons-react";
+import { IconSearch, IconTrash, IconCreditCard, IconCheck, IconLoader2, IconX, IconChevronLeft, IconPrinter, IconToolsKitchen2 } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useQueryClient } from "@tanstack/react-query";
@@ -884,25 +884,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 >
                                 {categories.map((cat: any, idx: number) => {
                                     const count = products.filter((p: any) => p.category_id === cat.id).length;
-                                    const getSafeIcon = (name: string) => {
-                                        const n = name.toLowerCase();
-                                        if (n.includes('caf')) return '☕';
-                                        if (n.includes('piz')) return '🍕';
-                                        if (n.includes('ham')) return '🍔';
-                                        if (n.includes('beb') || n.includes('jug')) return '🍹';
-                                        if (n.includes('dul') || n.includes('pos')) return '🍰';
-                                        if (n.includes('ens')) return '🥗';
-                                        if (n.includes('mila') || n.includes('pla')) return '🍽️';
-                                        if (n.includes('pan') || n.includes('fact')) return '🥐';
-                                        if (n.includes('tost')) return '🥪';
-                                        if (n.includes('papa')) return '🍟';
-                                        if (n.includes('cerve')) return '🍺';
-                                        if (n.includes('vino')) return '🍷';
-                                        return '🌟';
-                                    };
-
-                                    const icon = getSafeIcon(cat.name);
-                                    
                                     // Asignar área según el índice (Bento Pattern)
                                     const area = idx === 0 ? 'big' : idx === 1 ? 's1' : idx === 2 ? 's2' : idx === 3 ? 's3' : idx === 4 ? 's4' : idx === 5 ? 's5' : 'auto';
 
@@ -915,12 +896,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         >
                                             {/* Pastel Tint */}
                                             <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity bg-current" />
-                                            
-                                            <motion.div 
+
+                                            <motion.div
                                                 whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
-                                                className={`${idx === 0 ? 'text-8xl' : 'text-5xl'} drop-shadow-md select-none transition-all`}
+                                                className="text-gray-400 group-hover:text-gray-700 transition-colors"
                                             >
-                                                {icon}
+                                                <IconToolsKitchen2 size={idx === 0 ? 72 : 48} stroke={1.5} />
                                             </motion.div>
 
                                             <div>
