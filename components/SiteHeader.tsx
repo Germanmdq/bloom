@@ -152,15 +152,15 @@ export function SiteHeader({
           <div className="flex items-center gap-3 shrink-0">
             <FoodKingMobileNavButton onOpen={onMobileNavOpen} />
             {menuExtras ?? (
-              <>
+              <div className="flex items-center gap-2 sm:gap-3">
                 <Link
                   href="/menu"
-                  className="inline-flex items-center gap-2 rounded-full bg-ink-800 px-5 py-2.5 text-[13px] font-medium text-white hover:bg-ink-700 transition-colors whitespace-nowrap"
+                  className="hidden sm:inline-flex items-center gap-2 rounded-full bg-ink-800 px-5 py-2.5 text-[13px] font-medium text-white hover:bg-ink-700 transition-colors whitespace-nowrap"
                 >
                   Pedí ahora
                 </Link>
                 <PublicAccountNav />
-              </>
+              </div>
             )}
             {menuExtras != null && showCartButton ? (
               <button

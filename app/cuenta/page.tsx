@@ -465,8 +465,8 @@ export default function CuentaPage() {
     
     const amountToPay = mode === 'TOTAL' ? profile.balance : parseFloat(payAmount);
     
-    if (!amountToPay || amountToPay < 1) {
-        toast.error("Ingresá un monto válido (mínimo $1)");
+    if (!amountToPay || amountToPay < 10) {
+        toast.error("Ingresá un monto válido (mínimo $10)");
         return;
     }
 
@@ -477,38 +477,38 @@ export default function CuentaPage() {
 
     setIsPaying(true);
     try {
-        const res = await fetch('/api/payments/pay-debt', {
+        // En lugar de llamar a pay-debt (que es manual), generamos una preferencia de Mercado Pago
+        // Usamos el mismo API que para los pedidos pero con un flag o ítems descriptivos
+        const res = await fetch('/api/payments/create-preference', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                amount: amountToPay,
-                method: 'CASH', // Default or selector
-                notes: mode === 'TOTAL' ? 'Pago total de deuda' : 'Pago parcial de deuda'
+                items: [
+                    {
+                        id: `DEBT_PAYMENT_${user.id}_${Date.now()}`,
+                        name: "Pago de Saldo Pendiente - Bloom Club",
+                        unit_price: amountToPay,
+                        quantity: 1
+                    }
+                ],
+                metadata: {
+                  type: 'DEBT_PAYMENT',
+                  customer_id: user.id,
+                  amount: amountToPay
+                },
+                external_reference: `DEBT_${user.id}_${Date.now()}`
             })
         });
 
         const result = await res.json();
+        if (!res.ok) throw new Error(result.error || "Error al generar link de pago");
 
-        if (!res.ok) throw new Error(result.error || "Error al procesar el pago");
-
-        toast.success("¡Pago procesado con éxito!");
-        
-        // 4. PRINT TICKET
-        try {
-            const { formatDebtPaymentTicket } = await import("@/lib/utils/esc-pos");
-            const ticketText = formatDebtPaymentTicket(result.data);
-            console.log("GENERATED TICKET FOR PRINTER:", ticketText);
-            
-            // Here we could trigger a browser print or send to a socket
-            // For now, let's show a simulated success in console
-            // and if there's a print utility, we call it.
-        } catch (printErr) {
-            console.error("Error generating ticket:", printErr);
+        if (result.init_point) {
+            toast.info("Redirigiendo a Mercado Pago...");
+            window.location.href = result.init_point;
+        } else {
+            throw new Error("No se recibió el punto de inicio de pago");
         }
-
-        // Refresh data
-        await loadData(user.id);
-        setPayAmount("");
     } catch (err: any) {
         toast.error(err.message);
     } finally {
@@ -735,31 +735,31 @@ export default function CuentaPage() {
       </div>
 
       {profile && profile.balance > 0 && (
-        <div className={`${cardCls} border-2 border-red-200 bg-red-50 shadow-red-100 overflow-hidden`}>
+        <div className={`${cardCls} border-2 border-emerald-200 bg-emerald-50 shadow-emerald-100 overflow-hidden`}>
             <div className="flex items-center justify-between gap-4 p-5 pb-0">
                 <div className="flex-1">
-                    <h2 className="flex items-center gap-2 text-base font-black text-red-900 leading-none mb-1.5">
-                        <TrendingUp className="h-5 w-5 text-red-600" />
-                        Cuenta Corriente
+                    <h2 className="flex items-center gap-2 text-base font-black text-emerald-900 leading-none mb-1.5">
+                        <TrendingUp className="h-5 w-5 text-emerald-600" />
+                        Saldo Pendiente
                     </h2>
-                    <p className="text-sm text-red-800 leading-snug font-medium mb-2">
+                    <p className="text-sm text-emerald-800 leading-snug font-medium mb-2">
                         Tenés un saldo pendiente de pago de <strong>{formatMoney(profile.balance)}</strong>. 
                     </p>
                     <button 
                         onClick={() => setSection("pedidos")}
-                        className="text-xs font-bold uppercase tracking-wider text-red-700 underline underline-offset-4 hover:text-red-900 transition-colors"
+                        className="text-xs font-bold uppercase tracking-wider text-emerald-700 underline underline-offset-4 hover:text-emerald-900 transition-colors"
                     >
                         Ver detalle de pedidos
                     </button>
                 </div>
                 <div className="text-right whitespace-nowrap">
-                    <p className="text-2xl font-black text-red-600 leading-none">-{formatMoney(profile.balance)}</p>
+                    <p className="text-2xl font-black text-emerald-600 leading-none">-{formatMoney(profile.balance)}</p>
                 </div>
             </div>
 
             {/* Payment Form */}
-            <div className="mt-5 border-t border-red-100 bg-white/50 p-5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-3">Módulo de Pago</p>
+            <div className="mt-5 border-t border-emerald-100 bg-white/50 p-5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-3">Módulo de Pago Online</p>
                 <div className="flex flex-col gap-3">
                     <div className="flex gap-2">
                         <input 
@@ -767,12 +767,12 @@ export default function CuentaPage() {
                             placeholder="Monto a pagar..."
                             value={payAmount}
                             onChange={(e) => setPayAmount(e.target.value)}
-                            className="flex-1 h-12 px-4 rounded-xl border border-red-100 bg-white font-bold text-sm outline-none focus:ring-2 ring-red-500/20 transition-all"
+                            className="flex-1 h-12 px-4 rounded-xl border border-emerald-100 bg-white font-bold text-sm outline-none focus:ring-2 ring-emerald-500/20 transition-all"
                         />
                         <button 
                             disabled={isPaying}
                             onClick={() => handleDebtPayment('TOTAL')}
-                            className="h-12 px-6 bg-red-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-colors disabled:opacity-50"
+                            className="h-12 px-6 bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-colors disabled:opacity-50"
                         >
                             Pagar Total
                         </button>
@@ -780,13 +780,13 @@ export default function CuentaPage() {
                     <button 
                         disabled={isPaying || !payAmount}
                         onClick={() => handleDebtPayment('PARTIAL')}
-                        className="w-full h-12 bg-white border-2 border-red-600 text-red-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-50 transition-colors disabled:opacity-50 disabled:border-red-200 disabled:text-red-200"
+                        className="w-full h-12 bg-white border-2 border-emerald-600 text-emerald-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:border-emerald-200 disabled:text-emerald-200"
                     >
-                        {isPaying ? 'Procesando...' : 'Pagar Parcial'}
+                        {isPaying ? 'Procesando...' : 'Pagar Monto Parcial'}
                     </button>
                 </div>
-                <p className="mt-3 text-[9px] font-bold text-red-400 uppercase tracking-tighter text-center italic">
-                    Al confirmar, se generará un comprobante electrónico para la tiquetera.
+                <p className="mt-3 text-[9px] font-bold text-emerald-400 uppercase tracking-tighter text-center italic">
+                    Al confirmar, serás redirigido a Mercado Pago para completar la operación.
                 </p>
             </div>
         </div>

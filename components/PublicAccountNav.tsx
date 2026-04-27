@@ -60,11 +60,11 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center gap-1.5 text-[13px] font-medium transition-colors ${dark ? "text-white/80 hover:text-white" : "text-neutral-500 hover:text-neutral-900"} ${className}`}
         >
-          <div className="w-6 h-6 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500">
-            <UserIcon size={12} />
+          <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 shadow-sm border border-black/5">
+            <UserIcon size={14} />
           </div>
-          <span>Mi cuenta</span>
-          <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
+          <span className="hidden sm:inline">Mi cuenta</span>
+          <ChevronDown size={14} className={`hidden sm:block transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
         </button>
         
         <AnimatePresence>
@@ -107,9 +107,14 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
     <Link
       href="/auth"
       onClick={() => onAfterNavigate?.()}
-      className={`text-[13px] font-medium transition-colors ${dark ? "text-white/80 hover:text-white" : "text-neutral-500 hover:text-neutral-900"} ${className}`}
+      className={`inline-flex items-center justify-center rounded-full px-3 py-1.5 text-[12px] sm:text-[13px] font-bold transition-all ${
+        dark 
+          ? "bg-white/10 text-white hover:bg-white/20" 
+          : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+      } ${className}`}
     >
-      Iniciar sesión
+      <UserIcon size={14} className="sm:mr-1.5" />
+      <span className="hidden sm:inline">Iniciar sesión</span>
     </Link>
   );
 }
