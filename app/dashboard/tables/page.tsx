@@ -23,6 +23,7 @@ type WebOrder = {
 
 export default function TablesPage() {
     const [tables, setTables] = useState<Table[]>([]);
+    const [tableSearch, setTableSearch] = useState("");
     const [selectedTable, setSelectedTable] = useState<Table | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
