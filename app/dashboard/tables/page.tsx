@@ -96,6 +96,11 @@ export default function TablesPage() {
     // Keyboard Shortcuts (F1 y +)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // F1 enfoca el buscador
+            if (e.key === 'F1') {
+                e.preventDefault();
+                document.getElementById('table-search')?.focus();
+            }
             // El signo "+" abre la mesa (si no hay modales abiertos)
             if (e.key === '+' && !isNewTableModalOpen && !selectedTable) {
                 e.preventDefault();
@@ -478,15 +483,12 @@ export default function TablesPage() {
                     </div>
                     <div className="flex items-center gap-2">
                         <input
-                            type="number"
-                            placeholder="Mesa #"
-                            className="w-24 bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold outline-none focus:border-black focus:ring-2 focus:ring-black/5 transition-all shadow-sm"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    handleQuickOpen(e.currentTarget.value);
-                                    e.currentTarget.value = "";
-                                }
-                            }}
+                            id="table-search"
+                            type="text"
+                            placeholder="Buscar mesa o nombre (F1)..."
+                            value={tableSearch}
+                            onChange={(e) => setTableSearch(e.target.value)}
+                            className="w-64 bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold outline-none focus:border-black focus:ring-2 focus:ring-black/5 transition-all shadow-sm"
                         />
                         <button
                             onClick={() => setIsNewTableModalOpen(true)}
