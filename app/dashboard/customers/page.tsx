@@ -83,27 +83,65 @@ export default function DashboardCustomersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    void (async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await fetch("/api/dashboard/customers");
-        const j = (await res.json()) as { customers?: DashboardCustomerRow[]; error?: string };
-        if (!res.ok) {
-          setError(j.error || "Error al cargar");
-          setRows([]);
-          return;
-        }
-        setRows(j.customers ?? []);
-      } catch {
-        setError("Error de red");
+  // Partial Payment UI State
+  const [payModal, setPayModal] = useState<{ open: boolean; customer: DashboardCustomerRow | null }>({ open: false, customer: null });
+  const [payAmount, setPayAmount] = useState("");
+  const [payMethod, setPayMethod] = useState("CASH");
+  const [payLoading, setPayLoading] = useState(false);
+
+  async function fetchRows() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/dashboard/customers");
+      const j = (await res.json()) as { customers?: DashboardCustomerRow[]; error?: string };
+      if (!res.ok) {
+        setError(j.error || "Error al cargar");
         setRows([]);
-      } finally {
-        setLoading(false);
+        return;
       }
-    })();
+      setRows(j.customers ?? []);
+    } catch {
+      setError("Error de red");
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void fetchRows();
   }, []);
+
+  const handlePayPartial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payModal.customer || !payAmount) return;
+    setPayLoading(true);
+    try {
+      const res = await fetch("/api/dashboard/customers/pay-partial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            customerId: payModal.customer.id, 
+            amount: parseFloat(payAmount),
+            paymentMethod: payMethod 
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json();
+        alert(j.error || "Error al registrar el pago");
+        return;
+      }
+      alert("Pago registrado con éxito ✅");
+      setPayModal({ open: false, customer: null });
+      setPayAmount("");
+      fetchRows();
+    } catch (e) {
+      alert("Error de red");
+    } finally {
+      setPayLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -169,8 +207,23 @@ export default function DashboardCustomersPage() {
                     <td className="max-w-[220px] truncate px-4 py-3 text-gray-600">{r.defaultAddress}</td>
                     <td className="px-4 py-3 text-center tabular-nums font-bold text-gray-900">{r.orderCount}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-gray-700">{fmtDate(r.lastOrderAt)}</td>
-                    <td className={`px-4 py-3 text-center tabular-nums font-black ${r.balance > 0 ? 'text-red-600' : 'text-gray-400'}`}>
-                      {r.balance > 0 ? `-$${r.balance.toLocaleString()}` : `$${r.balance.toLocaleString()}`}
+                    <td className="px-4 py-3 text-center tabular-nums font-black whitespace-nowrap">
+                        <div className="flex flex-col items-center gap-1">
+                            <span className={r.balance > 0 ? 'text-red-600' : 'text-gray-400'}>
+                                {r.balance > 0 ? `-$${r.balance.toLocaleString()}` : `$${r.balance.toLocaleString()}`}
+                            </span>
+                            {r.balance > 0 && (
+                                <button 
+                                    onClick={() => {
+                                        setPayModal({ open: true, customer: r });
+                                        setPayAmount(r.balance.toString());
+                                    }}
+                                    className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-black uppercase tracking-widest hover:bg-red-700 transition-colors"
+                                >
+                                    Pagar parcial
+                                </button>
+                            )}
+                        </div>
                     </td>
                     <td className="px-4 py-3 text-center tabular-nums font-bold text-[#2d4a3e]">
                       {r.loyaltyPoints}
@@ -194,6 +247,61 @@ export default function DashboardCustomersPage() {
           </div>
         )}
       </div>
+
+      {/* MODAL PAGO PARCIAL */}
+      {payModal.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPayModal({ open: false, customer: null })} />
+              <div className="relative bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+                  <h3 className="text-xl font-black mb-2 uppercase">Abonar de Cuenta</h3>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Cliente: {payModal.customer?.displayName}</p>
+                  
+                  <form onSubmit={handlePayPartial} className="space-y-4">
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">Monto a abonar ($)</label>
+                        <input 
+                            type="number" 
+                            required 
+                            autoFocus
+                            value={payAmount}
+                            onChange={e => setPayAmount(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 font-black text-xl outline-none focus:ring-2 ring-red-500/10 transition-all"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">Medio de Pago</label>
+                        <select 
+                            value={payMethod}
+                            onChange={e => setPayMethod(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 font-bold outline-none appearance-none"
+                        >
+                            <option value="CASH">Efectivo 💵</option>
+                            <option value="CARD">Tarjeta 💳</option>
+                            <option value="MERCADO_PAGO">Mercado Pago 📱</option>
+                        </select>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                        <button 
+                            type="button" 
+                            onClick={() => setPayModal({ open: false, customer: null })}
+                            className="flex-1 py-4 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-100 transition-all"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            type="submit"
+                            disabled={payLoading}
+                            className="flex-[2] py-4 bg-black text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10"
+                        >
+                            {payLoading ? "Procesando..." : "Registrar Pago"}
+                        </button>
+                    </div>
+                  </form>
+              </div>
+          </div>
+      )}
     </div>
   );
 }
