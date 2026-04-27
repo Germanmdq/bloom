@@ -629,11 +629,7 @@ export default function TablesPage() {
                                                 
                                                 return (
                                                     <>
-                                                        {hasName && table.id < 301 && (
-                                                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-40 ${styles.textColor}`}>
-                                                                Mesa {table.id}
-                                                            </span>
-                                                        )}
+                                                        {/* Eliminado: Ya no mostramos el número si hay un nombre/alias */}
                                                         <span className={`font-semibold leading-none tracking-tight break-words w-full ${styles.textColor} ${
                                                             displayName.length > 12 ? 'text-[2.5rem]' :
                                                             displayName.length > 8 ? 'text-[3.5rem]' : 
