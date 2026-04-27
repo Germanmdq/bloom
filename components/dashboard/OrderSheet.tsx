@@ -501,43 +501,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     items: cart,
                 });
 
-                // ── LÓGICA DE ACTUALIZACIÓN DE INVENTARIO (BLOOM) ──
-                try {
-                    const inventoryPromises = cart.map(async (item) => {
-                        const nombreLower = item.name.toLowerCase();
-                        let unidadesARestar = item.quantity;
-                        
-                        // REGLA ESPECIAL CAFÉ DOBLE (Descuenta 2 por cada unidad)
-                        if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
-                            unidadesARestar = item.quantity * 2;
-                        }
-
-                        // Actualizar Stock y Vendidos de forma atómica en public.products
-                        // Obtenemos los valores actuales para asegurar precisión
-                        const { data: prod } = await supabase
-                            .from('products')
-                            .select('stock, vendidos')
-                            .eq('id', item.id)
-                            .single();
-
-                        if (prod) {
-                            const newStock = (prod.stock || 0) - unidadesARestar;
-                            const newVendidos = (prod.vendidos || 0) + item.quantity;
-
-                            return supabase
-                                .from('products')
-                                .update({ 
-                                    stock: newStock, 
-                                    vendidos: newVendidos 
-                                })
-                                .eq('id', item.id);
-                        }
-                    });
-
-                    await Promise.all(inventoryPromises);
-                } catch (err) {
-                    console.error("Error actualizando inventario Bloom:", err);
-                }
+                // Nota: El descuento de stock de Bloom ahora se maneja en sendToKitchen
+                // para que sea instantáneo ni bien se pide el producto.
                 
                 // If it's a web order, we mark it as completed and paid
                 if (webOrderId || currentWebOrderId) {
@@ -588,6 +553,45 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     updated_at: new Date().toISOString()
                 })
                 .eq("id", tableId);
+            await sendKitchenTicket.mutateAsync({
+                table_id: String(tableId),
+                items: cart,
+            });
+
+            // ── LÓGICA DE ACTUALIZACIÓN DE INVENTARIO (BLOOM) ──
+            // Se ejecuta ni bien se envía a cocina para que el stock sea real al instante
+            try {
+                const inventoryPromises = cart.map(async (item) => {
+                    const nombreLower = item.name.toLowerCase();
+                    let unidadesARestar = item.quantity;
+                    
+                    if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
+                        unidadesARestar = item.quantity * 2;
+                    }
+
+                    const { data: prod } = await supabase
+                        .from('products')
+                        .select('stock, vendidos')
+                        .eq('id', item.id)
+                        .single();
+
+                    if (prod) {
+                        const newStock = (prod.stock || 0) - unidadesARestar;
+                        const newVendidos = (prod.vendidos || 0) + item.quantity;
+
+                        return supabase
+                            .from('products')
+                            .update({ 
+                                stock: newStock, 
+                                vendidos: newVendidos 
+                            })
+                            .eq('id', item.id);
+                    }
+                });
+                await Promise.all(inventoryPromises);
+            } catch (err) {
+                console.error("Error actualizando inventario Bloom al enviar a cocina:", err);
+            }
 
             setFeedback({ message: "Enviado a cocina", type: 'success' });
             setTimeout(() => {
