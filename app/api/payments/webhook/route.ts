@@ -107,16 +107,14 @@ export async function POST(request: NextRequest) {
 
     const mpConfig = new MercadoPagoConfig({ accessToken, options: { timeout: 10000 } });
 
-    let debtMetadata: { type?: string; customer_id?: string; amount?: number } | null = null;
+    let debtMetadata: { type?: string; customer_id?: string; amount?: number | string } | null = null;
 
     if (topic === "payment" || topic === "payment.updated" || topic === "payment.created") {
       const paymentApi = new Payment(mpConfig);
       const p = await paymentApi.get({ id: resourceId });
       approved = p.status === "approved";
       externalRef = p.external_reference ?? undefined;
-      if (p.metadata?.type === "DEBT_PAYMENT") {
-        debtMetadata = p.metadata;
-      }
+      debtMetadata = p.metadata;
     } else if (topic === "merchant_order" || topic === "topic_merchant_order_wh") {
       const moApi = new MerchantOrder(mpConfig);
       const mo = await moApi.get({ merchantOrderId: resourceId });
@@ -124,15 +122,26 @@ export async function POST(request: NextRequest) {
       approved =
         mo.order_status === "paid" ||
         Boolean(mo.payments?.some((pay) => pay.status === "approved"));
+      
+      // Si es una orden comercial, buscamos el pago aprobado para sacar la metadata
+      const approvedPayment = mo.payments?.find(p => p.status === "approved");
+      if (approvedPayment?.id) {
+        try {
+          const paymentApi = new Payment(mpConfig);
+          const p = await paymentApi.get({ id: String(approvedPayment.id) });
+          debtMetadata = p.metadata;
+        } catch (e) {
+          console.error("[Webhook] No se pudo obtener metadata del pago de la orden", e);
+        }
+      }
     } else {
+      // Fallback intentando tratar el id como pago
       try {
         const paymentApi = new Payment(mpConfig);
         const p = await paymentApi.get({ id: resourceId });
         approved = p.status === "approved";
         externalRef = p.external_reference ?? undefined;
-        if (p.metadata?.type === "DEBT_PAYMENT") {
-          debtMetadata = p.metadata;
-        }
+        debtMetadata = p.metadata;
       } catch {
         try {
           const moApi = new MerchantOrder(mpConfig);
@@ -141,9 +150,7 @@ export async function POST(request: NextRequest) {
           approved =
             mo.order_status === "paid" ||
             Boolean(mo.payments?.some((pay) => pay.status === "approved"));
-        } catch {
-          /* unknown topic */
-        }
+        } catch { /* ignore */ }
       }
     }
 
@@ -151,12 +158,12 @@ export async function POST(request: NextRequest) {
       const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
       const supabaseAdmin = createClient(getSupabaseUrl(), serviceKey || "");
 
-      // Caso 1: Pago de Deuda Directo (desde la cuenta)
-      if (debtMetadata?.customer_id && debtMetadata.amount) {
+      // Prioridad 1: Tenemos metadata explícita de DEBT_PAYMENT
+      if (debtMetadata?.type === "DEBT_PAYMENT" && debtMetadata.customer_id && debtMetadata.amount) {
         const cid = debtMetadata.customer_id;
         const amt = Number(debtMetadata.amount);
         
-        console.log(`[Webhook] Procesando DEBT_PAYMENT para ${cid}: ${amt}`);
+        console.log(`[Webhook] DEBT_PAYMENT detectado -> Cliente: ${cid}, Monto: ${amt}`);
         
         const { data: profile } = await supabaseAdmin
           .from("profiles")
@@ -165,16 +172,18 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (profile) {
-          const newBalance = Math.max(0, Number(profile.balance ?? 0) - amt);
+          const currentBalance = Number(profile.balance ?? 0);
+          const newBalance = Math.max(0, currentBalance - amt);
           await supabaseAdmin
             .from("profiles")
             .update({ balance: newBalance })
             .eq("id", cid);
-          console.log(`[Webhook] Balance actualizado: ${newBalance}`);
+          console.log(`[Webhook] Balance actualizado de ${currentBalance} a ${newBalance}`);
         }
       } 
-      // Caso 2: Pedido Normal (que puede o no tener deuda incluida)
-      else if (externalRef && /^[0-9a-f-]{36}$/i.test(externalRef)) {
+      // Prioridad 2: Es una orden normal (puede tener deuda incluida)
+      else if (externalRef && (/^[0-9a-f-]{36}$/i.test(externalRef) || externalRef.startsWith("DEBT_"))) {
+        console.log(`[Webhook] Procesando pedido normal/deuda con ref: ${externalRef}`);
         await markOrderPaid(externalRef);
       }
     }
