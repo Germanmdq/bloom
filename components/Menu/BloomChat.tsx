@@ -716,16 +716,6 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     scrollToBottom();
   }, [cart, encargoOpen, successMessage, softAuthHintVisible, upsellVariant]);
 
-  useEffect(() => {
-    if (!open || !context) return;
-
-    const hasScope = (context.productIds?.length ?? 0) > 0 || !!context.categoryId;
-    if (!hasScope) {
-      setProducts([]);
-      if (scrollRef.current) scrollRef.current.scrollTop = 0;
-      return;
-    }
-
   // Cargar OFERTAS DEL DÍA una vez al abrir el chat
   useEffect(() => {
     if (!open) return;
@@ -758,7 +748,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     if (!open || !context) return;
     
     // Si no hay categoría seleccionada, no cargar productos extra (solo mostrar ofertas arriba)
-    if (!context.categoryId && (!context.productIds || context.productIds.length === 0)) {
+    const hasScope = (context.productIds?.length ?? 0) > 0 || !!context.categoryId;
+    if (!hasScope) {
       setProducts([]);
       return;
     }
