@@ -1928,7 +1928,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
               {!loadingProducts && showProductGrid && (
                 <>
-                  {products.length === 0 ? (
+                  {products.length === 0 && dailyOffersList.length === 0 ? (
                     <p className="text-sm text-neutral-500">No hay productos activos en esta categoría por ahora.</p>
                   ) : (
                     <div className="flex w-full flex-col gap-3">
