@@ -716,6 +716,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <input
                                 id="product-search"
                                 type="text"
+                                autoFocus
                                 value={productSearch}
                                 onChange={(e) => { setProductSearch(e.target.value); setActiveCategory(null); }}
                                 placeholder="Buscar producto..."

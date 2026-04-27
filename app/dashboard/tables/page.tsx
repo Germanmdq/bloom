@@ -94,9 +94,15 @@ export default function TablesPage() {
         };
     }, []);
     
-    // Keyboard Shortcuts (F1 y +)
+    // Keyboard Shortcuts (F1, +, Esc)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Esc cierra todo
+            if (e.key === 'Escape') {
+                if (selectedTable) setSelectedTable(null);
+                if (isNewTableModalOpen) setIsNewTableModalOpen(false);
+                if (selectedWebOrder) setSelectedWebOrder(null);
+            }
             // F1 enfoca el buscador
             if (e.key === 'F1') {
                 e.preventDefault();
@@ -110,7 +116,7 @@ export default function TablesPage() {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isNewTableModalOpen, selectedTable]);
+    }, [isNewTableModalOpen, selectedTable, selectedWebOrder]);
 
     async function fetchWebOrders() {
         try {
