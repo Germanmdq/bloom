@@ -582,6 +582,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             // PERSISTIMOS LOS ITEMS EN LA MESA ANTES DE CERRAR
             await supabase.from("salon_tables")
                 .update({ 
+                    status: 'OCCUPIED',
                     items: cart, 
                     total: cart.reduce((acc, item) => acc + (item.price * item.quantity), 0),
                     updated_at: new Date().toISOString()

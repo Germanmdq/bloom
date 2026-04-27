@@ -63,11 +63,6 @@ export default function TablesPage() {
         fetchTables();
         fetchWebOrders();
         
-        // Anti-ghost cleanup for legacy or virtual tables
-        supabase.from('salon_tables').delete().gte('id', 300).then(() => {
-            console.log('Ghost tables purged.');
-        });
-
         // Listen to salon_tables changes (POS tables)
         const tableChannel = supabase
             .channel('salon_tables_realtime')
