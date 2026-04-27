@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Users, Search, Loader2, Star, TrendingUp, Calendar, ArrowUpDown, X, Phone, Mail, ShoppingBag, CheckCircle2, AlertCircle, History, Receipt } from "lucide-react";
+import { IconUsers, IconSearch, IconLoader2, IconStar, IconTrendingUp, IconCalendar, IconArrowsUpDown, IconX, IconPhone, IconMail, IconShoppingBag, IconCircleCheck, IconAlertCircle, IconHistory, IconReceipt } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function ClientesPage() {
@@ -92,14 +92,14 @@ export default function ClientesPage() {
                 <div>
                     <h2 className="text-4xl font-black tracking-tight text-gray-900 mb-1 leading-none uppercase">CLIENTES</h2>
                     <p className="text-gray-400 font-bold text-[10px] tracking-[0.2em] uppercase flex items-center gap-2">
-                        <Users size={12} className="text-accent" />
+                        <IconUsers size={12} className="text-accent" />
                         {clients.length} Registrados • Gestión de CRM
                     </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                     <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                         <input
                             type="text" placeholder="Filtro rápido..."
                             value={search} onChange={(e) => setSearch(e.target.value)}
@@ -108,7 +108,7 @@ export default function ClientesPage() {
                     </div>
                     
                     <div className="flex items-center gap-2 bg-white px-5 py-3 rounded-[1.5rem] border border-gray-100 shadow-sm">
-                        <ArrowUpDown size={16} className="text-gray-400" />
+                        <IconArrowsUpDown size={16} className="text-gray-400" />
                         <select 
                             value={sortBy} 
                             onChange={(e: any) => setSortBy(e.target.value)}
@@ -125,13 +125,13 @@ export default function ClientesPage() {
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-40 gap-4">
-                    <Loader2 className="animate-spin text-gray-200" size={64} />
+                    <IconLoader2 className="animate-spin text-gray-200" size={64} />
                     <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Accediendo a la base de datos...</p>
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-40 text-center gap-3">
                     <div className="w-20 h-20 bg-gray-50 rounded-[2rem] flex items-center justify-center text-gray-200 mb-2">
-                        <Users size={40} />
+                        <IconUsers size={40} />
                     </div>
                     <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-[10px]">No se encontraron coincidencias</p>
                 </div>
@@ -167,11 +167,11 @@ export default function ClientesPage() {
                                 <h3 className="font-black text-xl text-gray-900 truncate mb-1">{client.full_name || "S/N"}</h3>
                                 <div className="flex flex-col gap-1.5 mb-8">
                                     <p className="text-[11px] font-bold text-gray-400 flex items-center gap-2 tracking-tight truncate">
-                                        <Mail size={12} className="opacity-40" /> {client.email || 'Email no cargado'}
+                                        <IconMail size={12} className="opacity-40" /> {client.email || 'Email no cargado'}
                                     </p>
                                     {client.phone && (
                                         <p className="text-[11px] font-bold text-gray-400 flex items-center gap-2 tracking-tight">
-                                            <Phone size={12} className="opacity-40" /> {client.phone}
+                                            <IconPhone size={12} className="opacity-40" /> {client.phone}
                                         </p>
                                     )}
                                 </div>
@@ -205,7 +205,7 @@ export default function ClientesPage() {
                         >
                             {/* Close Button UI */}
                             <button onClick={() => setSelectedClient(null)} className="absolute top-6 right-6 w-11 h-11 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center text-white transition-all z-[60] active:scale-95 shadow-xl">
-                                <X size={20} />
+                                <IconX size={20} />
                             </button>
 
                             {/* Header Gradient */}
@@ -219,7 +219,7 @@ export default function ClientesPage() {
                                         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FFD60A] mb-1">Perfil de Cliente</p>
                                         <h2 className="text-3xl font-black text-white leading-tight">{selectedClient.full_name}</h2>
                                         <p className="text-white/40 text-sm font-bold flex items-center gap-2 mt-2 truncate">
-                                            <Mail size={14} /> {selectedClient.email || 'Sin correo asociado'}
+                                            <IconMail size={14} /> {selectedClient.email || 'Sin correo asociado'}
                                         </p>
                                     </div>
                                 </div>
@@ -230,23 +230,23 @@ export default function ClientesPage() {
                                 {/* Stats Cards */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="bg-gray-50/50 p-5 rounded-[2.5rem] text-center border border-gray-100 group hover:bg-white hover:shadow-xl transition-all">
-                                        <TrendingUp className="mx-auto mb-3 text-black opacity-20" size={20} />
+                                        <IconTrendingUp className="mx-auto mb-3 text-black opacity-20" size={20} />
                                         <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Gasto Total</p>
                                         <p className="text-xl font-black text-gray-900">${selectedClient.total_spent.toLocaleString()}</p>
                                     </div>
                                     <div className="bg-gray-50/50 p-5 rounded-[2.5rem] text-center border border-gray-100 group hover:bg-white hover:shadow-xl transition-all">
-                                        <ShoppingBag className="mx-auto mb-3 text-black opacity-20" size={20} />
+                                        <IconShoppingBag className="mx-auto mb-3 text-black opacity-20" size={20} />
                                         <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Frecuencia</p>
                                         <p className="text-xl font-black text-gray-900">{selectedClient.order_count}</p>
                                     </div>
                                     <div className="bg-gray-50/50 p-5 rounded-[2.5rem] text-center border border-gray-100 group hover:bg-white hover:shadow-xl transition-all">
-                                        <Star className="mx-auto mb-3 text-[#FFD60A]" size={20} fill="currentColor" />
+                                        <IconStar className="mx-auto mb-3 text-[#FFD60A]" size={20} fill="currentColor" />
                                         <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Puntos</p>
                                         <p className="text-xl font-black text-gray-900">{selectedClient.points}</p>
                                     </div>
                                     <div className={`${selectedClient.balance > 0 ? 'bg-red-600 text-white shadow-xl shadow-red-600/20' : selectedClient.balance < 0 ? 'bg-emerald-600 text-white' : 'bg-black text-white'} p-5 rounded-[2.5rem] text-center transition-all relative overflow-hidden`}>
                                          {selectedClient.balance !== 0 && <div className="absolute top-0 right-0 w-8 h-8 -mr-4 -mt-4 bg-white/20 rotate-45" />}
-                                        <ArrowUpDown className="mx-auto mb-3 opacity-40" size={20} />
+                                        <IconArrowsUpDown className="mx-auto mb-3 opacity-40" size={20} />
                                         <p className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-1">Saldo CC</p>
                                         <p className="text-xl font-black">
                                             {selectedClient.balance > 0 ? `-$${selectedClient.balance.toLocaleString()}` : selectedClient.balance < 0 ? `+$${Math.abs(selectedClient.balance).toLocaleString()}` : `$0`}
@@ -258,7 +258,7 @@ export default function ClientesPage() {
                                 <div className={`p-8 rounded-[3rem] ${selectedClient.balance > 0 ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'} border-2 flex flex-col gap-6 shadow-sm`}>
                                     <div className="flex items-center gap-4">
                                         <div className={`w-14 h-14 ${selectedClient.balance > 0 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'} rounded-full flex items-center justify-center`}>
-                                            <Receipt size={28} />
+                                            <IconReceipt size={28} />
                                         </div>
                                         <div>
                                             <h4 className={`font-black ${selectedClient.balance > 0 ? 'text-red-900' : 'text-emerald-900'} text-lg`}>Registrar Pago</h4>
@@ -279,7 +279,7 @@ export default function ClientesPage() {
                                             disabled={isPaying} onClick={() => handleSettleDebt(selectedClient.id)}
                                             className={`h-16 px-10 ${selectedClient.balance > 0 ? 'bg-red-600 shadow-red-600/20' : 'bg-emerald-600 shadow-emerald-600/20'} text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-xl`}
                                         >
-                                            {isPaying ? <Loader2 className="animate-spin" size={18} /> : <><CheckCircle2 size={18} /> Confirmar Pago</>}
+                                            {isPaying ? <IconLoader2 className="animate-spin" size={18} /> : <><IconCircleCheck size={18} /> Confirmar Pago</>}
                                         </button>
                                     </div>
                                     
@@ -297,7 +297,7 @@ export default function ClientesPage() {
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between">
                                         <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-gray-400 flex items-center gap-2">
-                                            <History size={16} /> ÚLTIMOS CONSUMOS
+                                            <IconHistory size={16} /> ÚLTIMOS CONSUMOS
                                         </h4>
                                         <span className="text-[10px] font-bold text-gray-400 italic">Últimas 5 órdenes</span>
                                     </div>
@@ -307,7 +307,7 @@ export default function ClientesPage() {
                                                 <div key={order.id} className="bg-white p-5 rounded-[2rem] border border-gray-100 flex items-center justify-between hover:shadow-lg transition-all group">
                                                     <div className="flex items-center gap-5">
                                                         <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-black group-hover:text-white transition-all">
-                                                            <Receipt size={20} />
+                                                            <IconReceipt size={20} />
                                                         </div>
                                                         <div>
                                                             <p className="font-black text-gray-900 text-sm">Pedido #{order.id?.slice(0, 8) || 'N/A'}</p>
@@ -324,7 +324,7 @@ export default function ClientesPage() {
                                             ))
                                         ) : (
                                             <div className="py-12 border-2 border-dashed border-gray-100 rounded-[3rem] flex flex-col items-center justify-center text-center opacity-30">
-                                                <ShoppingBag size={32} className="mb-2" />
+                                                <IconShoppingBag size={32} className="mb-2" />
                                                 <p className="text-[10px] font-black uppercase tracking-widest">No hay historial de compras</p>
                                             </div>
                                         )}
@@ -334,14 +334,14 @@ export default function ClientesPage() {
                                 {/* CONTACT FOOTER */}
                                 <div className="pt-8 border-t border-gray-100 grid grid-cols-2 gap-4">
                                      <div className="flex items-center gap-3 p-5 bg-gray-50 rounded-[1.5rem] border border-transparent hover:border-gray-200 transition-colors">
-                                         <Phone size={18} className="text-gray-300" />
+                                         <IconPhone size={18} className="text-gray-300" />
                                          <div>
                                              <p className="text-[8px] font-black uppercase opacity-40 text-black mb-0.5">Teléfono</p>
                                              <p className="text-xs font-bold text-gray-900 truncate">{selectedClient.phone || 'S/N'}</p>
                                          </div>
                                      </div>
                                      <div className="flex items-center gap-3 p-5 bg-gray-50 rounded-[1.5rem] border border-transparent hover:border-gray-200 transition-colors">
-                                         <Mail size={18} className="text-gray-300" />
+                                         <IconMail size={18} className="text-gray-300" />
                                          <div>
                                              <p className="text-[8px] font-black uppercase opacity-40 text-black mb-0.5">Email</p>
                                              <p className="text-xs font-bold text-gray-900 truncate">{selectedClient.email || 'S/N'}</p>

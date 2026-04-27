@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { PieChart, DollarSign, CreditCard, Wallet, Calendar, Loader2, TrendingUp, ShoppingBag, Receipt, RefreshCcw, Package, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { IconChartPie, IconCurrencyDollar, IconCreditCard, IconWallet, IconCalendar, IconLoader2, IconTrendingUp, IconShoppingBag, IconReceipt, IconRefresh, IconPackage, IconArrowUpRight, IconArrowDownRight } from "@tabler/icons-react";
 
 type Timeframe = 'TODAY' | 'WEEK' | 'MONTH';
 
@@ -116,7 +116,7 @@ export default function ReportsPage() {
                 <div>
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-                            <PieChart className="text-[#FFD60A]" size={20} />
+                            <IconChartPie className="text-[#FFD60A]" size={20} />
                         </div>
                         <h1 className="text-4xl font-black tracking-tight text-gray-900">Reporte Diario</h1>
                     </div>
@@ -142,7 +142,7 @@ export default function ReportsPage() {
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-40 gap-4">
-                    <Loader2 className="animate-spin text-gray-200" size={64} />
+                    <IconLoader2 className="animate-spin text-gray-200" size={64} />
                     <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-xs">Sincronizando datos...</p>
                 </div>
             ) : (
@@ -153,28 +153,28 @@ export default function ReportsPage() {
                             title="Ingresos Brutos" 
                             amount={stats.totalSales} 
                             subtitle={`${stats.salesCount} pedidos`} 
-                            icon={TrendingUp} 
+                            icon={IconTrendingUp} 
                             color="emerald" 
                         />
                         <SummaryCard 
                             title="Compras Mercadería" 
                             amount={stats.totalPurchases} 
                             subtitle="Inversión en stock" 
-                            icon={ShoppingBag} 
+                            icon={IconShoppingBag} 
                             color="amber" 
                         />
                         <SummaryCard 
                             title="Gastos Fijos" 
                             amount={stats.totalExpenses} 
                             subtitle="Sueldos y servicios" 
-                            icon={Receipt} 
+                            icon={IconReceipt} 
                             color="red" 
                         />
                         <SummaryCard 
                             title="Balance Neto" 
                             amount={stats.netBalance} 
                             subtitle="Margen de ganancia" 
-                            icon={DollarSign} 
+                            icon={IconCurrencyDollar} 
                             color={stats.netBalance >= 0 ? "black" : "red-dark"} 
                             dark
                         />
@@ -187,14 +187,14 @@ export default function ReportsPage() {
                             <div className="flex items-center justify-between mb-12">
                                 <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Medios de Pago</h3>
                                 <button onClick={fetchReports} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
-                                    <RefreshCcw size={18} className="text-gray-300" />
+                                    <IconRefresh size={18} className="text-gray-300" />
                                 </button>
                             </div>
 
                             <div className="space-y-10">
-                                <PaymentRow label="Efectivo" amount={stats.cash} percentage={cashPercentage} icon={Wallet} color="bg-emerald-500" textColor="text-emerald-600" bgColor="bg-emerald-50" />
-                                <PaymentRow label="Tarjeta" amount={stats.card} percentage={cardPercentage} icon={CreditCard} color="bg-blue-500" textColor="text-blue-600" bgColor="bg-blue-50" />
-                                <PaymentRow label="Mercado Pago" amount={stats.mercadoPago} percentage={mpPercentage} icon={DollarSign} color="bg-sky-500" textColor="text-sky-600" bgColor="bg-sky-50" />
+                                <PaymentRow label="Efectivo" amount={stats.cash} percentage={cashPercentage} icon={IconWallet} color="bg-emerald-500" textColor="text-emerald-600" bgColor="bg-emerald-50" />
+                                <PaymentRow label="Tarjeta" amount={stats.card} percentage={cardPercentage} icon={IconCreditCard} color="bg-blue-500" textColor="text-blue-600" bgColor="bg-blue-50" />
+                                <PaymentRow label="Mercado Pago" amount={stats.mercadoPago} percentage={mpPercentage} icon={IconCurrencyDollar} color="bg-sky-500" textColor="text-sky-600" bgColor="bg-sky-50" />
                             </div>
                         </div>
 
@@ -204,11 +204,11 @@ export default function ReportsPage() {
                             <div className="space-y-8 flex-1">
                                 <div className="flex justify-between items-center group">
                                     <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Ingresos</span>
-                                    <span className="text-lg font-black text-gray-900 flex items-center gap-2"><ArrowUpRight size={16} className="text-emerald-500" /> ${stats.totalSales.toLocaleString()}</span>
+                                    <span className="text-lg font-black text-gray-900 flex items-center gap-2"><IconArrowUpRight size={16} className="text-emerald-500" /> ${stats.totalSales.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center group">
                                     <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Egresos</span>
-                                    <span className="text-lg font-bold text-red-500 flex items-center gap-2"><ArrowDownRight size={16} className="text-red-500" /> -${(stats.totalExpenses + stats.totalPurchases).toLocaleString()}</span>
+                                    <span className="text-lg font-bold text-red-500 flex items-center gap-2"><IconArrowDownRight size={16} className="text-red-500" /> -${(stats.totalExpenses + stats.totalPurchases).toLocaleString()}</span>
                                 </div>
                                 <div className="h-px bg-gray-50" />
                                 <div className="flex justify-between items-center py-4 rounded-3xl bg-gray-50/50 px-6">
@@ -236,14 +236,14 @@ export default function ReportsPage() {
                     <div className="w-full">
                          <div className="flex items-center gap-3 mb-8 ml-2">
                             <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-500">
-                                <ShoppingBag size={20} />
+                                <IconShoppingBag size={20} />
                             </div>
                             <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Unidades Vendidas</h3>
                         </div>
 
                         {Object.keys(stats.productsByCategory).length === 0 ? (
                             <div className="bg-white p-20 rounded-[3rem] border border-gray-100 text-center">
-                                <Package size={40} className="mx-auto text-gray-100 mb-4" />
+                                <IconPackage size={40} className="mx-auto text-gray-100 mb-4" />
                                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay ventas registradas</p>
                             </div>
                         ) : (

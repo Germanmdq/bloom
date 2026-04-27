@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
+import IconPhoto from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { MapPin, Instagram } from "lucide-react";
+import { IconMapPin, IconBrandInstagram } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { useFachadaImageUrl } from "@/lib/hooks/useFachadaImageUrl";
 import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
@@ -18,9 +18,9 @@ const STORY_P2 =
 function Hero({ fachadaSrc }: { fachadaSrc: string }) {
   return (
     <section className="relative w-full min-h-[min(72vh,820px)] overflow-hidden bg-neutral-950">
-      <Image
+      <IconPhoto
         src={fachadaSrc}
-        alt="Fachada Bloom Coffee & More, Mar del Plata"
+        alt="Fachada Bloom IconCoffee & More, Mar del Plata"
         fill
         priority
         className="object-cover object-center"
@@ -87,7 +87,7 @@ function LocationCard({ fachadaSrc }: { fachadaSrc: string }) {
           className="overflow-hidden rounded-2xl md:rounded-3xl bg-white shadow-[0_20px_56px_-12px_rgba(61,59,47,0.18),0_8px_24px_rgba(61,59,47,0.08)] ring-1 ring-black/[0.06]"
         >
           <div className="relative aspect-[16/10] w-full bg-neutral-100">
-            <Image
+            <IconPhoto
               src={fachadaSrc}
               alt="Bloom · Almirante Brown, Mar del Plata"
               fill
@@ -98,7 +98,7 @@ function LocationCard({ fachadaSrc }: { fachadaSrc: string }) {
           <div className="p-6 md:p-8 text-center md:text-left md:flex md:items-center md:justify-between md:gap-6">
             <div>
               <h3 className="font-sans text-xl font-black tracking-wide text-piedra mb-1">Bloom · Mar del Plata</h3>
-              <p className="text-neutral-500 text-sm font-medium">Coffee &amp; more · Cafetería y restó</p>
+              <p className="text-neutral-500 text-sm font-medium">IconCoffee &amp; more · Cafetería y restó</p>
             </div>
             <a
               href="https://maps.google.com/?q=Almirante+Brown+2005+Mar+del+Plata"
@@ -106,7 +106,7 @@ function LocationCard({ fachadaSrc }: { fachadaSrc: string }) {
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 mt-4 md:mt-0 rounded-full bg-bloom-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-bloom-700 transition-colors"
             >
-              <MapPin size={18} />
+              <IconMapPin size={18} />
               Almirante Brown 2005
             </a>
           </div>
@@ -122,7 +122,7 @@ function Footer() {
       <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="text-center md:text-left">
           <p className="font-sans text-xl font-black tracking-[0.2em] mb-1">BLOOM</p>
-          <p className="text-gris text-sm">Coffee &amp; more · Mar del Plata</p>
+          <p className="text-gris text-sm">IconCoffee &amp; more · Mar del Plata</p>
         </div>
         <div className="flex gap-6">
           <Link
@@ -130,9 +130,9 @@ function Footer() {
             target="_blank"
             rel="noopener noreferrer"
             className="text-crema/80 hover:text-bloom-gold transition-colors"
-            aria-label="Instagram"
+            aria-label="IconBrandInstagram"
           >
-            <Instagram size={22} />
+            <IconBrandInstagram size={22} />
           </Link>
         </div>
         <p className="text-xs text-gris">© {new Date().getFullYear()} Bloom</p>

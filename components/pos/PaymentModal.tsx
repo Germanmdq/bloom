@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { IconLoader2 } from "@tabler/icons-react";
 import QRCode from "react-qr-code";
 import { CartItem } from "@/lib/store/order-store";
 import { PaymentMethod } from "@/lib/types";
-import { Search, X, User } from "lucide-react";
+import { IconSearch, IconX, IconUser } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 
 const POINT_POLL_MS = 1200;
@@ -303,7 +303,7 @@ export function PaymentModal({
                     <div className="mb-6">
                         {!selectedCustomerId ? (
                             <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
                                     type="text"
                                     value={q}
@@ -311,7 +311,7 @@ export function PaymentModal({
                                     placeholder="Vincular cliente seleccionado..."
                                     className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-black/5 focus:bg-white transition-all"
                                 />
-                                {isSearching && <Loader2 className="absolute right-4 top-1/3 h-4 w-4 animate-spin text-gray-400" />}
+                                {isSearching && <IconLoader2 className="absolute right-4 top-1/3 h-4 w-4 animate-spin text-gray-400" />}
 
                                 {results.length > 0 && (
                                     <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-[110] overflow-hidden divide-y divide-gray-50">
@@ -345,7 +345,7 @@ export function PaymentModal({
                             <div className="flex items-center justify-between p-4 bg-gray-900 rounded-2xl border border-black shadow-xl">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                                        <User size={20} className="text-white" />
+                                        <IconUser size={20} className="text-white" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-black text-white leading-none">{customerName}</p>
@@ -360,7 +360,7 @@ export function PaymentModal({
                                     }}
                                     className="p-2 rounded-xl hover:bg-white/10 text-white/40 transition-colors"
                                 >
-                                    <X size={18} />
+                                    <IconX size={18} />
                                 </button>
                             </div>
                         )}
@@ -422,7 +422,7 @@ export function PaymentModal({
                             <div className="text-center w-full max-w-sm space-y-5">
                                 {pointWaiting ? (
                                     <div className="flex flex-col items-center gap-3">
-                                        <Loader2 className="animate-spin h-10 w-10 text-sky-600" />
+                                        <IconLoader2 className="animate-spin h-10 w-10 text-sky-600" />
                                         <p className="text-sm font-bold text-gray-800">Procesando en el terminal…</p>
                                         <p className="text-xs font-medium text-gray-500">
                                             Pedile al cliente que pague en el Point Smart (N950).
@@ -463,7 +463,7 @@ export function PaymentModal({
                                             <div className="pt-2">
                                                 {isGeneratingQR ? (
                                                     <div className="flex flex-col items-center gap-3">
-                                                        <Loader2 className="animate-spin mx-auto h-8 w-8 text-sky-600" />
+                                                        <IconLoader2 className="animate-spin mx-auto h-8 w-8 text-sky-600" />
                                                         <p className="text-sm font-semibold text-gray-600">Generando QR…</p>
                                                     </div>
                                                 ) : qrError ? (

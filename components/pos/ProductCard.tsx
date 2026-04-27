@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Image from 'next/image';
-import { Plus, ShoppingBag } from 'lucide-react';
+import IconPhoto from 'next/image';
+import { IconPlus, IconShoppingBag } from "@tabler/icons-react";
 
 interface ProductCardProps {
     product: {
@@ -33,10 +33,10 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
                 }
             `}
         >
-            {/* Image Area (Fixed aspect ratio 16:9 for compactness) */}
+            {/* IconPhoto Area (Fixed aspect ratio 16:9 for compactness) */}
             <div className="relative aspect-video bg-gray-50 overflow-hidden">
                 {!imgError && product.image_url ? (
-                    <Image
+                    <IconPhoto
                         src={product.image_url}
                         alt={product.name}
                         fill
@@ -45,11 +45,11 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
                     />
                 ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 group-hover:text-bloom-300 transition-colors">
-                        <ShoppingBag size={32} strokeWidth={1} />
+                        <IconShoppingBag size={32} strokeWidth={1} />
                     </div>
                 )}
 
-                {/* Price Tag Overlay */}
+                {/* Price IconTag Overlay */}
                 <div className="absolute bottom-2 right-2 bg-white/95 backdrop-blur shadow-sm px-2.5 py-1 rounded-lg text-sm font-black text-gray-900 border border-gray-100 group-hover:border-bloom-600 group-hover:text-bloom-600 transition-colors">
                     ${product.price?.toLocaleString()}
                 </div>
@@ -79,7 +79,7 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
                             }
                         `}
                     >
-                        <Plus size={16} strokeWidth={3} />
+                        <IconPlus size={16} strokeWidth={3} />
                     </button>
                 </div>
             </div>

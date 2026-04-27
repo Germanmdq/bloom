@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Search, Trash2, CreditCard, Check, Loader2, X, ChevronLeft, Printer } from 'lucide-react';
+import { IconSearch, IconTrash, IconCreditCard, IconCheck, IconLoader2, IconX, IconChevronLeft, IconPrinter, IconToolsKitchen2 } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useQueryClient } from "@tanstack/react-query";
@@ -655,7 +655,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center bg-gray-50">
-                <Loader2 className="animate-spin text-gray-400" size={32} />
+                <IconLoader2 className="animate-spin text-gray-400" size={32} />
             </div>
         );
     }
@@ -682,7 +682,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     <div className="flex items-center gap-5">
                         {isWebTable && currentWebOrderId && (
                             <button onClick={handleBackToWebList} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-all active:scale-90">
-                                <ChevronLeft size={20} className="text-gray-900" />
+                                <IconChevronLeft size={20} className="text-gray-900" />
                             </button>
                         )}
                         
@@ -748,7 +748,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             onClick={handleClose}
                             className="w-11 h-11 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-900 transition-all active:scale-90"
                         >
-                            <X size={20} />
+                            <IconX size={20} />
                         </button>
                     </div>
                 </div>
@@ -763,7 +763,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     {/* Barra de búsqueda */}
                     <div className="px-4 py-3 bg-white border-b border-gray-100 shrink-0">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+                            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
                             <input
                                 id="product-search"
                                 type="text"
@@ -784,7 +784,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 onClick={() => { setActiveCategory(null); setProductSearch(''); }}
                                 className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-900 transition-colors"
                             >
-                                <ChevronLeft size={14} />
+                                <IconChevronLeft size={14} />
                                 {searchTerm
                                     ? `Resultados para "${productSearch}"`
                     : (categories.find((c: any) => c.id === activeCategory)?.name ?? 'Categoría')}
@@ -884,25 +884,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 >
                                 {categories.map((cat: any, idx: number) => {
                                     const count = products.filter((p: any) => p.category_id === cat.id).length;
-                                    const getSafeIcon = (name: string) => {
-                                        const n = name.toLowerCase();
-                                        if (n.includes('caf')) return '☕';
-                                        if (n.includes('piz')) return '🍕';
-                                        if (n.includes('ham')) return '🍔';
-                                        if (n.includes('beb') || n.includes('jug')) return '🍹';
-                                        if (n.includes('dul') || n.includes('pos')) return '🍰';
-                                        if (n.includes('ens')) return '🥗';
-                                        if (n.includes('mila') || n.includes('pla')) return '🍽️';
-                                        if (n.includes('pan') || n.includes('fact')) return '🥐';
-                                        if (n.includes('tost')) return '🥪';
-                                        if (n.includes('papa')) return '🍟';
-                                        if (n.includes('cerve')) return '🍺';
-                                        if (n.includes('vino')) return '🍷';
-                                        return '🌟';
-                                    };
-
-                                    const icon = getSafeIcon(cat.name);
-                                    
                                     // Asignar área según el índice (Bento Pattern)
                                     const area = idx === 0 ? 'big' : idx === 1 ? 's1' : idx === 2 ? 's2' : idx === 3 ? 's3' : idx === 4 ? 's4' : idx === 5 ? 's5' : 'auto';
 
@@ -915,12 +896,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         >
                                             {/* Pastel Tint */}
                                             <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity bg-current" />
-                                            
-                                            <motion.div 
+
+                                            <motion.div
                                                 whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
-                                                className={`${idx === 0 ? 'text-8xl' : 'text-5xl'} drop-shadow-md select-none transition-all`}
+                                                className="text-gray-400 group-hover:text-gray-700 transition-colors"
                                             >
-                                                {icon}
+                                                <IconToolsKitchen2 size={idx === 0 ? 72 : 48} stroke={1.5} />
                                             </motion.div>
 
                                             <div>
@@ -1020,7 +1001,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         placeholder="Buscar cliente por nombre..."
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
                                     />
-                                    {isSearchingCustomer && <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" />}
+                                    {isSearchingCustomer && <IconLoader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" />}
                                     
                                     {customerResults.length > 0 && (
                                         <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden divide-y divide-gray-50">
@@ -1066,7 +1047,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         }}
                                         className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 transition-colors"
                                     >
-                                        <X size={16} />
+                                        <IconX size={16} />
                                     </button>
                                 </div>
                             )}
@@ -1110,7 +1091,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         {cart.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center gap-2 text-gray-300 p-6 text-center">
                                 <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mb-2">
-                                    <CreditCard size={20} className="text-gray-300" />
+                                    <IconCreditCard size={20} className="text-gray-300" />
                                 </div>
                                 <p className="text-sm font-medium">Seleccioná productos</p>
                             </div>
@@ -1129,7 +1110,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             <p className="text-sm font-black text-gray-900">${(item.price * item.quantity).toLocaleString()}</p>
                                         </div>
                                         <button onClick={() => removeFromCart(idx)} className="shrink-0 p-1 rounded-lg hover:bg-red-50 transition-colors">
-                                            <Trash2 size={13} className="text-gray-300 hover:text-red-400" />
+                                            <IconTrash size={13} className="text-gray-300 hover:text-red-400" />
                                         </button>
                                     </div>
                                 ))}
@@ -1211,7 +1192,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         className="absolute inset-0 z-[120] bg-white flex flex-col items-center justify-center p-8 text-center"
                     >
                         <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
-                            <Check size={40} className="text-emerald-500" strokeWidth={3} />
+                            <IconCheck size={40} className="text-emerald-500" strokeWidth={3} />
                         </div>
                         <h3 className="text-2xl font-black text-gray-900 mb-2">¡Venta Finalizada!</h3>
                         <p className="text-gray-500 mb-8">El pedido de la <strong>Mesa {tableId}</strong> fue registrado con éxito.</p>
@@ -1221,7 +1202,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 onClick={() => setShowReceiptModal(true)}
                                 className="w-full h-14 bg-black text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-neutral-800 transition-all active:scale-95 shadow-xl shadow-black/10"
                             >
-                                <Printer size={20} /> Imprimir Ticket
+                                <IconPrinter size={20} /> Imprimir Ticket
                             </button>
                             <button
                                 onClick={() => {
@@ -1296,7 +1277,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             }`}
                         >
                             <div className={`w-12 h-12 rounded-full flex items-center justify-center ${feedback.type === 'success' ? 'bg-white/10' : 'bg-red-50'}`}>
-                                {feedback.type === 'success' ? <Check size={24} className="text-white" /> : <X size={24} className="text-red-500" />}
+                                {feedback.type === 'success' ? <IconCheck size={24} className="text-white" /> : <IconX size={24} className="text-red-500" />}
                             </div>
                             <p className="font-bold text-lg">{feedback.message}</p>
                         </motion.div>

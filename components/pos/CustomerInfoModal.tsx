@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MapPin, Phone, User } from 'lucide-react';
+import { IconX, IconMapPin, IconPhone, IconUser } from "@tabler/icons-react";
 
 interface CustomerInfo {
     name: string;
@@ -43,7 +43,7 @@ export function CustomerInfoModal({ isOpen, orderType, tableId, onClose, onSubmi
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-dark-200 rounded-full transition-colors">
-                        <X size={20} />
+                        <IconX size={20} />
                     </button>
                 </div>
 
@@ -52,7 +52,7 @@ export function CustomerInfoModal({ isOpen, orderType, tableId, onClose, onSubmi
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-dark-500 uppercase tracking-wider ml-1">Nombre Cliente</label>
                         <div className="relative">
-                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400" size={18} />
+                            <IconUser className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400" size={18} />
                             <input
                                 required
                                 type="text"
@@ -67,7 +67,7 @@ export function CustomerInfoModal({ isOpen, orderType, tableId, onClose, onSubmi
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-dark-500 uppercase tracking-wider ml-1">Teléfono / WhatsApp</label>
                         <div className="relative">
-                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400" size={18} />
+                            <IconPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400" size={18} />
                             <input
                                 required
                                 type="tel"
@@ -83,7 +83,7 @@ export function CustomerInfoModal({ isOpen, orderType, tableId, onClose, onSubmi
                         <div className="space-y-1">
                             <label className="text-xs font-bold text-dark-500 uppercase tracking-wider ml-1">Dirección de Entrega</label>
                             <div className="relative">
-                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400" size={18} />
+                                <IconMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400" size={18} />
                                 <input
                                     required
                                     type="text"

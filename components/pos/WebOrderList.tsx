@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, X } from "lucide-react";
+import { IconLayoutGrid, IconX } from "@tabler/icons-react";
 import { WEB_ORDER_TABLE_DELIVERY, WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
 
 interface WebOrder {
@@ -46,7 +46,7 @@ export function WebOrderList({ tableId, webOrders, onSelectOrder, onClose }: Web
         return (
             <div className="h-full flex flex-col items-center justify-center p-8 bg-[#F8F9FA] text-center">
                 <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-6 text-gray-400">
-                    <LayoutGrid size={48} />
+                    <IconLayoutGrid size={48} />
                 </div>
                 <h2 className="text-2xl font-black text-gray-400 uppercase tracking-widest mb-4">
                     No hay pedidos pendientes
@@ -68,7 +68,7 @@ export function WebOrderList({ tableId, webOrders, onSelectOrder, onClose }: Web
                     onClick={onClose}
                     className="w-12 h-12 rounded-full bg-black/5 hover:bg-black hover:text-white transition-all flex items-center justify-center"
                 >
-                    <X />
+                    <IconX />
                 </button>
             </div>
 

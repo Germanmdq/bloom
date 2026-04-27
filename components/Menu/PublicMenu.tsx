@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { MenuProductCard } from "./MenuProductCard";
-import { X, Send, MapPin, User, ChevronRight } from "lucide-react";
+import { IconX, IconSend, IconMapPin, IconUser, IconChevronRight } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type CartItem = {
@@ -92,7 +92,7 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
 
         if (!storedPhone) {
             // Optional: Warn user they are using the default number
-            console.warn("Using default WhatsApp number. Configure in Settings.");
+            console.warn("Using default WhatsApp number. Configure in IconSettings.");
         }
 
         let message = `Hola BLOOM! Quiero hacer un pedido: \n\n`;
@@ -204,7 +204,7 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
                                 <span className="text-xs font-bold uppercase tracking-widest block opacity-80">Tu Pedido</span>
                                 <span className="font-black text-lg">${total.toLocaleString('es-AR')}</span>
                             </div>
-                            <span className="font-bold uppercase tracking-widest text-sm flex items-center gap-1">Ver <ChevronRight size={16} /></span>
+                            <span className="font-bold uppercase tracking-widest text-sm flex items-center gap-1">Ver <IconChevronRight size={16} /></span>
                         </button>
                     </motion.div>
                 )}
@@ -231,7 +231,7 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
                             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                                 <h3 className="text-2xl font-black text-[#6B4E3D] font-serif">Tu Pedido</h3>
                                 <button onClick={() => setIsCartOpen(false)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
-                                    <X size={20} className="text-gray-600" />
+                                    <IconX size={20} className="text-gray-600" />
                                 </button>
                             </div>
 
@@ -261,7 +261,7 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
                                 <div className="space-y-4 mb-6">
                                     <div>
                                         <label className="flex items-center gap-2 text-xs font-black uppercase text-gray-400 mb-2">
-                                            <User size={14} /> Tu Nombre
+                                            <IconUser size={14} /> Tu Nombre
                                         </label>
                                         <input
                                             type="text"
@@ -273,7 +273,7 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
                                     </div>
                                     <div>
                                         <label className="flex items-center gap-2 text-xs font-black uppercase text-gray-400 mb-2">
-                                            <MapPin size={14} /> Dirección de Entrega *
+                                            <IconMapPin size={14} /> Dirección de Entrega *
                                         </label>
                                         <input
                                             type="text"
@@ -295,7 +295,7 @@ export function PublicMenu({ categories, products }: { categories: any[], produc
                                     disabled={cart.length === 0}
                                     className="w-full bg-[#25D366] text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 hover:brightness-105 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <Send size={20} /> Enviar Pedido por WhatsApp
+                                    <IconSend size={20} /> Enviar Pedido por WhatsApp
                                 </button>
                             </div>
                         </motion.div>

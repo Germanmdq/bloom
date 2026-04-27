@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Store, Sliders, Database, Printer, Shield, Download, LayoutGrid, Keyboard, Star, Check, Megaphone, Plus, Trash2, Edit2, X } from "lucide-react";
+import { IconDeviceFloppy, IconBuildingStore, IconAdjustments, IconDatabase, IconPrinter, IconShield, IconDownload, IconLayoutGrid, IconKeyboard, IconStar, IconCheck, IconSpeakerphone, IconPlus, IconTrash, IconEdit, IconX } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import { createClient } from "@/lib/supabase/client";
-import Image from "next/image";
+import IconPhoto from "next/image";
 
 export default function SettingsPage() {
     const supabase = createClient();
@@ -49,7 +49,7 @@ export default function SettingsPage() {
                     if (data.plato_del_dia_id) setSelectedPlatoDia(data.plato_del_dia_id);
                 }
             } catch (err: any) {
-                console.error('[Settings] Error en loadSettings:', err.message);
+                console.error('[IconSettings] Error en loadSettings:', err.message);
             }
 
             const savedF1 = localStorage.getItem('bloom_f1_action') as ComparisonType | null;
@@ -237,7 +237,7 @@ export default function SettingsPage() {
             alert("Ajustes guardados correctamente.");
         }
 
-        // Save F-key actions to localStorage
+        // IconDeviceFloppy F-key actions to localStorage
         localStorage.setItem('bloom_f1_action', f1Action);
         localStorage.setItem('bloom_f2_action', f2Action);
     };
@@ -254,7 +254,7 @@ export default function SettingsPage() {
                     disabled={isLoading}
                     className="bg-black text-[#FFD60A] px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-50 self-start sm:self-auto"
                 >
-                    {isLoading ? "Guardando..." : <><Save size={18} /> Guardar</>}
+                    {isLoading ? "Guardando..." : <><IconDeviceFloppy size={18} /> Guardar</>}
                 </button>
             </header>
 
@@ -266,7 +266,7 @@ export default function SettingsPage() {
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-700">
-                            <LayoutGrid size={24} />
+                            <IconLayoutGrid size={24} />
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-gray-900">Distribución del Salón</h2>
@@ -303,7 +303,7 @@ export default function SettingsPage() {
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-12 h-12 rounded-2xl bg-[#FFD60A]/20 flex items-center justify-center text-black">
-                            <Keyboard size={24} />
+                            <IconKeyboard size={24} />
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-gray-900">Atajos de Teclado</h2>
@@ -351,7 +351,7 @@ export default function SettingsPage() {
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-12 h-12 rounded-2xl bg-bloom-50 flex items-center justify-center text-bloom-600">
-                            <Star size={24} />
+                            <IconStar size={24} />
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-gray-900">Plato del Día</h2>
@@ -372,14 +372,14 @@ export default function SettingsPage() {
                                 >
                                     <div className="relative h-28 bg-gray-100 w-full">
                                         {product.image_url ? (
-                                            <Image src={product.image_url} alt={product.name} fill className="object-cover" />
+                                            <IconPhoto src={product.image_url} alt={product.name} fill className="object-cover" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-3xl">🍽️</div>
                                         )}
                                         {isSelected && (
                                             <div className="absolute inset-0 bg-bloom-600/20 flex items-center justify-center">
                                                 <div className="bg-bloom-600 rounded-full p-1">
-                                                    <Check size={16} className="text-white" strokeWidth={3} />
+                                                    <IconCheck size={16} className="text-white" strokeWidth={3} />
                                                 </div>
                                             </div>
                                         )}
@@ -404,7 +404,7 @@ export default function SettingsPage() {
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
-                            <Megaphone size={24} />
+                            <IconSpeakerphone size={24} />
                         </div>
                         <div className="flex-1">
                             <h2 className="text-xl font-black text-gray-900">Ofertas del Día</h2>
@@ -456,7 +456,7 @@ export default function SettingsPage() {
                                         className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors"
                                         title="Eliminar oferta"
                                     >
-                                        <Trash2 size={18} />
+                                        <IconTrash size={18} />
                                     </button>
                                 </div>
                             </div>
@@ -468,14 +468,14 @@ export default function SettingsPage() {
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                            <Megaphone size={24} />
+                            <IconSpeakerphone size={24} />
                         </div>
                         <div className="flex-1">
                             <h2 className="text-xl font-black text-gray-900">Promociones Activas</h2>
                             <p className="text-xs text-gray-400 font-medium mt-0.5">Se mostrarán destacadas en la pantalla principal de la web</p>
                         </div>
                         <button onClick={() => { setPromoForm({ id: '', name: '', description: '', price: '', image_url: '' }); setShowPromoModal(true); }} className="bg-indigo-600 text-white rounded-xl px-4 py-2 text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 transition-colors">
-                            <Plus size={16} /> Nueva Promo
+                            <IconPlus size={16} /> Nueva Promo
                         </button>
                     </div>
 
@@ -484,7 +484,7 @@ export default function SettingsPage() {
                             <div key={promo.id} className="relative rounded-2xl border border-gray-100 overflow-hidden flex group hover:border-indigo-200 transition-colors">
                                 <div className="w-1/3 relative bg-gray-50 min-h-[100px]">
                                     {promo.image_url ? (
-                                        <Image src={promo.image_url} alt={promo.name} fill className="object-cover" />
+                                        <IconPhoto src={promo.image_url} alt={promo.name} fill className="object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-2xl">📸</div>
                                     )}
@@ -496,10 +496,10 @@ export default function SettingsPage() {
                                 </div>
                                 <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button onClick={(e) => { e.stopPropagation(); setPromoForm({ id: promo.id, name: promo.name, description: promo.description, price: promo.price || '', image_url: promo.image_url || '' }); setShowPromoModal(true); }} className="w-8 h-8 rounded-full bg-white/90 backdrop-blur shadow-sm flex items-center justify-center text-gray-600 hover:text-black">
-                                        <Edit2 size={14} />
+                                        <IconEdit size={14} />
                                     </button>
                                     <button onClick={(e) => handleDeletePromo(promo.id, e)} className="w-8 h-8 rounded-full bg-white/90 backdrop-blur shadow-sm flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50">
-                                        <Trash2 size={14} />
+                                        <IconTrash size={14} />
                                     </button>
                                 </div>
                             </div>
@@ -516,7 +516,7 @@ export default function SettingsPage() {
                 <section className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 md:col-span-2">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
-                            <Database size={24} />
+                            <IconDatabase size={24} />
                         </div>
                         <h2 className="text-xl font-black text-gray-900">Datos & Dispositivos</h2>
                     </div>
@@ -534,7 +534,7 @@ export default function SettingsPage() {
                             }}
                             className="h-24 rounded-2xl bg-gray-50 hover:bg-gray-100 flex flex-col items-center justify-center gap-2 group transition-all"
                         >
-                            <Printer className="text-gray-400 group-hover:text-black transition-colors" />
+                            <IconPrinter className="text-gray-400 group-hover:text-black transition-colors" />
                             <span className="text-xs font-black uppercase text-gray-400 group-hover:text-black">Configurar Impresora</span>
                         </button>
                         <button
@@ -582,7 +582,7 @@ export default function SettingsPage() {
                             }}
                             className="h-24 rounded-2xl bg-gray-50 hover:bg-gray-100 flex flex-col items-center justify-center gap-2 group transition-all"
                         >
-                            <Download className="text-gray-400 group-hover:text-black transition-colors" />
+                            <IconDownload className="text-gray-400 group-hover:text-black transition-colors" />
                             <span className="text-xs font-black uppercase text-gray-400 group-hover:text-black">Exportar Ventas CSV</span>
                         </button>
                         <button
@@ -601,7 +601,7 @@ export default function SettingsPage() {
                             }}
                             className="h-24 rounded-2xl bg-red-50 hover:bg-red-100 flex flex-col items-center justify-center gap-2 group transition-all"
                         >
-                            <Shield className="text-red-300 group-hover:text-red-500 transition-colors" />
+                            <IconShield className="text-red-300 group-hover:text-red-500 transition-colors" />
                             <span className="text-xs font-black uppercase text-red-300 group-hover:text-red-500">Resetear Sistema</span>
                         </button>
                     </div>
@@ -616,7 +616,7 @@ export default function SettingsPage() {
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-lg z-10 border border-gray-100">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-2xl font-black text-gray-900">{promoForm.id ? "Editar" : "Crear"} Promoción</h2>
-                                <button onClick={() => setShowPromoModal(false)} className="text-gray-400 hover:text-black"><X size={24} /></button>
+                                <button onClick={() => setShowPromoModal(false)} className="text-gray-400 hover:text-black"><IconX size={24} /></button>
                             </div>
                             <form onSubmit={handleSavePromo} className="space-y-4">
                                 <div>

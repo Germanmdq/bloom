@@ -1,11 +1,11 @@
-import { Banknote, CreditCard, Smartphone, Receipt } from 'lucide-react';
+import { IconCash, IconCreditCard, IconDeviceMobile, IconReceipt } from "@tabler/icons-react";
 
 export function getPaymentIcon(method: string) {
     switch (method) {
-        case 'CASH': return <Banknote size={16} className="text-green-600" />;
-        case 'CARD': return <CreditCard size={16} className="text-blue-600" />;
-        case 'MERCADO_PAGO': return <Smartphone size={16} className="text-sky-500" />;
-        default: return <Receipt size={16} className="text-gray-400" />;
+        case 'CASH': return <IconCash size={16} className="text-green-600" />;
+        case 'CARD': return <IconCreditCard size={16} className="text-blue-600" />;
+        case 'MERCADO_PAGO': return <IconDeviceMobile size={16} className="text-sky-500" />;
+        default: return <IconReceipt size={16} className="text-gray-400" />;
     }
 }
 

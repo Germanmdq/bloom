@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle } from "lucide-react";
+import { IconCircleCheck } from "@tabler/icons-react";
 
 export default function SuccessPage() {
     return (
@@ -9,7 +9,7 @@ export default function SuccessPage() {
             <div className="bg-[#111] p-10 rounded-3xl border border-white/5 max-w-md w-full shadow-2xl">
                 <div className="flex justify-center mb-6">
                     <div className="bg-green-500/20 p-4 rounded-full">
-                        <CheckCircle className="text-green-500 w-16 h-16" />
+                        <IconCircleCheck className="text-green-500 w-16 h-16" />
                     </div>
                 </div>
 

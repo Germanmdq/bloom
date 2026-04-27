@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Loader2 } from "lucide-react";
+import { IconLoader2 } from "@tabler/icons-react";
 import { AuthPageClient } from "./AuthPageClient";
 
 export default function AuthPage() {
@@ -7,7 +7,7 @@ export default function AuthPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-[#FAF7F2]">
-          <Loader2 className="h-10 w-10 animate-spin text-[#2d4a3e]" aria-hidden />
+          <IconLoader2 className="h-10 w-10 animate-spin text-[#2d4a3e]" aria-hidden />
         </div>
       }
     >

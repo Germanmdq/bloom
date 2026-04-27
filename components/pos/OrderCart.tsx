@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Plus, Minus, Printer, DollarSign, Bike, ShoppingBag, Store } from 'lucide-react';
+import { IconTrash, IconPlus, IconMinus, IconPrinter, IconCurrencyDollar, IconBike, IconShoppingBag, IconBuildingStore } from "@tabler/icons-react";
 
 interface CartItem {
     id: string; // Product ID
@@ -34,9 +34,9 @@ export function OrderCart({
 
     const getTypeIcon = () => {
         switch (orderType) {
-            case 'DELIVERY': return <Bike size={16} />;
-            case 'RETIRO': return <ShoppingBag size={16} />;
-            default: return <Store size={16} />;
+            case 'DELIVERY': return <IconBike size={16} />;
+            case 'RETIRO': return <IconShoppingBag size={16} />;
+            default: return <IconBuildingStore size={16} />;
         }
     };
 
@@ -67,7 +67,7 @@ export function OrderCart({
             {items.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-8 text-center opacity-60">
                     <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
-                        <ShoppingBag size={40} />
+                        <IconShoppingBag size={40} />
                     </div>
                     <p className="font-bold text-gray-500 text-lg">El carrito está vacío</p>
                     <p className="text-sm text-gray-400 mt-1 max-w-[200px]">Selecciona productos del menú para comenzar el pedido</p>
@@ -109,7 +109,7 @@ export function OrderCart({
                                     className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                     title="Eliminar"
                                 >
-                                    <Trash2 size={16} />
+                                    <IconTrash size={16} />
                                 </button>
 
                                 <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-1 px-1.5">
@@ -118,14 +118,14 @@ export function OrderCart({
                                         className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-gray-600 hover:text-bloom-600 active:scale-95 disabled:opacity-50"
                                         disabled={item.quantity <= 1}
                                     >
-                                        <Minus size={14} strokeWidth={3} />
+                                        <IconMinus size={14} strokeWidth={3} />
                                     </button>
                                     <span className="font-black text-sm w-4 text-center">{item.quantity}</span>
                                     <button
                                         onClick={() => onUpdateQuantity(item.cartItemId || item.id, item.quantity + 1)}
                                         className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-gray-600 hover:text-emerald-600 active:scale-95"
                                     >
-                                        <Plus size={14} strokeWidth={3} />
+                                        <IconPlus size={14} strokeWidth={3} />
                                     </button>
                                 </div>
                             </div>
@@ -149,7 +149,7 @@ export function OrderCart({
                         disabled={items.length === 0}
                         className="col-span-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl flex flex-col items-center justify-center py-3 active:scale-95 transition-all disabled:opacity-50"
                     >
-                        <Printer size={20} />
+                        <IconPrinter size={20} />
                         <span className="text-[10px] font-bold mt-1 uppercase">Ticket</span>
                     </button>
 
@@ -159,7 +159,7 @@ export function OrderCart({
                         className="col-span-3 bg-gray-900 hover:bg-black text-white rounded-xl py-3 px-4 font-black text-lg shadow-strong flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
                     >
                         <span className="group-hover:translate-x-1 transition-transform">COBRAR</span>
-                        <DollarSign size={20} strokeWidth={3} />
+                        <IconCurrencyDollar size={20} strokeWidth={3} />
                     </button>
                 </div>
             </div>

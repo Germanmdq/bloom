@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
-import { Eye, EyeOff, Instagram, Loader2 } from "lucide-react";
+import { IconEye, IconEyeOff, IconBrandInstagram, IconLoader2 } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 
 const GREEN = "#2d4a3e";
@@ -397,10 +397,10 @@ export default function RegistroPage() {
                   style={{ background: INSTAGRAM_BUTTON_GRADIENT }}
                   aria-hidden
                 >
-                  <Instagram className="h-8 w-8" strokeWidth={2} aria-hidden />
+                  <IconBrandInstagram className="h-8 w-8" strokeWidth={2} aria-hidden />
                 </div>
                 <h2 id="registro-ig-title" className="text-[1.35rem] font-black leading-tight text-neutral-900 sm:text-2xl">
-                  ¡Seguinos en Instagram!
+                  ¡Seguinos en IconBrandInstagram!
                 </h2>
                 <p className="mt-3 text-[15px] font-medium leading-relaxed text-neutral-600 sm:text-base">
                   Enterate de los platos del día, promociones y novedades de Bloom
@@ -412,7 +412,7 @@ export default function RegistroPage() {
                   className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-[16px] font-black text-white shadow-lg transition hover:opacity-95 active:scale-[0.99]"
                   style={{ background: INSTAGRAM_BUTTON_GRADIENT }}
                 >
-                  Seguir en Instagram →
+                  Seguir en IconBrandInstagram →
                 </button>
                 <button
                   type="button"
@@ -743,7 +743,7 @@ export default function RegistroPage() {
                         aria-pressed={showPassword}
                         aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                       >
-                        {showPassword ? <EyeOff className="h-5 w-5" strokeWidth={2} /> : <Eye className="h-5 w-5" strokeWidth={2} />}
+                        {showPassword ? <IconEyeOff className="h-5 w-5" strokeWidth={2} /> : <IconEye className="h-5 w-5" strokeWidth={2} />}
                       </button>
                     </div>
                     {fieldErrors.password ? (
@@ -792,7 +792,7 @@ export default function RegistroPage() {
                     disabled={loading}
                     className="registro-cta-pulse mt-2 flex h-[60px] w-full items-center justify-center rounded-full bg-[#2d4a3e] text-[18px] font-black text-white transition hover:bg-[#243d32] disabled:opacity-60"
                   >
-                    {loading ? <Loader2 className="h-6 w-6 animate-spin" aria-hidden /> : "UNIRME AL CLUB BLOOM →"}
+                    {loading ? <IconLoader2 className="h-6 w-6 animate-spin" aria-hidden /> : "UNIRME AL CLUB BLOOM →"}
                   </button>
                   <p className="text-center text-[15px] font-medium text-neutral-600">
                     🔒 Sin spam. Podés darte de baja cuando quieras.

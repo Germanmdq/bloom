@@ -1,12 +1,12 @@
 "use client"; 
 
 import { useState, useEffect, Suspense, useCallback, useRef, useMemo } from "react";
-import Image from "next/image";
+import IconPhoto from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ChevronLeft, Plus, Minus, CreditCard, X } from "lucide-react";
+import { IconShoppingBag, IconChevronLeft, IconPlus, IconMinus, IconCreditCard, IconX } from "@tabler/icons-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { toast } from "sonner";
 import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
@@ -468,7 +468,7 @@ function PublicMenuPage() {
                             className="xl:hidden inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-black text-white shadow-md active:scale-[0.98] whitespace-nowrap"
                             style={{ backgroundColor: fk.primary }}
                         >
-                            <ShoppingBag size={15} className="shrink-0" strokeWidth={2.5} />
+                            <IconShoppingBag size={15} className="shrink-0" strokeWidth={2.5} />
                             Categorías
                         </Link>
                         {tableLabel ? (
@@ -549,7 +549,7 @@ function PublicMenuPage() {
                                                     <div className="flex items-center justify-between w-full">
                                                         <span className="text-4xl font-black tracking-tighter text-black">${Number(p.price).toLocaleString()}</span>
                                                         <span className="text-[10px] font-black text-white bg-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg flex items-center gap-2">
-                                                            Poner <Plus size={14} strokeWidth={3} />
+                                                            Poner <IconPlus size={14} strokeWidth={3} />
                                                         </span>
                                                     </div>
                                                 </motion.button>
@@ -662,7 +662,7 @@ function PublicMenuPage() {
                             className="text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform relative border-2 border-white/30"
                             style={{ backgroundColor: fk.primary }}
                         >
-                            <ShoppingBag size={24} />
+                            <IconShoppingBag size={24} />
                             <span
                                 className="absolute -top-1 -right-1 text-xs font-black w-6 h-6 flex items-center justify-center rounded-full border-2 border-white"
                                 style={{ backgroundColor: fk.accent, color: fk.dark }}
@@ -697,7 +697,7 @@ function PublicMenuPage() {
                                         onClick={() => setCartStep('items')}
                                         className="flex items-center gap-1 text-sm font-bold text-gray-400 hover:text-gray-700 transition-colors"
                                     >
-                                        <ChevronLeft size={16} /> Volver
+                                        <IconChevronLeft size={16} /> Volver
                                     </button>
                                 )}
                             </div>
@@ -731,7 +731,7 @@ function PublicMenuPage() {
                                     <>
                                         {cart.length === 0 ? (
                                             <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60 py-16">
-                                                <ShoppingBag size={64} className="mb-4" />
+                                                <IconShoppingBag size={64} className="mb-4" />
                                                 <p className="font-medium text-lg">Tu carrito está vacío</p>
                                             </div>
                                         ) : (
@@ -754,9 +754,9 @@ function PublicMenuPage() {
                                                         )}
                                                         <div className="flex items-center gap-3">
                                                             <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                                                                <button onClick={() => updateQuantity(item.cartItemId, -1)} className="p-1 hover:bg-white rounded-md transition-colors shadow-sm"><Minus size={14} /></button>
+                                                                <button onClick={() => updateQuantity(item.cartItemId, -1)} className="p-1 hover:bg-white rounded-md transition-colors shadow-sm"><IconMinus size={14} /></button>
                                                                 <span className="font-bold w-6 text-center text-sm">{item.quantity}</span>
-                                                                <button onClick={() => updateQuantity(item.cartItemId, 1)} className="p-1 hover:bg-white rounded-md transition-colors shadow-sm"><Plus size={14} /></button>
+                                                                <button onClick={() => updateQuantity(item.cartItemId, 1)} className="p-1 hover:bg-white rounded-md transition-colors shadow-sm"><IconPlus size={14} /></button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -912,7 +912,7 @@ function PublicMenuPage() {
                                             className="w-full text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg"
                                             style={{ backgroundColor: fk.primary }}
                                         >
-                                            {isPaying ? 'Procesando...' : <><CreditCard size={20} /> Confirmar y Pagar</>}
+                                            {isPaying ? 'Procesando...' : <><IconCreditCard size={20} /> Confirmar y Pagar</>}
                                         </button>
                                     ) : (
                                         /* Estado inicial: dos botones */
@@ -923,7 +923,7 @@ function PublicMenuPage() {
                                                 className="w-full text-white py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-50 shadow-lg hover:opacity-95"
                                                 style={{ backgroundColor: fk.primary }}
                                             >
-                                                <CreditCard size={20} /> Pedir o Pagar
+                                                <IconCreditCard size={20} /> Pedir o Pagar
                                             </button>
                                             <button
                                                 onClick={() => { setIsCartOpen(false); setCartStep('items'); }}

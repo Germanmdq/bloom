@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, ListChecks, Settings, CalendarDays, MoreHorizontal } from "lucide-react";
+import { IconLayoutGrid, IconListCheck, IconSettings, IconCalendar, IconDots } from "@tabler/icons-react";
 
 const mainLinks = [
-    { href: "/dashboard/tables",       label: "Mesas",    icon: LayoutGrid },
-    { href: "/dashboard/reservations", label: "Reservas", icon: CalendarDays },
-    { href: "/dashboard/orders",       label: "Historial", icon: ListChecks },
-    { href: "/dashboard/settings",     label: "Ajustes",  icon: Settings },
+    { href: "/dashboard/tables",       label: "Mesas",    icon: IconLayoutGrid },
+    { href: "/dashboard/reservations", label: "Reservas", icon: IconCalendar },
+    { href: "/dashboard/orders",       label: "Historial", icon: IconListCheck },
+    { href: "/dashboard/settings",     label: "Ajustes",  icon: IconSettings },
 ];
 
 interface MobileBottomNavProps {
@@ -47,7 +47,7 @@ export function MobileBottomNav({ onMoreClick }: MobileBottomNavProps) {
                     className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400"
                 >
                     <div className="p-1.5 rounded-xl">
-                        <MoreHorizontal size={20} strokeWidth={1.8} />
+                        <IconDots size={20} strokeWidth={1.8} />
                     </div>
                     <span className="text-[10px] font-bold">Más</span>
                 </button>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { CalendarDays, Clock, Users, Phone, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { IconCalendar, IconClock, IconUsers, IconPhone, IconCircleCheck, IconCircleX, IconRefresh } from "@tabler/icons-react";
 
 type Reservation = {
     id: string;
@@ -59,7 +59,7 @@ export default function ReservationsPage() {
                     )}
                 </div>
                 <button onClick={load} className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors">
-                    <RefreshCw size={18} className="text-gray-500" />
+                    <IconRefresh size={18} className="text-gray-500" />
                 </button>
             </div>
 
@@ -80,7 +80,7 @@ export default function ReservationsPage() {
                 <div className="text-gray-400 text-sm">Cargando...</div>
             ) : filtered.length === 0 ? (
                 <div className="text-center py-20 text-gray-400">
-                    <CalendarDays size={40} className="mx-auto mb-3 opacity-30" />
+                    <IconCalendar size={40} className="mx-auto mb-3 opacity-30" />
                     <p className="font-bold">No hay reservas</p>
                 </div>
             ) : (
@@ -96,16 +96,16 @@ export default function ReservationsPage() {
                                             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${st.color}`}>{st.label}</span>
                                         </div>
                                         <a href={`tel:${r.customer_phone}`} className="text-sm text-bloom-600 font-bold flex items-center gap-1 mt-0.5">
-                                            <Phone size={13} /> {r.customer_phone}
+                                            <IconPhone size={13} /> {r.customer_phone}
                                         </a>
                                     </div>
                                     <div className="text-right text-sm text-gray-500 shrink-0">
                                         <p className="font-black text-gray-900 text-base flex items-center gap-1 justify-end">
-                                            <CalendarDays size={15} className="text-bloom-500" />
+                                            <IconCalendar size={15} className="text-bloom-500" />
                                             {new Date(r.date + "T12:00:00").toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" })}
                                         </p>
                                         <p className="flex items-center gap-1 justify-end mt-0.5">
-                                            <Clock size={13} /> {r.time} · <Users size={13} /> {r.guests} {r.guests === 1 ? "persona" : "personas"}
+                                            <IconClock size={13} /> {r.time} · <IconUsers size={13} /> {r.guests} {r.guests === 1 ? "persona" : "personas"}
                                         </p>
                                     </div>
                                 </div>
@@ -122,13 +122,13 @@ export default function ReservationsPage() {
                                             onClick={() => updateStatus(r.id, "CONFIRMED")}
                                             className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-black transition-colors"
                                         >
-                                            <CheckCircle2 size={16} /> Confirmar
+                                            <IconCircleCheck size={16} /> Confirmar
                                         </button>
                                         <button
                                             onClick={() => updateStatus(r.id, "CANCELLED")}
                                             className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 text-sm font-black transition-colors"
                                         >
-                                            <XCircle size={16} /> Cancelar
+                                            <IconCircleX size={16} /> Cancelar
                                         </button>
                                     </div>
                                 )}

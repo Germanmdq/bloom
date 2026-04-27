@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { MobileBottomNav } from "@/components/dashboard/MobileBottomNav";
-import { Lock, Delete } from "lucide-react";
+import { IconLock, IconBackspace } from "@tabler/icons-react";
 import { SalesComparisonPanel, ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import { OrderNotificationListener } from "./OrderNotificationListener";
 import { GlobalOrderNotification } from "./GlobalOrderNotification";
@@ -77,7 +77,7 @@ export function DashboardClientLayout({
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#F5F5F7] p-4">
         <div className="w-full max-w-xs rounded-[3rem] border border-gray-100 bg-white p-8 text-center shadow-2xl">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-black text-[#FFD60A] shadow-xl">
-            <Lock size={32} strokeWidth={2.5} />
+            <IconLock size={32} strokeWidth={2.5} />
           </div>
           <h2 className="mb-1 text-2xl font-black uppercase tracking-tighter text-gray-900">Bloom</h2>
           <p className="mb-6 text-xs font-bold uppercase tracking-widest text-gray-400">Ingresá el PIN</p>
@@ -107,7 +107,7 @@ export function DashboardClientLayout({
                     }}
                     className="flex h-16 items-center justify-center rounded-2xl bg-gray-100 text-gray-500 transition-all hover:bg-gray-200 active:scale-95"
                   >
-                    <Delete size={20} />
+                    <IconBackspace size={20} />
                   </button>
                 );
               return (

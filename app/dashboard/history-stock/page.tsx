@@ -7,8 +7,8 @@ import {
     useProducts
 } from "@/lib/hooks/use-pos-data";
 import { 
-    Loader2, Search, Calendar, Users, Package, History, Filter, ArrowUpRight, ArrowDownLeft, RefreshCcw
-} from "lucide-react";
+    IconLoader2, IconSearch, IconCalendar, IconUsers, IconPackage, IconHistory, IconFilter, IconArrowUpRight, IconArrowDownLeft, IconRefresh
+} from "@tabler/icons-react";
 import { motion } from "framer-motion";
 
 type Timeframe = 'ALL' | 'TODAY' | 'WEEK' | 'MONTH';
@@ -25,14 +25,14 @@ export default function HistoryStockPage() {
 
     const filteredMovements = useMemo(() => {
         return movements.filter((mov: any) => {
-            // Product Search
+            // Product IconSearch
             const productName = mov.products?.name?.toLowerCase() || "";
             const matchesProduct = productName.includes(searchTerm.toLowerCase());
             
-            // Supplier Filter
+            // Supplier IconFilter
             const matchesSupplier = !supplierFilter || mov.supplier_id === supplierFilter;
             
-            // Timeframe Filter
+            // Timeframe IconFilter
             if (!matchesProduct || !matchesSupplier) return false;
             if (timeframe === 'ALL') return true;
             
@@ -57,7 +57,7 @@ export default function HistoryStockPage() {
     if (movementsLoading) {
         return (
             <div className="h-full flex flex-col items-center justify-center py-40 gap-4">
-                <Loader2 className="animate-spin text-gray-200" size={64} />
+                <IconLoader2 className="animate-spin text-gray-200" size={64} />
                 <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-xs">Cargando Historial...</p>
             </div>
         );
@@ -74,18 +74,18 @@ export default function HistoryStockPage() {
                     onClick={() => refetch()}
                     className="w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-gray-400 hover:text-black hover:rotate-180 transition-all duration-500"
                 >
-                    <RefreshCcw size={20} />
+                    <IconRefresh size={20} />
                 </button>
             </header>
 
             {/* FILTERS BAR */}
             <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-gray-100 mb-10 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Search by Product */}
+                    {/* IconSearch by Product */}
                     <div className="relative">
                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Buscar Producto</label>
                         <div className="relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                            <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
                             <input
                                 type="text"
                                 value={searchTerm}
@@ -96,11 +96,11 @@ export default function HistoryStockPage() {
                         </div>
                     </div>
 
-                    {/* Filter by Supplier */}
+                    {/* IconFilter by Supplier */}
                     <div>
                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Filtrar Proveedor</label>
                         <div className="relative">
-                            <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                            <IconUsers className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
                             <select 
                                 value={supplierFilter}
                                 onChange={(e) => setSupplierFilter(e.target.value)}
@@ -163,14 +163,14 @@ export default function HistoryStockPage() {
                                 <td className="p-8">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
-                                            <Package size={14} />
+                                            <IconPackage size={14} />
                                         </div>
                                         <span className="text-gray-900">{mov.products?.name}</span>
                                     </div>
                                 </td>
                                 <td className={`p-8 text-right`}>
                                     <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl font-black ${mov.qty > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                                        {mov.qty > 0 ? <ArrowUpRight size={14} /> : <ArrowDownLeft size={14} />}
+                                        {mov.qty > 0 ? <IconArrowUpRight size={14} /> : <IconArrowDownLeft size={14} />}
                                         {mov.qty > 0 ? '+' : ''}{mov.qty} <span className="text-[10px] uppercase">{mov.products?.unit}</span>
                                     </div>
                                 </td>
@@ -185,7 +185,7 @@ export default function HistoryStockPage() {
                                 <td className="p-8">
                                     {mov.suppliers ? (
                                         <div className="flex items-center gap-2 text-emerald-600">
-                                            <Users size={14} className="opacity-50" />
+                                            <IconUsers size={14} className="opacity-50" />
                                             <span className="text-xs uppercase tracking-tight font-black">{mov.suppliers.name}</span>
                                         </div>
                                     ) : (
@@ -199,7 +199,7 @@ export default function HistoryStockPage() {
                 {filteredMovements.length === 0 && (
                     <div className="p-32 text-center">
                         <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <History size={40} className="text-gray-200" />
+                            <IconHistory size={40} className="text-gray-200" />
                         </div>
                         <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No se encontraron movimientos con estos filtros</p>
                         <button onClick={() => {setSearchTerm(""); setSupplierFilter(""); setTimeframe('ALL');}} className="mt-4 text-emerald-600 text-xs font-black uppercase hover:underline">Limpiar filtros</button>

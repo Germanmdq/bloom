@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useKitchenTickets } from "@/lib/hooks/use-pos-data";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, CheckCircle2, ChevronRight, CookingPot, Timer, MessageSquare, Loader2 } from "lucide-react";
+import { IconClock, IconCircleCheck, IconChevronRight, IconToolsKitchen, IconMessage, IconLoader2 } from "@tabler/icons-react";
 
 type KitchenTicket = {
     id: string;
@@ -77,7 +77,7 @@ export default function KitchenPage() {
 
     if (isLoading) return (
         <div className="min-h-screen flex flex-col items-center justify-center p-10 font-black uppercase tracking-widest text-gray-400 gap-4">
-            <Loader2 className="animate-spin text-[#FFD60A]" size={48} />
+            <IconLoader2 className="animate-spin text-[#FFD60A]" size={48} />
             Cargando Cocina...
         </div>
     );
@@ -94,11 +94,11 @@ export default function KitchenPage() {
                 </div>
                 <div className="flex gap-4">
                     <div className="bg-white px-6 py-4 rounded-3xl font-black shadow-sm border border-chocolate/5 flex flex-col items-end min-w-[140px]">
-                        <span className="flex items-center gap-1 text-[10px] text-gris uppercase tracking-widest"><Clock size={10} /> Espera Est.</span>
+                        <span className="flex items-center gap-1 text-[10px] text-gris uppercase tracking-widest"><IconClock size={10} /> Espera Est.</span>
                         <span className="text-2xl font-black text-piedra">{estTime} min</span>
                     </div>
                     <div className="bg-chocolate text-crema px-6 py-4 rounded-3xl font-black flex items-center gap-3 shadow-xl">
-                        <CookingPot size={24} />
+                        <IconToolsKitchen size={24} />
                         Cocina Bloom
                     </div>
                 </div>
@@ -126,7 +126,7 @@ export default function KitchenPage() {
                                     <div>
                                         <h3 className="font-black text-xl text-piedra">Mesa {ticket.table_id}</h3>
                                         <p className="text-[10px] font-black text-gris uppercase tracking-widest flex items-center gap-1">
-                                            <Clock size={12} />
+                                            <IconClock size={12} />
                                             {new Date(ticket.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </div>
@@ -154,7 +154,7 @@ export default function KitchenPage() {
                             {
                                 ticket.notes && (
                                     <div className="mb-8 p-4 bg-yellow-50 rounded-2xl border border-yellow-200 flex gap-3">
-                                        <MessageSquare size={16} className="text-yellow-600 shrink-0 mt-1" />
+                                        <IconMessage size={16} className="text-yellow-600 shrink-0 mt-1" />
                                         <p className="text-sm font-medium text-yellow-800 italic">{ticket.notes}</p>
                                     </div>
                                 )
@@ -168,13 +168,13 @@ export default function KitchenPage() {
                                     }`}
                             >
                                 {ticket.status === 'PENDING' && (
-                                    <> <Timer size={20} /> Empezar </>
+                                    <> <IconClock size={20} /> Empezar </>
                                 )}
                                 {ticket.status === 'PREPARING' && (
-                                    <> <CheckCircle2 size={20} /> ¡Listo! </>
+                                    <> <IconCircleCheck size={20} /> ¡Listo! </>
                                 )}
                                 {ticket.status === 'READY' && (
-                                    <> <ChevronRight size={20} /> Entregar </>
+                                    <> <IconChevronRight size={20} /> Entregar </>
                                 )}
                             </button>
                         </motion.div>
@@ -185,7 +185,7 @@ export default function KitchenPage() {
             {
                 tickets.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-40 gap-6 opacity-20 text-gris">
-                        <CookingPot size={100} />
+                        <IconToolsKitchen size={100} />
                         <p className="text-2xl font-black uppercase tracking-widest">Sin Comandas</p>
                     </div>
                 )

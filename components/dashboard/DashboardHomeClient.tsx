@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LayoutGrid, UserCircle, ArrowRight, Loader2, Clock } from "lucide-react";
+import { IconLayoutGrid, IconUserCircle, IconArrowRight, IconLoader2, IconClock } from "@tabler/icons-react";
 import type { Order } from "@/lib/types";
 import { CHANNEL_BADGE, CHANNEL_LABEL, CHANNEL_LEFT, getOrderChannel } from "@/lib/dashboard/order-channel";
 import { tableChannelFromId } from "@/lib/dashboard/table-colors";
@@ -135,7 +135,7 @@ export function DashboardHomeClient() {
                     <p className="text-sm font-semibold text-red-600">{pendingError}</p>
                 ) : pendingQueue == null ? (
                     <div className="flex items-center gap-2 text-gray-500">
-                        <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                        <IconLoader2 className="h-5 w-5 animate-spin" aria-hidden />
                         <span className="text-sm font-medium">Cargando pendientes…</span>
                     </div>
                 ) : pendingQueue.length === 0 ? (
@@ -168,7 +168,7 @@ export function DashboardHomeClient() {
                                                 {CHANNEL_LABEL[channel]}
                                             </span>
                                             <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500">
-                                                <Clock size={12} />
+                                                <IconClock size={12} />
                                                 {timeLabel}
                                             </span>
                                         </div>
@@ -212,7 +212,7 @@ export function DashboardHomeClient() {
                                             Cocina
                                         </span>
                                         <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500">
-                                            <Clock size={12} />
+                                            <IconClock size={12} />
                                             {timeLabel}
                                         </span>
                                     </div>
@@ -233,7 +233,7 @@ export function DashboardHomeClient() {
                     <p className="text-sm font-semibold text-red-600">{error}</p>
                 ) : stats == null ? (
                     <div className="flex items-center gap-2 text-gray-500">
-                        <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                        <IconLoader2 className="h-5 w-5 animate-spin" aria-hidden />
                         <span className="text-sm font-medium">Cargando clientes…</span>
                     </div>
                 ) : (
@@ -257,14 +257,14 @@ export function DashboardHomeClient() {
                 >
                     <div className="flex items-center gap-3">
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-black/10">
-                            <LayoutGrid size={24} strokeWidth={2.2} />
+                            <IconLayoutGrid size={24} strokeWidth={2.2} />
                         </div>
                         <div>
                             <p className="font-black uppercase tracking-tight">Mesas / POS</p>
                             <p className="text-xs font-semibold text-gray-800/80">Abrir operación</p>
                         </div>
                     </div>
-                    <ArrowRight className="h-5 w-5 shrink-0 transition group-hover:translate-x-1" />
+                    <IconArrowRight className="h-5 w-5 shrink-0 transition group-hover:translate-x-1" />
                 </Link>
 
                 <Link
@@ -273,14 +273,14 @@ export function DashboardHomeClient() {
                 >
                     <div className="flex items-center gap-3">
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100">
-                            <UserCircle size={24} strokeWidth={2} className="text-gray-700" />
+                            <IconUserCircle size={24} strokeWidth={2} className="text-gray-700" />
                         </div>
                         <div>
                             <p className="font-black uppercase tracking-tight">Clientes</p>
                             <p className="text-xs font-semibold text-gray-500">Cuentas y pedidos web</p>
                         </div>
                     </div>
-                    <ArrowRight className="h-5 w-5 shrink-0 text-gray-400 transition group-hover:translate-x-1" />
+                    <IconArrowRight className="h-5 w-5 shrink-0 text-gray-400 transition group-hover:translate-x-1" />
                 </Link>
             </div>
         </div>

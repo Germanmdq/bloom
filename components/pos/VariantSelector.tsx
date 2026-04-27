@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { X, Check, Plus, Minus } from "lucide-react";
+import { IconX, IconCheck, IconPlus, IconMinus } from "@tabler/icons-react";
 
 interface VariantOption {
     name: string;
@@ -433,7 +433,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder: _onAdd
                         }}
                         className="p-2 bg-gray-100 rounded-full text-gray-400 hover:text-gray-900 shrink-0 ml-3"
                     >
-                        <X size={20} />
+                        <IconX size={20} />
                     </button>
                 </div>
 
@@ -443,7 +443,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder: _onAdd
                             <div className="flex items-center justify-between mb-3 gap-2">
                                 <h3 className="font-black text-gray-800 text-sm uppercase tracking-wide flex items-center gap-2">
                                     {group.name}
-                                    {isGroupSatisfied(group) && <Check size={15} className="text-green-500 shrink-0" strokeWidth={3} />}
+                                    {isGroupSatisfied(group) && <IconCheck size={15} className="text-green-500 shrink-0" strokeWidth={3} />}
                                 </h3>
                                 <span className="text-xs font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md shrink-0">
                                     {group.selectionMode === "quantity"
@@ -477,7 +477,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder: _onAdd
                                                         className="w-9 h-9 rounded-lg bg-white border-2 border-gray-200 flex items-center justify-center text-gray-700 hover:border-bloom-300 active:scale-95 transition-all disabled:opacity-40"
                                                         disabled={count <= 0}
                                                     >
-                                                        <Minus size={16} strokeWidth={2.5} />
+                                                        <IconMinus size={16} strokeWidth={2.5} />
                                                     </button>
                                                     <span className="w-7 text-center font-black text-gray-900 tabular-nums">{count}</span>
                                                     <button
@@ -487,7 +487,7 @@ export function VariantSelector({ product, isOpen, onClose, onAddToOrder: _onAdd
                                                         className="w-9 h-9 rounded-lg bg-bloom-600 border-2 border-bloom-600 flex items-center justify-center text-white hover:bg-bloom-700 active:scale-95 transition-all disabled:opacity-40"
                                                         disabled={sumGroupQuantities(group.id, quantitySelections) >= group.max}
                                                     >
-                                                        <Plus size={16} strokeWidth={2.5} />
+                                                        <IconPlus size={16} strokeWidth={2.5} />
                                                     </button>
                                                 </div>
                                             </div>

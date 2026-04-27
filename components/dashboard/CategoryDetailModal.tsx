@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Edit3, Trash2, X } from "lucide-react";
+import { IconEdit, IconTrash, IconX } from "@tabler/icons-react";
 import { DashboardProduct } from "@/lib/types";
 
 interface CategoryDetailModalProps {
@@ -41,7 +41,7 @@ export function CategoryDetailModal({ categoryName, products, onEdit, onDelete, 
                         onClick={onClose}
                         className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                     >
-                        <X size={24} />
+                        <IconX size={24} />
                     </button>
                 </div>
 
@@ -68,13 +68,13 @@ export function CategoryDetailModal({ categoryName, products, onEdit, onDelete, 
                                         onClick={() => onEdit(product)}
                                         className="p-2 rounded-xl bg-gray-50 text-black hover:bg-gray-100 transition-colors"
                                     >
-                                        <Edit3 size={18} />
+                                        <IconEdit size={18} />
                                     </button>
                                     <button
                                         onClick={() => onDelete(product.id)}
                                         className="p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
                                     >
-                                        <Trash2 size={18} />
+                                        <IconTrash size={18} />
                                     </button>
                                 </div>
                             </div>

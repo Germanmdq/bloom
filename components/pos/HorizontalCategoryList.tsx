@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { IconChevronRight, IconChevronLeft } from "@tabler/icons-react";
 
 interface HorizontalCategoryListProps {
     categories: any[];
@@ -23,7 +23,7 @@ export function HorizontalCategoryList({ categories, selectedCategory, onSelect 
                 onClick={() => scroll('left')}
                 className="p-3 bg-gray-50 text-gray-400 hover:text-gray-900 rounded-full shadow-sm hover:bg-gray-200 disabled:opacity-50 shrink-0 mx-2"
             >
-                <ChevronLeft size={24} />
+                <IconChevronLeft size={24} />
             </button>
 
             <div
@@ -66,7 +66,7 @@ export function HorizontalCategoryList({ categories, selectedCategory, onSelect 
                 onClick={() => scroll('right')}
                 className="p-3 bg-gray-50 text-gray-400 hover:text-gray-900 rounded-full shadow-sm hover:bg-gray-200 disabled:opacity-50 shrink-0 mx-2"
             >
-                <ChevronRight size={24} />
+                <IconChevronRight size={24} />
             </button>
         </div>
     );

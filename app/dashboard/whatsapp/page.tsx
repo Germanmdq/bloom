@@ -5,13 +5,13 @@ import { useWhatsAppPedidos } from '@/lib/hooks/useWhatsAppPedidos';
 import { WhatsAppOrder, WhatsAppOrderStatus } from '@/lib/store/whatsappStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    MessageCircle,
-    ShoppingBag,
-    Clock,
-    XCircle,
-    Truck,
-    AlertCircle
-} from 'lucide-react';
+    IconMessageCircle,
+    IconShoppingBag,
+    IconClock,
+    IconCircleX,
+    IconTruck,
+    IconAlertCircle
+} from "@tabler/icons-react";
 import { clsx } from 'clsx';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -52,7 +52,7 @@ export default function WhatsAppPOSPage() {
             <header className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-3xl font-bold flex items-center gap-3 text-gray-900">
-                        <MessageCircle className="w-8 h-8 text-green-500" />
+                        <IconMessageCircle className="w-8 h-8 text-green-500" />
                         Pedidos WhatsApp
                     </h1>
                     <p className="text-gray-500 mt-1">Gestiona los pedidos entrantes en tiempo real</p>
@@ -94,7 +94,7 @@ export default function WhatsAppPOSPage() {
 
             {!isLoading && filteredPedidos.length === 0 && (
                 <div className="text-center py-20 text-gray-400">
-                    <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <IconShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-50" />
                     <p className="text-xl">No hay pedidos en esta categoría</p>
                 </div>
             )}
@@ -137,7 +137,7 @@ function OrderCard({
                         {pedido.nombre_cliente || pedido.numero_cliente}
                     </h3>
                     <div className="flex items-center gap-1 text-xs opacity-70 mt-1">
-                        <Clock className="w-3 h-3" />
+                        <IconClock className="w-3 h-3" />
                         {format(new Date(pedido.created_at), "HH:mm 'hs' - dd MMM", { locale: es })}
                     </div>
                 </div>
@@ -172,9 +172,9 @@ function OrderCard({
                         {pedido.items_parseados.tipo_entrega && (
                             <div className="mt-4 pt-3 border-t border-dashed flex gap-2 items-center text-sm text-gray-600">
                                 {pedido.items_parseados.tipo_entrega === 'delivery' ? (
-                                    <Truck className="w-4 h-4 text-blue-500" />
+                                    <IconTruck className="w-4 h-4 text-blue-500" />
                                 ) : (
-                                    <ShoppingBag className="w-4 h-4 text-bloom-600" />
+                                    <IconShoppingBag className="w-4 h-4 text-bloom-600" />
                                 )}
                                 <span className="capitalize font-medium">{pedido.items_parseados.tipo_entrega}</span>
                                 {pedido.items_parseados.direccion && (
@@ -194,7 +194,7 @@ function OrderCard({
 
                 {pedido.notas && (
                     <div className="mt-3 bg-yellow-50 text-yellow-800 text-xs p-2 rounded border border-yellow-100 flex gap-2 items-start">
-                        <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
+                        <IconAlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
                         {pedido.notas}
                     </div>
                 )}
@@ -220,7 +220,7 @@ function OrderCard({
                         title="Cancelar"
                         className="bg-white border border-gray-200 hover:bg-red-50 hover:border-red-200 hover:text-red-500 text-gray-500 p-2 rounded-lg transition-colors"
                     >
-                        <XCircle className="w-5 h-5" />
+                        <IconCircleX className="w-5 h-5" />
                     </button>
                 )}
             </div>

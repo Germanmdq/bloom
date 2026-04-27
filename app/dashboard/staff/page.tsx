@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, Trash2, Mail, User, Coffee, Loader2 } from "lucide-react";
+import { IconUserPlus, IconTrash, IconMail, IconUser, IconCoffee, IconLoader2 } from "@tabler/icons-react";
 
 export default function StaffPage() {
     const [profiles, setProfiles] = useState<any[]>([]);
@@ -62,7 +62,7 @@ export default function StaffPage() {
                 setNewStaff({ email: "", password: "", fullName: "", role: "WAITER" });
                 fetchEverything();
             } else {
-                if (result.message?.includes("User already registered")) {
+                if (result.message?.includes("IconUser already registered")) {
                     setError("Este email ya está registrado.");
                 } else if (result.message?.includes("Password should be")) {
                     setError("La contraseña debe tener al menos 6 caracteres.");
@@ -106,7 +106,7 @@ export default function StaffPage() {
                     onClick={() => setIsAdding(true)}
                     className="bg-black text-white px-8 py-4 rounded-[2rem] font-black uppercase text-xs tracking-widest flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-black/20"
                 >
-                    <UserPlus size={18} />
+                    <IconUserPlus size={18} />
                     <span>Registrar Nuevo</span>
                 </button>
             </div>
@@ -120,7 +120,7 @@ export default function StaffPage() {
 
             {loading && profiles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <Loader2 className="animate-spin text-gray-200" size={48} />
+                    <IconLoader2 className="animate-spin text-gray-200" size={48} />
                     <p className="text-gray-400 font-medium italic">Sincronizando equipo...</p>
                 </div>
             ) : (
@@ -135,7 +135,7 @@ export default function StaffPage() {
                             <div className="relative z-10">
                                 <div className="flex justify-between items-start mb-6">
                                     <div className="w-16 h-16 rounded-[1.5rem] bg-gray-50 flex items-center justify-center text-gray-300 border border-gray-100 group-hover:scale-110 transition-transform">
-                                        <User size={32} />
+                                        <IconUser size={32} />
                                     </div>
                                     <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase border ${profile.role === 'ADMIN'
                                         ? 'bg-black text-white border-black'
@@ -147,7 +147,7 @@ export default function StaffPage() {
 
                                 <h4 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">{profile.full_name || "Sin nombre"}</h4>
                                 <div className="flex items-center gap-2 text-gray-400 mb-8 lowercase">
-                                    <Mail size={12} />
+                                    <IconMail size={12} />
                                     <span className="text-xs font-bold tracking-tight">{profile.email || "No sincronizado"}</span>
                                 </div>
 
@@ -155,7 +155,7 @@ export default function StaffPage() {
                                     <div className="bg-gray-50/50 p-4 rounded-3xl">
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Mesas</p>
                                         <div className="flex items-center gap-2">
-                                            <Coffee size={14} className="text-accent" />
+                                            <IconCoffee size={14} className="text-accent" />
                                             <span className="text-xl font-black text-gray-900">{profile.orders?.[0]?.count || 0}</span>
                                         </div>
                                     </div>
@@ -164,7 +164,7 @@ export default function StaffPage() {
                                             onClick={() => setDeleteId(profile.id)}
                                             className="flex-1 flex items-center justify-center gap-2 rounded-3xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all p-3"
                                         >
-                                            <Trash2 size={16} />
+                                            <IconTrash size={16} />
                                         </button>
                                     </div>
                                 </div>
@@ -194,7 +194,7 @@ export default function StaffPage() {
                             className="relative bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center"
                         >
                             <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Trash2 size={28} />
+                                <IconTrash size={28} />
                             </div>
                             <h3 className="text-2xl font-black text-gray-900 mb-2">¿Eliminar Empleado?</h3>
                             <p className="text-gray-500 font-medium text-sm mb-8">Esta acción no se puede deshacer.</p>

@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isAdminEmail } from "@/lib/auth/admin";
-import { Eye, EyeOff, Loader2, Mail } from "lucide-react";
+import { IconEye, IconEyeOff, IconLoader2, IconMail } from "@tabler/icons-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -194,7 +194,7 @@ export function AuthPageClient() {
       <main className="mx-auto max-w-md px-5 pb-16 pt-10">
         <div className="mb-8 text-center" aria-hidden="true">
           <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-[#e8e4d4] ring-2 ring-[#c4b896]/40">
-            <Mail className="h-9 w-9 text-[#5f5c46]" strokeWidth={2} />
+            <IconMail className="h-9 w-9 text-[#5f5c46]" strokeWidth={2} />
           </div>
           <h1 className="text-3xl font-black tracking-tight text-neutral-900">
             {panel === "login" ? "Iniciar sesión" : "Crear cuenta"}
@@ -249,7 +249,7 @@ export function AuthPageClient() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute bottom-4 right-4 text-neutral-400 hover:text-[#7a765a] transition-colors"
                 >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? <IconEyeOff className="h-5 w-5" /> : <IconEye className="h-5 w-5" />}
                 </button>
               </div>
               {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
@@ -260,7 +260,7 @@ export function AuthPageClient() {
                 disabled={loading}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a3e] py-4 text-base font-black text-white shadow-lg shadow-[#2d4a3e]/20 transition hover:bg-[#1f352c] active:scale-[0.99] disabled:opacity-50"
               >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                {loading ? <IconLoader2 className="h-5 w-5 animate-spin" /> : null}
                 Iniciar sesión
               </button>
               <p className="text-center text-sm text-neutral-600">
@@ -393,7 +393,7 @@ export function AuthPageClient() {
                 disabled={loading}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2d4a3e] py-4 text-base font-black text-white shadow-lg shadow-[#2d4a3e]/20 transition hover:bg-[#1f352c] active:scale-[0.99] disabled:opacity-50"
               >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                {loading ? <IconLoader2 className="h-5 w-5 animate-spin" /> : null}
                 Crear cuenta
               </button>
               <p className="text-center text-sm text-neutral-600">
