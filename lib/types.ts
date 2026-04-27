@@ -44,6 +44,7 @@ export type Table = {
     webOrderId?: string;
     clientName?: string;
     items?: any[];
+    created_at?: string;
     updated_at?: string;
 };
 
