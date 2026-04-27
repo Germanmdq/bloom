@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Table, TableStatus } from "@/lib/types";
 import { OrderSheet } from "@/components/dashboard/OrderSheet";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, X } from "lucide-react";
+import { IconLoader2, IconX } from "@tabler/icons-react";
 
 type WebOrder = {
     id: string;
@@ -97,7 +97,7 @@ export default function TablesPage() {
         };
     }, []);
     
-    // Keyboard Shortcuts (F1, F5, +, Esc)
+    // IconKeyboard Shortcuts (F1, F5, +, Esc)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Esc cierra todo
@@ -301,7 +301,7 @@ export default function TablesPage() {
         .sort((a, b) => a.id - b.id);
 
     const getCardStyles = (table: Table) => {
-        // 1. Check order_type first (Most reliable)
+        // 1. IconCheck order_type first (Most reliable)
         if (table.order_type === 'DELIVERY') {
             return {
                 bg: 'bg-red-500 shadow-[0_22px_70px_rgba(0,0,0,0.18)]',
@@ -489,7 +489,7 @@ export default function TablesPage() {
                                 {newTableCustomerId ? (
                                     <div className="flex items-center justify-between p-3 bg-gray-900 rounded-xl">
                                         <span className="text-xs font-black text-white truncate">{newTableName || 'Cliente Vinculado'}</span>
-                                        <button onClick={() => { setNewTableCustomerId(null); setNewTableName(""); }} className="text-white/40 hover:text-white"><X size={14}/></button>
+                                        <button onClick={() => { setNewTableCustomerId(null); setNewTableName(""); }} className="text-white/40 hover:text-white"><IconX size={14}/></button>
                                     </div>
                                 ) : (
                                     <>
@@ -500,7 +500,7 @@ export default function TablesPage() {
                                             onChange={(e) => searchCustomers(e.target.value)}
                                             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold outline-none focus:border-black text-sm"
                                         />
-                                        {isSearching && <Loader2 className="absolute right-8 top-10 animate-spin text-gray-300" size={16} />}
+                                        {isSearching && <IconLoader2 className="absolute right-8 top-10 animate-spin text-gray-300" size={16} />}
                                         {customerResults.length > 0 && (
                                             <div className="absolute left-12 right-4 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-2xl z-[70] overflow-hidden">
                                                 {customerResults.map(c => (
@@ -602,7 +602,7 @@ export default function TablesPage() {
 
             {loading && tables.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-40 gap-4">
-                    <Loader2 className="animate-spin text-gray-200" size={64} />
+                    <IconLoader2 className="animate-spin text-gray-200" size={64} />
                     <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-xs">Sincronizando salón...</p>
                 </div>
             ) : error ? (
@@ -661,7 +661,7 @@ export default function TablesPage() {
                                              isDelivery ? 'bg-red-500' : 'bg-emerald-500'
                                          }`}
                                      >
-                                        {/* Timer Centered Top */}
+                                        {/* IconClock Centered Top */}
                                         <div className="flex flex-col items-center gap-1 z-10">
                                             <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 text-white">Minutos</span>
                                             <span className="text-xl font-medium text-white">{displayTime}</span>
@@ -706,7 +706,7 @@ export default function TablesPage() {
                                         onClick={() => setSelectedTable(table)}
                                         className={`rounded-[2.5rem] p-8 flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[400px] ${styles.bg}`}
                                     >
-                                        {/* Timer Centered Top */}
+                                        {/* IconClock Centered Top */}
                                             <div className="flex flex-col items-center gap-1 z-10">
                                                 <span className={`text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 ${styles.textColor}`}>Minutos</span>
                                                 <span className={`text-xl font-medium ${styles.textColor}`}>{displayTime}</span>

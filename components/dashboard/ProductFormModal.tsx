@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { motion } from "framer-motion";
-import { Tag, DollarSign, Image as ImageIcon, Check } from "lucide-react";
+import { IconTag, IconCurrencyDollar, IconPhoto as IconPhoto, IconCheck } from "@tabler/icons-react";
 
 interface Category {
     id: string;
@@ -64,7 +64,7 @@ export function ProductFormModal({ product, categories, loading, onChange, onSav
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Nombre</label>
                             <div className="relative">
-                                <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                                <IconTag className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
                                 <input
                                     type="text" required
                                     value={product.name}
@@ -77,7 +77,7 @@ export function ProductFormModal({ product, categories, loading, onChange, onSav
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Precio</label>
                             <div className="relative">
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                                <IconCurrencyDollar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
                                 <input
                                     type="number" step="0.01" required
                                     value={product.price}
@@ -113,7 +113,7 @@ export function ProductFormModal({ product, categories, loading, onChange, onSav
                                         onClick={handleAddCategory}
                                         className="bg-black text-white px-4 rounded-[1.2rem] font-bold hover:scale-105 transition-all"
                                     >
-                                        <Check size={18} />
+                                        <IconCheck size={18} />
                                     </button>
                                 </div>
                             ) : (
@@ -136,7 +136,7 @@ export function ProductFormModal({ product, categories, loading, onChange, onSav
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Imagen URL</label>
                             <div className="relative">
-                                <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                                <IconPhoto className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
                                 <input
                                     type="text"
                                     value={product.image_url}

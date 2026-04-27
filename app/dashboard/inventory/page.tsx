@@ -14,11 +14,11 @@ import {
     useCreateProduct
 } from "@/lib/hooks/use-pos-data";
 import { 
-    Loader2, Plus, ArrowDown, AlertTriangle, Package, Search, 
-    Receipt, Users, TrendingDown, Lightbulb, Flame, Home, 
-    Wrench, FileText, ShoppingCart, Megaphone, ShieldAlert, 
-    MoreHorizontal, Edit2, Phone, Mail, Tag, Check, X, History, Filter
-} from "lucide-react";
+    IconLoader2, IconPlus, IconArrowDown, IconAlertTriangle, IconPackage, IconSearch,
+    IconReceipt, IconUsers, IconTrendingDown, IconBulb, IconFlame, IconHome,
+    IconTool, IconFileText, IconShoppingCart, IconSpeakerphone, IconShieldExclamation,
+    IconDots, IconEdit, IconPhone, IconMail, IconTag, IconCheck, IconX, IconHistory, IconFilter
+} from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Tab = 'stock' | 'expenses' | 'suppliers';
@@ -47,7 +47,7 @@ export default function InventoryPage() {
     const [showSupplierModal, setShowSupplierModal] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState<any>(null);
 
-    // Search & Filter States
+    // IconSearch & IconFilter States
     const [stockSearch, setStockSearch] = useState("");
     const [expenseSearch, setExpenseSearch] = useState("");
     const [supplierSearch, setSupplierSearch] = useState("");
@@ -239,23 +239,23 @@ export default function InventoryPage() {
 
     const getExpenseIcon = (cat: string) => {
         switch (cat) {
-            case 'Luz': return <Lightbulb size={24} />;
-            case 'Gas': return <Flame size={24} />;
-            case 'Alquiler': return <Home size={24} />;
-            case 'Sueldos': return <Users size={24} className="text-blue-500" />;
-            case 'Reparaciones': return <Wrench size={24} className="text-orange-500" />;
-            case 'Impuestos': return <FileText size={24} className="text-purple-500" />;
-            case 'Mercadería': return <ShoppingCart size={24} className="text-emerald-500" />;
-            case 'Publicidad': return <Megaphone size={24} className="text-pink-500" />;
-            case 'Seguros': return <ShieldAlert size={24} className="text-indigo-500" />;
-            default: return <MoreHorizontal size={24} />;
+            case 'Luz': return <IconBulb size={24} />;
+            case 'Gas': return <IconFlame size={24} />;
+            case 'Alquiler': return <IconHome size={24} />;
+            case 'Sueldos': return <IconUsers size={24} className="text-blue-500" />;
+            case 'Reparaciones': return <IconTool size={24} className="text-orange-500" />;
+            case 'Impuestos': return <IconFileText size={24} className="text-purple-500" />;
+            case 'Mercadería': return <IconShoppingCart size={24} className="text-emerald-500" />;
+            case 'Publicidad': return <IconSpeakerphone size={24} className="text-pink-500" />;
+            case 'Seguros': return <IconShieldExclamation size={24} className="text-indigo-500" />;
+            default: return <IconDots size={24} />;
         }
     };
 
     if (stockLoading || expensesLoading || suppliersLoading) {
         return (
             <div className="h-full flex items-center justify-center">
-                <Loader2 className="animate-spin text-gray-200" size={64} />
+                <IconLoader2 className="animate-spin text-gray-200" size={64} />
             </div>
         );
     }
@@ -270,9 +270,9 @@ export default function InventoryPage() {
                 </div>
                 
                 <div className="flex flex-wrap gap-3">
-                    <button onClick={() => { setStockForm({...stockForm, type: 'purchase'}); setShowStockModal(true); }} className="flex-1 lg:flex-none h-16 px-6 bg-black text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10"> <ShoppingCart size={18} /> + Insumo </button>
-                    <button onClick={() => setShowExpenseModal(true)} className="flex-1 lg:flex-none h-16 px-6 bg-red-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-red-500/10"> <Receipt size={18} /> + Gasto </button>
-                    <button onClick={() => { setEditingSupplier(null); setSupplierForm({ name: "", phone: "", provided_items: [] }); setShowSupplierModal(true); }} className="flex-1 lg:flex-none h-16 px-6 bg-emerald-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-500/10"> <Users size={18} /> + Proveedor </button>
+                    <button onClick={() => { setStockForm({...stockForm, type: 'purchase'}); setShowStockModal(true); }} className="flex-1 lg:flex-none h-16 px-6 bg-black text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10"> <IconShoppingCart size={18} /> + Insumo </button>
+                    <button onClick={() => setShowExpenseModal(true)} className="flex-1 lg:flex-none h-16 px-6 bg-red-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-red-500/10"> <IconReceipt size={18} /> + Gasto </button>
+                    <button onClick={() => { setEditingSupplier(null); setSupplierForm({ name: "", phone: "", provided_items: [] }); setShowSupplierModal(true); }} className="flex-1 lg:flex-none h-16 px-6 bg-emerald-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-500/10"> <IconUsers size={18} /> + Proveedor </button>
                 </div>
             </header>
 
@@ -289,15 +289,15 @@ export default function InventoryPage() {
                     <motion.div key="stock" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                         <div className="flex items-center justify-between mb-8 gap-4">
                             <div className="relative flex-1 max-w-md">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
+                                <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
                                 <input id="stock-search" type="text" value={stockSearch} onChange={(e) => setStockSearch(e.target.value)} placeholder="Buscar insumo (F1)..." className="w-full h-14 pl-12 pr-6 rounded-2xl bg-white border-transparent focus:ring-2 ring-black/5 shadow-sm outline-none font-bold" />
                             </div>
-                            <button onClick={() => { setStockForm({...stockForm, type: 'waste'}); setShowStockModal(true); }} className="h-14 px-8 bg-red-50 text-red-600 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-red-100 transition-all"> <ArrowDown size={18} /> Merma </button>
+                            <button onClick={() => { setStockForm({...stockForm, type: 'waste'}); setShowStockModal(true); }} className="h-14 px-8 bg-red-50 text-red-600 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-red-100 transition-all"> <IconArrowDown size={18} /> Merma </button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredStock.map((item: any) => {
                                 const isLow = item.current_stock <= item.min_stock;
-                                return ( <div key={item.id} className={`p-8 rounded-[2.5rem] border-2 ${isLow ? 'border-red-100 bg-red-50/50' : 'border-transparent bg-white'} shadow-sm hover:shadow-xl transition-all group`}> <div className="flex justify-between items-start mb-6"> <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:scale-110 transition-transform"> <Package size={28} /> </div> {isLow && ( <div className="px-3 py-1 rounded-full bg-red-100 text-red-600 text-[9px] font-black uppercase tracking-widest flex items-center gap-1 animate-pulse"> <AlertTriangle size={12} /> Bajo Stock </div> )} </div> <h3 className="text-xl font-black text-gray-900 mb-2">{item.name}</h3> <div className="flex items-baseline gap-1"> <span className={`text-5xl font-black ${isLow ? 'text-red-500' : 'text-gray-900'}`}> {item.current_stock.toLocaleString()} </span> <span className="text-sm font-bold text-gray-400 uppercase tracking-widest"> {item.unit} </span> </div> {item.total_vendidos > 0 && ( <div className="mt-4 flex items-center gap-2 text-orange-600"> <Flame size={14} /> <span className="text-xs font-black uppercase tracking-tighter">{item.total_vendidos} Vendidos Históricos</span> </div> )} <div className="mt-6 pt-6 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-400 font-mono"> <span>MIN: {item.min_stock}</span> <span className="opacity-50">{item.id.slice(0, 8)}</span> </div> </div> );
+                                return ( <div key={item.id} className={`p-8 rounded-[2.5rem] border-2 ${isLow ? 'border-red-100 bg-red-50/50' : 'border-transparent bg-white'} shadow-sm hover:shadow-xl transition-all group`}> <div className="flex justify-between items-start mb-6"> <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:scale-110 transition-transform"> <IconPackage size={28} /> </div> {isLow && ( <div className="px-3 py-1 rounded-full bg-red-100 text-red-600 text-[9px] font-black uppercase tracking-widest flex items-center gap-1 animate-pulse"> <IconAlertTriangle size={12} /> Bajo Stock </div> )} </div> <h3 className="text-xl font-black text-gray-900 mb-2">{item.name}</h3> <div className="flex items-baseline gap-1"> <span className={`text-5xl font-black ${isLow ? 'text-red-500' : 'text-gray-900'}`}> {item.current_stock.toLocaleString()} </span> <span className="text-sm font-bold text-gray-400 uppercase tracking-widest"> {item.unit} </span> </div> {item.total_vendidos > 0 && ( <div className="mt-4 flex items-center gap-2 text-orange-600"> <IconFlame size={14} /> <span className="text-xs font-black uppercase tracking-tighter">{item.total_vendidos} Vendidos Históricos</span> </div> )} <div className="mt-6 pt-6 border-t border-gray-100 flex justify-between text-xs font-bold text-gray-400 font-mono"> <span>MIN: {item.min_stock}</span> <span className="opacity-50">{item.id.slice(0, 8)}</span> </div> </div> );
                             })}
                         </div>
                     </motion.div>
@@ -307,8 +307,8 @@ export default function InventoryPage() {
                     <motion.div key="expenses" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                         <div className="flex items-center justify-between mb-10 gap-6">
                             <div className="flex flex-wrap items-center gap-6">
-                                <div className="bg-white px-8 py-5 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-4"> <TrendingDown className="text-red-500" size={24} /> <div> <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Total Gastos</p> <p className="text-2xl font-black text-gray-900">${totalExpenses.toLocaleString()}</p> </div> </div>
-                                <div className="relative w-64"> <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} /> <input id="expense-search" type="text" value={expenseSearch} onChange={(e) => setExpenseSearch(e.target.value)} placeholder="Filtrar gastos (F1)..." className="w-full h-12 pl-11 pr-4 rounded-2xl bg-white border-transparent shadow-sm outline-none font-bold text-sm" /> </div>
+                                <div className="bg-white px-8 py-5 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-4"> <IconTrendingDown className="text-red-500" size={24} /> <div> <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Total Gastos</p> <p className="text-2xl font-black text-gray-900">${totalExpenses.toLocaleString()}</p> </div> </div>
+                                <div className="relative w-64"> <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} /> <input id="expense-search" type="text" value={expenseSearch} onChange={(e) => setExpenseSearch(e.target.value)} placeholder="Filtrar gastos (F1)..." className="w-full h-12 pl-11 pr-4 rounded-2xl bg-white border-transparent shadow-sm outline-none font-bold text-sm" /> </div>
                             </div>
                         </div>
                         <div className="space-y-4">
@@ -319,9 +319,9 @@ export default function InventoryPage() {
 
                 {activeTab === 'suppliers' && (
                     <motion.div key="suppliers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                         <div className="flex items-center justify-between mb-8"> <div className="relative flex-1 max-w-md"> <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} /> <input id="supplier-search" type="text" value={supplierSearch} onChange={(e) => setSupplierSearch(e.target.value)} placeholder="Buscar proveedores (F1)..." className="w-full h-14 pl-12 pr-6 rounded-2xl bg-white border-transparent focus:ring-2 ring-black/5 shadow-sm outline-none font-bold" /> </div> </div>
+                         <div className="flex items-center justify-between mb-8"> <div className="relative flex-1 max-w-md"> <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} /> <input id="supplier-search" type="text" value={supplierSearch} onChange={(e) => setSupplierSearch(e.target.value)} placeholder="Buscar proveedores (F1)..." className="w-full h-14 pl-12 pr-6 rounded-2xl bg-white border-transparent focus:ring-2 ring-black/5 shadow-sm outline-none font-bold" /> </div> </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {filteredSuppliers.map((supplier: any) => ( <div key={supplier.id} className="bg-white p-8 rounded-[2.5rem] border border-transparent hover:border-gray-100 shadow-sm hover:shadow-xl transition-all group"> <div className="flex justify-between items-start mb-6"> <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform"> <Users size={28} /> </div> <button onClick={() => { setEditingSupplier(supplier); setSupplierForm({ name: supplier.name, phone: supplier.phone || "", provided_items: supplier.category ? supplier.category.split(", ") : [] }); setShowSupplierModal(true); }} className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-black transition-all"> <Edit2 size={16} /> </button> </div> <h3 className="text-xl font-black text-gray-900 mb-1">{supplier.name}</h3> <div className="space-y-3 mt-4 text-xs font-bold text-gray-500"> {supplier.phone && ( <div className="flex items-center gap-3"> <Phone size={14} className="text-emerald-500" /> {supplier.phone} </div> )} {supplier.category && ( <div className="flex flex-wrap gap-1 items-center"> <Tag size={14} className="text-gray-300" /> {supplier.category.split(", ").map((t: string) => <span key={t} className="bg-gray-50 px-2 py-0.5 rounded text-[9px] uppercase">{t}</span>)} </div> )} </div> </div> ))}
+                            {filteredSuppliers.map((supplier: any) => ( <div key={supplier.id} className="bg-white p-8 rounded-[2.5rem] border border-transparent hover:border-gray-100 shadow-sm hover:shadow-xl transition-all group"> <div className="flex justify-between items-start mb-6"> <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform"> <IconUsers size={28} /> </div> <button onClick={() => { setEditingSupplier(supplier); setSupplierForm({ name: supplier.name, phone: supplier.phone || "", provided_items: supplier.category ? supplier.category.split(", ") : [] }); setShowSupplierModal(true); }} className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-black transition-all"> <IconEdit size={16} /> </button> </div> <h3 className="text-xl font-black text-gray-900 mb-1">{supplier.name}</h3> <div className="space-y-3 mt-4 text-xs font-bold text-gray-500"> {supplier.phone && ( <div className="flex items-center gap-3"> <IconPhone size={14} className="text-emerald-500" /> {supplier.phone} </div> )} {supplier.category && ( <div className="flex flex-wrap gap-1 items-center"> <IconTag size={14} className="text-gray-300" /> {supplier.category.split(", ").map((t: string) => <span key={t} className="bg-gray-50 px-2 py-0.5 rounded text-[9px] uppercase">{t}</span>)} </div> )} </div> </div> ))}
                         </div>
                     </motion.div>
                 )}
@@ -359,7 +359,7 @@ export default function InventoryPage() {
                                         </div>
                                         <div className="md:col-span-6 relative">
                                             <div className="relative">
-                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} /> 
+                                                <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} /> 
                                                 <input type="text" placeholder="Buscar insumo..." value={item.search} 
                                                     onChange={(e) => {
                                                         updateStockItem(index, 'search', e.target.value);
@@ -382,7 +382,7 @@ export default function InventoryPage() {
                                                             </div>
                                                         ))}
                                                         <div onClick={() => handleQuickCreateInsumo(item.search, 'stock', index)} className="p-4 bg-emerald-50 hover:bg-emerald-100 rounded-xl cursor-pointer flex items-center justify-center gap-2 border border-dashed border-emerald-200 transition-all">
-                                                            <Plus size={14} className="text-emerald-600" />
+                                                            <IconPlus size={14} className="text-emerald-600" />
                                                             <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Crear "{item.search}" como nuevo</span>
                                                         </div>
                                                     </div>
@@ -398,13 +398,13 @@ export default function InventoryPage() {
                                         </div>
                                         <div className="md:col-span-2">
                                             <button type="button" onClick={() => handleRemoveStockItem(index)} className="w-full h-14 rounded-2xl flex items-center justify-center text-red-400 hover:bg-red-50 transition-colors">
-                                                <X size={20} />
+                                                <IconX size={20} />
                                             </button>
                                         </div>
                                     </div>
                                 ))}
                                 <button type="button" onClick={handleAddStockItem} className="w-full h-14 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 font-black text-[10px] uppercase tracking-widest hover:border-black hover:text-black transition-all flex items-center justify-center gap-2">
-                                    <Plus size={16} /> Agregar otro insumo
+                                    <IconPlus size={16} /> Agregar otro insumo
                                 </button>
                             </div>
 
@@ -483,7 +483,7 @@ export default function InventoryPage() {
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Insumos que provee</label>
                                 <div className="relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                    <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                     <input type="text" placeholder="Buscar insumo..." value={supplierItemSearch}
                                         onChange={(e) => { setSupplierItemSearch(e.target.value); setIsSupplierItemSearchOpen(true); }}
                                         onFocus={() => setIsSupplierItemSearchOpen(true)}
@@ -501,7 +501,7 @@ export default function InventoryPage() {
                                                 </div>
                                             ))}
                                             <div onClick={() => handleQuickCreateInsumo(supplierItemSearch, 'supplier')} className="p-3 bg-emerald-50 hover:bg-emerald-100 rounded-lg cursor-pointer flex items-center justify-center gap-2 border border-dashed border-emerald-200 mt-1 transition-all">
-                                                <Plus size={12} className="text-emerald-600" />
+                                                <IconPlus size={12} className="text-emerald-600" />
                                                 <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest leading-none">Crear nuevo insumo</span>
                                             </div>
                                         </div>
@@ -510,7 +510,7 @@ export default function InventoryPage() {
                                 <div className="flex flex-wrap gap-2 mt-3">
                                     {supplierForm.provided_items.map(item => (
                                         <span key={item} className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[9px] font-black uppercase flex items-center gap-2 border border-emerald-100">
-                                            {item} <button type="button" onClick={() => setSupplierForm(prev => ({ ...prev, provided_items: prev.provided_items.filter(i => i !== item) }))}><X size={10} /></button>
+                                            {item} <button type="button" onClick={() => setSupplierForm(prev => ({ ...prev, provided_items: prev.provided_items.filter(i => i !== item) }))}><IconX size={10} /></button>
                                         </span>
                                     ))}
                                 </div>

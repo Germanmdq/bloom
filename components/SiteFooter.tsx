@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { MapPin, Instagram, Facebook } from "lucide-react";
+import { IconMapPin, IconBrandInstagram, IconBrandFacebook } from "@tabler/icons-react";
 
 export function SiteFooter() {
     return (
@@ -19,11 +19,11 @@ export function SiteFooter() {
                         <div className="flex gap-3">
                             <a href="https://instagram.com" target="_blank" rel="noreferrer"
                                 className="w-9 h-9 bg-gray-100 hover:bg-bloom-100 rounded-full flex items-center justify-center transition-colors">
-                                <Instagram size={16} className="text-gray-600" />
+                                <IconBrandInstagram size={16} className="text-gray-600" />
                             </a>
                             <a href="https://facebook.com" target="_blank" rel="noreferrer"
                                 className="w-9 h-9 bg-gray-100 hover:bg-bloom-100 rounded-full flex items-center justify-center transition-colors">
-                                <Facebook size={16} className="text-gray-600" />
+                                <IconBrandFacebook size={16} className="text-gray-600" />
                             </a>
                         </div>
                     </div>
@@ -33,7 +33,7 @@ export function SiteFooter() {
                         <h4 className="font-black text-gray-800 text-sm uppercase tracking-wide mb-3">Ubicación</h4>
                         <ul className="space-y-2 text-sm text-gray-500">
                             <li className="flex items-start gap-1.5">
-                                <MapPin size={14} className="shrink-0 mt-0.5 text-bloom-500" />
+                                <IconMapPin size={14} className="shrink-0 mt-0.5 text-bloom-500" />
                                 Almirante Brown 2005, Mar del Plata
                             </li>
                             <li className="text-bloom-600 font-bold cursor-pointer hover:underline text-xs mt-2">Ver en Maps →</li>

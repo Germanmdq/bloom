@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { IconLoader2 } from "@tabler/icons-react";
 import type { CustomerOrderRow } from "@/lib/types/dashboard-customers";
 
 function fmtMoney(n: number | null): string {
@@ -119,7 +119,7 @@ export default function DashboardCustomerDetailPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-16 text-gray-500">
-            <Loader2 className="h-6 w-6 animate-spin" />
+            <IconLoader2 className="h-6 w-6 animate-spin" />
             <span className="font-medium">Cargando pedidos…</span>
           </div>
         ) : error ? (
@@ -179,7 +179,7 @@ export default function DashboardCustomerDetailPage() {
                       </label>
                     </td>
                     <td className="px-4 py-3 text-right text-xs text-gray-400">
-                      {updatingId === o.id ? <Loader2 className="ml-auto h-4 w-4 animate-spin text-gray-500" /> : null}
+                      {updatingId === o.id ? <IconLoader2 className="ml-auto h-4 w-4 animate-spin text-gray-500" /> : null}
                     </td>
                   </tr>
                 ))}

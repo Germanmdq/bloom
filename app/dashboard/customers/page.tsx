@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, ChevronRight, MessageCircle, Copy, Check } from "lucide-react";
+import { IconLoader2, IconChevronRight, IconMessageCircle, IconCopy, IconCheck } from "@tabler/icons-react";
 import type { DashboardCustomerRow } from "@/lib/types/dashboard-customers";
 
 function fmtDate(iso: string | null): string {
@@ -67,11 +67,11 @@ function WhatsAppLinkButton({ userId, name }: { userId: string; name: string }) 
       className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-2.5 py-1.5 text-xs font-bold text-green-800 hover:bg-green-100 transition-colors disabled:opacity-50"
     >
       {state === "loading" ? (
-        <Loader2 size={13} className="animate-spin" />
+        <IconLoader2 size={13} className="animate-spin" />
       ) : state === "copied" ? (
-        <Check size={13} />
+        <IconCheck size={13} />
       ) : (
-        <MessageCircle size={13} />
+        <IconMessageCircle size={13} />
       )}
       {state === "copied" ? "¡Copiado!" : "Link WA"}
     </button>
@@ -164,7 +164,7 @@ export default function DashboardCustomersPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-16 text-gray-500">
-            <Loader2 className="h-6 w-6 animate-spin" />
+            <IconLoader2 className="h-6 w-6 animate-spin" />
             <span className="font-medium">Cargando…</span>
           </div>
         ) : error ? (
@@ -236,7 +236,7 @@ export default function DashboardCustomersPage() {
                           className="inline-flex items-center gap-1 font-bold text-gray-900 hover:underline"
                         >
                           Detalle
-                          <ChevronRight size={16} />
+                          <IconChevronRight size={16} />
                         </Link>
                       </div>
                     </td>

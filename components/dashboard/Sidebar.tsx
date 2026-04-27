@@ -2,22 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Coffee, ListChecks, Settings, Users, PieChart, Receipt, CookingPot, Package, MessageCircle, Briefcase, X, LogOut, Home, History as HistoryIcon } from "lucide-react";
+import { IconLayoutGrid, IconCoffee, IconListCheck, IconSettings, IconUsers, IconChartPie, IconReceipt, IconToolsKitchen, IconPackage, IconMessageCircle, IconBriefcase, IconX, IconLogout, IconHome, IconHistory} from "@tabler/icons-react";
 import { useUserRole } from "@/lib/hooks/use-pos-data";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 const links = [
-    { href: "/dashboard/tables",   label: "Mesas",     icon: LayoutGrid },
-    { href: "/dashboard/orders",   label: "Ventas",    icon: ListChecks },
-    { href: "/dashboard/products", label: "Menú",      icon: Coffee },
-    { href: "/dashboard/inventory", label: "Inventario", icon: Package },
-    { href: "/dashboard/clientes", label: "Clientes",  icon: Users },
-    { href: "/dashboard/staff",    label: "Personal",  icon: Briefcase },
-    { href: "/dashboard/reports",  label: "Reporte Diario", icon: PieChart },
-    { href: "/dashboard/kitchen",  label: "Cocina",    icon: CookingPot },
-    { href: "/dashboard/whatsapp", label: "WhatsApp",  icon: MessageCircle },
-    { href: "/dashboard/settings", label: "Ajustes",   icon: Settings },
+    { href: "/dashboard/tables",   label: "Mesas",     icon: IconLayoutGrid },
+    { href: "/dashboard/orders",   label: "Ventas",    icon: IconListCheck },
+    { href: "/dashboard/products", label: "Menú",      icon: IconCoffee },
+    { href: "/dashboard/inventory", label: "Inventario", icon: IconPackage },
+    { href: "/dashboard/clientes", label: "Clientes",  icon: IconUsers },
+    { href: "/dashboard/staff",    label: "Personal",  icon: IconBriefcase },
+    { href: "/dashboard/reports",  label: "Reporte Diario", icon: IconChartPie },
+    { href: "/dashboard/kitchen",  label: "Cocina",    icon: IconToolsKitchen },
+    { href: "/dashboard/whatsapp", label: "WhatsApp",  icon: IconMessageCircle },
+    { href: "/dashboard/settings", label: "Ajustes",   icon: IconSettings },
 ];
 
 const HIDDEN_SECTIONS = ["Cocina", "WhatsApp"];
@@ -75,14 +75,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         onClick={onClose}
                         className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
                     >
-                        <X size={18} />
+                        <IconX size={18} />
                     </button>
                 </div>
 
                 <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                     <Link href="/" onClick={onClose}>
                         <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-white/40 hover:text-gray-900 transition-all duration-200">
-                           <Home size={20} className="stroke-[2.5px] opacity-70" />
+                           <IconHome size={20} className="stroke-[2.5px] opacity-70" />
                            <span className="font-medium">Ver sitio público</span>
                         </div>
                     </Link>
@@ -124,7 +124,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         onClick={handleSignOut}
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all duration-200 text-sm font-medium"
                     >
-                        <LogOut size={18} />
+                        <IconLogout size={18} />
                         <span>Cerrar sesión</span>
                     </button>
                 </div>

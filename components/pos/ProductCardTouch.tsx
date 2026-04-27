@@ -1,6 +1,6 @@
 import React from 'react';
-import Image from 'next/image';
-import { Plus } from 'lucide-react';
+import IconPhoto from 'next/image';
+import { IconPlus } from "@tabler/icons-react";
 
 interface ProductCardTouchProps {
     product: {
@@ -16,7 +16,7 @@ interface ProductCardTouchProps {
 export function ProductCardTouch({ product, onAdd }: ProductCardTouchProps) {
     const isActive = product.active !== false;
 
-    // Fallback Image Logic if needed, but we focus on TEXT clarity first.
+    // Fallback IconPhoto Logic if needed, but we focus on TEXT clarity first.
 
     return (
         <button
@@ -31,10 +31,10 @@ export function ProductCardTouch({ product, onAdd }: ProductCardTouchProps) {
                 }
             `}
         >
-            {/* Background Image Accent (Optional low opacity) */}
+            {/* Background IconPhoto Accent (Optional low opacity) */}
             {product.image_url && (
                 <div className="absolute inset-0 rounded-3xl overflow-hidden opacity-10 pointer-events-none">
-                    <Image src={product.image_url} alt="" fill className="object-cover grayscale group-hover:grayscale-0" />
+                    <IconPhoto src={product.image_url} alt="" fill className="object-cover grayscale group-hover:grayscale-0" />
                 </div>
             )}
 
@@ -55,7 +55,7 @@ export function ProductCardTouch({ product, onAdd }: ProductCardTouchProps) {
                     w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-colors
                     ${isActive ? 'bg-bloom-100 text-bloom-600 group-hover:bg-bloom-600 group-hover:text-white' : 'bg-gray-100 text-gray-400'}
                 `}>
-                    <Plus size={28} strokeWidth={4} />
+                    <IconPlus size={28} strokeWidth={4} />
                 </div>
             </div>
         </button>

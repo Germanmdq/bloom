@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, Users, User, Phone, MessageSquare, CheckCircle2 } from "lucide-react";
+import { IconCalendar, IconClock, IconUsers, IconUser, IconPhone, IconMessage, IconCircleCheck } from "@tabler/icons-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -102,7 +102,7 @@ export default function ReservationsPage() {
                             className="flex flex-col items-center justify-center text-center py-20 gap-5"
                         >
                             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
-                                <CheckCircle2 size={44} className="text-green-500" />
+                                <IconCircleCheck size={44} className="text-green-500" />
                             </div>
                             <div>
                                 <h2 className="text-2xl font-black text-gray-900 mb-2">¡Reserva recibida!</h2>
@@ -132,7 +132,7 @@ export default function ReservationsPage() {
                             {/* Nombre */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
-                                    <User size={13} /> Nombre
+                                    <IconUser size={13} /> Nombre
                                 </label>
                                 <input
                                     type="text"
@@ -147,7 +147,7 @@ export default function ReservationsPage() {
                             {/* Teléfono */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
-                                    <Phone size={13} /> Teléfono
+                                    <IconPhone size={13} /> Teléfono
                                 </label>
                                 <input
                                     type="tel"
@@ -162,7 +162,7 @@ export default function ReservationsPage() {
                             {/* Fecha */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
-                                    <CalendarDays size={13} /> Fecha
+                                    <IconCalendar size={13} /> Fecha
                                 </label>
                                 <input
                                     type="date"
@@ -177,7 +177,7 @@ export default function ReservationsPage() {
                             {/* Horario */}
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
-                                    <Clock size={13} /> Horario
+                                    <IconClock size={13} /> Horario
                                 </label>
                                 <div className="grid grid-cols-4 gap-2">
                                     {HORARIOS.map(h => (
@@ -199,7 +199,7 @@ export default function ReservationsPage() {
                             {/* Personas */}
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
-                                    <Users size={13} /> Personas
+                                    <IconUsers size={13} /> Personas
                                 </label>
                                 <div className="flex gap-2 flex-wrap">
                                     {PERSONAS.map(n => (
@@ -220,7 +220,7 @@ export default function ReservationsPage() {
                             {/* Notas */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
-                                    <MessageSquare size={13} /> Aclaraciones <span className="font-normal normal-case text-gray-300">(opcional)</span>
+                                    <IconMessage size={13} /> Aclaraciones <span className="font-normal normal-case text-gray-300">(opcional)</span>
                                 </label>
                                 <textarea
                                     rows={3}

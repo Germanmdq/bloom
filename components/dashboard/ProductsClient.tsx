@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence } from "framer-motion";
-import { Search, Plus, Tag, ChevronRight, X, DollarSign, Flame, Edit2 } from "lucide-react";
+import { IconSearch, IconPlus, IconTag, IconChevronRight, IconX, IconCurrencyDollar, IconFlame, IconEdit } from "@tabler/icons-react";
 
 function formatName(name: string): string {
     if (!name) return "";
@@ -104,7 +104,7 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
                         onClick={() => setIsAddingCategory(true)}
                         className="bg-gray-100 px-5 py-3 rounded-2xl font-bold flex items-center gap-2"
                     >
-                        <Tag size={18} /> Categorías
+                        <IconTag size={18} /> Categorías
                     </button>
                     <button
                         onClick={() => {
@@ -113,7 +113,7 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
                         }}
                         className="bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-xl"
                     >
-                        <Plus size={20} /> Nuevo Item
+                        <IconPlus size={20} /> Nuevo Item
                     </button>
                 </div>
             </div>
@@ -129,7 +129,7 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
                             <h3 className="text-2xl font-black">{formatName(category.name)}</h3>
                             <span className="text-xs text-gray-400 font-bold uppercase">{category.count} Items</span>
                         </div>
-                        <ChevronRight className="text-gray-300" />
+                        <IconChevronRight className="text-gray-300" />
                     </div>
                 ))}
             </div>
@@ -152,7 +152,7 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
                                         onClick={() => { setSelectedCategory(null); setIsQuickPricing(false); }}
                                         className="p-3 bg-gray-100 rounded-full"
                                     >
-                                        <X />
+                                        <IconX />
                                     </button>
                                 </div>
                             </div>
@@ -175,7 +175,7 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
                                         <p className="text-xs text-gray-400 italic mb-4">{product.description}</p>
                                         <div className="mt-auto pt-4 border-t border-gray-100/50 flex items-center justify-between">
                                             <div className="flex items-center gap-1.5 bg-orange-50 text-orange-600 px-2.5 py-1 rounded-lg">
-                                                <Flame size={12} className="animate-pulse" />
+                                                <IconFlame size={12} className="animate-pulse" />
                                                 <span className="text-[10px] font-black uppercase tracking-tight">
                                                     {product.total_vendidos || 0} vendidos
                                                 </span>

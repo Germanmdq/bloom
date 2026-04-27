@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { Order } from "@/lib/types";
 import * as XLSX from "xlsx";
-import { Loader2, X, Filter, Download, Bike, Store, Building2, UtensilsCrossed, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
+import { IconLoader2, IconX, IconFilter, IconDownload, IconBike, IconBuildingStore, IconBuilding, IconToolsKitchen, IconAlertCircle, IconCircleCheck, IconRefresh } from "@tabler/icons-react";
 import { getPaymentIcon, getPaymentLabel } from "@/lib/utils/payment";
 import { motion, AnimatePresence } from "framer-motion";
 import { CHANNEL_BADGE, CHANNEL_LABEL, CHANNEL_LEFT, getOrderChannel } from "@/lib/dashboard/order-channel";
@@ -22,11 +22,11 @@ interface GroupedData {
 
 function orderTypeLabel(order: any) {
     const t = order.delivery_type || order.order_type;
-    if (t === "tribunales") return { label: "Tribunales", icon: <Building2 size={13} /> };
-    if (t === "delivery")   return { label: "Delivery",   icon: <Bike size={13} /> };
-    if (t === "retiro")     return { label: "Retiro",     icon: <Store size={13} /> };
-    if (order.table_id)     return { label: `Mesa ${order.table_id}`, icon: <UtensilsCrossed size={13} /> };
-    return { label: "Web", icon: <Store size={13} /> };
+    if (t === "tribunales") return { label: "Tribunales", icon: <IconBuilding size={13} /> };
+    if (t === "delivery")   return { label: "Delivery",   icon: <IconBike size={13} /> };
+    if (t === "retiro")     return { label: "Retiro",     icon: <IconBuildingStore size={13} /> };
+    if (order.table_id)     return { label: `Mesa ${order.table_id}`, icon: <IconToolsKitchen size={13} /> };
+    return { label: "Web", icon: <IconBuildingStore size={13} /> };
 }
 
 function isOrderPaid(o: Order & { paid?: boolean | null }) {
@@ -281,7 +281,7 @@ export function OrderList() {
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-40 gap-4">
-                <Loader2 className="animate-spin text-[#FFD60A]" size={64} />
+                <IconLoader2 className="animate-spin text-[#FFD60A]" size={64} />
                 <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-xs">Cargando historial...</p>
             </div>
         );
@@ -309,7 +309,7 @@ export function OrderList() {
             <div className={`rounded-3xl border-2 p-5 flex flex-wrap items-center justify-between gap-4 ${unpaidSummary.count > 0 ? "border-amber-400 bg-amber-50/90" : "border-gray-200 bg-white"}`}>
                 <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${unpaidSummary.count > 0 ? "bg-amber-200 text-amber-900" : "bg-gray-100 text-gray-500"}`}>
-                        <AlertCircle size={24} />
+                        <IconAlertCircle size={24} />
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
@@ -360,7 +360,7 @@ export function OrderList() {
                     onClick={() => setShowFilters(!showFilters)}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold shadow-sm transition-all active:scale-95 border ${showFilters ? "bg-black text-[#FFD60A] border-black" : "bg-white border-gray-200 text-gray-700 hover:border-black/20"}`}
                 >
-                    <Filter size={16} /> {showFilters ? "Ocultar Filtros" : "Búsqueda Avanzada"}
+                    <IconFilter size={16} /> {showFilters ? "Ocultar Filtros" : "Búsqueda Avanzada"}
                 </button>
 
                 <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -369,12 +369,12 @@ export function OrderList() {
                         onClick={() => void fetchOrders({ silent: true })}
                         className="flex items-center gap-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 px-4 py-2.5 rounded-2xl text-sm font-bold shadow-sm transition-all active:scale-95"
                     >
-                        <RefreshCw size={16} /> Actualizar
+                        <IconRefresh size={16} /> Actualizar
                     </button>
                     <button onClick={exportToExcel}
                         className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-2xl text-sm font-bold shadow transition-all active:scale-95"
                     >
-                        <Download size={16} /> Excel
+                        <IconDownload size={16} /> Excel
                     </button>
                 </div>
             </div>
@@ -451,7 +451,7 @@ export function OrderList() {
             {/* GRID */}
             {groupedOrders.length === 0 ? (
                 <div className="text-center py-20 opacity-50">
-                    <Filter size={48} className="mx-auto mb-4" />
+                    <IconFilter size={48} className="mx-auto mb-4" />
                     <p className="font-bold">No hay órdenes para mostrar</p>
                 </div>
             ) : (
@@ -512,7 +512,7 @@ export function OrderList() {
                                 <button onClick={() => setSelectedGroup(null)}
                                     className="w-9 h-9 rounded-full bg-black/10 hover:bg-black hover:text-white transition-colors flex items-center justify-center shrink-0"
                                 >
-                                    <X size={18} />
+                                    <IconX size={18} />
                                 </button>
                             </div>
 
@@ -605,7 +605,7 @@ export function OrderList() {
                                                     onClick={(e) => { e.stopPropagation(); void setOrderPaid(o.id, !paid); }}
                                                     className={`inline-flex items-center justify-center gap-1.5 text-xs font-black uppercase px-3 py-1.5 rounded-xl transition-all ${paid ? "bg-amber-100 text-amber-900 hover:bg-amber-200" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
                                                 >
-                                                    {togglingId === o.id ? <Loader2 className="animate-spin" size={14} /> : paid ? <><AlertCircle size={14} /> Marcar impago</> : <><CheckCircle2 size={14} /> Marcar pagado</>}
+                                                    {togglingId === o.id ? <IconLoader2 className="animate-spin" size={14} /> : paid ? <><IconAlertCircle size={14} /> Marcar impago</> : <><IconCircleCheck size={14} /> Marcar pagado</>}
                                                 </button>
                                             </div>
                                         </div>
@@ -651,7 +651,7 @@ export function OrderList() {
                                 <button onClick={() => setSelectedOrder(null)}
                                     className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center shrink-0"
                                 >
-                                    <X size={18} />
+                                    <IconX size={18} />
                                 </button>
                             </div>
 

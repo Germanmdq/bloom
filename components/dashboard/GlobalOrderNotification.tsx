@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ChevronRight, X } from "lucide-react";
+import { IconShoppingBag, IconChevronRight, IconX } from "@tabler/icons-react";
 import { useRouter, usePathname } from "next/navigation";
 
 export function GlobalOrderNotification() {
@@ -76,7 +76,7 @@ export function GlobalOrderNotification() {
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white ${isDelivery ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                                            <ShoppingBag size={24} />
+                                            <IconShoppingBag size={24} />
                                         </div>
                                         <div>
                                             <span className={`text-[9px] font-black uppercase tracking-widest ${isDelivery ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -91,7 +91,7 @@ export function GlobalOrderNotification() {
                                         onClick={() => setNotifications(prev => prev.filter(n => n.id !== notif.id))}
                                         className="text-gray-300 hover:text-gray-900 transition-colors"
                                     >
-                                        <X size={20} />
+                                        <IconX size={20} />
                                     </button>
                                 </div>
 
@@ -106,7 +106,7 @@ export function GlobalOrderNotification() {
                                         isDelivery ? 'bg-red-500 text-white shadow-red-500/20' : 'bg-emerald-500 text-white shadow-emerald-500/20'
                                     }`}
                                 >
-                                    Ir a Gestionar <ChevronRight size={16} />
+                                    Ir a Gestionar <IconChevronRight size={16} />
                                 </button>
                             </div>
                         </motion.div>

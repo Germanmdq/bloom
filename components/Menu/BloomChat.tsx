@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import IconPhoto from "next/image";
 import { useRouter } from "next/navigation";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { MessageCircle, X, Loader2, Check, ShoppingBag, Plus, Minus } from "lucide-react";
+import { IconMessageCircle, IconX, IconLoader2, IconCheck, IconShoppingBag, IconPlus, IconMinus } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
@@ -187,7 +187,7 @@ async function geocodeAddressGoogle(
   return { lat: loc.lat, lng: loc.lng };
 }
 
-/** Solo `user_metadata` de la sesión (sin email ni campos del objeto User). */
+/** Solo `user_metadata` de la sesión (sin email ni campos del objeto IconUser). */
 function prefillCheckoutFromUser(user: { user_metadata?: Record<string, unknown> }): {
   name: string;
   phone: string;
@@ -406,7 +406,7 @@ function ProductCard({
               <h4 className="font-bold text-neutral-900 leading-[1.1] text-base">{product.name}</h4>
               {added && (
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm mt-1">
-                  <Check className="h-3 w-3" strokeWidth={4} />
+                  <IconCheck className="h-3 w-3" strokeWidth={4} />
                 </span>
               )}
             </div>
@@ -507,9 +507,9 @@ function ProductCard({
                 <div className="flex items-center justify-between bg-neutral-50 p-2 rounded-2xl ring-1 ring-black/[0.03] w-full h-14">
                   <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 ml-4">Cantidad</span>
                   <div className="flex items-center gap-4 mr-2">
-                    <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center bg-white shadow-sm rounded-xl transition-all text-neutral-400 hover:text-neutral-900 border border-neutral-100"><Minus size={18} /></button>
+                    <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center bg-white shadow-sm rounded-xl transition-all text-neutral-400 hover:text-neutral-900 border border-neutral-100"><IconMinus size={18} /></button>
                     <span className="w-6 text-center font-bold text-base text-neutral-900">{quantity}</span>
-                    <button onClick={() => setQuantity(q => q + 1)} className="w-10 h-10 flex items-center justify-center bg-white shadow-sm rounded-xl transition-all text-neutral-400 hover:text-neutral-900 border border-neutral-100"><Plus size={18} /></button>
+                    <button onClick={() => setQuantity(q => q + 1)} className="w-10 h-10 flex items-center justify-center bg-white shadow-sm rounded-xl transition-all text-neutral-400 hover:text-neutral-900 border border-neutral-100"><IconPlus size={18} /></button>
                   </div>
                 </div>
                 <button
@@ -517,7 +517,7 @@ function ProductCard({
                   onClick={handleEncargarClick}
                   className="w-full h-14 rounded-2xl bg-[#7a765a] text-white text-xs font-black uppercase tracking-[0.2em] shadow-[0_10px_25px_-5px_rgba(122,118,90,0.4)] active:scale-[0.98] transition-all flex items-center justify-center gap-3 hover:bg-[#6b674e]"
                 >
-                  <ShoppingBag size={18} /> {added ? "SUMAR AL ENCARGO" : "AGREGAR AL ENCARGO"}
+                  <IconShoppingBag size={18} /> {added ? "SUMAR AL ENCARGO" : "AGREGAR AL ENCARGO"}
                 </button>
               </div>
             </div>
@@ -1409,7 +1409,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
               : "Abrir encargo Bloom"
           }
         >
-          <MessageCircle className="h-7 w-7" strokeWidth={2} />
+          <IconMessageCircle className="h-7 w-7" strokeWidth={2} />
           {cartCount > 0 ? (
             <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c4b896] px-1 text-[10px] font-black tabular-nums text-[#1a3028] ring-2 ring-white">
               {cartCount > 99 ? "99+" : cartCount}
@@ -1436,7 +1436,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                 className="rounded-lg p-1 text-neutral-500 hover:bg-black/5"
                 aria-label="Cerrar"
               >
-                <X className="h-5 w-5" />
+                <IconX className="h-5 w-5" />
               </button>
             </div>
 
@@ -1582,7 +1582,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                     {savedAddressFromProfile.trim() && !deliveryCustomAddressMode ? (
                       <div className="rounded-xl border border-emerald-200/90 bg-emerald-50/90 px-3 py-3 text-sm text-neutral-800">
                         <p className="flex items-start gap-2 leading-snug">
-                          <Check
+                          <IconCheck
                             className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
                             strokeWidth={2.5}
                             aria-hidden
@@ -1678,7 +1678,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                       <div className="text-xs text-neutral-600">
                         {deliveryZoneStatus === "checking" ? (
                           <p className="flex items-center gap-2 font-medium text-[#2d4a3e]">
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                            <IconLoader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                             Verificando zona de delivery…
                           </p>
                         ) : null}
@@ -1818,7 +1818,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   onClick={() => void submitOrder()}
                   className="w-full rounded-xl bg-[#7a765a] px-4 py-3 text-sm font-black uppercase text-white hover:bg-[#5f5c46] disabled:opacity-50"
                 >
-                  {submittingOrder ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : "Confirmar encargo"}
+                  {submittingOrder ? <IconLoader2 className="mx-auto h-5 w-5 animate-spin" /> : "Confirmar encargo"}
                 </button>
               ) : null}
             </div>
@@ -1851,10 +1851,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
               <div className="flex items-center justify-between gap-2 mt-1">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <div className="w-8 h-8 rounded-full bg-bloom-700 flex items-center justify-center text-white shadow-inner">
-                    <ShoppingBag size={16} strokeWidth={2.5} />
+                    <IconShoppingBag size={16} strokeWidth={2.5} />
                   </div>
                   <h2 id="bloom-chat-title" className="truncate font-black text-lg tracking-tight text-neutral-900">
-                    {context?.displayName ?? "Bloom Store"}
+                    {context?.displayName ?? "Bloom IconBuildingStore"}
                   </h2>
                 </div>
                 <button
@@ -1863,7 +1863,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                   className="shrink-0 rounded-full p-2 bg-neutral-100 hover:bg-neutral-200 transition-colors text-neutral-500"
                   aria-label="Cerrar"
                 >
-                  <X size={18} strokeWidth={2.5} />
+                  <IconX size={18} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
@@ -1916,7 +1916,7 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
 
               {loadingProducts && showProductGrid && (
                 <div className="flex items-center gap-2 text-sm text-neutral-500">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Cargando productos…
+                  <IconLoader2 className="h-4 w-4 animate-spin" /> Cargando productos…
                 </div>
               )}
 

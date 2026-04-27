@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, TrendingUp, TrendingDown, Minus, Loader2, BarChart2 } from "lucide-react";
+import { IconX, IconTrendingUp, IconTrendingDown, IconMinus, IconLoader2, IconChartBar } from "@tabler/icons-react";
 
 export type ComparisonType = 'yesterday' | 'last_week' | 'last_month';
 
@@ -137,13 +137,13 @@ export function SalesComparisonPanel({ comparisonType, onClose }: SalesCompariso
                         onClick={onClose}
                         className="absolute top-6 right-6 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                     >
-                        <X size={18} />
+                        <IconX size={18} />
                     </button>
 
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-8">
                         <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center text-[#FFD60A]">
-                            <BarChart2 size={22} />
+                            <IconChartBar size={22} />
                         </div>
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
@@ -155,7 +155,7 @@ export function SalesComparisonPanel({ comparisonType, onClose }: SalesCompariso
 
                     {loading ? (
                         <div className="flex items-center justify-center py-16">
-                            <Loader2 className="animate-spin text-gray-300" size={48} />
+                            <IconLoader2 className="animate-spin text-gray-300" size={48} />
                         </div>
                     ) : (
                         <>
@@ -191,11 +191,11 @@ export function SalesComparisonPanel({ comparisonType, onClose }: SalesCompariso
                             >
                                 <div className="flex items-center gap-3">
                                     {isFlat ? (
-                                        <Minus size={24} className="text-gray-400" />
+                                        <IconMinus size={24} className="text-gray-400" />
                                     ) : isUp ? (
-                                        <TrendingUp size={24} className="text-green-600" />
+                                        <IconTrendingUp size={24} className="text-green-600" />
                                     ) : (
-                                        <TrendingDown size={24} className="text-red-500" />
+                                        <IconTrendingDown size={24} className="text-red-500" />
                                     )}
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">

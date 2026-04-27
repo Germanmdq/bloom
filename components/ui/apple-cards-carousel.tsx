@@ -7,13 +7,13 @@ import React, {
   useContext,
 } from "react";
 import {
-  ChevronLeft,
-  ChevronRight,
-  X,
-} from "lucide-react";
+  IconChevronLeft,
+  IconChevronRight,
+  IconX,
+} from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import Image, { ImageProps } from "next/image";
+import IconPhoto, { ImageProps } from "next/image";
 
 interface CarouselProps {
   items: React.ReactNode[];
@@ -136,14 +136,14 @@ export const Carousel = ({ items, initialScroll = 0 }: CarouselProps) => {
             onClick={scrollLeft}
             disabled={!canScrollLeft}
           >
-            <ChevronLeft className="h-6 w-6 text-gray-500" />
+            <IconChevronLeft className="h-6 w-6 text-gray-500" />
           </button>
           <button
             className="relative z-40 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center disabled:opacity-50"
             onClick={scrollRight}
             disabled={!canScrollRight}
           >
-            <ChevronRight className="h-6 w-6 text-gray-500" />
+            <IconChevronRight className="h-6 w-6 text-gray-500" />
           </button>
         </div>
       </div>
@@ -206,7 +206,7 @@ export const BlurImage = ({
 }: ImageProps) => {
   const [isLoading, setLoading] = useState(true);
   return (
-    <Image
+    <IconPhoto
       className={cn(
         "transition duration-300",
         isLoading ? "blur-sm" : "blur-0",

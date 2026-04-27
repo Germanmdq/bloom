@@ -1,8 +1,8 @@
 "use client";
 
-import { Printer, X } from "lucide-react";
+import { IconPrinter, IconX } from "@tabler/icons-react";
 import { CartItem } from "@/lib/store/order-store";
-import Image from "next/image";
+import IconPhoto from "next/image";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -75,7 +75,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
                     onClick={onClose} 
                     className="w-12 h-12 bg-white border border-gray-200 text-gray-800 font-bold rounded-xl shadow-2xl flex items-center justify-center hover:bg-gray-50 mb-4"
                 >
-                    <X size={24} />
+                    <IconX size={24} />
                 </button>
             </div>
 
@@ -83,7 +83,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
             <div className="w-[72mm] p-4 bg-white flex flex-col gap-2 print:px-6 print:py-4">
                 <div className="text-center py-2">
                     <h2 className="font-bold text-2xl tracking-tighter leading-none">BLOOM</h2>
-                    <p className="text-[10px] uppercase font-bold mt-1">Coffee & More</p>
+                    <p className="text-[10px] uppercase font-bold mt-1">IconCoffee & More</p>
                     <div className="border-b border-dashed border-black my-2" />
                     <div className="flex justify-between text-[11px] font-bold">
                         <span>{customerName ? `Alias: ${customerName}` : `Mesa: ${tableId}`}</span>

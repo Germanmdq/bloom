@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { IconMenu2, IconX } from "@tabler/icons-react";
 import { PublicAccountNav } from "@/components/PublicAccountNav";
 
 const LINKS = [
@@ -20,7 +20,7 @@ export function FoodKingMobileNavButton({ onOpen }: { onOpen: () => void }) {
       className="xl:hidden flex items-center justify-center w-11 h-11 rounded-xl border-2 border-bloom-200 bg-white shadow-sm active:scale-[0.98] text-bloom-600"
       aria-label="Abrir menú de navegación"
     >
-      <Menu size={22} strokeWidth={2.5} />
+      <IconMenu2 size={22} strokeWidth={2.5} />
     </button>
   );
 }
@@ -56,7 +56,7 @@ export function FoodKingMobileNavPanel({ open, onClose }: { open: boolean; onClo
                 className="p-2 rounded-full hover:bg-bloom-50 text-neutral-600"
                 aria-label="Cerrar menú"
               >
-                <X size={22} />
+                <IconX size={22} />
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Printer, QrCode, Settings2, X, AlertTriangle, Pencil, Check } from "lucide-react";
+import { IconPrinter, IconQrcode, IconSettings, IconX, IconAlertTriangle, IconPencil, IconCheck } from "@tabler/icons-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -50,7 +50,7 @@ function QRModal({ table, baseUrl, onClose }: { table: TableEntry; baseUrl: stri
                     onClick={onClose}
                     className="absolute top-4 right-4 text-gray-300 hover:text-gray-700 transition-colors"
                 >
-                    <X size={22} />
+                    <IconX size={22} />
                 </button>
 
                 <p className={`text-xs font-black uppercase tracking-widest ${isBarra ? "text-amber-500" : "text-gray-400"}`}>
@@ -74,7 +74,7 @@ function QRModal({ table, baseUrl, onClose }: { table: TableEntry; baseUrl: stri
                     onClick={handlePrint}
                     className="flex items-center gap-2 bg-black text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-800 active:scale-95 transition-all mt-2 w-full justify-center"
                 >
-                    <Printer size={17} />
+                    <IconPrinter size={17} />
                     Imprimir este QR
                 </button>
             </div>
@@ -152,7 +152,7 @@ export default function QRCodesPage() {
         const clean = urlInput.replace(/\/$/, ""); // remove trailing slash
         setBaseUrl(clean);
         setEditingUrl(false);
-        // Save to app_settings
+        // IconDeviceFloppy to app_settings
         await supabase.from("app_settings").update({ site_url: clean }).eq("id", 1);
     };
 
@@ -182,7 +182,7 @@ export default function QRCodesPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
                 <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center">
-                        <QrCode size={24} className="text-white" />
+                        <IconQrcode size={24} className="text-white" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-black text-gray-900">Códigos QR</h1>
@@ -195,7 +195,7 @@ export default function QRCodesPage() {
                     href="/dashboard/settings"
                     className="flex items-center gap-2 border border-gray-200 text-gray-600 px-4 py-2.5 rounded-xl font-bold text-sm hover:border-gray-400 transition-all print:hidden"
                 >
-                    <Settings2 size={15} />
+                    <IconSettings size={15} />
                     Ajustar mesas
                 </Link>
             </div>
@@ -204,14 +204,14 @@ export default function QRCodesPage() {
             <div className={`print:hidden rounded-2xl border-2 p-4 space-y-2 ${isLocalhost ? "border-red-300 bg-red-50" : "border-green-200 bg-green-50"}`}>
                 {isLocalhost && (
                     <div className="flex items-center gap-2 text-red-600 font-black text-sm">
-                        <AlertTriangle size={16} />
+                        <IconAlertTriangle size={16} />
                         ¡Los QR apuntan a localhost! Los teléfonos no pueden escanearlos.
                         Ingresá la URL de producción (ej: https://tu-app.vercel.app)
                     </div>
                 )}
                 {!isLocalhost && (
                     <p className="text-green-700 font-black text-sm flex items-center gap-1.5">
-                        <Check size={15} /> QR apuntan a: <span className="font-medium">{baseUrl}</span>
+                        <IconCheck size={15} /> QR apuntan a: <span className="font-medium">{baseUrl}</span>
                     </p>
                 )}
                 {editingUrl ? (
@@ -227,7 +227,7 @@ export default function QRCodesPage() {
                             Guardar
                         </button>
                         <button onClick={() => setEditingUrl(false)} className="px-3 py-2 bg-gray-100 rounded-xl text-sm">
-                            <X size={16} />
+                            <IconX size={16} />
                         </button>
                     </div>
                 ) : (
@@ -235,7 +235,7 @@ export default function QRCodesPage() {
                         onClick={() => setEditingUrl(true)}
                         className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-800 transition-colors"
                     >
-                        <Pencil size={12} /> Cambiar URL
+                        <IconPencil size={12} /> Cambiar URL
                     </button>
                 )}
             </div>
@@ -250,7 +250,7 @@ export default function QRCodesPage() {
                         href="/dashboard/settings"
                         className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition-all"
                     >
-                        <Settings2 size={16} />
+                        <IconSettings size={16} />
                         Ir a Ajustes
                     </Link>
                 </div>

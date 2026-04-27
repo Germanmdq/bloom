@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ArrowLeft, Camera, ChevronDown, ChevronUp, CircleUser, Coffee, Home, Loader2, Lock, PieChart, ShoppingBag, Tag, TrendingUp } from "lucide-react";
+import { IconArrowLeft, IconCamera, IconChevronDown, IconChevronUp, IconUserCircle, IconCoffee, IconHome, IconLoader2, IconLock, IconChartPie, IconShoppingBag, IconTag, IconTrendingUp } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 const COFFEE_GOAL = 10;
@@ -598,7 +598,7 @@ export default function CuentaPage() {
   if (sessionPending || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: CREAM }}>
-        <Loader2 className="h-10 w-10 animate-spin" style={{ color: GREEN }} />
+        <IconLoader2 className="h-10 w-10 animate-spin" style={{ color: GREEN }} />
       </div>
     );
   }
@@ -620,13 +620,13 @@ export default function CuentaPage() {
             className="flex min-w-0 flex-1 flex-col items-center justify-center py-2 text-white"
             aria-label="Volver al inicio"
           >
-            <ArrowLeft className="h-6 w-6 shrink-0" strokeWidth={2} aria-hidden />
+            <IconArrowLeft className="h-6 w-6 shrink-0" strokeWidth={2} aria-hidden />
           </button>
-          {mobileNavBtn("inicio", "Inicio", Home)}
-          {mobileNavBtn("pedidos", "Mis pedidos", ShoppingBag)}
-          {mobileNavBtn("cupones", "Beneficios", Tag)}
-          {mobileNavBtn("perfil", "Mi perfil", CircleUser)}
-          {mobileNavBtn("estadisticas", "Estadísticas", PieChart)}
+          {mobileNavBtn("inicio", "Inicio", IconHome)}
+          {mobileNavBtn("pedidos", "Mis pedidos", IconShoppingBag)}
+          {mobileNavBtn("cupones", "Beneficios", IconTag)}
+          {mobileNavBtn("perfil", "Mi perfil", IconUserCircle)}
+          {mobileNavBtn("estadisticas", "Estadísticas", IconChartPie)}
         </nav>
       );
     }
@@ -661,15 +661,15 @@ export default function CuentaPage() {
             onClick={() => router.push("/")}
             className="mb-4 flex w-full items-center gap-3 rounded-r-lg border-l-4 border-transparent py-3 pl-4 pr-3 text-left text-[15px] font-semibold text-white/90 transition hover:bg-white/5"
           >
-            <ArrowLeft className="h-5 w-5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+            <IconArrowLeft className="h-5 w-5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
             <span>Volver al sitio</span>
           </button>
 
-          {navBtn("inicio", "Inicio", Home)}
-          {navBtn("pedidos", "Mis pedidos", ShoppingBag)}
-          {navBtn("cupones", "Beneficios", Tag)}
-          {navBtn("perfil", "Mi perfil", CircleUser)}
-          {navBtn("estadisticas", "Estadísticas", PieChart)}
+          {navBtn("inicio", "Inicio", IconHome)}
+          {navBtn("pedidos", "Mis pedidos", IconShoppingBag)}
+          {navBtn("cupones", "Beneficios", IconTag)}
+          {navBtn("perfil", "Mi perfil", IconUserCircle)}
+          {navBtn("estadisticas", "Estadísticas", IconChartPie)}
         </nav>
         <div className="min-h-0 flex-1" />
       </>
@@ -715,7 +715,7 @@ export default function CuentaPage() {
 
       <div className={cardCls}>
         <h2 className="flex items-center gap-2 text-base font-bold" style={{ color: TEXT_DARK }}>
-          <Coffee className="h-5 w-5" style={{ color: GREEN }} aria-hidden />
+          <IconCoffee className="h-5 w-5" style={{ color: GREEN }} aria-hidden />
           Club Bloom — Tu Fidelidad
         </h2>
         <div className="mt-4 flex items-center justify-between">
@@ -739,7 +739,7 @@ export default function CuentaPage() {
             <div className="flex items-center justify-between gap-4 p-5 pb-0">
                 <div className="flex-1">
                     <h2 className="flex items-center gap-2 text-base font-black text-emerald-900 leading-none mb-1.5">
-                        <TrendingUp className="h-5 w-5 text-emerald-600" />
+                        <IconTrendingUp className="h-5 w-5 text-emerald-600" />
                         Saldo Pendiente
                     </h2>
                     <p className="text-sm text-emerald-800 leading-snug font-medium mb-2">
@@ -867,7 +867,7 @@ export default function CuentaPage() {
       <div className={cardCls + " overflow-hidden p-0"}>
         {ordersLoading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin" style={{ color: GREEN }} />
+            <IconLoader2 className="h-8 w-8 animate-spin" style={{ color: GREEN }} />
           </div>
         ) : filteredOrders.length === 0 ? (
           <p className="p-8 text-center text-sm text-neutral-600">No hay pedidos en este filtro.</p>
@@ -928,7 +928,7 @@ export default function CuentaPage() {
                             aria-expanded={openQ}
                             aria-label={openQ ? "Cerrar detalle" : "Ver detalle"}
                           >
-                            {openQ ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                            {openQ ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
                           </button>
                         </td>
                       </tr>
@@ -1099,7 +1099,7 @@ export default function CuentaPage() {
                 <span className="text-3xl font-black text-white">{initialsFromName(displayName)}</span>
               )}
               <span className="pointer-events-none absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/50 to-transparent pb-2 opacity-0 transition group-hover:opacity-100">
-                {avatarBusy ? <Loader2 className="h-6 w-6 animate-spin text-white" /> : <Camera className="h-5 w-5 text-white" />}
+                {avatarBusy ? <IconLoader2 className="h-6 w-6 animate-spin text-white" /> : <IconCamera className="h-5 w-5 text-white" />}
               </span>
             </button>
             <div className="min-w-0 flex-1 space-y-4">
@@ -1153,7 +1153,7 @@ export default function CuentaPage() {
                 className="flex min-h-12 items-center justify-center rounded-full px-8 text-sm font-bold text-white shadow-sm disabled:opacity-60"
                 style={{ backgroundColor: GREEN }}
               >
-                {savingProfile ? <Loader2 className="h-5 w-5 animate-spin" /> : "Guardar cambios"}
+                {savingProfile ? <IconLoader2 className="h-5 w-5 animate-spin" /> : "Guardar cambios"}
               </button>
             </div>
           </div>

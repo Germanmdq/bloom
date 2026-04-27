@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { motion, AnimatePresence } from "framer-motion";
-import { User as UserIcon, ChevronDown, LogOut, Settings } from "lucide-react";
+import { IconUser, IconChevronDown, IconLogout, IconSettings } from "@tabler/icons-react";
 
 type Props = {
   className?: string;
@@ -61,10 +61,10 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
           className={`flex items-center gap-1.5 text-[13px] font-medium transition-colors ${dark ? "text-white/80 hover:text-white" : "text-neutral-500 hover:text-neutral-900"} ${className}`}
         >
           <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 shadow-sm border border-black/5">
-            <UserIcon size={14} />
+            <IconUser size={14} />
           </div>
           <span className="hidden sm:inline">Mi cuenta</span>
-          <ChevronDown size={14} className={`hidden sm:block transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
+          <IconChevronDown size={14} className={`hidden sm:block transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
         </button>
         
         <AnimatePresence>
@@ -81,7 +81,7 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
                 onClick={() => { setIsOpen(false); onAfterNavigate?.(); }}
                 className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
                 >
-                    <Settings size={14} className="text-neutral-400" />
+                    <IconSettings size={14} className="text-neutral-400" />
                     Ver mi cuenta
                 </Link>
                 <div className="h-px bg-neutral-50 mx-3 my-1" />
@@ -93,7 +93,7 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
                 }}
                 className="flex items-center gap-2.5 w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors"
                 >
-                    <LogOut size={14} />
+                    <IconLogout size={14} />
                     Cerrar sesión
                 </button>
             </motion.div>
@@ -113,7 +113,7 @@ export function PublicAccountNav({ className = "", onAfterNavigate, tone = "defa
           : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
       } ${className}`}
     >
-      <UserIcon size={14} className="sm:mr-1.5" />
+      <IconUser size={14} className="sm:mr-1.5" />
       <span className="hidden sm:inline">Iniciar sesión</span>
     </Link>
   );

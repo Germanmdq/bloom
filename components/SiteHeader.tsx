@@ -1,9 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Image from "next/image";
+import IconPhoto from "next/image";
 import Link from "next/link";
-import { MapPin, Phone, ShoppingBag } from "lucide-react";
+import { IconMapPin, IconPhone, IconShoppingBag } from "@tabler/icons-react";
 import { FoodKingMobileNavButton } from "@/components/FoodKingMobileNav";
 import { PublicAccountNav } from "@/components/PublicAccountNav";
 
@@ -20,7 +20,7 @@ const CONTACT = {
 };
 
 export type SiteHeaderProps = {
-  /** Home: sombra al hacer scroll. Otras páginas: false o según scroll. */
+  /** IconHome: sombra al hacer scroll. Otras páginas: false o según scroll. */
   scrolled?: boolean;
   onMobileNavOpen: () => void;
   activeNav?: "home" | "menu" | "about" | "reservations" | null;
@@ -98,7 +98,7 @@ export function SiteHeader({
         <div className="container mx-auto px-4 py-2.5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2">
           <div className="flex flex-col gap-1.5 min-w-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-1">
             <span className="inline-flex items-start gap-1.5 min-w-0">
-              <MapPin size={14} className="shrink-0 mt-0.5 text-bloom-gold" />
+              <IconMapPin size={14} className="shrink-0 mt-0.5 text-bloom-gold" />
               <span className="leading-snug">
                 {CONTACT.address}, {CONTACT.city}
               </span>
@@ -116,7 +116,7 @@ export function SiteHeader({
               href={CONTACT.phoneHref}
               className="inline-flex items-center gap-1.5 font-bold hover:underline hover:text-bloom-gold"
             >
-              <Phone size={14} className="shrink-0" />
+              <IconPhone size={14} className="shrink-0" />
               <span className="whitespace-nowrap">{CONTACT.phoneDisplay}</span>
             </a>
             <Link href="/about" className="hover:underline font-bold hover:text-bloom-gold">
@@ -134,9 +134,9 @@ export function SiteHeader({
       >
         <div className="mx-auto w-full max-w-[1200px] px-6 flex items-center justify-between gap-4 h-[72px]">
           <Link href="/" className="flex items-center shrink-0 min-w-0">
-            <Image
+            <IconPhoto
               src={HERO_LOGO_SRC}
-              alt="Bloom Coffee & More"
+              alt="Bloom IconCoffee & More"
               width={168}
               height={56}
               className="h-9 sm:h-10 w-auto max-w-[min(168px,42vw)] object-contain object-left"
@@ -170,7 +170,7 @@ export function SiteHeader({
                 style={{ backgroundColor: accentColor }}
                 aria-label="Abrir carrito"
               >
-                <ShoppingBag size={20} strokeWidth={2.5} />
+                <IconShoppingBag size={20} strokeWidth={2.5} />
                 {cartCount > 0 ? (
                   <span
                     className="absolute -top-1 -right-1 text-[10px] font-black min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full border-2 border-white bg-[#c4b896] text-[#1a3028]"
