@@ -750,20 +750,67 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     {/* Área principal: categorías o productos */}
                     <div className="flex-1 overflow-y-auto p-3 no-scrollbar">
                         {!searchTerm && !activeCategory ? (
-                            /* Categorías: Bento Grid Estilo Apple (Hero Layout) */
-                            <div 
-                                className="grid gap-4 w-full h-full pb-20"
-                                style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(3, 1fr)',
-                                    gridAutoRows: 'minmax(140px, auto)',
-                                    gridTemplateAreas: `
-                                        "big big s1"
-                                        "big big s2"
-                                        "s3 s4 s5"
-                                    `
-                                }}
-                            >
+                            <div className="flex flex-col gap-4">
+                                {/* SECCIÓN: OFERTA DEL DÍA (Apple Pro Style) */}
+                                {(() => {
+                                    const promoProducts = products.filter((p: any) => 
+                                        p.name.toLowerCase().includes('promo') || 
+                                        p.name.toLowerCase().includes('oferta') ||
+                                        p.name.toLowerCase().includes('especial')
+                                    );
+                                    
+                                    if (promoProducts.length === 0) return null;
+
+                                    return (
+                                        <div className="relative group overflow-hidden bg-black rounded-[32px] p-8 text-white shadow-2xl transition-all hover:scale-[1.01]">
+                                            {/* Glow Effect */}
+                                            <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px]" />
+                                            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/10 rounded-full blur-[60px]" />
+                                            
+                                            <div className="relative z-10 flex items-center justify-between">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.15em] text-white/60 border border-white/5">
+                                                            Sugerencia del Mozo
+                                                        </span>
+                                                    </div>
+                                                    <h4 className="text-3xl font-black tracking-tighter leading-tight">Oferta del día</h4>
+                                                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest max-w-[200px] leading-relaxed">
+                                                        Aprovechá los precios especiales de hoy
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex gap-2">
+                                                    {promoProducts.slice(0, 3).map((p: any) => (
+                                                        <button
+                                                            key={p.id}
+                                                            onClick={() => addToCart({ id: p.id, name: p.name, price: Number(p.price), quantity: 1 })}
+                                                            className="h-20 w-32 bg-white/10 hover:bg-white text-white hover:text-black rounded-2xl p-3 border border-white/10 transition-all flex flex-col justify-between items-start text-left group"
+                                                        >
+                                                            <span className="text-[9px] font-black uppercase truncate w-full opacity-60 group-hover:opacity-100">{p.name}</span>
+                                                            <span className="text-lg font-black tracking-tighter">${Number(p.price).toLocaleString()}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Bento Grid de Categorías */}
+                                <div 
+                                    className="grid gap-4 w-full h-full pb-20"
+                                    style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(3, 1fr)',
+                                        gridAutoRows: 'minmax(140px, auto)',
+                                        gridTemplateAreas: `
+                                            "big big s1"
+                                            "big big s2"
+                                            "s3 s4 s5"
+                                        `
+                                    }}
+                                >
                                 {categories.map((cat: any, idx: number) => {
                                     const count = products.filter((p: any) => p.category_id === cat.id).length;
                                     const getSafeIcon = (name: string) => {
