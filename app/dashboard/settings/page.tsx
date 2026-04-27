@@ -77,11 +77,10 @@ export default function SettingsPage() {
                 }
             }
 
-            // Load Ofertas del Día
+            // Load Ofertas del Día (Desde la nueva tabla dedicada)
             const { data: offersData } = await supabase
-                .from('products')
+                .from('daily_promotions')
                 .select('*')
-                .eq('kind', 'oferta_del_dia')
                 .order('created_at', { ascending: true });
             
             if (offersData && offersData.length > 0) {
@@ -108,37 +107,26 @@ export default function SettingsPage() {
     const handleSaveOffers = async () => {
         setIsSavingOffers(true);
         try {
-            const { data: catData } = await supabase
-                .from('categories')
-                .select('id')
-                .ilike('name', '%promoción%')
-                .maybeSingle();
-            
-            const categoryId = catData?.id || null;
-
             for (const offer of dailyOffers) {
                 if (!offer.name && !offer.id) continue;
 
-                const payload: any = {
+                const payload = {
                     name: offer.name || '',
                     price: Number(offer.price) || 0,
-                    kind: 'oferta_del_dia',
-                    active: !!offer.name,
-                    category_id: categoryId
+                    active: !!offer.name
                 };
 
                 if (offer.id) {
-                    await supabase.from('products').update(payload).eq('id', offer.id);
+                    await supabase.from('daily_promotions').update(payload).eq('id', offer.id);
                 } else if (offer.name) {
-                    await supabase.from('products').insert([payload]);
+                    await supabase.from('daily_promotions').insert([payload]);
                 }
             }
             
-            // Recarga completa
+            // Recargar desde la nueva tabla
             const { data: offersData } = await supabase
-                .from('products')
+                .from('daily_promotions')
                 .select('*')
-                .eq('kind', 'oferta_del_dia')
                 .order('created_at', { ascending: true });
             
             if (offersData) {
@@ -148,9 +136,9 @@ export default function SettingsPage() {
                 });
                 setDailyOffers(refreshed);
             }
-            alert("¡Ofertas guardadas!");
+            alert("¡Ofertas guardadas en la base de datos de promociones!");
         } catch (e: any) {
-            alert("Error: " + e.message);
+            alert("Error: " + e.message + ". ¿Creaste la tabla daily_promotions?");
         }
         setIsSavingOffers(false);
     };
@@ -164,7 +152,7 @@ export default function SettingsPage() {
         }
 
         if (confirm("¿Seguro que quieres eliminar esta oferta?")) {
-            const { error } = await supabase.from('products').delete().eq('id', id);
+            const { error } = await supabase.from('daily_promotions').delete().eq('id', id);
             if (error) alert(error.message);
             else {
                 const newOffers = [...dailyOffers];

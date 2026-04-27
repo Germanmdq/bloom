@@ -732,9 +732,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     const fetchOffers = async () => {
       try {
         const { data } = await supabase
-          .from("products")
-          .select("id,name,description,price,kind,options,image_url")
-          .eq("kind", "oferta_del_dia")
+          .from("daily_promotions")
+          .select("id,name,price")
           .eq("active", true)
           .order("created_at", { ascending: true });
         
@@ -742,16 +741,13 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
           const mapped = data.map(p => ({
             id: p.id,
             name: p.name,
-            description: p.description || null,
-            image_url: p.image_url || null,
             price: Number(p.price),
-            kind: p.kind || null,
-            ...parseProductOptionsRow(p.options),
+            kind: 'oferta_del_dia'
           } as ProductRow));
           setDailyOffersList(mapped);
         }
       } catch (e) {
-        console.error("Error loading daily offers:", e);
+        console.error("Error loading daily offers from daily_promotions:", e);
       }
     };
     void fetchOffers();
