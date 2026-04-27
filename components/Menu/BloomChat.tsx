@@ -601,8 +601,8 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
     [cart, router],
   );
 
-  const persistCartAndGoToRegistro = useCallback(() => persistCartAndGo("/registro"), [persistCartAndGo]);
-  const persistCartAndGoToAuth = useCallback(() => persistCartAndGo("/auth"), [persistCartAndGo]);
+  const persistCartAndGoToRegistro = useCallback(() => persistCartAndGo("/registro?redirect=/menu"), [persistCartAndGo]);
+  const persistCartAndGoToAuth = useCallback(() => persistCartAndGo("/auth?redirect=/menu"), [persistCartAndGo]);
 
   const cartCount = useMemo(() => cart.reduce((n, l) => n + l.quantity, 0), [cart]);
   const cartTotal = useMemo(() => cart.reduce((s, l) => s + l.price * l.quantity, 0), [cart]);
