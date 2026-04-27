@@ -353,29 +353,27 @@ export default function TablesPage() {
                             </label>
 
                             <div className="pl-12 pr-4 pb-2">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Identificador (Nº Mesa o Nombre)</p>
                                 <input
                                     autoFocus
-                                    type="number"
+                                    type="text"
                                     placeholder={
-                                        newTableType === 'LOCAL' ? "Nº Mesa (1-99)" :
-                                        newTableType === 'DELIVERY' ? "Nº Delivery (Opcional, 101+)" :
-                                        "Nº Retiro (Opcional, 201+)"
+                                        newTableType === 'LOCAL' ? "Ej: 5, Germán, Barra..." :
+                                        newTableType === 'DELIVERY' ? "Ej: 101, Juan..." :
+                                        "Ej: 201, Retiro 1..."
                                     }
                                     value={newTableIdInput}
-                                    onChange={(e) => setNewTableIdInput(e.target.value)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' && !newTableName) handleOpenTable(); }}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold outline-none focus:border-black"
-                                />
-                            </div>
-
-                            <div className="pl-12 pr-4 pb-2">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Alias / Nombre (Opcional)</p>
-                                <input
-                                    type="text"
-                                    placeholder="Ej: Germán, Barra, Vereda 1..."
-                                    value={newTableName}
-                                    onChange={(e) => setNewTableName(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold outline-none focus:border-black"
+                                    onChange={(e) => {
+                                        setNewTableIdInput(e.target.value);
+                                        // Si es texto, lo seteamos como nombre también
+                                        if (isNaN(parseInt(e.target.value))) {
+                                            setNewTableName(e.target.value);
+                                        } else {
+                                            setNewTableName("");
+                                        }
+                                    }}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') handleOpenTable(); }}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 font-black text-lg outline-none focus:ring-2 ring-black/5 transition-all"
                                 />
                             </div>
 
