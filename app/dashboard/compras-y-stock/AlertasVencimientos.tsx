@@ -19,6 +19,10 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
     const marcarPagado = useMarcarGastoPagado();
     const abonarGasto = useAbonarGastoFijo();
     const [historyModal, setHistoryModal] = useState<GastoFijo | null>(null);
+    const [pagoModal, setPagoModal] = useState<GastoFijo | null>(null);
+    const [montoPago, setMontoPago] = useState("");
+    const [motivoPago, setMotivoPago] = useState("");
+    const [metodoPago, setMetodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
 
     const hoy = new Date();
     const en7dias = new Date(hoy);
@@ -62,34 +66,35 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
         return `${diff} días`;
     };
 
-    const handlePagar = async (e: React.MouseEvent, g: GastoFijo) => {
+    const handleOpenPagoModal = (e: React.MouseEvent, g: GastoFijo) => {
         e.stopPropagation(); // Prevenir abrir el modal de historial
-        const input = window.prompt(`¿Cuánto vas a abonar de ${g.nombre}? (Total restante: $${g.monto})`, g.monto.toString());
-        if (input === null) return; // Cancelado
+        setPagoModal(g);
+        setMontoPago(g.monto.toString());
+        setMotivoPago("");
+        setMetodoPago("Efectivo");
+    };
+
+    const handleConfirmarPago = async () => {
+        if (!pagoModal || !montoPago) return;
         
-        const montoAbonar = parseFloat(input);
+        const montoAbonar = parseFloat(montoPago);
         if (isNaN(montoAbonar) || montoAbonar <= 0) {
             alert("Monto inválido");
             return;
         }
 
-        let motivo = "Pago";
-        if (montoAbonar < g.monto) {
-            const inputMotivo = window.prompt("Motivo del adelanto/abono (ej: Adelanto):", "Adelanto");
-            if (inputMotivo === null) return;
-            motivo = inputMotivo;
-        }
-
-        const isTransferencia = window.confirm("¿El pago es por TRANSFERENCIA?\n(Aceptar = Transferencia, Cancelar = Efectivo)");
-        const metodoPago = isTransferencia ? "Transferencia" : "Efectivo";
-        const motivoFinal = `${motivo} (${metodoPago})`;
+        const motivoBase = motivoPago || (montoAbonar < pagoModal.monto ? 'Adelanto' : 'Pago Total');
+        const motivoFinal = `${motivoBase} (${metodoPago})`;
 
         try {
-            if (montoAbonar >= g.monto) {
-                await marcarPagado.mutateAsync(g.id);
+            if (montoAbonar >= pagoModal.monto) {
+                await marcarPagado.mutateAsync(pagoModal.id);
             } else {
-                await abonarGasto.mutateAsync({ id: g.id, montoAbonado: montoAbonar, motivo: motivoFinal });
+                await abonarGasto.mutateAsync({ id: pagoModal.id, montoAbonado: montoAbonar, motivo: motivoFinal });
             }
+            setPagoModal(null);
+            setMontoPago("");
+            setMotivoPago("");
         } catch (err: any) {
             alert('Error: ' + err.message);
         }
@@ -157,7 +162,7 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                                 Restante | Vence {formatFecha(g.fecha_vencimiento)}
                             </p>
                             <button
-                                onClick={(e) => handlePagar(e, g)}
+                                onClick={(e) => handleOpenPagoModal(e, g)}
                                 className="mt-4 w-full h-10 rounded-xl bg-white border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all flex items-center justify-center gap-2"
                             >
                                 <IconCoin size={14} /> Abonar / Pagar
@@ -200,7 +205,7 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                                 Restante | Vence {formatFecha(g.fecha_vencimiento)}
                             </p>
                             <button
-                                onClick={(e) => handlePagar(e, g)}
+                                onClick={(e) => handleOpenPagoModal(e, g)}
                                 className="mt-4 w-full h-10 rounded-xl bg-white border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-100 transition-all flex items-center justify-center gap-2"
                             >
                                 <IconCoin size={14} /> Abonar / Pagar
@@ -250,6 +255,43 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                             <div className="mt-6 pt-4 border-t border-gray-100">
                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mb-1">Saldo Pendiente Actual</p>
                                 <p className="text-2xl font-black text-center text-gray-900">${historyModal.monto.toLocaleString('es-AR')}</p>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal Pago */}
+            <AnimatePresence>
+                {pagoModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPagoModal(null)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col">
+                            <h3 className="text-xl font-black mb-1">Abonar a {pagoModal.nombre}</h3>
+                            <p className="text-sm text-gray-400 font-bold mb-6">Monto pendiente: ${(pagoModal.monto || 0).toLocaleString('es-AR')}</p>
+                            
+                            <div className="flex gap-2 mb-4">
+                                <button 
+                                    onClick={() => setMetodoPago('Efectivo')}
+                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${metodoPago === 'Efectivo' ? 'bg-black text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                                >
+                                    Efectivo
+                                </button>
+                                <button 
+                                    onClick={() => setMetodoPago('Transferencia')}
+                                    className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${metodoPago === 'Transferencia' ? 'bg-black text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                                >
+                                    Transf.
+                                </button>
+                            </div>
+
+                            <input type="number" value={montoPago} onChange={e => setMontoPago(e.target.value)} placeholder="Monto a abonar (ej. adelanto)" className="w-full h-14 px-6 rounded-xl bg-gray-50 font-bold outline-none text-lg mb-3" />
+                            
+                            <input type="text" value={motivoPago} onChange={e => setMotivoPago(e.target.value)} placeholder="Motivo (opcional, ej: Adelanto)" className="w-full h-14 px-6 rounded-xl bg-gray-50 font-bold outline-none text-sm mb-6" />
+
+                            <div className="flex gap-3">
+                                <button onClick={() => setPagoModal(null)} className="flex-1 h-12 rounded-xl bg-gray-100 font-black text-gray-400 text-xs uppercase">Cancelar</button>
+                                <button onClick={handleConfirmarPago} className="flex-[2] h-12 rounded-xl bg-emerald-600 text-white font-black text-xs uppercase hover:scale-105 active:scale-95 transition-all">Confirmar</button>
                             </div>
                         </motion.div>
                     </div>
