@@ -765,8 +765,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 <div className="flex-1 flex flex-col overflow-hidden">
 
                     {/* Barra de búsqueda */}
-                    <div className="px-4 py-3 bg-white border-b border-gray-100 shrink-0">
-                        <div className="relative">
+                    <div className="px-4 py-3 bg-white border-b border-gray-100 shrink-0 flex gap-2">
+                        <div className="relative flex-1">
                             <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
                             <input
                                 id="product-search"
@@ -779,6 +779,28 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 autoComplete="off"
                             />
                         </div>
+                        <button
+                            onClick={() => {
+                                const desc = prompt("Descripción del ítem (opcional):", "");
+                                if (desc === null) return;
+                                const priceStr = prompt("Precio final ($):", "");
+                                if (priceStr === null) return;
+                                const price = parseFloat(priceStr.replace(',', '.'));
+                                if (isNaN(price) || price < 0) {
+                                    alert("Precio inválido");
+                                    return;
+                                }
+                                addToCart({ 
+                                    id: `varios-${Date.now()}`, 
+                                    name: desc.trim() ? `Varios - ${desc.trim()}` : 'Varios', 
+                                    price: price, 
+                                    quantity: 1 
+                                });
+                            }}
+                            className="bg-gray-900 text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black active:scale-95 transition-all shadow-md shrink-0 flex items-center"
+                        >
+                            + Varios
+                        </button>
                     </div>
 
                     {/* Sub-header: volver a categorías cuando hay una activa */}
