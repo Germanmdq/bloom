@@ -11,7 +11,7 @@ const links = [
     { href: "/dashboard/tables",   label: "Mesas",     icon: IconLayoutGrid },
     { href: "/dashboard/orders",   label: "Ventas",    icon: IconListCheck },
     { href: "/dashboard/products", label: "Menú",      icon: IconCoffee },
-    { href: "/dashboard/inventory", label: "Inventario", icon: IconPackage },
+    { href: "/dashboard/compras-y-stock", label: "Compras & Stock", icon: IconPackage },
     { href: "/dashboard/clientes", label: "Clientes",  icon: IconUsers },
     { href: "/dashboard/staff",    label: "Personal",  icon: IconBriefcase },
     { href: "/dashboard/reports",  label: "Reporte Diario", icon: IconChartPie },

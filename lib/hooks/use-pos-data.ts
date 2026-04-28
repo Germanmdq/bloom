@@ -252,6 +252,122 @@ export function useCreateExpense() {
     });
 }
 
+// ─── Compras & Stock ──────────────────────────────────────────────────────
+
+export function useSupplies(supplierId?: string) {
+    return useQuery({
+        queryKey: ['supplies', supplierId ?? 'all'],
+        queryFn: async () => {
+            let q = supabase
+                .from('supplies')
+                .select('*, suppliers(name)')
+                .eq('active', true)
+                .order('name');
+            if (supplierId) q = q.eq('supplier_id', supplierId);
+            const { data, error } = await q;
+            if (error) throw error;
+            return data;
+        },
+        staleTime: 1000 * 30,
+    });
+}
+
+export function useCreateSupply() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (supply: any) => {
+            const { data, error } = await supabase.from('supplies').insert([supply]).select();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['supplies'] }); },
+    });
+}
+
+export function useUpdateSupply() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, ...supply }: any) => {
+            const { data, error } = await supabase.from('supplies').update(supply).eq('id', id).select();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['supplies'] }); },
+    });
+}
+
+export function usePurchases() {
+    return useQuery({
+        queryKey: ['purchases'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('purchases')
+                .select('*, suppliers(name), purchase_items(supply_name, quantity, unit_price, subtotal)')
+                .order('created_at', { ascending: false })
+                .limit(50);
+            if (error) throw error;
+            return data;
+        },
+    });
+}
+
+export function useCreatePurchase() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (payload: {
+            supplierId: string;
+            invoiceNumber: string;
+            cuit: string;
+            paymentMethod: 'CASH' | 'ACCOUNT';
+            items: { supply_id: string; supply_name: string; quantity: number; unit_price: number }[];
+        }) => {
+            const { data, error } = await supabase.rpc('create_purchase', {
+                p_supplier_id:    payload.supplierId,
+                p_invoice_number: payload.invoiceNumber,
+                p_cuit:           payload.cuit,
+                p_payment_method: payload.paymentMethod,
+                p_items:          payload.items,
+            });
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['purchases'] });
+            queryClient.invalidateQueries({ queryKey: ['supplies'] });
+            queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+            queryClient.invalidateQueries({ queryKey: ['expenses'] });
+        },
+    });
+}
+
+export function useFixedExpenses() {
+    return useQuery({
+        queryKey: ['fixed_expenses'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('fixed_expenses')
+                .select('*')
+                .order('due_date', { ascending: true });
+            if (error) throw error;
+            return data;
+        },
+    });
+}
+
+export function useUpdateFixedExpense() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, ...fields }: any) => {
+            const { data, error } = await supabase.from('fixed_expenses').update(fields).eq('id', id).select();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['fixed_expenses'] }); },
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function useUserRole() {
     return useQuery({
         queryKey: ['user_role'],
