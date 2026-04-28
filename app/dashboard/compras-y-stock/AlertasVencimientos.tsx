@@ -147,6 +147,12 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                         <p className="text-[10px] font-bold text-gray-400 mt-1">
                             Vence {formatFecha(g.fecha_vencimiento)}
                         </p>
+                        <button
+                            onClick={() => handlePagar(g.id)}
+                            className="mt-4 w-full h-10 rounded-xl bg-white border border-gray-100 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all flex items-center justify-center gap-2"
+                        >
+                            <IconCoin size={14} /> Marcar Pagado
+                        </button>
                     </motion.div>
                 ))}
             </div>

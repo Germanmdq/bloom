@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { usePagarSaldoProveedor, useUpdateGastoFijo, useCreateGastoFijo } from "@/lib/hooks/use-compras-stock";
-import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconReceipt, IconPlus, IconX, IconEdit } from "@tabler/icons-react";
+import { usePagarSaldoProveedor, useUpdateGastoFijo, useCreateGastoFijo, useDeleteGastoFijo } from "@/lib/hooks/use-compras-stock";
+import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconReceipt, IconPlus, IconX, IconEdit, IconTrash } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Proveedor { id: string; nombre: string; cuit: string | null; saldo_cc: number; telefono: string | null; }
@@ -20,6 +20,7 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
     const pagarSaldo = usePagarSaldoProveedor();
     const updateGasto = useUpdateGastoFijo();
     const createGasto = useCreateGastoFijo();
+    const deleteGasto = useDeleteGastoFijo();
 
     const categorias = useMemo(() => {
         const cats = new Set(insumos.map((i: any) => i.categoria || 'General'));
@@ -70,6 +71,15 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                 });
             }
             setGastoModal(null);
+        } catch (err: any) {
+            alert('Error: ' + err.message);
+        }
+    };
+
+    const handleDeleteGasto = async (id: string) => {
+        if (!confirm('¿Seguro que querés eliminar este gasto?')) return;
+        try {
+            await deleteGasto.mutateAsync(id);
         } catch (err: any) {
             alert('Error: ' + err.message);
         }
@@ -220,9 +230,14 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <p className="font-black text-lg">${g.monto.toLocaleString('es-AR')}</p>
-                                    <button onClick={() => setGastoModal(g)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white transition-all">
-                                        <IconEdit size={16} />
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setGastoModal(g)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white transition-all">
+                                            <IconEdit size={16} />
+                                        </button>
+                                        <button onClick={() => handleDeleteGasto(g.id)} className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all">
+                                            <IconTrash size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}

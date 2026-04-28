@@ -12,7 +12,7 @@ DELETE FROM public.proveedores;
 -- ============================================
 INSERT INTO public.proveedores (nombre) VALUES
 ('Leche'),
-('Caseria'),
+('La Caseriana'),
 ('San Diego'),
 ('Cabrales'),
 ('Coca'),
@@ -39,10 +39,10 @@ INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,pr
 ('Dulce de leche','kg',0,0,'Lacteos',(SELECT id FROM proveedores WHERE nombre='Leche' LIMIT 1)),
 ('Crema','l',0,0,'Lacteos',(SELECT id FROM proveedores WHERE nombre='Leche' LIMIT 1));
 
--- INSUMOS: Caseria
+-- INSUMOS: La Caseriana
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
-('Sorrentinos de calabaza','un',0,0,'Pastas',(SELECT id FROM proveedores WHERE nombre='Caseria' LIMIT 1)),
-('Ravioles de verdura','un',0,0,'Pastas',(SELECT id FROM proveedores WHERE nombre='Caseria' LIMIT 1));
+('Sorrentinos de calabaza','un',0,0,'Pastas',(SELECT id FROM proveedores WHERE nombre='La Caseriana' LIMIT 1)),
+('Ravioles de verdura','un',0,0,'Pastas',(SELECT id FROM proveedores WHERE nombre='La Caseriana' LIMIT 1));
 
 -- INSUMOS: San Diego
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
