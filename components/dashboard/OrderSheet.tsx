@@ -83,7 +83,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
     const [showConfigurator, setShowConfigurator] = useState(false);
     const [pendingProduct, setPendingProduct] = useState<any>(null);
-    const [configStep, setConfigStep] = useState<'drink' | 'garnish' | 'notes'>('drink');
+    const [configStep, setConfigStep] = useState<'drink-group' | 'drink-detail' | 'garnish' | 'notes'>('drink-group');
+    const [selectedDrinkGroup, setSelectedDrinkGroup] = useState<string | null>(null);
     const [selectedDrink, setSelectedDrink] = useState<any>(null);
     const [selectedGarnish, setSelectedGarnish] = useState<any>(null);
     const [configNotes, setConfigNotes] = useState("");
@@ -846,7 +847,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     <button
                                         onClick={() => {
                                             setPendingProduct(featuredProduct);
-                                            setConfigStep('drink');
+                                            setConfigStep('drink-group');
+                                            setSelectedDrinkGroup(null);
                                             setSelectedDrink(null);
                                             setSelectedGarnish(null);
                                             setConfigNotes("");
@@ -959,7 +961,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 const catName = categories.find((c: any) => c.id === item.category_id)?.name?.toLowerCase() || "";
                                                 if (catName.includes("plato") || catName.includes("menú")) {
                                                     setPendingProduct(item);
-                                                    setConfigStep('drink');
+                                                    setConfigStep('drink-group');
+                                                    setSelectedDrinkGroup(null);
                                                     setSelectedDrink(null);
                                                     setSelectedGarnish(null);
                                                     setConfigNotes("");
@@ -1328,12 +1331,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             </div>
 
                             {/* Stepper Header */}
-                            <div className="flex gap-2 mb-8">
+                            <div className="flex gap-1.5 mb-6">
                                 {['drink', 'garnish', 'notes'].map((step) => (
                                     <div 
                                         key={step}
-                                        className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
-                                            (step === 'drink' && configStep === 'drink') ||
+                                        className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                                            ((step === 'drink') && (configStep === 'drink-group' || configStep === 'drink-detail')) ||
                                             (step === 'garnish' && configStep === 'garnish') ||
                                             (step === 'notes' && configStep === 'notes')
                                                 ? 'bg-black' : 'bg-gray-100'
@@ -1342,37 +1345,23 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 ))}
                             </div>
 
-                            <div className="min-h-[350px]">
-                                {configStep === 'drink' && (
-                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                                        <h3 className="text-xl font-black mb-6 flex items-center gap-3">
-                                            🥤 Seleccionar Bebida <span className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">INCLUÍDA</span>
-                                        </h3>
-                                        <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
-                                            {products
-                                                .filter((p: any) => {
-                                                    const catName = categories.find((c: any) => c.id === p.category_id)?.name?.toLowerCase() || "";
-                                                    return catName.includes("bebida") || catName.includes("gaseosa") || catName.includes("jugo") || catName.includes("agua");
-                                                })
-                                                .map((drink: any) => (
-                                                    <button
-                                                        key={drink.id}
-                                                        onClick={() => {
-                                                            setSelectedDrink(drink);
-                                                            setConfigStep('garnish');
-                                                        }}
-                                                        className="p-5 rounded-[2rem] bg-gray-50 hover:bg-black hover:text-white transition-all text-left group"
-                                                    >
-                                                        <p className="font-black text-sm">{drink.name}</p>
-                                                    </button>
-                                                ))
-                                            }
+                            <div className="min-h-[300px]">
+                                {configStep === 'drink-group' && (
+                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                        <h3 className="text-lg font-black mb-4 flex items-center gap-2">🥤 Selección de Bebida</h3>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {['Línea Coca-Cola', 'Línea Aquarius', 'Aguas', 'Otras'].map(group => (
+                                                <button
+                                                    key={group}
+                                                    onClick={() => { setSelectedDrinkGroup(group); setConfigStep('drink-detail'); }}
+                                                    className="p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all text-left"
+                                                >
+                                                    <p className="font-black text-xs uppercase tracking-wider">{group}</p>
+                                                </button>
+                                            ))}
                                             <button
-                                                onClick={() => {
-                                                    setSelectedDrink({ name: "Sin bebida" });
-                                                    setConfigStep('garnish');
-                                                }}
-                                                className="p-5 rounded-[2rem] bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all text-center font-black text-xs uppercase tracking-widest"
+                                                onClick={() => { setSelectedDrink({ name: "Sin bebida" }); setConfigStep('garnish'); }}
+                                                className="p-4 rounded-2xl bg-gray-100 text-gray-400 font-black text-[10px] uppercase tracking-widest hover:bg-gray-200"
                                             >
                                                 Sin bebida
                                             </button>
@@ -1380,110 +1369,110 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     </motion.div>
                                 )}
 
-                                {configStep === 'garnish' && (
-                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                                        <h3 className="text-xl font-black mb-6 flex items-center gap-3">
-                                            🥗 Seleccionar Guarnición
+                                {configStep === 'drink-detail' && (
+                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                                        <h3 className="text-lg font-black mb-4 flex items-center gap-2">
+                                            🥤 {selectedDrinkGroup}
                                         </h3>
-                                        <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
-                                            {products
-                                                .filter((p: any) => {
-                                                    const catName = categories.find((c: any) => c.id === p.category_id)?.name?.toLowerCase() || "";
-                                                    return catName.includes("guarnición") || catName.includes("ensalada") || catName.includes("papa");
-                                                })
-                                                .map((garnish: any) => (
-                                                    <button
-                                                        key={garnish.id}
-                                                        onClick={() => {
-                                                            setSelectedGarnish(garnish);
-                                                            setConfigStep('notes');
-                                                        }}
-                                                        className="p-5 rounded-[2rem] bg-gray-50 hover:bg-black hover:text-white transition-all text-left group"
-                                                    >
-                                                        <p className="font-black text-sm">{garnish.name}</p>
-                                                    </button>
-                                                ))
-                                            }
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {(selectedDrinkGroup === 'Línea Coca-Cola' 
+                                                ? ['Coca-Cola', 'Coca Zero', 'Sprite', 'Sprite Zero', 'Schweppes Pomelo']
+                                                : selectedDrinkGroup === 'Línea Aquarius'
+                                                ? ['Aquarius Pera', 'Aquarius Manzana', 'Aquarius Pomelo', 'Aquarius Uva']
+                                                : selectedDrinkGroup === 'Aguas'
+                                                ? ['Agua con Gas', 'Agua sin Gas']
+                                                : ['Jugo de Naranja', 'Limonada']
+                                            ).map(drink => (
+                                                <button
+                                                    key={drink}
+                                                    onClick={() => { setSelectedDrink({ name: drink }); setConfigStep('garnish'); }}
+                                                    className="p-3 rounded-xl bg-gray-50 hover:bg-black hover:text-white transition-all text-left"
+                                                >
+                                                    <p className="font-bold text-xs">{drink}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button onClick={() => setConfigStep('drink-group')} className="mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-black">← Volver</button>
+                                    </motion.div>
+                                )}
+
+                                {configStep === 'garnish' && (
+                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                                        <h3 className="text-lg font-black mb-4 flex items-center gap-2">🥗 Guarnición</h3>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {['Puré de Papas', 'Papas Fritas', 'Puré de Zapallo', 'Ensalada'].map(g => (
+                                                <button
+                                                    key={g}
+                                                    onClick={() => { 
+                                                        setSelectedGarnish({ name: g }); 
+                                                        setConfigStep('notes'); 
+                                                        if (g === 'Ensalada') setFeedback({ message: 'Recordá poner el sabor de la ensalada en notas', type: 'success' });
+                                                    }}
+                                                    className="p-4 rounded-2xl bg-gray-50 hover:bg-black hover:text-white transition-all text-left"
+                                                >
+                                                    <p className="font-black text-xs uppercase tracking-wider">{g}</p>
+                                                </button>
+                                            ))}
                                             <button
-                                                onClick={() => {
-                                                    setSelectedGarnish({ name: "Sin guarnición" });
-                                                    setConfigStep('notes');
-                                                }}
-                                                className="p-5 rounded-[2rem] bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all text-center font-black text-xs uppercase tracking-widest"
+                                                onClick={() => { setSelectedGarnish({ name: "Sin guarnición" }); setConfigStep('notes'); }}
+                                                className="p-4 rounded-2xl bg-gray-100 text-gray-400 font-black text-[10px] uppercase tracking-widest"
                                             >
                                                 Sin guarnición
                                             </button>
                                         </div>
-                                        <button onClick={() => setConfigStep('drink')} className="mt-6 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-black">← Volver a bebidas</button>
+                                        <button onClick={() => setConfigStep('drink-group')} className="mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-black">← Volver</button>
                                     </motion.div>
                                 )}
 
                                 {configStep === 'notes' && (
-                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                                        <h3 className="text-xl font-black mb-6 flex items-center gap-3">
-                                            📝 Observaciones
-                                        </h3>
+                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                                        <h3 className="text-lg font-black mb-4">📝 Observaciones {selectedGarnish?.name === 'Ensalada' && <span className="text-red-500">(Sabor de ensalada)</span>}</h3>
                                         <textarea
                                             value={configNotes}
                                             onChange={(e) => setConfigNotes(e.target.value)}
-                                            placeholder="Ej: Carne bien cocida, sin sal, etc..."
-                                            className="w-full p-6 rounded-[2rem] bg-gray-50 border-transparent focus:bg-white focus:ring-4 ring-black/5 outline-none font-bold text-lg min-h-[150px] resize-none"
+                                            placeholder={selectedGarnish?.name === 'Ensalada' ? "Especificá el sabor de la ensalada..." : "Ej: Sin sal, carne bien cocida..."}
+                                            className="w-full p-5 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-4 ring-black/5 outline-none font-bold text-base min-h-[120px] resize-none"
                                         />
                                         
-                                        <div className="mt-8 flex gap-3">
+                                        <div className="mt-6 flex gap-2">
                                             <button 
                                                 onClick={() => setConfigStep('garnish')}
-                                                className="flex-1 py-5 rounded-2xl bg-gray-100 text-gray-500 font-black text-xs uppercase tracking-widest hover:bg-gray-200"
+                                                className="flex-1 py-4 rounded-xl bg-gray-100 text-gray-500 font-black text-[10px] uppercase tracking-widest"
                                             >
                                                 Volver
                                             </button>
                                             <button 
                                                 onClick={() => {
                                                     if (pendingProduct) {
-                                                        const mainItem = {
+                                                        addToCart({
                                                             id: pendingProduct.id,
                                                             name: pendingProduct.name,
                                                             price: Number(pendingProduct.price || 0),
                                                             quantity: 1,
                                                             notes: configNotes
-                                                        };
-                                                        
-                                                        // Agregamos el plato con las notas
-                                                        addToCart(mainItem);
-
-                                                        // Agregamos la guarnición (precio 0)
+                                                        });
                                                         if (selectedGarnish && selectedGarnish.name !== "Sin guarnición") {
-                                                            addToCart({
-                                                                id: selectedGarnish.id + '-included',
-                                                                name: `Guarnición: ${selectedGarnish.name}`,
-                                                                price: 0,
-                                                                quantity: 1
-                                                            });
+                                                            addToCart({ id: Math.random().toString(), name: `Guarnición: ${selectedGarnish.name}`, price: 0, quantity: 1 });
                                                         }
-
-                                                        // Agregamos la bebida (precio 0)
                                                         if (selectedDrink && selectedDrink.name !== "Sin bebida") {
-                                                            addToCart({
-                                                                id: selectedDrink.id + '-included',
-                                                                name: `Bebida: ${selectedDrink.name} (Incl.)`,
-                                                                price: 0,
-                                                                quantity: 1
-                                                            });
+                                                            addToCart({ id: Math.random().toString(), name: `Bebida: ${selectedDrink.name}`, price: 0, quantity: 1 });
                                                         }
-
-                                                        setFeedback({ message: `Agregado: ${pendingProduct.name} completo`, type: 'success' });
+                                                        setFeedback({ message: 'Agregado correctamente', type: 'success' });
                                                         setShowConfigurator(false);
-                                                        setPendingProduct(null);
                                                     }
                                                 }}
-                                                className="flex-[2] py-5 rounded-2xl bg-black text-white font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-black/20"
+                                                className="flex-[2] py-4 rounded-xl bg-black text-white font-black text-[10px] uppercase tracking-widest shadow-xl"
                                             >
-                                                Confirmar y Agregar
+                                                Finalizar y Agregar
                                             </button>
                                         </div>
                                     </motion.div>
                                 )}
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
                         </motion.div>
                     </div>
                 )}
