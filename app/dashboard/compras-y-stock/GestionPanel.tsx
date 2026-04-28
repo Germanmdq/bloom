@@ -1,20 +1,25 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { usePagarSaldoProveedor } from "@/lib/hooks/use-compras-stock";
-import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconChevronDown, IconChevronUp } from "@tabler/icons-react";
+import { usePagarSaldoProveedor, useUpdateGastoFijo, useCreateGastoFijo } from "@/lib/hooks/use-compras-stock";
+import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconReceipt, IconPlus, IconX, IconEdit } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Proveedor { id: string; nombre: string; cuit: string | null; saldo_cc: number; telefono: string | null; }
 interface Insumo { id: string; nombre: string; unidad: string; stock_actual: number; stock_minimo: number; precio_ultima_compra: number; categoria: string; proveedores: { id: string; nombre: string } | null; }
+interface Gasto { id: string; nombre: string; monto: number; fecha_vencimiento: string; estado: string; categoria: string; }
 
-export function GestionPanel({ proveedores, insumos }: { proveedores: Proveedor[]; insumos: Insumo[] }) {
-    const [tab, setTab] = useState<'insumos' | 'proveedores'>('insumos');
+export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Proveedor[]; insumos: Insumo[]; gastos: Gasto[] }) {
+    const [tab, setTab] = useState<'insumos' | 'proveedores' | 'gastos'>('insumos');
     const [search, setSearch] = useState("");
     const [catFilter, setCatFilter] = useState("Todos");
     const [pagoModal, setPagoModal] = useState<Proveedor | null>(null);
     const [montoPago, setMontoPago] = useState("");
+    const [gastoModal, setGastoModal] = useState<Partial<Gasto> | null>(null);
+
     const pagarSaldo = usePagarSaldoProveedor();
+    const updateGasto = useUpdateGastoFijo();
+    const createGasto = useCreateGastoFijo();
 
     const categorias = useMemo(() => {
         const cats = new Set(insumos.map((i: any) => i.categoria || 'General'));
@@ -45,6 +50,31 @@ export function GestionPanel({ proveedores, insumos }: { proveedores: Proveedor[
         }
     };
 
+    const handleSaveGasto = async () => {
+        if (!gastoModal?.nombre || !gastoModal?.monto || !gastoModal?.fecha_vencimiento) return;
+        try {
+            if (gastoModal.id) {
+                await updateGasto.mutateAsync({
+                    id: gastoModal.id,
+                    nombre: gastoModal.nombre,
+                    monto: parseFloat(gastoModal.monto.toString()),
+                    fecha_vencimiento: gastoModal.fecha_vencimiento,
+                    categoria: gastoModal.categoria
+                } as any);
+            } else {
+                await createGasto.mutateAsync({
+                    nombre: gastoModal.nombre,
+                    monto: parseFloat(gastoModal.monto.toString()),
+                    fecha_vencimiento: gastoModal.fecha_vencimiento,
+                    categoria: gastoModal.categoria || 'normal'
+                });
+            }
+            setGastoModal(null);
+        } catch (err: any) {
+            alert('Error: ' + err.message);
+        }
+    };
+
     const totalDeuda = proveedores.reduce((sum, p) => sum + (p.saldo_cc || 0), 0);
 
     return (
@@ -66,6 +96,9 @@ export function GestionPanel({ proveedores, insumos }: { proveedores: Proveedor[
                 </button>
                 <button onClick={() => { setTab('proveedores'); setSearch(""); }} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${tab === 'proveedores' ? 'bg-white text-black shadow-sm' : 'text-gray-400'}`}>
                     Proveedores ({proveedores.length})
+                </button>
+                <button onClick={() => { setTab('gastos'); setSearch(""); }} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${tab === 'gastos' ? 'bg-white text-black shadow-sm' : 'text-gray-400'}`}>
+                    Gastos ({gastos.length})
                 </button>
             </div>
 
@@ -168,6 +201,35 @@ export function GestionPanel({ proveedores, insumos }: { proveedores: Proveedor[
                 </>
             )}
 
+            {tab === 'gastos' && (
+                <>
+                    <div className="flex justify-end mb-4">
+                        <button
+                            onClick={() => setGastoModal({ nombre: '', monto: 0, fecha_vencimiento: new Date().toISOString().split('T')[0], categoria: 'normal' })}
+                            className="bg-black text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-gray-800 transition-all"
+                        >
+                            <IconPlus size={16} /> Agregar Gasto
+                        </button>
+                    </div>
+                    <div className="space-y-3">
+                        {gastos.filter(g => g.nombre.toLowerCase().includes(search.toLowerCase())).map(g => (
+                            <div key={g.id} className="p-4 rounded-xl border border-gray-100 bg-white flex justify-between items-center hover:shadow-sm transition-all">
+                                <div>
+                                    <h3 className="font-black text-sm">{g.nombre}</h3>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase">Vence: {g.fecha_vencimiento} · {g.categoria}</p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <p className="font-black text-lg">${g.monto.toLocaleString('es-AR')}</p>
+                                    <button onClick={() => setGastoModal(g)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white transition-all">
+                                        <IconEdit size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+
             {/* Modal Pago */}
             {pagoModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
@@ -179,6 +241,43 @@ export function GestionPanel({ proveedores, insumos }: { proveedores: Proveedor[
                         <div className="flex gap-3">
                             <button onClick={() => setPagoModal(null)} className="flex-1 h-12 rounded-xl bg-gray-100 font-black text-gray-400 text-xs uppercase">Cancelar</button>
                             <button onClick={handlePago} className="flex-[2] h-12 rounded-xl bg-emerald-600 text-white font-black text-xs uppercase hover:scale-105 active:scale-95 transition-all">Confirmar</button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
+            {/* Modal Gasto */}
+            {gastoModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setGastoModal(null)} />
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm">
+                        <h3 className="text-xl font-black mb-6">{gastoModal.id ? 'Editar Gasto' : 'Nuevo Gasto'}</h3>
+                        
+                        <div className="space-y-4 mb-6">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nombre</label>
+                                <input type="text" value={gastoModal.nombre} onChange={e => setGastoModal({...gastoModal, nombre: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Monto ($)</label>
+                                <input type="number" value={gastoModal.monto} onChange={e => setGastoModal({...gastoModal, monto: parseFloat(e.target.value) || 0})} className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Vencimiento</label>
+                                <input type="date" value={gastoModal.fecha_vencimiento} onChange={e => setGastoModal({...gastoModal, fecha_vencimiento: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Prioridad</label>
+                                <select value={gastoModal.categoria} onChange={e => setGastoModal({...gastoModal, categoria: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none">
+                                    <option value="normal">Normal</option>
+                                    <option value="urgente">Urgente</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={() => setGastoModal(null)} className="flex-1 h-12 rounded-xl bg-gray-100 font-black text-gray-400 text-xs uppercase">Cancelar</button>
+                            <button onClick={handleSaveGasto} disabled={updateGasto.isPending || createGasto.isPending} className="flex-[2] h-12 rounded-xl bg-black text-white font-black text-xs uppercase hover:scale-105 active:scale-95 transition-all">Guardar</button>
                         </div>
                     </motion.div>
                 </div>

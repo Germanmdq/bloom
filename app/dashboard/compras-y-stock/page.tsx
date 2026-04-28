@@ -22,8 +22,9 @@ export default function ComprasYStockPage() {
     const { data: proveedores = [], isLoading: loadProv } = useProveedores();
     const { data: insumos = [], isLoading: loadIns } = useInsumos();
     const { data: gastosPendientes = [], isLoading: loadGastos } = useGastosFijosPendientes();
+    const { data: gastosFijosTodos = [], isLoading: loadGastosTodos } = useGastosFijos();
 
-    if (loadProv || loadIns || loadGastos) {
+    if (loadProv || loadIns || loadGastos || loadGastosTodos) {
         return (
             <div className="h-full flex items-center justify-center">
                 <IconLoader2 className="animate-spin text-gray-300" size={64} />
@@ -49,8 +50,8 @@ export default function ComprasYStockPage() {
             {/* BLOQUE B: Formulario de Compra */}
             <FormularioCompra proveedores={proveedores} />
 
-            {/* BLOQUE C: Gestión Insumos & Proveedores */}
-            <GestionPanel proveedores={proveedores} insumos={insumos} />
+            {/* BLOQUE C: Gestión Insumos, Proveedores & Gastos Fijos */}
+            <GestionPanel proveedores={proveedores} insumos={insumos} gastos={gastosFijosTodos} />
         </div>
     );
 }
