@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { usePagarSaldoProveedor, useUpdateGastoFijo, useCreateGastoFijo, useDeleteGastoFijo } from "@/lib/hooks/use-compras-stock";
-import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconReceipt, IconPlus, IconX, IconEdit, IconTrash } from "@tabler/icons-react";
+import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconReceipt, IconPlus, IconX, IconEdit, IconTrash, IconDownload } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Proveedor { id: string; nombre: string; cuit: string | null; saldo_cc: number; telefono: string | null; }
@@ -85,6 +85,40 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
         }
     };
 
+    const handleExport = () => {
+        let csv = "";
+        let filename = "";
+
+        if (tab === 'insumos') {
+            filename = "insumos.csv";
+            csv = "Nombre;Proveedor;Categoria;Stock;Minimo;Unidad;Precio Ultima Compra\n";
+            filtered.forEach((i: any) => {
+                csv += `"${i.nombre}";"${i.proveedores?.nombre || ''}";"${i.categoria}";${i.stock_actual};${i.stock_minimo};"${i.unidad}";${i.precio_ultima_compra}\n`;
+            });
+        } else if (tab === 'proveedores') {
+            filename = "proveedores.csv";
+            csv = "Nombre;CUIT;Telefono;Saldo CC\n";
+            filteredProveedores.forEach((p: any) => {
+                csv += `"${p.nombre}";"${p.cuit || ''}";"${p.telefono || ''}";${p.saldo_cc || 0}\n`;
+            });
+        } else {
+            filename = "gastos.csv";
+            csv = "Nombre;Monto;Vencimiento;Estado;Prioridad\n";
+            gastos.filter(g => g.nombre.toLowerCase().includes(search.toLowerCase())).forEach((g: any) => {
+                csv += `"${g.nombre}";${g.monto};"${g.fecha_vencimiento}";"${g.estado}";"${g.categoria}"\n`;
+            });
+        }
+
+        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const totalDeuda = proveedores.reduce((sum, p) => sum + (p.saldo_cc || 0), 0);
 
     return (
@@ -112,10 +146,18 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                 </button>
             </div>
 
-            {/* Search */}
-            <div className="relative mb-6">
-                <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
-                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={`Buscar ${tab}...`} className="w-full h-12 pl-12 pr-4 rounded-xl bg-white border border-gray-100 font-bold outline-none text-sm" />
+            {/* Search and Export */}
+            <div className="flex gap-3 mb-6">
+                <div className="relative flex-1">
+                    <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                    <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={`Buscar ${tab}...`} className="w-full h-12 pl-12 pr-4 rounded-xl bg-white border border-gray-100 font-bold outline-none text-sm" />
+                </div>
+                <button
+                    onClick={handleExport}
+                    className="h-12 px-6 rounded-xl bg-emerald-50 text-emerald-600 font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-100 transition-all border border-emerald-100"
+                >
+                    <IconDownload size={16} /> Excel
+                </button>
             </div>
 
             {tab === 'insumos' && (
