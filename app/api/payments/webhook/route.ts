@@ -50,8 +50,7 @@ async function markOrderPaid(orderId: string) {
   const { error } = await supabase
     .from("orders")
     .update({
-      paid: true,
-      status: "pending",
+      status: "paid",
       payment_method: "MERCADO_PAGO",
       payment_notes: "Pagado vía Mercado Pago",
     })

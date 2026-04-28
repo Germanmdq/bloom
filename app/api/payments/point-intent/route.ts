@@ -96,7 +96,6 @@ export async function POST(req: Request) {
       total: finalTotal,
       status: "pending_payment",
       order_type: "pos",
-      paid: false,
       payment_method: "MERCADO_PAGO",
       payment_notes: "Mercado Pago Point Smart (pendiente en terminal)",
       customer_name: `Mesa / POS ${tableId}`,
@@ -240,7 +239,7 @@ export async function GET(request: NextRequest) {
         await svc
           .from("orders")
           .update({
-            paid: true,
+            status: "paid",
             payment_method: "MERCADO_PAGO",
             payment_notes: "Mercado Pago Point Smart (N950)",
           })

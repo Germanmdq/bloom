@@ -14,9 +14,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "orderId requerido" }, { status: 400 });
     }
 
-    const patch: Record<string, boolean> = {};
-    if (typeof body.paid === "boolean") patch.paid = body.paid;
-    if (typeof body.cuenta_corriente === "boolean") patch.cuenta_corriente = body.cuenta_corriente;
+    const patch: Record<string, any> = {};
+    if (typeof body.paid === "boolean") {
+      patch.paid = body.paid;
+      patch.status = body.paid ? "paid" : "pending";
+    }
+    if (typeof body.cuenta_corriente === "boolean") {
+      patch.cuenta_corriente = body.cuenta_corriente;
+      if (body.cuenta_corriente) patch.payment_method = "CUENTA_CORRIENTE";
+    }
     if (Object.keys(patch).length === 0) {
       return NextResponse.json({ error: "paid o cuenta_corriente requerido" }, { status: 400 });
     }

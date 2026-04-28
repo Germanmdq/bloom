@@ -101,7 +101,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
                         <div key={idx} className="grid grid-cols-[1fr_20px_60px] text-[11px] gap-1 py-0.5 border-b border-gray-50 leading-tight">
                             <span className="truncate">{item.name}</span>
                             <span className="text-center">{item.quantity}</span>
-                            <span className="text-right font-bold">${(item.price * item.quantity).toLocaleString()}</span>
+                            <span className="text-right font-bold">${(Number(item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
                         </div>
                     ))}
                 </div>
@@ -109,7 +109,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
                 <div className="border-t-2 border-black pt-2 mt-1">
                     <div className="flex justify-between font-black text-xl tracking-tighter">
                         <span>TOTAL</span>
-                        <span>${total.toLocaleString()}</span>
+                        <span>${Number(total || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-[10px] font-bold opacity-60 mt-0.5">
                         <span>{cart.reduce((s, i) => s + i.quantity, 0)} Items</span>

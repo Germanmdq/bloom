@@ -29,8 +29,8 @@ function orderTypeLabel(order: any) {
     return { label: "Web", icon: <IconBuildingStore size={13} /> };
 }
 
-function isOrderPaid(o: Order & { paid?: boolean | null }) {
-    return Boolean(o.paid);
+function isOrderPaid(o: Order & { paid?: boolean | null; status?: string | null }) {
+    return Boolean(o.paid) || o.status === 'completed' || o.status === 'paid';
 }
 
 function isDeliveryOrder(o: Order & { delivery_type?: string | null }) {

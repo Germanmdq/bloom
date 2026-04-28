@@ -139,7 +139,7 @@ export function OrderCart({
                 <div className="flex justify-between items-end mb-4">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total a Pagar</span>
                     <span className="text-4xl font-black text-gray-900 tracking-tight leading-none">
-                        ${total.toLocaleString()}
+                        ${Number(total || 0).toLocaleString()}
                     </span>
                 </div>
 

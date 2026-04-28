@@ -52,7 +52,6 @@ export async function POST(req: Request) {
         total: amount,
         payment_method: paymentMethod || "CASH",
         status: "completed",
-        paid: true,
         customer_name: profile.full_name,
         items: [{ name: "ABONO CUENTA CORRIENTE", quantity: 1, price: amount }],
         order_type: "pos"

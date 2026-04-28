@@ -438,7 +438,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 
                 if (webOrderId || currentWebOrderId) {
                     const idToComplete = webOrderId || currentWebOrderId;
-                    await supabase.from('orders').update({ status: 'completed', paid: true }).eq('id', idToComplete);
+                    const { error: updErr } = await supabase.from('orders').update({ status: 'completed' }).eq('id', idToComplete);
+                    if (updErr) console.error("❌ [FinishOrder] Error actualizando pedido web:", updErr.message);
                 }
                 setMpPosOrderId(null);
                 queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -530,7 +531,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 // If it's a web order, we mark it as completed and paid
                 if (webOrderId || currentWebOrderId) {
                     const idToComplete = webOrderId || currentWebOrderId;
-                    await supabase.from('orders').update({ status: 'completed', paid: true }).eq('id', idToComplete);
+                    const { error: updErr } = await supabase.from('orders').update({ status: 'completed' }).eq('id', idToComplete);
+                    if (updErr) console.error("❌ [FinishOrder] Error actualizando pedido web:", updErr.message);
                 }
 
                 await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
@@ -951,7 +953,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 </p>
                                                 <div className="flex justify-center">
                                                     <span className="px-4 py-1.5 bg-gray-900 text-white rounded-full text-[10px] font-black tracking-widest">
-                                                        ${Number(item.price).toLocaleString()}
+                                                        ${Number(item.price || 0).toLocaleString()}
                                                     </span>
                                                 </div>
                                             </div>
@@ -1001,7 +1003,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                         <p className="text-[10px] text-gray-400">{c.phone || 'Sin teléfono'}</p>
                                                     </div>
                                                     {Number(c.balance || 0) > 0 && (
-                                                        <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-md">Debe ${Number(c.balance).toLocaleString()}</span>
+                                                        <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-md">Debe ${Number(c.balance || 0).toLocaleString()}</span>
                                                     )}
                                                 </button>
                                             ))}
@@ -1086,7 +1088,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             <p className="text-xs text-gray-400">${Number(item.price || 0).toLocaleString()} c/u</p>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <p className="text-sm font-black text-gray-900">${(Number(item.price || 0) * item.quantity).toLocaleString()}</p>
+                                            <p className="text-sm font-black text-gray-900">${(Number(item.price || 0) * (item.quantity || 1)).toLocaleString()}</p>
                                         </div>
                                         <button onClick={() => removeFromCart(idx)} className="shrink-0 p-1 rounded-lg hover:bg-red-50 transition-colors">
                                             <IconTrash size={13} className="text-gray-300 hover:text-red-400" />
@@ -1109,7 +1111,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                         <div className="flex items-center justify-between py-1">
                             <span className="text-sm text-gray-500">Total</span>
-                            <span className="text-2xl font-black text-gray-900">${total.toLocaleString()}</span>
+                            <span className="text-2xl font-black text-gray-900">${Number(total || 0).toLocaleString()}</span>
                         </div>
 
                         {/* Delivery Person Selector */}
@@ -1138,7 +1140,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         >
                             {webOrderIsPaid 
                                 ? `Finalizar (Pago con ${webOrderPaymentMethod === 'MERCADO_PAGO' ? 'Mercado Pago' : 'Online'})` 
-                                : `Cobrar $${finalTotal.toLocaleString()}`
+                                : `Cobrar $${Number(finalTotal || 0).toLocaleString()}`
                             }
                         </button>
 
