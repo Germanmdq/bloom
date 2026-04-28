@@ -1083,10 +1083,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-semibold text-gray-800 truncate">{item.name}</p>
-                                            <p className="text-xs text-gray-400">${item.price.toLocaleString()} c/u</p>
+                                            <p className="text-xs text-gray-400">${Number(item.price || 0).toLocaleString()} c/u</p>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <p className="text-sm font-black text-gray-900">${(item.price * item.quantity).toLocaleString()}</p>
+                                            <p className="text-sm font-black text-gray-900">${(Number(item.price || 0) * item.quantity).toLocaleString()}</p>
                                         </div>
                                         <button onClick={() => removeFromCart(idx)} className="shrink-0 p-1 rounded-lg hover:bg-red-50 transition-colors">
                                             <IconTrash size={13} className="text-gray-300 hover:text-red-400" />

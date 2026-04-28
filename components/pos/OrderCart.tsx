@@ -93,12 +93,12 @@ export function OrderCart({
                                     )}
 
                                     <div className="text-xs font-medium text-gray-400 mt-1">
-                                        ${item.price.toLocaleString()} u.
+                                        ${Number(item.price || 0).toLocaleString()} u.
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <div className="font-black text-lg text-gray-900">
-                                        ${(item.price * item.quantity).toLocaleString()}
+                                        ${(Number(item.price || 0) * item.quantity).toLocaleString()}
                                     </div>
                                 </div>
                             </div>
