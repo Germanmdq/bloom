@@ -81,8 +81,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [webOrderPaymentMethod, setWebOrderPaymentMethod] = useState<string | null>(null);
     const [completedOrderData, setCompletedOrderData] = useState<{ cart: any[], total: number } | null>(null);
     const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
-    const [showDrinkSelector, setShowDrinkSelector] = useState(false);
-    const [pendingFeaturedProduct, setPendingFeaturedProduct] = useState<any>(null);
+    const [showConfigurator, setShowConfigurator] = useState(false);
+    const [pendingProduct, setPendingProduct] = useState<any>(null);
+    const [configStep, setConfigStep] = useState<'drink' | 'garnish' | 'notes'>('drink');
+    const [selectedDrink, setSelectedDrink] = useState<any>(null);
+    const [selectedGarnish, setSelectedGarnish] = useState<any>(null);
+    const [configNotes, setConfigNotes] = useState("");
 
     const handleCustomerSearch = async (q: string) => {
         setCustomerSearchQuery(q);
@@ -841,8 +845,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 {featuredProduct && (
                                     <button
                                         onClick={() => {
-                                            setPendingFeaturedProduct(featuredProduct);
-                                            setShowDrinkSelector(true);
+                                            setPendingProduct(featuredProduct);
+                                            setConfigStep('drink');
+                                            setSelectedDrink(null);
+                                            setSelectedGarnish(null);
+                                            setConfigNotes("");
+                                            setShowConfigurator(true);
                                         }}
                                         className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
                                     >
@@ -947,7 +955,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     return (
                                         <button
                                             key={item.id}
-                                            onClick={() => addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 })}
+                                            onClick={() => {
+                                                const catName = categories.find((c: any) => c.id === item.category_id)?.name?.toLowerCase() || "";
+                                                if (catName.includes("plato") || catName.includes("menú")) {
+                                                    setPendingProduct(item);
+                                                    setConfigStep('drink');
+                                                    setSelectedDrink(null);
+                                                    setSelectedGarnish(null);
+                                                    setConfigNotes("");
+                                                    setShowConfigurator(true);
+                                                } else {
+                                                    addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 });
+                                                }
+                                            }}
                                             className="group relative bg-white rounded-[24px] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.05)] hover:shadow-2xl active:scale-95 transition-all text-center border border-gray-50 flex flex-col items-center justify-center gap-4 overflow-hidden h-full"
                                         >
                                             <motion.div 
@@ -1275,102 +1295,194 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     </div>
                 )}
             </AnimatePresence>
-            {/* Drink Selector Modal for Menú del Día */}
+            {/* Product Configurator Modal (Drink, Garnish, Notes) */}
             <AnimatePresence>
-                {showDrinkSelector && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                {showConfigurator && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
                         <motion.div 
                             initial={{ opacity: 0 }} 
                             animate={{ opacity: 1 }} 
                             exit={{ opacity: 0 }} 
-                            className="absolute inset-0 bg-black/60 backdrop-blur-md" 
-                            onClick={() => setShowDrinkSelector(false)} 
+                            className="absolute inset-0 bg-black/70 backdrop-blur-xl" 
+                            onClick={() => setShowConfigurator(false)} 
                         />
                         <motion.div 
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+                            initial={{ opacity: 0, scale: 0.9, y: 30 }} 
                             animate={{ opacity: 1, scale: 1, y: 0 }} 
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }} 
-                            className="relative bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden p-8"
+                            exit={{ opacity: 0, scale: 0.9, y: 30 }} 
+                            className="relative bg-white w-full max-w-2xl rounded-[3.5rem] shadow-2xl overflow-hidden p-10"
                         >
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h2 className="text-3xl font-black text-gray-900 tracking-tight">Seleccionar Bebida</h2>
-                                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">El Menú del Día incluye una bebida</p>
+                                    <h2 className="text-3xl font-black text-gray-900 tracking-tight">Personalizar Pedido</h2>
+                                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                        {pendingProduct?.name}
+                                    </p>
                                 </div>
                                 <button 
-                                    onClick={() => setShowDrinkSelector(false)}
-                                    className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-black transition-colors"
+                                    onClick={() => setShowConfigurator(false)}
+                                    className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-black transition-colors"
                                 >
-                                    <IconX size={24} />
+                                    <IconX size={28} />
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
-                                {products
-                                    .filter((p: any) => {
-                                        const catName = categories.find((c: any) => c.id === p.category_id)?.name?.toLowerCase() || "";
-                                        return catName.includes("bebida") || catName.includes("gaseosa") || catName.includes("jugo") || catName.includes("agua");
-                                    })
-                                    .map((drink: any) => (
-                                        <button
-                                            key={drink.id}
-                                            onClick={() => {
-                                                if (pendingFeaturedProduct) {
-                                                    // Agregar el plato principal
-                                                    addToCart({
-                                                        id: pendingFeaturedProduct.id,
-                                                        name: pendingFeaturedProduct.name,
-                                                        price: Number(pendingFeaturedProduct.price || 0),
-                                                        quantity: 1
-                                                    });
-                                                    // Agregar la bebida (con precio 0 ya que está incluída)
-                                                    addToCart({
-                                                        id: drink.id + '-included',
-                                                        name: `Bebida: ${drink.name} (Incluída)`,
-                                                        price: 0,
-                                                        quantity: 1
-                                                    });
-                                                    setFeedback({ message: `Agregado: Menú del Día con ${drink.name}`, type: 'success' });
-                                                    setShowDrinkSelector(false);
-                                                    setPendingFeaturedProduct(null);
-                                                }
-                                            }}
-                                            className="p-6 rounded-[2rem] bg-gray-50 hover:bg-black hover:text-white transition-all text-left group border border-transparent hover:border-black shadow-sm"
-                                        >
-                                            <p className="text-lg font-black leading-tight mb-1">{drink.name}</p>
-                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-40 group-hover:opacity-60">Seleccionar</p>
-                                        </button>
-                                    ))
-                                }
-                                {products.filter((p: any) => {
-                                    const catName = categories.find((c: any) => c.id === p.category_id)?.name?.toLowerCase() || "";
-                                    return catName.includes("bebida") || catName.includes("gaseosa") || catName.includes("jugo") || catName.includes("agua");
-                                }).length === 0 && (
-                                    <div className="col-span-2 py-20 text-center text-gray-300 font-bold">
-                                        No se encontraron bebidas disponibles
-                                    </div>
+                            {/* Stepper Header */}
+                            <div className="flex gap-2 mb-8">
+                                {['drink', 'garnish', 'notes'].map((step) => (
+                                    <div 
+                                        key={step}
+                                        className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+                                            (step === 'drink' && configStep === 'drink') ||
+                                            (step === 'garnish' && configStep === 'garnish') ||
+                                            (step === 'notes' && configStep === 'notes')
+                                                ? 'bg-black' : 'bg-gray-100'
+                                        }`}
+                                    />
+                                ))}
+                            </div>
+
+                            <div className="min-h-[350px]">
+                                {configStep === 'drink' && (
+                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                                        <h3 className="text-xl font-black mb-6 flex items-center gap-3">
+                                            🥤 Seleccionar Bebida <span className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">INCLUÍDA</span>
+                                        </h3>
+                                        <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
+                                            {products
+                                                .filter((p: any) => {
+                                                    const catName = categories.find((c: any) => c.id === p.category_id)?.name?.toLowerCase() || "";
+                                                    return catName.includes("bebida") || catName.includes("gaseosa") || catName.includes("jugo") || catName.includes("agua");
+                                                })
+                                                .map((drink: any) => (
+                                                    <button
+                                                        key={drink.id}
+                                                        onClick={() => {
+                                                            setSelectedDrink(drink);
+                                                            setConfigStep('garnish');
+                                                        }}
+                                                        className="p-5 rounded-[2rem] bg-gray-50 hover:bg-black hover:text-white transition-all text-left group"
+                                                    >
+                                                        <p className="font-black text-sm">{drink.name}</p>
+                                                    </button>
+                                                ))
+                                            }
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedDrink({ name: "Sin bebida" });
+                                                    setConfigStep('garnish');
+                                                }}
+                                                className="p-5 rounded-[2rem] bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all text-center font-black text-xs uppercase tracking-widest"
+                                            >
+                                                Sin bebida
+                                            </button>
+                                        </div>
+                                    </motion.div>
                                 )}
-                            </div>
 
-                            <div className="mt-8 pt-8 border-t border-gray-100">
-                                <button 
-                                    onClick={() => {
-                                        if (pendingFeaturedProduct) {
-                                            addToCart({
-                                                id: pendingFeaturedProduct.id,
-                                                name: pendingFeaturedProduct.name,
-                                                price: Number(pendingFeaturedProduct.price || 0),
-                                                quantity: 1
-                                            });
-                                            setFeedback({ message: `Agregado: ${pendingFeaturedProduct.name} (Sin bebida)`, type: 'success' });
-                                            setShowDrinkSelector(false);
-                                            setPendingFeaturedProduct(null);
-                                        }
-                                    }}
-                                    className="w-full py-4 rounded-2xl bg-gray-100 text-gray-500 font-black text-sm uppercase tracking-widest hover:bg-gray-200 transition-all"
-                                >
-                                    Continuar sin bebida
-                                </button>
+                                {configStep === 'garnish' && (
+                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                                        <h3 className="text-xl font-black mb-6 flex items-center gap-3">
+                                            🥗 Seleccionar Guarnición
+                                        </h3>
+                                        <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
+                                            {products
+                                                .filter((p: any) => {
+                                                    const catName = categories.find((c: any) => c.id === p.category_id)?.name?.toLowerCase() || "";
+                                                    return catName.includes("guarnición") || catName.includes("ensalada") || catName.includes("papa");
+                                                })
+                                                .map((garnish: any) => (
+                                                    <button
+                                                        key={garnish.id}
+                                                        onClick={() => {
+                                                            setSelectedGarnish(garnish);
+                                                            setConfigStep('notes');
+                                                        }}
+                                                        className="p-5 rounded-[2rem] bg-gray-50 hover:bg-black hover:text-white transition-all text-left group"
+                                                    >
+                                                        <p className="font-black text-sm">{garnish.name}</p>
+                                                    </button>
+                                                ))
+                                            }
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedGarnish({ name: "Sin guarnición" });
+                                                    setConfigStep('notes');
+                                                }}
+                                                className="p-5 rounded-[2rem] bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all text-center font-black text-xs uppercase tracking-widest"
+                                            >
+                                                Sin guarnición
+                                            </button>
+                                        </div>
+                                        <button onClick={() => setConfigStep('drink')} className="mt-6 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-black">← Volver a bebidas</button>
+                                    </motion.div>
+                                )}
+
+                                {configStep === 'notes' && (
+                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                                        <h3 className="text-xl font-black mb-6 flex items-center gap-3">
+                                            📝 Observaciones
+                                        </h3>
+                                        <textarea
+                                            value={configNotes}
+                                            onChange={(e) => setConfigNotes(e.target.value)}
+                                            placeholder="Ej: Carne bien cocida, sin sal, etc..."
+                                            className="w-full p-6 rounded-[2rem] bg-gray-50 border-transparent focus:bg-white focus:ring-4 ring-black/5 outline-none font-bold text-lg min-h-[150px] resize-none"
+                                        />
+                                        
+                                        <div className="mt-8 flex gap-3">
+                                            <button 
+                                                onClick={() => setConfigStep('garnish')}
+                                                className="flex-1 py-5 rounded-2xl bg-gray-100 text-gray-500 font-black text-xs uppercase tracking-widest hover:bg-gray-200"
+                                            >
+                                                Volver
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    if (pendingProduct) {
+                                                        const mainItem = {
+                                                            id: pendingProduct.id,
+                                                            name: pendingProduct.name,
+                                                            price: Number(pendingProduct.price || 0),
+                                                            quantity: 1,
+                                                            notes: configNotes
+                                                        };
+                                                        
+                                                        // Agregamos el plato con las notas
+                                                        addToCart(mainItem);
+
+                                                        // Agregamos la guarnición (precio 0)
+                                                        if (selectedGarnish && selectedGarnish.name !== "Sin guarnición") {
+                                                            addToCart({
+                                                                id: selectedGarnish.id + '-included',
+                                                                name: `Guarnición: ${selectedGarnish.name}`,
+                                                                price: 0,
+                                                                quantity: 1
+                                                            });
+                                                        }
+
+                                                        // Agregamos la bebida (precio 0)
+                                                        if (selectedDrink && selectedDrink.name !== "Sin bebida") {
+                                                            addToCart({
+                                                                id: selectedDrink.id + '-included',
+                                                                name: `Bebida: ${selectedDrink.name} (Incl.)`,
+                                                                price: 0,
+                                                                quantity: 1
+                                                            });
+                                                        }
+
+                                                        setFeedback({ message: `Agregado: ${pendingProduct.name} completo`, type: 'success' });
+                                                        setShowConfigurator(false);
+                                                        setPendingProduct(null);
+                                                    }
+                                                }}
+                                                className="flex-[2] py-5 rounded-2xl bg-black text-white font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-black/20"
+                                            >
+                                                Confirmar y Agregar
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
                             </div>
                         </motion.div>
                     </div>
