@@ -571,7 +571,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         }
     };
 
-    const sendToKitchen = async () => {
+    const sendToKitchen = async (skipClose = false) => {
         if (cart.length === 0) {
             setFeedback({ message: "La comanda está vacía", type: 'error' });
             setTimeout(() => setFeedback(null), 2000);
@@ -661,7 +661,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             setFeedback({ message: "Enviado a cocina", type: 'success' });
             setTimeout(() => {
                 setFeedback(null);
-                onClose();
+                if (!skipClose) onClose();
             }, 1000);
         } catch (error: any) {
             setFeedback({ message: `Error: ${error.message}`, type: 'error' });
@@ -842,34 +842,54 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         {!searchTerm && !activeCategory ? (
                             <div className="flex flex-col gap-4">
 
-                                {/* Plato del Día Sugerido */}
-                                {featuredProduct && (
-                                    <button
-                                        onClick={() => {
-                                            setPendingProduct(featuredProduct);
-                                            setConfigStep('drink-group');
-                                            setSelectedDrinkGroup(null);
-                                            setSelectedDrink(null);
-                                            setSelectedGarnish(null);
-                                            setConfigNotes("");
-                                            setShowConfigurator(true);
-                                        }}
-                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
-                                    >
-                                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                                            <IconStar size={80} />
-                                        </div>
-                                        <div className="relative z-10">
-                                            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest mb-3">
-                                                Menú del Día (Incluye Bebida)
-                                            </span>
-                                            <h3 className="text-2xl font-black tracking-tight mb-1">{featuredProduct.name}</h3>
-                                            <p className="text-[#FFD60A] font-black text-xl">${Number(featuredProduct.price || 0).toLocaleString()}</p>
-                                        </div>
-                                    </button>
-                                )}
+                                {/* Plato del Día Sugerido + Platos Diarios en 2 Columnas */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    {featuredProduct && (
+                                        <button
+                                            onClick={() => {
+                                                setPendingProduct(featuredProduct);
+                                                setConfigStep('drink-group');
+                                                setSelectedDrinkGroup(null);
+                                                setSelectedDrink(null);
+                                                setSelectedGarnish(null);
+                                                setConfigNotes("");
+                                                setShowConfigurator(true);
+                                            }}
+                                            className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
+                                        >
+                                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                                <IconStar size={60} />
+                                            </div>
+                                            <div className="relative z-10">
+                                                <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest mb-2">
+                                                    Menú del Día (Incluye Bebida)
+                                                </span>
+                                                <h3 className="text-xl font-black tracking-tight mb-1">{featuredProduct.name}</h3>
+                                                <p className="text-[#FFD60A] font-black text-lg">${Number(featuredProduct.price || 0).toLocaleString()}</p>
+                                            </div>
+                                        </button>
+                                    )}
 
-                                {/* Bento Grid de Categorías */}
+                                    {categories.find(c => c.name.toLowerCase().includes('plato')) && (
+                                        <button
+                                            onClick={() => setActiveCategory(categories.find(c => c.name.toLowerCase().includes('plato'))?.id)}
+                                            className="relative overflow-hidden p-6 rounded-[2rem] bg-white border border-gray-100 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[140px]"
+                                        >
+                                            <div className="absolute top-0 right-0 p-4 opacity-10 text-gray-400">
+                                                <IconToolsKitchen2 size={60} />
+                                            </div>
+                                            <div className="relative z-10">
+                                                <span className="inline-block px-3 py-1 bg-gray-100 rounded-full text-[8px] font-black uppercase tracking-widest mb-2 text-gray-500">
+                                                    Categoría
+                                                </span>
+                                                <h3 className="text-xl font-black tracking-tight mb-1 text-gray-900">Platos del Día</h3>
+                                                <p className="text-gray-400 font-bold text-sm">Ver opciones →</p>
+                                            </div>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Bento Grid de Categorías (Filtrando la que ya mostramos arriba si es necesario, o dejándola) */}
                                 <div 
                                     className="grid gap-4 w-full h-full pb-20"
                                     style={{
@@ -883,7 +903,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         `
                                     }}
                                 >
-                                {categories.map((cat: any, idx: number) => {
+                                {categories
+                                    .filter(c => !c.name.toLowerCase().includes('plato')) // Evitamos duplicar la de arriba
+                                    .map((cat: any, idx: number) => {
                                     const count = products.filter((p: any) => p.category_id === cat.id).length;
                                     // Asignar área según el índice (Bento Pattern)
                                     const area = idx === 0 ? 'big' : idx === 1 ? 's1' : idx === 2 ? 's2' : idx === 3 ? 's3' : idx === 4 ? 's4' : idx === 5 ? 's5' : 'auto';
@@ -1118,6 +1140,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-semibold text-gray-800 truncate">{item.name}</p>
+                                            {item.notes && <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">Obs: {item.notes}</p>}
                                             <p className="text-xs text-gray-400">${Number(item.price || 0).toLocaleString()} c/u</p>
                                         </div>
                                         <div className="text-right shrink-0">
@@ -1186,10 +1209,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 Enviar cocina
                             </button>
                             <button
-                                onClick={() => setShowReceiptModal(true)}
-                                className="h-10 bg-gray-100 text-gray-700 rounded-xl font-semibold text-xs hover:bg-gray-200 active:scale-95 transition-all"
+                                onClick={async () => {
+                                    // Comanda = Enviar cocina + Abrir Ticket/Comanda para imprimir
+                                    await sendToKitchen(true);
+                                    setShowReceiptModal(true);
+                                }}
+                                disabled={cart.length === 0 || isFinishing}
+                                className="h-10 bg-gray-900 text-white rounded-xl font-semibold text-xs hover:bg-black active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
                             >
-                                Ticket
+                                <IconPrinter size={14} /> Comanda
                             </button>
                         </div>
                     </div>
