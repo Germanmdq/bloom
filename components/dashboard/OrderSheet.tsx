@@ -800,77 +800,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     <div className="flex-1 overflow-y-auto p-3 no-scrollbar">
                         {!searchTerm && !activeCategory ? (
                             <div className="flex flex-col gap-4">
-                                {/* SECCIÓN: OFERTA DEL DÍA (Apple Pro Style) */}
-                                {(() => {
-                                    let promoProducts = products.filter((p: any) => 
-                                        p.name.toLowerCase().includes('promo') || 
-                                        p.name.toLowerCase().includes('oferta') ||
-                                        p.name.toLowerCase().includes('especial')
-                                    );
-                                    
-                                    // Si no hay promos, para probar mostramos 3 cualquiera
-                                    if (promoProducts.length === 0 && products.length > 0) {
-                                        promoProducts = [...products].sort(() => 0.5 - Math.random()).slice(0, 3);
-                                    }
 
-                                    if (promoProducts.length === 0) return null;
-
-                                    return (
-                                        <div 
-                                            className="relative group overflow-hidden bg-[#2d4a3e] rounded-[32px] p-8 text-white transition-all hover:scale-[1.01]"
-                                            style={{
-                                                boxShadow: '0 25px 80px -15px rgba(0,0,0,0.6), 0 10px 40px -10px rgba(0,0,0,0.4)',
-                                            }}
-                                        >
-                                            {/* Glow Effect */}
-                                            <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#E8A387]/10 rounded-full blur-[80px]" />
-                                            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-white/5 rounded-full blur-[60px]" />
-                                            
-                                            <div className="relative z-10 flex items-center justify-between">
-                                                <div className="flex flex-col gap-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.15em] text-white/60 border border-white/5">
-                                                            Sugerencia del Mozo
-                                                        </span>
-                                                    </div>
-                                                    <h4 className="text-3xl font-black tracking-tighter leading-tight">Oferta del día</h4>
-                                                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest max-w-[200px] leading-relaxed">
-                                                        Aprovechá los precios especiales de hoy
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex-1 flex justify-end h-24 relative">
-                                                    <AnimatePresence mode="popLayout">
-                                                        {promoProducts.map((p: any, idx: number) => idx === currentPromoIndex && (
-                                                            <motion.button
-                                                                key={p.id}
-                                                                initial={{ opacity: 0, x: 80 }}
-                                                                animate={{ opacity: 1, x: 0 }}
-                                                                exit={{ opacity: 0, x: -80 }}
-                                                                transition={{ 
-                                                                    type: "spring", 
-                                                                    stiffness: 400, 
-                                                                    damping: 40
-                                                                }}
-                                                                onClick={() => addToCart({ id: p.id, name: p.name, price: Number(p.price), quantity: 1 })}
-                                                                className="absolute right-0 h-24 w-full max-w-[240px] bg-white text-black rounded-[2rem] p-6 shadow-2xl transition-all flex flex-col justify-between items-start text-left group overflow-hidden border border-white/20"
-                                                            >
-                                                                {/* Accent Glow inside button */}
-                                                                <div className="absolute top-0 right-0 w-20 h-20 bg-black/5 blur-2xl" />
-                                                                
-                                                                <span className="text-[10px] font-black uppercase truncate w-full tracking-widest text-gray-900">{p.name}</span>
-                                                                <div className="flex items-baseline gap-1 mt-auto">
-                                                                    <span className="text-3xl font-black tracking-tighter">${Number(p.price).toLocaleString()}</span>
-                                                                    <span className="text-[10px] font-black text-white bg-gray-900 px-2 py-0.5 rounded-full">OFERTA</span>
-                                                                </div>
-                                                            </motion.button>
-                                                        ))}
-                                                    </AnimatePresence>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
 
                                 {/* Bento Grid de Categorías */}
                                 <div 
