@@ -75,16 +75,20 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
 
         let motivo = "Pago";
         if (montoAbonar < g.monto) {
-            const inputMotivo = window.prompt("Motivo del adelanto/abono (ej: Adelanto en efectivo):", "Adelanto");
+            const inputMotivo = window.prompt("Motivo del adelanto/abono (ej: Adelanto):", "Adelanto");
             if (inputMotivo === null) return;
             motivo = inputMotivo;
         }
+
+        const isTransferencia = window.confirm("¿El pago es por TRANSFERENCIA?\n(Aceptar = Transferencia, Cancelar = Efectivo)");
+        const metodoPago = isTransferencia ? "Transferencia" : "Efectivo";
+        const motivoFinal = `${motivo} (${metodoPago})`;
 
         try {
             if (montoAbonar >= g.monto) {
                 await marcarPagado.mutateAsync(g.id);
             } else {
-                await abonarGasto.mutateAsync({ id: g.id, montoAbonado: montoAbonar, motivo });
+                await abonarGasto.mutateAsync({ id: g.id, montoAbonado: montoAbonar, motivo: motivoFinal });
             }
         } catch (err: any) {
             alert('Error: ' + err.message);

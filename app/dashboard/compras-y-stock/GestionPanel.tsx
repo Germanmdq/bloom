@@ -15,6 +15,8 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
     const [catFilter, setCatFilter] = useState("Todos");
     const [pagoModal, setPagoModal] = useState<Proveedor | null>(null);
     const [montoPago, setMontoPago] = useState("");
+    const [motivoPago, setMotivoPago] = useState("");
+    const [metodoPago, setMetodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
     const [gastoModal, setGastoModal] = useState<Partial<Gasto> | null>(null);
 
     const pagarSaldo = usePagarSaldoProveedor();
@@ -42,10 +44,12 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
     const handlePago = async () => {
         if (!pagoModal || !montoPago) return;
         try {
-            await pagarSaldo.mutateAsync({ id: pagoModal.id, monto: parseFloat(montoPago) });
+            const motivoFinal = `${motivoPago || 'Pago a cuenta'} (${metodoPago})`;
+            await pagarSaldo.mutateAsync({ id: pagoModal.id, monto: parseFloat(montoPago), motivo: motivoFinal });
             alert('Pago registrado ✅');
             setPagoModal(null);
             setMontoPago("");
+            setMotivoPago("");
         } catch (err: any) {
             alert('Error: ' + err.message);
         }
