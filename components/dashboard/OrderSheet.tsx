@@ -81,6 +81,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [webOrderPaymentMethod, setWebOrderPaymentMethod] = useState<string | null>(null);
     const [completedOrderData, setCompletedOrderData] = useState<{ cart: any[], total: number } | null>(null);
     const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
+    const [showDrinkSelector, setShowDrinkSelector] = useState(false);
+    const [pendingFeaturedProduct, setPendingFeaturedProduct] = useState<any>(null);
 
     const handleCustomerSearch = async (q: string) => {
         setCustomerSearchQuery(q);
@@ -115,6 +117,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const onMpOrderReady = useCallback((id: string | null) => {
         setMpPosOrderId(id);
     }, []);
+
+    // Auto-limpiar feedback después de 3 segundos
+    useEffect(() => {
+        if (feedback) {
+            const timer = setTimeout(() => setFeedback(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [feedback]);
 
     // Auto-Slider para Promociones
     useEffect(() => {
@@ -831,8 +841,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 {featuredProduct && (
                                     <button
                                         onClick={() => {
-                                            addToCart(featuredProduct);
-                                            setFeedback({ message: `Agregado: ${featuredProduct.name}`, type: 'success' });
+                                            setPendingFeaturedProduct(featuredProduct);
+                                            setShowDrinkSelector(true);
                                         }}
                                         className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
                                     >
@@ -841,10 +851,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         </div>
                                         <div className="relative z-10">
                                             <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest mb-3">
-                                                Menú del Día
+                                                Menú del Día (Incluye Bebida)
                                             </span>
                                             <h3 className="text-2xl font-black tracking-tight mb-1">{featuredProduct.name}</h3>
-                                            <p className="text-[#FFD60A] font-black text-xl">${featuredProduct.price}</p>
+                                            <p className="text-[#FFD60A] font-black text-xl">${Number(featuredProduct.price || 0).toLocaleString()}</p>
                                         </div>
                                     </button>
                                 )}
@@ -1261,6 +1271,107 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 {feedback.type === 'success' ? <IconCheck size={24} className="text-white" /> : <IconX size={24} className="text-red-500" />}
                             </div>
                             <p className="font-bold text-lg">{feedback.message}</p>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+            {/* Drink Selector Modal for Menú del Día */}
+            <AnimatePresence>
+                {showDrinkSelector && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            className="absolute inset-0 bg-black/60 backdrop-blur-md" 
+                            onClick={() => setShowDrinkSelector(false)} 
+                        />
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+                            animate={{ opacity: 1, scale: 1, y: 0 }} 
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }} 
+                            className="relative bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden p-8"
+                        >
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h2 className="text-3xl font-black text-gray-900 tracking-tight">Seleccionar Bebida</h2>
+                                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">El Menú del Día incluye una bebida</p>
+                                </div>
+                                <button 
+                                    onClick={() => setShowDrinkSelector(false)}
+                                    className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-black transition-colors"
+                                >
+                                    <IconX size={24} />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+                                {products
+                                    .filter((p: any) => {
+                                        const catName = categories.find((c: any) => c.id === p.category_id)?.name?.toLowerCase() || "";
+                                        return catName.includes("bebida") || catName.includes("gaseosa") || catName.includes("jugo") || catName.includes("agua");
+                                    })
+                                    .map((drink: any) => (
+                                        <button
+                                            key={drink.id}
+                                            onClick={() => {
+                                                if (pendingFeaturedProduct) {
+                                                    // Agregar el plato principal
+                                                    addToCart({
+                                                        id: pendingFeaturedProduct.id,
+                                                        name: pendingFeaturedProduct.name,
+                                                        price: Number(pendingFeaturedProduct.price || 0),
+                                                        quantity: 1
+                                                    });
+                                                    // Agregar la bebida (con precio 0 ya que está incluída)
+                                                    addToCart({
+                                                        id: drink.id + '-included',
+                                                        name: `Bebida: ${drink.name} (Incluída)`,
+                                                        price: 0,
+                                                        quantity: 1
+                                                    });
+                                                    setFeedback({ message: `Agregado: Menú del Día con ${drink.name}`, type: 'success' });
+                                                    setShowDrinkSelector(false);
+                                                    setPendingFeaturedProduct(null);
+                                                }
+                                            }}
+                                            className="p-6 rounded-[2rem] bg-gray-50 hover:bg-black hover:text-white transition-all text-left group border border-transparent hover:border-black shadow-sm"
+                                        >
+                                            <p className="text-lg font-black leading-tight mb-1">{drink.name}</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-40 group-hover:opacity-60">Seleccionar</p>
+                                        </button>
+                                    ))
+                                }
+                                {products.filter((p: any) => {
+                                    const catName = categories.find((c: any) => c.id === p.category_id)?.name?.toLowerCase() || "";
+                                    return catName.includes("bebida") || catName.includes("gaseosa") || catName.includes("jugo") || catName.includes("agua");
+                                }).length === 0 && (
+                                    <div className="col-span-2 py-20 text-center text-gray-300 font-bold">
+                                        No se encontraron bebidas disponibles
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="mt-8 pt-8 border-t border-gray-100">
+                                <button 
+                                    onClick={() => {
+                                        if (pendingFeaturedProduct) {
+                                            addToCart({
+                                                id: pendingFeaturedProduct.id,
+                                                name: pendingFeaturedProduct.name,
+                                                price: Number(pendingFeaturedProduct.price || 0),
+                                                quantity: 1
+                                            });
+                                            setFeedback({ message: `Agregado: ${pendingFeaturedProduct.name} (Sin bebida)`, type: 'success' });
+                                            setShowDrinkSelector(false);
+                                            setPendingFeaturedProduct(null);
+                                        }
+                                    }}
+                                    className="w-full py-4 rounded-2xl bg-gray-100 text-gray-500 font-black text-sm uppercase tracking-widest hover:bg-gray-200 transition-all"
+                                >
+                                    Continuar sin bebida
+                                </button>
+                            </div>
                         </motion.div>
                     </div>
                 )}
