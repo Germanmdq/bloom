@@ -49,10 +49,10 @@ const CONTACT = {
 };
 
 const categoryCards = [
-  { title: "Cafetería",  hint: "Cafés y bebidas calientes", href: "/menu?cat=Cafetería",        src: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1200&q=85" },
-  { title: "Comidas",    hint: "Platos del día y más",      href: "/menu?cat=Platos%20Diarios", src: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=85" },
-  { title: "Bebidas",    hint: "Bebidas frías",              href: "/menu?cat=Bebidas",          src: "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=1200&q=85" },
-  { title: "Pastelería", hint: "Dulces y panificados",       href: "/menu?cat=Pastelería",       src: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=1200&q=85" },
+  { title: "Cafetería",  hint: "Cafés y bebidas calientes", href: "/menu?cat=Cafetería",        src: "/images/categories/cafeteria.png" },
+  { title: "Comidas",    hint: "Platos del día y más",      href: "/menu?cat=Platos%20Diarios", src: "/images/categories/platos-diarios.png" },
+  { title: "Bebidas",    hint: "Bebidas frías",              href: "/menu?cat=Bebidas",          src: "/images/categories/bebidas.png" },
+  { title: "Pastelería", hint: "Dulces y panificados",       href: "/menu?cat=Pastelería",       src: "/images/categories/pasteleria.png" },
 ];
 
 const destacados: { name: string; desc: string; img: string; nameHint: string }[] = [
