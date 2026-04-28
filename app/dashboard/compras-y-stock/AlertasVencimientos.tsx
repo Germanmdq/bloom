@@ -1,6 +1,6 @@
 "use client";
 
-import { useMarcarGastoPagado } from "@/lib/hooks/use-compras-stock";
+import { useMarcarGastoPagado, useAbonarGastoFijo } from "@/lib/hooks/use-compras-stock";
 import { IconAlertTriangle, IconCalendarDue, IconCheck, IconCoin } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 
@@ -15,6 +15,7 @@ interface GastoFijo {
 
 export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
     const marcarPagado = useMarcarGastoPagado();
+    const abonarGasto = useAbonarGastoFijo();
 
     const hoy = new Date();
     const en7dias = new Date(hoy);
@@ -53,10 +54,22 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
         return `${diff} días`;
     };
 
-    const handlePagar = async (id: string) => {
-        if (!confirm('¿Marcar como pagado?')) return;
+    const handlePagar = async (g: GastoFijo) => {
+        const input = window.prompt(`¿Cuánto vas a abonar de ${g.nombre}? (Total: $${g.monto})`, g.monto.toString());
+        if (input === null) return; // Cancelado
+        
+        const montoAbonar = parseFloat(input);
+        if (isNaN(montoAbonar) || montoAbonar <= 0) {
+            alert("Monto inválido");
+            return;
+        }
+
         try {
-            await marcarPagado.mutateAsync(id);
+            if (montoAbonar >= g.monto) {
+                await marcarPagado.mutateAsync(g.id);
+            } else {
+                await abonarGasto.mutateAsync({ id: g.id, montoAbonado: montoAbonar });
+            }
         } catch (err: any) {
             alert('Error: ' + err.message);
         }
@@ -115,10 +128,10 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                                 Vence {formatFecha(g.fecha_vencimiento)}
                             </p>
                             <button
-                                onClick={() => handlePagar(g.id)}
+                                onClick={() => handlePagar(g)}
                                 className="mt-4 w-full h-10 rounded-xl bg-white border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all flex items-center justify-center gap-2"
                             >
-                                <IconCoin size={14} /> Marcar Pagado
+                                <IconCoin size={14} /> Abonar / Pagar
                             </button>
                         </motion.div>
                     );
@@ -148,10 +161,10 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                             Vence {formatFecha(g.fecha_vencimiento)}
                         </p>
                         <button
-                            onClick={() => handlePagar(g.id)}
+                            onClick={() => handlePagar(g)}
                             className="mt-4 w-full h-10 rounded-xl bg-white border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-100 transition-all flex items-center justify-center gap-2"
                         >
-                            <IconCoin size={14} /> Marcar Pagado
+                            <IconCoin size={14} /> Abonar / Pagar
                         </button>
                     </motion.div>
                 ))}

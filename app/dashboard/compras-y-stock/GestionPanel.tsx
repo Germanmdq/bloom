@@ -240,7 +240,7 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                                         <>
                                             <p className="text-xl font-black text-red-600">-${(prov.saldo_cc || 0).toLocaleString('es-AR')}</p>
                                             <button onClick={() => setPagoModal(prov)} className="mt-1 text-[9px] font-black text-emerald-600 uppercase tracking-widest hover:underline">
-                                                Registrar Pago
+                                                Abonar / Pagar
                                             </button>
                                         </>
                                     ) : (
@@ -292,9 +292,9 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPagoModal(null)} />
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm">
-                        <h3 className="text-xl font-black mb-1">Pago a {pagoModal.nombre}</h3>
-                        <p className="text-sm text-gray-400 font-bold mb-6">Deuda: ${(pagoModal.saldo_cc || 0).toLocaleString('es-AR')}</p>
-                        <input type="number" value={montoPago} onChange={e => setMontoPago(e.target.value)} placeholder="Monto a pagar" className="w-full h-14 px-6 rounded-xl bg-gray-50 font-bold outline-none text-lg mb-4" />
+                        <h3 className="text-xl font-black mb-1">Abonar a {pagoModal.nombre}</h3>
+                        <p className="text-sm text-gray-400 font-bold mb-6">Deuda total: ${(pagoModal.saldo_cc || 0).toLocaleString('es-AR')}</p>
+                        <input type="number" value={montoPago} onChange={e => setMontoPago(e.target.value)} placeholder="Monto a abonar (ej. adelanto)" className="w-full h-14 px-6 rounded-xl bg-gray-50 font-bold outline-none text-lg mb-4" />
                         <div className="flex gap-3">
                             <button onClick={() => setPagoModal(null)} className="flex-1 h-12 rounded-xl bg-gray-100 font-black text-gray-400 text-xs uppercase">Cancelar</button>
                             <button onClick={handlePago} className="flex-[2] h-12 rounded-xl bg-emerald-600 text-white font-black text-xs uppercase hover:scale-105 active:scale-95 transition-all">Confirmar</button>

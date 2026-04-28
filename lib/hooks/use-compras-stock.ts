@@ -344,6 +344,37 @@ export function useDeleteGastoFijo() {
     });
 }
 
+export function useAbonarGastoFijo() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, montoAbonado }: { id: string; montoAbonado: number }) => {
+            const { data: gasto } = await supabase
+                .from('gastos_fijos')
+                .select('monto, estado')
+                .eq('id', id)
+                .single();
+
+            const nuevoMonto = Math.max(0, (gasto?.monto || 0) - montoAbonado);
+            const nuevoEstado = nuevoMonto === 0 ? 'pagado' : gasto?.estado;
+
+            const { data, error } = await supabase
+                .from('gastos_fijos')
+                .update({ 
+                    monto: nuevoMonto, 
+                    estado: nuevoEstado,
+                    updated_at: new Date().toISOString() 
+                })
+                .eq('id', id)
+                .select();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['gastos_fijos'] });
+        }
+    });
+}
+
 // =====================================================
 // PAGAR SALDO A PROVEEDOR
 // =====================================================
