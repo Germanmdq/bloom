@@ -1202,7 +1202,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                         <div className="grid grid-cols-2 gap-2">
                             <button
-                                onClick={sendToKitchen}
+                                onClick={() => sendToKitchen()}
                                 disabled={cart.length === 0 || isFinishing}
                                 className="h-10 bg-gray-100 text-gray-700 rounded-xl font-semibold text-xs hover:bg-gray-200 active:scale-95 transition-all disabled:opacity-30"
                             >
