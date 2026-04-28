@@ -347,21 +347,30 @@ export function useDeleteGastoFijo() {
 export function useAbonarGastoFijo() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ id, montoAbonado }: { id: string; montoAbonado: number }) => {
+        mutationFn: async ({ id, montoAbonado, motivo }: { id: string; montoAbonado: number; motivo: string }) => {
             const { data: gasto } = await supabase
                 .from('gastos_fijos')
-                .select('monto, estado')
+                .select('monto, estado, historial_pagos')
                 .eq('id', id)
                 .single();
 
             const nuevoMonto = Math.max(0, (gasto?.monto || 0) - montoAbonado);
             const nuevoEstado = nuevoMonto === 0 ? 'pagado' : gasto?.estado;
+            
+            // Add to history
+            const historialActual = Array.isArray(gasto?.historial_pagos) ? gasto.historial_pagos : [];
+            const nuevoHistorial = [...historialActual, {
+                fecha: new Date().toISOString(),
+                monto: montoAbonado,
+                motivo: motivo || 'Abono parcial'
+            }];
 
             const { data, error } = await supabase
                 .from('gastos_fijos')
                 .update({ 
                     monto: nuevoMonto, 
                     estado: nuevoEstado,
+                    historial_pagos: nuevoHistorial,
                     updated_at: new Date().toISOString() 
                 })
                 .eq('id', id)
@@ -381,18 +390,29 @@ export function useAbonarGastoFijo() {
 export function usePagarSaldoProveedor() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ id, monto }: { id: string; monto: number }) => {
+        mutationFn: async ({ id, monto, motivo }: { id: string; monto: number; motivo: string }) => {
             const { data: proveedor } = await supabase
                 .from('proveedores')
-                .select('saldo_cc')
+                .select('saldo_cc, historial_pagos')
                 .eq('id', id)
                 .single();
 
             const nuevoSaldo = Math.max(0, (proveedor?.saldo_cc || 0) - monto);
 
+            const historialActual = Array.isArray(proveedor?.historial_pagos) ? proveedor.historial_pagos : [];
+            const nuevoHistorial = [...historialActual, {
+                fecha: new Date().toISOString(),
+                monto: monto,
+                motivo: motivo || 'Pago a proveedor'
+            }];
+
             const { data, error } = await supabase
                 .from('proveedores')
-                .update({ saldo_cc: nuevoSaldo, updated_at: new Date().toISOString() })
+                .update({ 
+                    saldo_cc: nuevoSaldo, 
+                    historial_pagos: nuevoHistorial,
+                    updated_at: new Date().toISOString() 
+                })
                 .eq('id', id)
                 .select();
             if (error) throw error;

@@ -1,8 +1,9 @@
 "use client";
 
 import { useMarcarGastoPagado, useAbonarGastoFijo } from "@/lib/hooks/use-compras-stock";
-import { IconAlertTriangle, IconCalendarDue, IconCheck, IconCoin } from "@tabler/icons-react";
-import { motion } from "framer-motion";
+import { IconAlertTriangle, IconCalendarDue, IconCheck, IconCoin, IconHistory, IconX } from "@tabler/icons-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 
 interface GastoFijo {
     id: string;
@@ -11,11 +12,13 @@ interface GastoFijo {
     fecha_vencimiento: string;
     estado: string;
     categoria: string;
+    historial_pagos?: any[];
 }
 
 export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
     const marcarPagado = useMarcarGastoPagado();
     const abonarGasto = useAbonarGastoFijo();
+    const [historyModal, setHistoryModal] = useState<GastoFijo | null>(null);
 
     const hoy = new Date();
     const en7dias = new Date(hoy);
@@ -45,6 +48,11 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
         return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
     };
 
+    const formatFechaHora = (iso: string) => {
+        const d = new Date(iso);
+        return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    };
+
     const diasRestantes = (f: string) => {
         const fecha = new Date(f + 'T12:00:00');
         const diff = Math.ceil((fecha.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
@@ -54,8 +62,9 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
         return `${diff} días`;
     };
 
-    const handlePagar = async (g: GastoFijo) => {
-        const input = window.prompt(`¿Cuánto vas a abonar de ${g.nombre}? (Total: $${g.monto})`, g.monto.toString());
+    const handlePagar = async (e: React.MouseEvent, g: GastoFijo) => {
+        e.stopPropagation(); // Prevenir abrir el modal de historial
+        const input = window.prompt(`¿Cuánto vas a abonar de ${g.nombre}? (Total restante: $${g.monto})`, g.monto.toString());
         if (input === null) return; // Cancelado
         
         const montoAbonar = parseFloat(input);
@@ -64,11 +73,18 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
             return;
         }
 
+        let motivo = "Pago";
+        if (montoAbonar < g.monto) {
+            const inputMotivo = window.prompt("Motivo del adelanto/abono (ej: Adelanto en efectivo):", "Adelanto");
+            if (inputMotivo === null) return;
+            motivo = inputMotivo;
+        }
+
         try {
             if (montoAbonar >= g.monto) {
                 await marcarPagado.mutateAsync(g.id);
             } else {
-                await abonarGasto.mutateAsync({ id: g.id, montoAbonado: montoAbonar });
+                await abonarGasto.mutateAsync({ id: g.id, montoAbonado: montoAbonar, motivo });
             }
         } catch (err: any) {
             alert('Error: ' + err.message);
@@ -76,7 +92,7 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
     };
 
     return (
-        <section className="mb-10">
+        <section className="mb-10 relative">
             <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-2xl bg-red-100 flex items-center justify-center">
                     <IconAlertTriangle size={20} className="text-red-600" />
@@ -91,16 +107,18 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                 {proximos.map((g, i) => {
                     const esUrgente = g.categoria === 'urgente';
                     const vencido = diasRestantes(g.fecha_vencimiento) === 'VENCIDO';
+                    const hasHistory = Array.isArray(g.historial_pagos) && g.historial_pagos.length > 0;
                     return (
                         <motion.div
                             key={g.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.05 }}
-                            className={`p-6 rounded-[1.5rem] border-2 ${
-                                vencido ? 'border-red-300 bg-red-50' :
-                                esUrgente ? 'border-red-200 bg-red-50/60' :
-                                'border-amber-200 bg-amber-50/60'
+                            onClick={() => setHistoryModal(g)}
+                            className={`p-6 rounded-[1.5rem] border-2 cursor-pointer transition-all hover:scale-[1.02] ${
+                                vencido ? 'border-red-300 bg-red-50 hover:bg-red-100' :
+                                esUrgente ? 'border-red-200 bg-red-50/60 hover:bg-red-100/60' :
+                                'border-amber-200 bg-amber-50/60 hover:bg-amber-100/60'
                             } relative group`}
                         >
                             {vencido && (
@@ -114,21 +132,28 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                                 }`}>
                                     <IconCalendarDue size={16} />
                                 </div>
-                                <span className={`text-[9px] font-black uppercase tracking-widest ${
-                                    vencido ? 'text-red-600' : esUrgente ? 'text-red-500' : 'text-amber-600'
-                                }`}>
-                                    {diasRestantes(g.fecha_vencimiento)}
-                                </span>
+                                <div className="flex flex-col items-end gap-1">
+                                    <span className={`text-[9px] font-black uppercase tracking-widest ${
+                                        vencido ? 'text-red-600' : esUrgente ? 'text-red-500' : 'text-amber-600'
+                                    }`}>
+                                        {diasRestantes(g.fecha_vencimiento)}
+                                    </span>
+                                    {hasHistory && (
+                                        <span className="text-[9px] font-bold text-gray-500 flex items-center gap-1 bg-white/50 px-2 py-0.5 rounded-full">
+                                            <IconHistory size={10} /> Pagos parciales
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <h3 className="font-black text-gray-900 text-sm mb-1">{g.nombre}</h3>
                             <p className="text-2xl font-black text-gray-900">
                                 {g.monto > 0 ? `$${g.monto.toLocaleString('es-AR')}` : 'S/monto'}
                             </p>
                             <p className="text-[10px] font-bold text-gray-400 mt-1">
-                                Vence {formatFecha(g.fecha_vencimiento)}
+                                Restante | Vence {formatFecha(g.fecha_vencimiento)}
                             </p>
                             <button
-                                onClick={() => handlePagar(g)}
+                                onClick={(e) => handlePagar(e, g)}
                                 className="mt-4 w-full h-10 rounded-xl bg-white border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all flex items-center justify-center gap-2"
                             >
                                 <IconCoin size={14} /> Abonar / Pagar
@@ -137,38 +162,95 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                     );
                 })}
 
-                {otros.map((g, i) => (
-                    <motion.div
-                        key={g.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: (proximos.length + i) * 0.05 }}
-                        className="p-6 rounded-[1.5rem] border-2 border-emerald-200 bg-emerald-50/60 group"
-                    >
-                        <div className="flex items-start justify-between mb-3">
-                            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                                <IconCalendarDue size={16} />
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
-                                {diasRestantes(g.fecha_vencimiento)}
-                            </span>
-                        </div>
-                        <h3 className="font-black text-gray-900 text-sm mb-1">{g.nombre}</h3>
-                        <p className="text-xl font-black text-emerald-700">
-                            {g.monto > 0 ? `$${g.monto.toLocaleString('es-AR')}` : 'S/monto'}
-                        </p>
-                        <p className="text-[10px] font-bold text-gray-400 mt-1">
-                            Vence {formatFecha(g.fecha_vencimiento)}
-                        </p>
-                        <button
-                            onClick={() => handlePagar(g)}
-                            className="mt-4 w-full h-10 rounded-xl bg-white border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-100 transition-all flex items-center justify-center gap-2"
+                {otros.map((g, i) => {
+                    const hasHistory = Array.isArray(g.historial_pagos) && g.historial_pagos.length > 0;
+                    return (
+                        <motion.div
+                            key={g.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: (proximos.length + i) * 0.05 }}
+                            onClick={() => setHistoryModal(g)}
+                            className="p-6 rounded-[1.5rem] border-2 border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/60 cursor-pointer transition-all hover:scale-[1.02] group"
                         >
-                            <IconCoin size={14} /> Abonar / Pagar
-                        </button>
-                    </motion.div>
-                ))}
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                                    <IconCalendarDue size={16} />
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                                        {diasRestantes(g.fecha_vencimiento)}
+                                    </span>
+                                    {hasHistory && (
+                                        <span className="text-[9px] font-bold text-gray-500 flex items-center gap-1 bg-white/50 px-2 py-0.5 rounded-full">
+                                            <IconHistory size={10} /> Pagos parciales
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <h3 className="font-black text-gray-900 text-sm mb-1">{g.nombre}</h3>
+                            <p className="text-xl font-black text-emerald-700">
+                                {g.monto > 0 ? `$${g.monto.toLocaleString('es-AR')}` : 'S/monto'}
+                            </p>
+                            <p className="text-[10px] font-bold text-gray-400 mt-1">
+                                Restante | Vence {formatFecha(g.fecha_vencimiento)}
+                            </p>
+                            <button
+                                onClick={(e) => handlePagar(e, g)}
+                                className="mt-4 w-full h-10 rounded-xl bg-white border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-100 transition-all flex items-center justify-center gap-2"
+                            >
+                                <IconCoin size={14} /> Abonar / Pagar
+                            </button>
+                        </motion.div>
+                    );
+                })}
             </div>
+
+            {/* Modal Historial */}
+            <AnimatePresence>
+                {historyModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setHistoryModal(null)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm max-h-[80vh] flex flex-col">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <h3 className="text-xl font-black text-gray-900 leading-tight">{historyModal.nombre}</h3>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Historial de Pagos</p>
+                                </div>
+                                <button onClick={() => setHistoryModal(null)} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200">
+                                    <IconX size={16} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto min-h-[100px]">
+                                {Array.isArray(historyModal.historial_pagos) && historyModal.historial_pagos.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {historyModal.historial_pagos.map((p, idx) => (
+                                            <div key={idx} className="p-4 bg-gray-50 border border-gray-100 rounded-xl flex justify-between items-center">
+                                                <div>
+                                                    <p className="font-black text-sm text-gray-900">{p.motivo || 'Pago'}</p>
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase">{formatFechaHora(p.fecha)}</p>
+                                                </div>
+                                                <p className="font-black text-emerald-600">${p.monto.toLocaleString('es-AR')}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center text-gray-400 py-10">
+                                        <IconHistory size={32} className="opacity-20 mb-2" />
+                                        <p className="text-sm font-bold">No hay pagos parciales</p>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="mt-6 pt-4 border-t border-gray-100">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mb-1">Saldo Pendiente Actual</p>
+                                <p className="text-2xl font-black text-center text-gray-900">${historyModal.monto.toLocaleString('es-AR')}</p>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </section>
     );
 }

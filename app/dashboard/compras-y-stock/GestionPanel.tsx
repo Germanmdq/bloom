@@ -290,13 +290,17 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
             {/* Modal Pago */}
             {pagoModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPagoModal(null)} />
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setPagoModal(null); setMotivoPago(''); }} />
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm">
                         <h3 className="text-xl font-black mb-1">Abonar a {pagoModal.nombre}</h3>
                         <p className="text-sm text-gray-400 font-bold mb-6">Deuda total: ${(pagoModal.saldo_cc || 0).toLocaleString('es-AR')}</p>
-                        <input type="number" value={montoPago} onChange={e => setMontoPago(e.target.value)} placeholder="Monto a abonar (ej. adelanto)" className="w-full h-14 px-6 rounded-xl bg-gray-50 font-bold outline-none text-lg mb-4" />
+                        
+                        <input type="number" value={montoPago} onChange={e => setMontoPago(e.target.value)} placeholder="Monto a abonar (ej. adelanto)" className="w-full h-14 px-6 rounded-xl bg-gray-50 font-bold outline-none text-lg mb-3" />
+                        
+                        <input type="text" value={motivoPago} onChange={e => setMotivoPago(e.target.value)} placeholder="Motivo (opcional)" className="w-full h-14 px-6 rounded-xl bg-gray-50 font-bold outline-none text-sm mb-6" />
+
                         <div className="flex gap-3">
-                            <button onClick={() => setPagoModal(null)} className="flex-1 h-12 rounded-xl bg-gray-100 font-black text-gray-400 text-xs uppercase">Cancelar</button>
+                            <button onClick={() => { setPagoModal(null); setMotivoPago(''); }} className="flex-1 h-12 rounded-xl bg-gray-100 font-black text-gray-400 text-xs uppercase">Cancelar</button>
                             <button onClick={handlePago} className="flex-[2] h-12 rounded-xl bg-emerald-600 text-white font-black text-xs uppercase hover:scale-105 active:scale-95 transition-all">Confirmar</button>
                         </div>
                     </motion.div>
