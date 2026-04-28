@@ -82,8 +82,8 @@ INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,pr
 
 -- INSUMOS: Avicola
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
-('Pata muslo','kg',0,0,'Avicola',(SELECT id FROM proveedores WHERE nombre='Avicola' LIMIT 1)),
-('Pechuga','kg',0,0,'Avicola',(SELECT id FROM proveedores WHERE nombre='Avicola' LIMIT 1));
+('Pata muslo','un',0,0,'Avicola',(SELECT id FROM proveedores WHERE nombre='Avicola' LIMIT 1)),
+('Pechuga','un',0,0,'Avicola',(SELECT id FROM proveedores WHERE nombre='Avicola' LIMIT 1));
 
 -- INSUMOS: Guido
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES

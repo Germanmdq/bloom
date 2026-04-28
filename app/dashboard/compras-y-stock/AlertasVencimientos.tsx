@@ -130,18 +130,18 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: (proximos.length + i) * 0.05 }}
-                        className="p-6 rounded-[1.5rem] border border-gray-100 bg-white/80 group"
+                        className="p-6 rounded-[1.5rem] border-2 border-emerald-200 bg-emerald-50/60 group"
                     >
                         <div className="flex items-start justify-between mb-3">
-                            <div className="w-8 h-8 rounded-xl bg-gray-100 text-gray-400 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
                                 <IconCalendarDue size={16} />
                             </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">
                                 {diasRestantes(g.fecha_vencimiento)}
                             </span>
                         </div>
                         <h3 className="font-black text-gray-900 text-sm mb-1">{g.nombre}</h3>
-                        <p className="text-xl font-black text-gray-600">
+                        <p className="text-xl font-black text-emerald-700">
                             {g.monto > 0 ? `$${g.monto.toLocaleString('es-AR')}` : 'S/monto'}
                         </p>
                         <p className="text-[10px] font-bold text-gray-400 mt-1">
@@ -149,7 +149,7 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                         </p>
                         <button
                             onClick={() => handlePagar(g.id)}
-                            className="mt-4 w-full h-10 rounded-xl bg-white border border-gray-100 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all flex items-center justify-center gap-2"
+                            className="mt-4 w-full h-10 rounded-xl bg-white border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-100 transition-all flex items-center justify-center gap-2"
                         >
                             <IconCoin size={14} /> Marcar Pagado
                         </button>
