@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { IconSearch, IconTrash, IconCreditCard, IconCheck, IconLoader2, IconX, IconChevronLeft, IconPrinter, IconToolsKitchen2 } from "@tabler/icons-react";
+import { IconSearch, IconTrash, IconCreditCard, IconCheck, IconLoader2, IconX, IconChevronLeft, IconPrinter, IconToolsKitchen2, IconStar } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useQueryClient } from "@tanstack/react-query";
