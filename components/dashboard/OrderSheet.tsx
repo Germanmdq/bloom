@@ -830,7 +830,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     <button
                                         onClick={() => {
                                             addToCart(featuredProduct);
-                                            setFeedback({ product: featuredProduct.name, image: featuredProduct.image_url });
+                                            setFeedback({ message: `Agregado: ${featuredProduct.name}`, type: 'success' });
                                         }}
                                         className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
                                     >
