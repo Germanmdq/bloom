@@ -490,7 +490,7 @@ function PublicMenuPage() {
 
                         return (
                             <div 
-                                className="mb-10 relative group overflow-hidden bg-[#2d4a3e] rounded-t-[2.5rem] rounded-br-[2.5rem] rounded-bl-none p-8 md:p-12 text-white transition-all border border-white/5 active:scale-[0.99]"
+                                className="mb-10 relative group overflow-hidden bg-[#2d4a3e] rounded-[2.5rem] p-8 md:p-12 text-white transition-all border border-white/5 active:scale-[0.99]"
                                 style={{
                                     boxShadow: '0 25px 80px -15px rgba(0,0,0,0.6), 0 10px 40px -10px rgba(0,0,0,0.4)',
                                 }}
