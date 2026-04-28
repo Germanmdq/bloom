@@ -84,6 +84,7 @@ function PublicMenuPage() {
         : null;
     const [products, setProducts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
+    const [dailyPromos, setDailyPromos] = useState<any[]>([]);
     /** Número WhatsApp del local (app_settings); usado por checkout WA y Bloom chat */
     const [whatsappNumber, setWhatsappNumber] = useState("5491112345678");
     const [loading, setLoading] = useState(true);
@@ -120,13 +121,15 @@ function PublicMenuPage() {
     // FETCH DATA — deps fijas [] (evita warning “dependency array changed size” con HMR/hidratación)
     useEffect(() => {
         const fetchMenu = async () => {
-            const [{ data: cats }, { data: prods }, { data: settings }, { data: popularLines }] = await Promise.all([
+            const [{ data: cats }, { data: prods }, { data: settings }, { data: popularLines }, { data: promosData }] = await Promise.all([
                 supabase.from("categories").select("id, name, sort_order, icon, image_url").order("sort_order", { ascending: true }),
                 supabase.from("products").select(MENU_PRODUCT_SELECT).eq("active", true),
                 supabase.from("app_settings").select("whatsapp, plato_del_dia_id").eq("id", 1).single(),
                 supabase.from("order_lines").select("product_id, quantity").order("created_at", { ascending: false }).limit(500),
+                supabase.from("daily_promotions").select("*").eq("active", true).order("created_at", { ascending: true })
             ]);
 
+            if (promosData) setDailyPromos(promosData.filter(p => p.name));
             if (cats && prods) {
                 // Calcular popularidad si hay líneas de pedido
                 const popularityMap: Record<string, number> = {};
@@ -172,21 +175,14 @@ function PublicMenuPage() {
 
     // Auto-Slider para Promociones
     useEffect(() => {
-        let promoProducts = products.filter((p: any) => 
-            p.name.toLowerCase().includes('promo') || 
-            p.name.toLowerCase().includes('oferta')
-        );
-        if (promoProducts.length === 0 && products.length > 0) {
-            promoProducts = [...products].slice(0, 3);
-        }
-        if (promoProducts.length <= 1) return;
+        if (dailyPromos.length <= 1) return;
 
         const interval = setInterval(() => {
-            setCurrentPromoIndex(prev => (prev + 1) % promoProducts.length);
+            setCurrentPromoIndex(prev => (prev + 1) % dailyPromos.length);
         }, 4000);
 
         return () => clearInterval(interval);
-    }, [products]);
+    }, [dailyPromos]);
 
     useEffect(() => {
         const loadUserSession = async () => {
@@ -488,14 +484,7 @@ function PublicMenuPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-8 mb-4">
                     {/* SECCIÓN: OFERTA DEL DÍA (Apple Pro Style) */}
                     {(() => {
-                        let promoProducts = products.filter((p: any) => 
-                            p.name.toLowerCase().includes('promo') || 
-                            p.name.toLowerCase().includes('oferta')
-                        );
-                        
-                        if (promoProducts.length === 0 && products.length > 0) {
-                            promoProducts = [...products].sort(() => 0.5 - Math.random()).slice(0, 3);
-                        }
+                        const promoProducts = dailyPromos;
 
                         if (promoProducts.length === 0) return null;
 
@@ -533,11 +522,16 @@ function PublicMenuPage() {
                                                     exit={{ opacity: 0, scale: 0.98 }}
                                                     transition={{ duration: 0.5, ease: "easeInOut" }}
                                                     onClick={() => {
-                                                        const prod = products.find(prod => prod.id === p.id);
-                                                        if (prod) {
-                                                            setCart(prev => [...prev, { ...prod, cartItemId: `${prod.id}-${Date.now()}`, quantity: 1 }]);
-                                                            toast.success(`Agregado: ${prod.name}`);
-                                                        }
+                                                        const randomId = p.id || `promo-${Date.now()}`;
+                                                        setCart(prev => [...prev, { 
+                                                            id: randomId, 
+                                                            name: p.name, 
+                                                            price: Number(p.price) || 0,
+                                                            description: 'Oferta Especial del Día', 
+                                                            cartItemId: `${randomId}-${Date.now()}`, 
+                                                            quantity: 1 
+                                                        }]);
+                                                        toast.success(`Agregado: ${p.name}`);
                                                     }}
                                                     className="absolute inset-0 w-full bg-white text-black rounded-[2rem] p-6 shadow-2xl flex flex-col justify-center gap-3 active:scale-95 transition-all group border border-white/20"
                                                 >
