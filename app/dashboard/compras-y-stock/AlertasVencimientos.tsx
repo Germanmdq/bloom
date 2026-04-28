@@ -240,7 +240,7 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                                                     <p className="font-black text-sm text-gray-900">{p.motivo || 'Pago'}</p>
                                                     <p className="text-[10px] font-bold text-gray-400 uppercase">{formatFechaHora(p.fecha)}</p>
                                                 </div>
-                                                <p className="font-black text-emerald-600">${p.monto.toLocaleString('es-AR')}</p>
+                                                <p className="font-black text-emerald-600">${Number(p.monto || 0).toLocaleString('es-AR')}</p>
                                             </div>
                                         ))}
                                     </div>
