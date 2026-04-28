@@ -20,6 +20,7 @@ export default function SettingsPage() {
     const [dailyOffers, setDailyOffers] = useState<any[]>([
         { id: null, name: '', price: '' },
         { id: null, name: '', price: '' },
+        { id: null, name: '', price: '' },
         { id: null, name: '', price: '' }
     ]);
     const [isSavingOffers, setIsSavingOffers] = useState(false);
@@ -84,8 +85,13 @@ export default function SettingsPage() {
                 .order('created_at', { ascending: true });
             
             if (offersData && offersData.length > 0) {
-                const newOffers = [{ id: null, name: '', price: '' }, { id: null, name: '', price: '' }, { id: null, name: '', price: '' }];
-                offersData.slice(0, 3).forEach((off, idx) => {
+                const newOffers = [
+                    { id: null, name: '', price: '' }, 
+                    { id: null, name: '', price: '' }, 
+                    { id: null, name: '', price: '' },
+                    { id: null, name: '', price: '' }
+                ];
+                offersData.slice(0, 4).forEach((off, idx) => {
                     newOffers[idx] = { id: off.id, name: off.name, price: off.price || '' };
                 });
                 setDailyOffers(newOffers);
@@ -130,8 +136,13 @@ export default function SettingsPage() {
                 .order('created_at', { ascending: true });
             
             if (offersData) {
-                const refreshed = [{ id: null, name: '', price: '' }, { id: null, name: '', price: '' }, { id: null, name: '', price: '' }];
-                offersData.slice(0, 3).forEach((off, idx) => {
+                const refreshed = [
+                    { id: null, name: '', price: '' }, 
+                    { id: null, name: '', price: '' }, 
+                    { id: null, name: '', price: '' },
+                    { id: null, name: '', price: '' }
+                ];
+                offersData.slice(0, 4).forEach((off, idx) => {
                     refreshed[idx] = { id: off.id, name: off.name, price: off.price || '' };
                 });
                 setDailyOffers(refreshed);

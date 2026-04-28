@@ -512,43 +512,39 @@ function PublicMenuPage() {
                                         </p>
                                     </div>
 
-                                    <div className="w-full md:w-[350px] h-32 relative">
-                                        <AnimatePresence mode="popLayout">
-                                            {promoProducts.map((p: any, idx: number) => idx === currentPromoIndex && (
-                                                <motion.button
-                                                    key={p.id}
-                                                    initial={{ opacity: 0, scale: 0.98 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    exit={{ opacity: 0, scale: 0.98 }}
-                                                    transition={{ duration: 0.5, ease: "easeInOut" }}
-                                                    onClick={() => {
-                                                        const randomId = p.id || `promo-${Date.now()}`;
-                                                        setCart(prev => [...prev, { 
-                                                            id: randomId, 
-                                                            name: p.name, 
-                                                            price: Number(p.price) || 0,
-                                                            description: 'Oferta Especial del Día', 
-                                                            cartItemId: `${randomId}-${Date.now()}`, 
-                                                            quantity: 1 
-                                                        }]);
-                                                        toast.success(`Agregado: ${p.name}`);
-                                                    }}
-                                                    className="absolute inset-0 w-full bg-white text-black rounded-[2rem] p-6 shadow-2xl flex flex-col justify-center gap-3 active:scale-95 transition-all group border border-white/20"
-                                                >
-                                                    <div className="w-full border-b border-gray-100 pb-2 flex justify-between items-center">
-                                                        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-black">{p.name}</span>
-                                                        <div className="w-2 h-2 bg-black rounded-full animate-pulse" />
+                                    <div className="w-full md:flex-1 grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {promoProducts.map((p: any) => (
+                                            <button
+                                                key={p.id}
+                                                onClick={() => {
+                                                    const randomId = p.id || `promo-${Date.now()}`;
+                                                    setCart(prev => [...prev, { 
+                                                        id: randomId, 
+                                                        name: p.name, 
+                                                        price: Number(p.price) || 0,
+                                                        description: 'Oferta Especial del Día', 
+                                                        cartItemId: `${randomId}-${Date.now()}`, 
+                                                        quantity: 1 
+                                                    }]);
+                                                    toast.success(`Agregado: ${p.name}`);
+                                                }}
+                                                className="w-full bg-white text-black rounded-[2rem] p-5 shadow-2xl flex flex-col justify-between min-h-[140px] hover:scale-105 active:scale-95 transition-all group border border-white/20 relative overflow-hidden text-left"
+                                            >
+                                                {/* Accent Glow inside button */}
+                                                <div className="absolute top-0 right-0 w-24 h-24 bg-black/5 blur-2xl group-hover:bg-[#2d4a3e]/10 transition-colors" />
+                                                
+                                                <div className="w-full border-b border-gray-100 pb-2 mb-2 flex justify-between items-start">
+                                                    <span className="text-xs font-black uppercase tracking-[0.1em] text-black line-clamp-2 leading-tight">{p.name}</span>
+                                                </div>
+                                                
+                                                <div className="flex items-center justify-between w-full mt-auto">
+                                                    <span className="text-3xl font-black tracking-tighter text-black">${Number(p.price).toLocaleString()}</span>
+                                                    <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                                        <IconPlus size={16} strokeWidth={3} />
                                                     </div>
-                                                    
-                                                    <div className="flex items-center justify-between w-full">
-                                                        <span className="text-4xl font-black tracking-tighter text-black">${Number(p.price).toLocaleString()}</span>
-                                                        <span className="text-[10px] font-black text-white bg-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg flex items-center gap-2">
-                                                            Poner <IconPlus size={14} strokeWidth={3} />
-                                                        </span>
-                                                    </div>
-                                                </motion.button>
-                                            ))}
-                                        </AnimatePresence>
+                                                </div>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
