@@ -664,14 +664,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
     const searchTerm = normalize(productSearch.trim());
+    
+    // Filtramos la oferta del día para que no aparezca como opción suelta
+    const validProducts = products.filter((p: any) => p.name !== 'PLATILLO DEL DÍA');
+
     const displayProducts = searchTerm
-        ? products.filter((p: any) =>
+        ? validProducts.filter((p: any) =>
             normalize(p.name).includes(searchTerm) ||
             normalize(p.description ?? '').includes(searchTerm)
         )
         : activeCategory
-            ? products.filter((p: any) => p.category_id === activeCategory)
-            : products;
+            ? validProducts.filter((p: any) => p.category_id === activeCategory)
+            : validProducts;
 
     return (
         <div className="h-full flex flex-col bg-gray-100 overflow-hidden">
