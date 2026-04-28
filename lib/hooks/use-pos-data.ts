@@ -54,6 +54,22 @@ export function useCategories() {
     });
 }
 
+export function useAppSettings() {
+    return useQuery({
+        queryKey: ['app_settings'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('app_settings')
+                .select('*')
+                .eq('id', 1)
+                .single();
+            if (error && error.code !== 'PGRST116') throw error;
+            return data;
+        },
+        staleTime: 1000 * 60 * 5,
+    });
+}
+
 export function useSendKitchenTicket() {
     return useMutation({
         mutationFn: async (ticket: { table_id: string; items: any[]; notes: string }) => {

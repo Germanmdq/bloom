@@ -6,7 +6,7 @@ import { IconSearch, IconTrash, IconCreditCard, IconCheck, IconLoader2, IconX, I
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useQueryClient } from "@tanstack/react-query";
-import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket } from "@/lib/hooks/use-pos-data";
+import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket, useAppSettings } from "@/lib/hooks/use-pos-data";
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ReceiptModal } from "@/components/pos/ReceiptModal";
 import { orderSheetHeaderBorderClass } from "@/lib/dashboard/table-colors";
@@ -46,6 +46,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     const { data: categories = [], isLoading: catLoading } = useCategories();
     const { data: products = [], isLoading: prodLoading } = useProducts();
+    const { data: appSettings } = useAppSettings();
     const queryClient = useQueryClient();
     const createOrder = useCreateOrder();
     const sendKitchenTicket = useSendKitchenTicket();
@@ -665,17 +666,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     const searchTerm = normalize(productSearch.trim());
     
-    // Filtramos la oferta del día para que no aparezca como opción suelta
-    const validProducts = products.filter((p: any) => p.name !== 'PLATILLO DEL DÍA');
-
     const displayProducts = searchTerm
-        ? validProducts.filter((p: any) =>
+        ? products.filter((p: any) =>
             normalize(p.name).includes(searchTerm) ||
             normalize(p.description ?? '').includes(searchTerm)
         )
         : activeCategory
-            ? validProducts.filter((p: any) => p.category_id === activeCategory)
-            : validProducts;
+            ? products.filter((p: any) => p.category_id === activeCategory)
+            : products;
+
+    const featuredProduct = appSettings?.plato_del_dia_id 
+        ? products.find((p: any) => p.id === appSettings.plato_del_dia_id)
+        : products.find((p: any) => p.kind === 'plato_del_dia');
 
     return (
         <div className="h-full flex flex-col bg-gray-100 overflow-hidden">
@@ -823,6 +825,27 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         {!searchTerm && !activeCategory ? (
                             <div className="flex flex-col gap-4">
 
+                                {/* Plato del Día Sugerido */}
+                                {featuredProduct && (
+                                    <button
+                                        onClick={() => {
+                                            addToCart(featuredProduct);
+                                            setFeedback({ product: featuredProduct.name, image: featuredProduct.image_url });
+                                        }}
+                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
+                                    >
+                                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                                            <IconStar size={80} />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest mb-3">
+                                                Menú del Día
+                                            </span>
+                                            <h3 className="text-2xl font-black tracking-tight mb-1">{featuredProduct.name}</h3>
+                                            <p className="text-[#FFD60A] font-black text-xl">${featuredProduct.price}</p>
+                                        </div>
+                                    </button>
+                                )}
 
                                 {/* Bento Grid de Categorías */}
                                 <div 
