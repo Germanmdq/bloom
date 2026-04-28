@@ -320,7 +320,7 @@ export function OrderList() {
                              {unpaidSummary.count} pedido{unpaidSummary.count === 1 ? "" : "s"} sugerido{unpaidSummary.count === 1 ? "" : "s"}
                         </p>
                         <p className="text-sm font-bold text-amber-800">
-                            Pendientes (últimos 30 días): <span className="text-lg">${unpaidSummary.total.toLocaleString("es-AR", { maximumFractionDigits: 0 })}</span>
+                            Pendientes (últimos 30 días): <span className="text-lg">${Number(unpaidSummary.total || 0).toLocaleString("es-AR", { maximumFractionDigits: 0 })}</span>
                         </p>
                     </div>
                 </div>
@@ -470,7 +470,7 @@ export function OrderList() {
                             <div className="space-y-1">
                                 <div className="flex justify-between items-baseline">
                                     <span className="text-[11px] font-bold text-gray-400 uppercase">Ventas</span>
-                                    <span className="text-2xl font-black text-gray-900">${group.total.toLocaleString()}</span>
+                                    <span className="text-2xl font-black text-gray-900">${Number(group.total || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-[11px] font-bold text-gray-400 uppercase">Órdenes</span>
@@ -501,7 +501,7 @@ export function OrderList() {
                                     <div className="flex items-center gap-3 mt-3">
                                         <div className="bg-black text-white px-3 py-1.5 rounded-xl">
                                             <p className="text-[9px] font-black uppercase opacity-60">Total</p>
-                                            <p className="text-lg font-black">${selectedGroup.total.toLocaleString()}</p>
+                                            <p className="text-lg font-black">${Number(selectedGroup.total || 0).toLocaleString()}</p>
                                         </div>
                                         <div className="bg-white/60 px-3 py-1.5 rounded-xl">
                                             <p className="text-[9px] font-black uppercase opacity-60">Órdenes</p>

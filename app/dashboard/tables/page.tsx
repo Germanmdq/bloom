@@ -743,7 +743,7 @@ export default function TablesPage() {
                                             <div className="h-px w-16 bg-black/5 mb-6" />
                                             <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-1 opacity-60 ${styles.textColor}`}>Total de la Mesa</p>
                                             <div className={`text-4xl font-semibold tracking-tight ${styles.textColor}`}>
-                                                ${table.total.toLocaleString("es-AR")}
+                                                ${Number(table.total || 0).toLocaleString("es-AR")}
                                             </div>
                                         </div>
                                     </motion.div>
