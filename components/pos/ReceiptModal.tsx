@@ -21,22 +21,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
 
     useEffect(() => {
         setMounted(true);
-        
-        // Listener para cerrar cuando la impresión termina o se cancela
-        const handleAfterPrint = () => {
-            onClose();
-        };
-        window.addEventListener('onafterprint', handleAfterPrint);
-
-        const timer = setTimeout(() => {
-            window.print();
-        }, 300); // Un poco más rápido
-
-        return () => {
-            clearTimeout(timer);
-            window.removeEventListener('onafterprint', handleAfterPrint);
-        };
-    }, [onClose]);
+    }, []);
 
     if (!mounted) return null;
 
@@ -65,12 +50,9 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
 
             {/* UI de Pantalla (Botones Flotantes) */}
             <div className="fixed top-4 right-4 z-[10000] flex gap-2 no-print">
-                <button 
-                    onClick={() => window.print()} 
-                    className="h-12 px-6 bg-black text-white font-bold rounded-xl shadow-2xl active:scale-95 transition-transform"
-                >
-                    Imprimir de nuevo
-                </button>
+                <div className="h-12 px-6 bg-emerald-500 text-white font-bold rounded-xl shadow-2xl flex items-center justify-center">
+                    Comanda Registrada
+                </div>
                 <button 
                     onClick={onClose} 
                     className="w-12 h-12 bg-white border border-gray-200 text-gray-800 font-bold rounded-xl shadow-2xl flex items-center justify-center hover:bg-gray-50 mb-4"
