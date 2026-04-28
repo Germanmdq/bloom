@@ -336,16 +336,32 @@ export default function HomePage() {
           </h2>
         </FadeIn>
 
-        <Carousel
-          items={categoryCards.map((c, index) => (
+        {/* Desktop: 4 cards in a static row */}
+        <div className="hidden md:flex gap-4 px-8 max-w-7xl mx-auto">
+          {categoryCards.map((c, index) => (
             <Card
               key={c.href}
               index={index}
               card={{ src: c.src, title: c.title, category: c.hint, content: null }}
               onClick={() => router.push(c.href)}
+              className="flex-1 w-auto md:w-auto md:h-[26rem]"
             />
           ))}
-        />
+        </div>
+
+        {/* Mobile: scrollable carousel */}
+        <div className="md:hidden">
+          <Carousel
+            items={categoryCards.map((c, index) => (
+              <Card
+                key={c.href}
+                index={index}
+                card={{ src: c.src, title: c.title, category: c.hint, content: null }}
+                onClick={() => router.push(c.href)}
+              />
+            ))}
+          />
+        </div>
       </section>
 
       {platoDelDia && (

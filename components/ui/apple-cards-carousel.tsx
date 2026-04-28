@@ -171,17 +171,22 @@ export const Card = ({
   index,
   layout = false,
   onClick,
+  className,
 }: {
   card: Card;
   index: number;
   layout?: boolean;
   onClick?: () => void;
+  className?: string;
 }) => {
   return (
     <motion.button
       layoutId={layout ? `card-${card.title}` : undefined}
       onClick={onClick}
-      className="rounded-3xl bg-gray-100 dark:bg-neutral-900 h-80 w-56 md:h-[40rem] md:w-96 overflow-hidden flex flex-col items-start justify-start relative z-10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+      className={cn(
+        "rounded-3xl bg-gray-100 dark:bg-neutral-900 h-80 w-56 md:h-[40rem] md:w-96 overflow-hidden flex flex-col items-start justify-start relative z-10 transition-all hover:scale-[1.02] active:scale-[0.98]",
+        className
+      )}
       style={{
         boxShadow: "0 25px 80px -15px rgba(0,0,0,0.6), 0 10px 40px -10px rgba(0,0,0,0.4)",
       }}
