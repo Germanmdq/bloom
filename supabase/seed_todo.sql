@@ -35,9 +35,9 @@ INSERT INTO public.proveedores (nombre) VALUES
 -- INSUMOS: Leche
 -- ============================================
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
-('Leche','l',0,0,'Lacteos',(SELECT id FROM proveedores WHERE nombre='Leche' LIMIT 1)),
-('Dulce de leche','kg',0,0,'Lacteos',(SELECT id FROM proveedores WHERE nombre='Leche' LIMIT 1)),
-('Crema','l',0,0,'Lacteos',(SELECT id FROM proveedores WHERE nombre='Leche' LIMIT 1));
+('Leche','un',0,0,'Lacteos',(SELECT id FROM proveedores WHERE nombre='Leche' LIMIT 1)),
+('Dulce de leche','un',0,0,'Lacteos',(SELECT id FROM proveedores WHERE nombre='Leche' LIMIT 1)),
+('Crema','un',0,0,'Lacteos',(SELECT id FROM proveedores WHERE nombre='Leche' LIMIT 1));
 
 -- INSUMOS: La Caseriana
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
@@ -47,14 +47,14 @@ INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,pr
 -- INSUMOS: San Diego
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
 ('Noquis','un',0,0,'Pastas',(SELECT id FROM proveedores WHERE nombre='San Diego' LIMIT 1)),
-('Fideos','kg',0,0,'Pastas',(SELECT id FROM proveedores WHERE nombre='San Diego' LIMIT 1));
+('Fideos','un',0,0,'Pastas',(SELECT id FROM proveedores WHERE nombre='San Diego' LIMIT 1));
 
 -- INSUMOS: Cabrales
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
-('Cafe','kg',0,0,'Cafeteria',(SELECT id FROM proveedores WHERE nombre='Cabrales' LIMIT 1)),
-('Azucar','kg',0,0,'Cafeteria',(SELECT id FROM proveedores WHERE nombre='Cabrales' LIMIT 1)),
+('Cafe','un',0,0,'Cafeteria',(SELECT id FROM proveedores WHERE nombre='Cabrales' LIMIT 1)),
+('Azucar','un',0,0,'Cafeteria',(SELECT id FROM proveedores WHERE nombre='Cabrales' LIMIT 1)),
 ('Edulcorante','un',0,0,'Cafeteria',(SELECT id FROM proveedores WHERE nombre='Cabrales' LIMIT 1)),
-('Submarino','kg',0,0,'Cafeteria',(SELECT id FROM proveedores WHERE nombre='Cabrales' LIMIT 1));
+('Submarino','un',0,0,'Cafeteria',(SELECT id FROM proveedores WHERE nombre='Cabrales' LIMIT 1));
 
 -- INSUMOS: Coca
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
@@ -75,10 +75,10 @@ INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,pr
 
 -- INSUMOS: Carniceria
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
-('Milanesas','kg',0,0,'Carniceria',(SELECT id FROM proveedores WHERE nombre='Carniceria' LIMIT 1)),
-('Bife','kg',0,0,'Carniceria',(SELECT id FROM proveedores WHERE nombre='Carniceria' LIMIT 1)),
-('Picada','kg',0,0,'Carniceria',(SELECT id FROM proveedores WHERE nombre='Carniceria' LIMIT 1)),
-('Bife de cerdo','kg',0,0,'Carniceria',(SELECT id FROM proveedores WHERE nombre='Carniceria' LIMIT 1));
+('Milanesas','un',0,0,'Carniceria',(SELECT id FROM proveedores WHERE nombre='Carniceria' LIMIT 1)),
+('Bife','un',0,0,'Carniceria',(SELECT id FROM proveedores WHERE nombre='Carniceria' LIMIT 1)),
+('Picada','un',0,0,'Carniceria',(SELECT id FROM proveedores WHERE nombre='Carniceria' LIMIT 1)),
+('Bife de cerdo','un',0,0,'Carniceria',(SELECT id FROM proveedores WHERE nombre='Carniceria' LIMIT 1));
 
 -- INSUMOS: Avicola
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
@@ -107,7 +107,7 @@ INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,pr
 -- INSUMOS: Los Pinos
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
 ('Pan de miga','un',0,0,'Panificados',(SELECT id FROM proveedores WHERE nombre='Los Pinos' LIMIT 1)),
-('Pan rallado','kg',0,0,'Panificados',(SELECT id FROM proveedores WHERE nombre='Los Pinos' LIMIT 1));
+('Pan rallado','un',0,0,'Panificados',(SELECT id FROM proveedores WHERE nombre='Los Pinos' LIMIT 1));
 
 -- INSUMOS: Tapamar
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
@@ -119,27 +119,27 @@ INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,pr
 
 -- INSUMOS: Verduleria
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
-('Cebolla','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Papa','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Zanahoria','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Morron','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Ajo','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Cebolla','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Papa','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Zanahoria','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Morron','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Ajo','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
 ('Lechuga','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Tomate','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Tomate','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
 ('Albahaca','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
 ('Palta','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
 ('Huevos','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Banana','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Frutilla','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Limon','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Banana','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Frutilla','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Limon','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
 ('Menta','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
 ('Perejil','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Tomate cherry','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Naranja','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Zapallo anco','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Zapallito','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Tomate cherry','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Naranja','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Zapallo anco','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
+('Zapallito','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
 ('Verdeo','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1)),
-('Jengibre','kg',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1));
+('Jengibre','un',0,0,'Verduleria',(SELECT id FROM proveedores WHERE nombre='Verduleria' LIMIT 1));
 
 -- INSUMOS: El Vasquito
 INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,proveedor_id) VALUES
@@ -187,12 +187,12 @@ INSERT INTO public.insumos (nombre,unidad,stock_actual,stock_minimo,categoria,pr
 ('Individuales de manteca','un',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
 ('Individuales de dulce de leche','un',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
 ('Individuales de mermelada','un',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
-('Aceite','l',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
-('Vinagre','l',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
-('Sal','kg',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
-('Limon','kg',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
+('Aceite','un',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
+('Vinagre','un',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
+('Sal','un',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
+('Limon','un',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
 ('Azafran','un',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1)),
-('Queso crema','kg',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1));
+('Queso crema','un',0,0,'Almacen',(SELECT id FROM proveedores WHERE nombre='Todo para la gastronomia' LIMIT 1));
 
 -- ============================================
 -- GASTOS FIJOS
