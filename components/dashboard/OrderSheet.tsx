@@ -798,7 +798,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         </button>
                     </div>
                 </div>
-            </div>
 
             {/* ── BODY ── */}
             <div className="flex-1 flex overflow-hidden">
@@ -1422,11 +1421,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 )}
                             </div>
                         </motion.div>
-                    </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div>
                 </div>
-            )}
-        </AnimatePresence>
-    </div>
-</div>
+            </div>
     );
 }
