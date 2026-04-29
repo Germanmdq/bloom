@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { IconSearch, IconTrash, IconCreditCard, IconCheck, IconLoader2, IconX, IconChevronLeft, IconPrinter, IconToolsKitchen2, IconStar } from "@tabler/icons-react";
+import { 
+    IconSearch, IconTrash, IconCreditCard, IconCheck, IconLoader2, IconX, 
+    IconChevronLeft, IconPrinter, IconToolsKitchen2, IconStar,
+    IconSoup, IconBeef, IconPizza, IconCup, IconIceCream, IconGlassFull, 
+    IconBeer, IconCake, IconBread, IconCookie, IconCheese, IconFish, 
+    IconCarrot, IconBottle, IconCoffee, IconGlass, IconSalad, IconBurger
+} from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useQueryClient } from "@tanstack/react-query";
@@ -904,31 +910,30 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     // Mapeador de Iconos Ultra-Específico
                                     const getSmartIcon = (name: string, cat: string) => {
                                         const n = (name + " " + cat).toLowerCase();
-                                        if (n.includes('rucula') || n.includes('ensala') || n.includes('vegeta')) return '🥗';
-                                        if (n.includes('crudo') || n.includes('jamon') || n.includes('bacon') || n.includes('pancet')) return '🥓';
-                                        if (n.includes('mila') || n.includes('carne') || n.includes('bife') || n.includes('lomo') || n.includes('parri')) return '🥩';
-                                        if (n.includes('choriz') || n.includes('salchi')) return '🌭';
-                                        if (n.includes('poll') || n.includes('supre') || n.includes('alitas')) return '🍗';
-                                        if (n.includes('piz') || n.includes('muzza') || n.includes('fuga')) return '🍕';
-                                        if (n.includes('ham') || n.includes('burg')) return '🍔';
-                                        if (n.includes('caf') || n.includes('latte') || n.includes('capu')) return '☕';
-                                        if (n.includes('te ') || n.includes('infus')) return '🫖';
-                                        if (n.includes('helad') || n.includes('postr')) return '🍦';
-                                        if (n.includes('torta') || n.includes('dulc') || n.includes('cake')) return '🍰';
-                                        if (n.includes('soda') || n.includes('agua') || n.includes('coca')) return '🥤';
-                                        if (n.includes('jug') || n.includes('batid')) return '🍹';
-                                        if (n.includes('cerve') || n.includes('pinta')) return '🍺';
-                                        if (n.includes('vino')) return '🍷';
-                                        if (n.includes('sand') || n.includes('tosta') || n.includes('mig')) return '🥪';
-                                        if (n.includes('papa') || n.includes('frit')) return '🍟';
-                                        if (n.includes('factu') || n.includes('media') || n.includes('pan')) return '🥐';
-                                        if (n.includes('pasta') || n.includes('fideo')) return '🍝';
-                                        if (n.includes('empa')) return '🥧';
-                                        return '🍽️';
+                                        const props = { size: 32, stroke: 1.5, className: "text-slate-400 group-hover:text-white transition-colors" };
+
+                                        if (n.includes('rucula') || n.includes('ensala') || n.includes('vegeta')) return <IconSalad {...props} />;
+                                        if (n.includes('mila') || n.includes('carne') || n.includes('bife') || n.includes('lomo') || n.includes('parri') || n.includes('beef')) return <IconBeef {...props} />;
+                                        if (n.includes('poll') || n.includes('supre') || n.includes('alitas')) return <IconBeef {...props} />;
+                                        if (n.includes('piz') || n.includes('muzza') || n.includes('fuga')) return <IconPizza {...props} />;
+                                        if (n.includes('ham') || n.includes('burg')) return <IconBurger {...props} />;
+                                        if (n.includes('caf') || n.includes('latte') || n.includes('capu')) return <IconCoffee {...props} />;
+                                        if (n.includes('te ') || n.includes('infus')) return <IconCup {...props} />;
+                                        if (n.includes('helad') || n.includes('postr')) return <IconIceCream {...props} />;
+                                        if (n.includes('torta') || n.includes('dulc') || n.includes('cake')) return <IconCake {...props} />;
+                                        if (n.includes('soda') || n.includes('agua') || n.includes('coca')) return <IconBottle {...props} />;
+                                        if (n.includes('jug') || n.includes('batid')) return <IconGlassFull {...props} />;
+                                        if (n.includes('cerve') || n.includes('pinta')) return <IconBeer {...props} />;
+                                        if (n.includes('vino')) return <IconGlass {...props} />;
+                                        if (n.includes('papa') || n.includes('frit')) return <IconToolsKitchen2 {...props} />;
+                                        if (n.includes('factu') || n.includes('media') || n.includes('pan')) return <IconBread {...props} />;
+                                        if (n.includes('pasta') || n.includes('fideo')) return <IconSoup {...props} />;
+                                        if (n.includes('empa')) return <IconCookie {...props} />;
+                                        return <IconToolsKitchen2 {...props} />;
                                     };
 
                                     const catName = categoryMap[item.category_id] || "";
-                                    const icon = getSmartIcon(item.name, catName);
+                                    const IconComponent = getSmartIcon(item.name, catName);
 
                                     return (
                                         <button
@@ -944,24 +949,30 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                     setConfigNotes("");
                                                     setShowConfigurator(true);
                                                 } else {
-                                                    addToCart({ id: item.id, name: item.name, price: Number(item.price), quantity: 1 });
+                                                    addToCart({
+                                                        id: item.id,
+                                                        name: item.name,
+                                                        price: item.price,
+                                                        quantity: 1
+                                                    });
                                                 }
                                             }}
-                                            className="group relative bg-white rounded-[24px] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.05)] hover:shadow-2xl active:scale-95 transition-all text-center border border-gray-50 flex flex-col items-center justify-center gap-4 overflow-hidden h-full"
+                                            className="group relative bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all border border-slate-100 flex flex-col items-center justify-center gap-6 overflow-hidden h-full"
                                         >
                                             <motion.div 
-                                                whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
-                                                className="text-6xl md:text-7xl drop-shadow-md select-none"
+                                                whileHover={{ scale: 1.1, y: -5 }}
+                                                className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center group-hover:bg-slate-900 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-slate-200"
                                             >
-                                                {icon}
+                                                {IconComponent}
                                             </motion.div>
                                             
-                                            <div className="w-full">
-                                                <p className="text-[14px] font-black text-gray-900 leading-tight uppercase tracking-tight mb-2">
+                                            <div className="text-center">
+                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] mb-1.5">{catName}</p>
+                                                <p className="text-base font-bold text-slate-900 leading-tight tracking-tight mb-4 group-hover:text-black">
                                                     {item.name}
                                                 </p>
                                                 <div className="flex justify-center">
-                                                    <span className="px-4 py-1.5 bg-gray-900 text-white rounded-full text-[10px] font-black tracking-widest">
+                                                    <span className="px-5 py-2 bg-slate-100 text-slate-900 group-hover:bg-slate-900 group-hover:text-white rounded-2xl text-[13px] font-bold tracking-tighter transition-all">
                                                         ${Number(item.price || 0).toLocaleString()}
                                                     </span>
                                                 </div>
@@ -971,7 +982,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 })}
                             </div>
                         )}
-                    </div>
                 </div>
 
                 {/* ── DERECHA: Datos Cliente + Carrito ── */}
