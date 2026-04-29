@@ -901,6 +901,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 <IconToolsKitchen2 size={60} />
                                             </div>
                                             <div className="relative z-10">
+                                                <h3 className="text-xl font-bold text-slate-900 leading-tight">{categories.find(c => c.name.toLowerCase().includes('plato'))?.name}</h3>
+                                                <p className="text-slate-400 font-bold text-sm">Ver opciones →</p>
+                                            </div>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         ) : (
                             /* Productos: Grilla Inteligente Adaptativa (v2.1) */
