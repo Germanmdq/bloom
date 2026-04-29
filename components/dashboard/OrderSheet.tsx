@@ -796,7 +796,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         >
                             <IconX size={20} />
                         </button>
-                    </div>
                 </div>
             </div>
 
