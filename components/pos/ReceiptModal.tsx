@@ -43,7 +43,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
     if (!mounted) return null;
 
     const ticketContent = (
-        <div id="bloom-print-portal" className="fixed inset-0 z-[9999] bg-white flex flex-col items-start overflow-y-auto">
+        <div id="bloom-print-portal" className="fixed inset-0 z-[-1] opacity-0 pointer-events-none bg-white flex flex-col items-start overflow-hidden">
             <style jsx global>{`
                 @media print {
                     @page { margin: 0; size: 72mm auto; }
@@ -57,26 +57,15 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
                         background: white !important;
                         padding: 0 !important;
                         margin: 0 !important;
+                        opacity: 1 !important;
+                        z-index: 9999 !important;
                     }
                     .no-print { display: none !important; }
-                    .print-tail { display: block !important; height: 150mm !important; }
+                    .print-tail { display: block !important; height: 180mm !important; }
                 }
-                .no-print { display: flex; }
+                .no-print { display: none; }
                 .print-tail { display: none; }
             `}</style>
-
-            {/* UI de Pantalla (Botones Flotantes) */}
-            <div className="fixed top-4 right-4 z-[10000] flex gap-2 no-print">
-                <div className="h-12 px-6 bg-emerald-500 text-white font-bold rounded-xl shadow-2xl flex items-center justify-center">
-                    {isKitchen ? 'Comanda Enviada a Cocina' : 'Venta Registrada'}
-                </div>
-                <button 
-                    onClick={onClose} 
-                    className="w-12 h-12 bg-white border border-gray-200 text-gray-800 font-bold rounded-xl shadow-2xl flex items-center justify-center hover:bg-gray-50 mb-4"
-                >
-                    <IconX size={24} />
-                </button>
-            </div>
 
             {/* Contenido del Ticket */}
             <div className="w-[72mm] p-4 bg-white flex flex-col gap-2 print:px-6 print:py-4">
@@ -126,8 +115,8 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
                     {!isKitchen && <p className="text-[9px]">bloommdp.com</p>}
                 </div>
 
-                {/* ESPACIO FORZADO: Avance de papel al final */}
-                <div className="print-tail w-full" style={{ height: '140mm' }} />
+                {/* ESPACIO FORZADO: Avance de papel al final aumentado a 180mm */}
+                <div className="print-tail w-full" style={{ height: '180mm' }} />
             </div>
         </div>
     );
