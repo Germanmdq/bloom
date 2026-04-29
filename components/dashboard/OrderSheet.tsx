@@ -1084,6 +1084,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     />
                                     <input
                                         type="text"
+                                        placeholder="Dirección"
+                                        value={customerAddress}
+                                        onChange={(e) => setCustomerAddress(e.target.value)}
+                                        className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Footer del carrito */}
                     <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex flex-col gap-4">
