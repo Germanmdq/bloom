@@ -142,8 +142,6 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
         iframe.style.border = "0";
         iframe.style.opacity = "0";
         iframe.style.pointerEvents = "none";
-        // Evita navegación/recursos externos innecesarios; igual permite imprimir.
-        iframe.setAttribute("sandbox", "allow-modals allow-same-origin");
         document.body.appendChild(iframe);
 
         const cleanup = () => {
@@ -177,20 +175,39 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
             handleAfterPrint();
         }, 15000);
 
-        iframe.onload = () => {
-            // Esperamos 2 frames para que el layout quede listo (evita "blank print" en Chrome).
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    try {
-                        // Fuerza un reflow en algunos drivers/browsers.
-                        void win.document.body?.offsetHeight;
-                        win.focus();
-                        win.print();
-                    } catch {
-                        handleAfterPrint();
-                    }
-                });
-            });
+        iframe.onload = async () => {
+            try {
+                // Esperar a que el documento esté completamente listo.
+                const doc = win.document;
+                if (doc.readyState !== "complete") {
+                    await new Promise<void>((resolve) => {
+                        const onReady = () => {
+                            if (doc.readyState === "complete") {
+                                doc.removeEventListener("readystatechange", onReady);
+                                resolve();
+                            }
+                        };
+                        doc.addEventListener("readystatechange", onReady);
+                    });
+                }
+
+                // Esperar fonts si el navegador lo soporta (ayuda a evitar impresión vacía).
+                // @ts-expect-error: fonts no está tipado en todos los DOM libs
+                if (doc.fonts?.ready) {
+                    // @ts-expect-error: fonts no está tipado en todos los DOM libs
+                    await doc.fonts.ready;
+                }
+
+                // 2 frames para asegurar layout final.
+                await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+
+                // Fuerza reflow.
+                void doc.body?.offsetHeight;
+                win.focus();
+                win.print();
+            } catch {
+                handleAfterPrint();
+            }
         };
 
         return () => {
