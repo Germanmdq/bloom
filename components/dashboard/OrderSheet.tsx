@@ -748,7 +748,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         const clean = customerName.replace('Cliente: ', '');
                                         if (tableId === WEB_ORDER_TABLE_RETIRO) return 'R';
                                         if (tableId === WEB_ORDER_TABLE_DELIVERY) return 'E';
-                                        return clean ? clean.charAt(0).toUpperCase() : tableId;
+                                        if (clean) return clean.charAt(0).toUpperCase();
+                                        return tableId < 100 ? tableId : 'N';
                                     })()}
                                 </span>
                             </div>
@@ -1087,34 +1088,38 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         </div>
                     )}
 
-                    {/* Formulario de cliente (solo si es delivery/retiro no web y no vinculaste un cliente arriba) */}
-                    {(orderType === 'DELIVERY' || orderType === 'TAKEAWAY' || tableId >= 100) && !isWebTable && !selectedCustomerId && (
+                    {/* Formulario de cliente (solo si NO es salón o si es una mesa temporal > 100) */}
+                    {(orderType !== 'DINE_IN' || tableId >= 100) && !isWebTable && !selectedCustomerId && (
                         <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 shrink-0">
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Datos de Entrega</label>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Identificación del Pedido</label>
                             <div className="space-y-2">
                                 <input
                                     type="text"
-                                    placeholder="Nombre del Cliente"
+                                    placeholder="Nombre / Mesa"
                                     value={customerName}
                                     onChange={(e) => setCustomerName(e.target.value)}
                                     className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
                                 />
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Teléfono"
-                                        value={customerPhone}
-                                        onChange={(e) => setCustomerPhone(e.target.value)}
-                                        className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="Dirección"
-                                        value={customerAddress}
-                                        onChange={(e) => setCustomerAddress(e.target.value)}
-                                        className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
-                                    />
-                                </div>
+                                
+                                {/* Mostrar teléfono y dirección SOLO si es Delivery o Takeaway */}
+                                {orderType !== 'DINE_IN' && (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Teléfono"
+                                            value={customerPhone}
+                                            onChange={(e) => setCustomerPhone(e.target.value)}
+                                            className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Dirección"
+                                            value={customerAddress}
+                                            onChange={(e) => setCustomerAddress(e.target.value)}
+                                            className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
