@@ -798,7 +798,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         </button>
                     </div>
                 </div>
-            </div>
 
             {/* ── BODY ── */}
             <div className="flex-1 flex overflow-hidden">
