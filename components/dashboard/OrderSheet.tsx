@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { 
     IconSearch, IconTrash, IconCreditCard, IconCheck, IconLoader2, IconX, 
     IconChevronLeft, IconPrinter, IconToolsKitchen2, IconStar,
-    IconSoup, IconBeef, IconPizza, IconCup, IconIceCream, IconGlassFull, 
+    IconSoup, IconMeat, IconPizza, IconCup, IconIceCream, IconGlassFull,
     IconBeer, IconCake, IconBread, IconCookie, IconCheese, IconFish, 
     IconCarrot, IconBottle, IconCoffee, IconGlass, IconSalad, IconBurger
 } from "@tabler/icons-react";
@@ -921,8 +921,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         const props = { size: 32, stroke: 1.5, className: "text-slate-400 group-hover:text-white transition-colors" };
 
                                         if (n.includes('rucula') || n.includes('ensala') || n.includes('vegeta')) return <IconSalad {...props} />;
-                                        if (n.includes('mila') || n.includes('carne') || n.includes('bife') || n.includes('lomo') || n.includes('parri') || n.includes('beef')) return <IconBeef {...props} />;
-                                        if (n.includes('poll') || n.includes('supre') || n.includes('alitas')) return <IconBeef {...props} />;
+                                        if (n.includes('mila') || n.includes('carne') || n.includes('bife') || n.includes('lomo') || n.includes('parri') || n.includes('beef')) return <IconMeat {...props} />;
+                                        if (n.includes('poll') || n.includes('supre') || n.includes('alitas')) return <IconMeat {...props} />;
                                         if (n.includes('piz') || n.includes('muzza') || n.includes('fuga')) return <IconPizza {...props} />;
                                         if (n.includes('ham') || n.includes('burg')) return <IconBurger {...props} />;
                                         if (n.includes('caf') || n.includes('latte') || n.includes('capu')) return <IconCoffee {...props} />;
@@ -1145,6 +1145,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     </div>
                 </div>
             </div>
+        </div>
 
             {/* ── PANTALLA DE ÉXITO Y TICKET POST-COBRO ── */}
             <AnimatePresence>
