@@ -929,11 +929,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 </div>
                             </div>
                         ) : (
-                            /* Productos: Grilla Inteligente Adaptativa (v2.1) */
-                            <div className={`grid gap-4 w-full h-full pb-20 ${
-                                displayProducts.length === 4 ? 'grid-cols-2' : 
-                                displayProducts.length >= 5 ? 'grid-cols-3' : 'grid-cols-1'
-                            }`}>
+                            /* Productos: grilla responsiva (evita deformaciones en modales chicos) */
+                            <div className="grid gap-4 w-full pb-20 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
                                 {displayProducts.map((item: any) => {
                                     // Mapeador de Iconos Ultra-Específico
                                     const getSmartIcon = (name: string, cat: string) => {
@@ -985,7 +982,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                     });
                                                 }
                                             }}
-                                            className="group relative bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all border border-slate-100 flex flex-col items-center justify-center gap-6 overflow-hidden h-full"
+                                            className="group relative bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all border border-slate-100 flex flex-col items-center justify-center gap-6 overflow-hidden min-h-[170px]"
                                         >
                                             <motion.div 
                                                 whileHover={{ scale: 1.1, y: -5 }}
