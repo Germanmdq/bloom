@@ -796,9 +796,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         >
                             <IconX size={20} />
                         </button>
+                    </div>
                 </div>
             </div>
-        </div>
 
             {/* ── BODY ── */}
             <div className="flex-1 flex overflow-hidden">
@@ -1147,7 +1147,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         </div>
                 </div>
             </div>
-        </div>
 
                 {/* ── PANTALLA DE ÉXITO Y TICKET POST-COBRO ── */}
             <AnimatePresence>
@@ -1423,9 +1422,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 )}
                             </div>
                         </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-        </div>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
+    </div>
+</div>
     );
 }
