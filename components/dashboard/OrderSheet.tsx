@@ -756,19 +756,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 border-4 border-white rounded-full" />
                         </div>
 
-                        <div>
+                        <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-3">
-                                <h2 className="text-3xl font-bold text-slate-900 tracking-tight leading-none">
-                                    {customerName || (isWebTable ? "Pedido Web" : `Mesa ${tableId}`)}
-                                </h2>
-                                {isWebTable && (
-                                    <span className="px-2.5 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-lg">Online</span>
-                                )}
+                                <input
+                                    type="text"
+                                    value={customerName.replace('Cliente: ', '')}
+                                    onChange={(e) => setCustomerName(e.target.value)}
+                                    placeholder={`Mesa ${tableId < 100 ? tableId : ''}`}
+                                    className="text-4xl font-black text-slate-900 tracking-tighter leading-none bg-transparent border-none outline-none p-0 w-full placeholder:text-slate-200 uppercase"
+                                />
                             </div>
-                            <div className="flex items-center gap-2 mt-1.5">
-                                <span className="text-xs font-medium text-slate-400 uppercase tracking-widest">
-                                    {orderType} • {cart.reduce((s, i) => s + i.quantity, 0)} ítems
-                                </span>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[10px] font-black uppercase tracking-wider">{orderType}</span>
+                                <span className="text-[10px] text-slate-400 font-bold">• {cart.reduce((s, i) => s + i.quantity, 0)} ÍTEMS</span>
                             </div>
                         </div>
                     </div>
@@ -1020,109 +1020,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                 {/* ── DERECHA: Datos Cliente + Carrito ── */}
                 <div className="w-72 xl:w-96 flex flex-col bg-white border-l border-gray-200 shrink-0">
-
-                    {/* Cliente / Cuenta Corriente Selector (Only for local tables) */}
-                    {!isWebTable && (
-                        <div className="px-4 py-3 bg-white border-b border-gray-100 shrink-0">
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cliente / Cuenta Corriente</label>
-                            
-                            {!selectedCustomerId ? (
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={customerSearchQuery}
-                                        onChange={(e) => handleCustomerSearch(e.target.value)}
-                                        placeholder="Buscar cliente por nombre..."
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
-                                    />
-                                    {isSearchingCustomer && <IconLoader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" />}
-                                    
-                                    {customerResults.length > 0 && (
-                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden divide-y divide-gray-50">
-                                            {customerResults.map(c => (
-                                                <button
-                                                    key={c.id}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setSelectedCustomerId(c.id);
-                                                        setCustomerName(c.full_name);
-                                                        setCustomerResults([]);
-                                                        setCustomerSearchQuery("");
-                                                    }}
-                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex justify-between items-center"
-                                                >
-                                                    <div>
-                                                        <p className="font-bold text-sm text-gray-900">{c.full_name}</p>
-                                                        <p className="text-[10px] text-gray-400">{c.phone || 'Sin teléfono'}</p>
-                                                    </div>
-                                                    {Number(c.balance || 0) > 0 && (
-                                                        <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-md">Debe ${Number(c.balance || 0).toLocaleString()}</span>
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-between p-3 bg-gray-900 rounded-2xl">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white font-black text-xs">
-                                            {customerName.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-black text-white leading-none">{customerName}</p>
-                                            <p className="text-[10px] text-white/50 mt-1 uppercase font-bold tracking-wider">Cliente vinculado</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        onClick={() => {
-                                            setSelectedCustomerId(null);
-                                            setCustomerName("");
-                                        }}
-                                        className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 transition-colors"
-                                    >
-                                        <IconX size={16} />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Formulario de cliente (solo si NO es salón o si es una mesa temporal > 100) */}
-                    {(orderType !== 'LOCAL' || tableId >= 100) && !isWebTable && !selectedCustomerId && (
-                        <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 shrink-0">
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Identificación del Pedido</label>
-                            <div className="space-y-2">
-                                <input
-                                    type="text"
-                                    placeholder="Nombre / Mesa"
-                                    value={customerName}
-                                    onChange={(e) => setCustomerName(e.target.value)}
-                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
-                                />
-                                
-                                {/* Mostrar teléfono y dirección SOLO si es Delivery o Takeaway */}
-                                {orderType !== 'LOCAL' && (
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Teléfono"
-                                            value={customerPhone}
-                                            onChange={(e) => setCustomerPhone(e.target.value)}
-                                            className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Dirección"
-                                            value={customerAddress}
-                                            onChange={(e) => setCustomerAddress(e.target.value)}
-                                            className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
 
                     {/* Lista de Productos en el Carrito */}
                     <div className="flex-1 overflow-y-auto px-4 py-2 no-scrollbar scroll-smooth">
