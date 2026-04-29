@@ -1147,7 +1147,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         </div>
                 </div>
             </div>
-        </div>
 
                 {/* ── PANTALLA DE ÉXITO Y TICKET POST-COBRO ── */}
             <AnimatePresence>
@@ -1427,5 +1426,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 )}
             </AnimatePresence>
         </div>
+                </div>
+            </div>
     );
 }
