@@ -667,28 +667,36 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 }
                 
                 // ── PERSISTENCIA TOTAL (UPSERT) ──
-                // Usamos upsert para asegurar que la mesa se cree o actualice y quede OCCUPIED con su tipo de orden
-                await supabase.from("salon_tables")
+                // Usamos upsert de forma ultra-segura para que la mesa se quede abierta
+                const { error: upsertError } = await supabase.from("salon_tables")
                     .upsert({ 
                         id: tableId,
                         items: cart,
                         status: 'OCCUPIED',
-                        order_type: orderType, // Mantenemos si es LOCAL, DELIVERY o TAKEAWAY
                         updated_at: new Date().toISOString()
                     });
+                
+                if (upsertError) console.error("Error en upsert mesa:", upsertError);
 
             } catch (err) {
-                console.error("❌ Fallo crítico en sistema de inventario:", err);
+                console.error("❌ Fallo crítico en proceso de cocina:", err);
             }
 
             setFeedback({ message: "Enviado a cocina", type: 'success' });
+            
+            // FORZAMOS EL CIERRE DEL PANEL PASE LO QUE PASE
             setTimeout(() => {
                 setFeedback(null);
-                if (!skipClose) onClose();
-            }, 1000);
+                onClose(); 
+            }, 800);
+
         } catch (error: any) {
+            console.error("Error general en sendToKitchen:", error);
             setFeedback({ message: `Error: ${error.message}`, type: 'error' });
-            setTimeout(() => setFeedback(null), 3000);
+            setTimeout(() => {
+                setFeedback(null);
+                onClose(); // Cerramos igual para no trabar la UI
+            }, 2000);
         }
         setIsFinishing(false);
     };
