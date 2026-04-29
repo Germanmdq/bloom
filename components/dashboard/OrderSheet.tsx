@@ -1089,7 +1089,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     )}
 
                     {/* Formulario de cliente (solo si NO es salón o si es una mesa temporal > 100) */}
-                    {(orderType !== 'DINE_IN' || tableId >= 100) && !isWebTable && !selectedCustomerId && (
+                    {(orderType !== 'LOCAL' || tableId >= 100) && !isWebTable && !selectedCustomerId && (
                         <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100 shrink-0">
                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Identificación del Pedido</label>
                             <div className="space-y-2">
@@ -1102,7 +1102,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 />
                                 
                                 {/* Mostrar teléfono y dirección SOLO si es Delivery o Takeaway */}
-                                {orderType !== 'DINE_IN' && (
+                                {orderType !== 'LOCAL' && (
                                     <div className="grid grid-cols-2 gap-2">
                                         <input
                                             type="text"
