@@ -59,7 +59,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
     <style>
       /* Algunos drivers de térmicas recortan el final si el alto es "auto".
          Forzamos una "hoja" muy larga y además dejamos margen inferior. */
-      @page { margin: 0 0 25mm 0; size: 72mm 2000mm; }
+      @page { margin: 0 0 25mm 0; size: 72mm auto; }
       html, body { margin: 0; padding: 0; background: #fff; }
       body { width: 72mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
       .ticket { width: 72mm; padding: 12px 12px 30mm 12px; box-sizing: border-box; }
@@ -142,6 +142,8 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
         iframe.style.border = "0";
         iframe.style.opacity = "0";
         iframe.style.pointerEvents = "none";
+        // Evita navegación/recursos externos innecesarios; igual permite imprimir.
+        iframe.setAttribute("sandbox", "allow-modals allow-same-origin");
         document.body.appendChild(iframe);
 
         const cleanup = () => {
@@ -150,6 +152,9 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
             } catch {}
         };
 
+        // Cargamos el HTML por srcdoc y esperamos onload para evitar impresión en blanco.
+        iframe.srcdoc = html;
+
         const win = iframe.contentWindow;
         if (!win) {
             cleanup();
@@ -157,27 +162,36 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
             return;
         }
 
-        // Escribimos el documento y disparamos print desde el iframe (sin “pantallazo” en la UI principal)
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
-
         const handleAfterPrint = () => {
-            win.removeEventListener("afterprint", handleAfterPrint);
+            try {
+                win.removeEventListener("afterprint", handleAfterPrint);
+            } catch {}
             cleanup();
             onClose();
         };
+
         win.addEventListener("afterprint", handleAfterPrint);
 
         const timer = window.setTimeout(() => {
-            try {
-                win.focus();
-                win.print();
-            } catch {
-                cleanup();
-                onClose();
-            }
-        }, 150);
+            // Fallback si onload no dispara (raro): evitamos dejar el iframe colgado.
+            handleAfterPrint();
+        }, 15000);
+
+        iframe.onload = () => {
+            // Esperamos 2 frames para que el layout quede listo (evita "blank print" en Chrome).
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    try {
+                        // Fuerza un reflow en algunos drivers/browsers.
+                        void win.document.body?.offsetHeight;
+                        win.focus();
+                        win.print();
+                    } catch {
+                        handleAfterPrint();
+                    }
+                });
+            });
+        };
 
         return () => {
             window.clearTimeout(timer);
