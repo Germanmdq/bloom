@@ -609,6 +609,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             return;
         }
         setIsFinishing(true);
+        const currentTotal = useOrderStore.getState().getTotal();
         try {
             await sendKitchenTicket.mutateAsync({
                 table_id: String(tableId),
@@ -669,9 +670,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 // ── PERSISTENCIA TOTAL (UPSERT) ──
                 // Usamos Number(tableId) para asegurar que la DB no lo rechace si viene como string
                 const { error: upsertError } = await supabase.from("salon_tables")
-                    .upsert({ 
+                    .upsert({
                         id: Number(tableId),
                         items: cart,
+                        total: currentTotal,
                         status: 'OCCUPIED',
                         updated_at: new Date().toISOString()
                     }, { onConflict: 'id' });
@@ -689,20 +691,17 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             }
 
             setFeedback({ message: "Enviado a cocina", type: 'success' });
-            
-            // Cierre controlado
+
+            // Solo cerramos automáticamente si skipClose no fue solicitado
             setTimeout(() => {
                 setFeedback(null);
-                onClose(); 
+                if (!skipClose) onClose();
             }, 800);
 
         } catch (error: any) {
             console.error("Error general en sendToKitchen:", error);
             setFeedback({ message: `Error: ${error.message}`, type: 'error' });
-            setTimeout(() => {
-                setFeedback(null);
-                onClose();
-            }, 2000);
+            setTimeout(() => setFeedback(null), 2000);
         }
         setIsFinishing(false);
     };
