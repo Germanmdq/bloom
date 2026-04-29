@@ -378,6 +378,7 @@ export default function TablesPage() {
                         <div className="bg-white/90 backdrop-blur-2xl w-full h-full rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-white/50 overflow-hidden flex flex-col">
                             <OrderSheet
                                 tableId={selectedTable.id}
+                                initialTableData={selectedTable}
                                 initialShowPayment={autoOpenPayment}
                                 onClose={() => { setSelectedTable(null); setAutoOpenPayment(false); fetchTables(); }}
                                 onOrderComplete={() => handleOrderComplete()}

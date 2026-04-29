@@ -32,10 +32,11 @@ type OrderSheetProps = {
     webOrderId?: string;
     /** Pass the full order object to skip the fetch and load the cart instantly */
     webOrderData?: any;
+    initialTableData?: any;
     initialShowPayment?: boolean;
 };
 
-export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webOrderData, initialShowPayment }: OrderSheetProps) {
+export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webOrderData, initialTableData, initialShowPayment }: OrderSheetProps) {
     const {
         cart, addToCart, setCart, removeFromCart, clearCart,
         paymentMethod, setPaymentMethod, notes, setNotes,
@@ -156,7 +157,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     /** Al cambiar de mesa, vaciar el store ya (evita mezclar pedidos entre mesas). */
     useLayoutEffect(() => {
         useOrderStore.getState().clearCart();
-    }, [tableId]);
+        
+        // INSTANT LOAD: If we have data from parent, use it NOW
+        if (initialTableData && initialTableData.status === 'OCCUPIED') {
+            const items = Array.isArray(initialTableData.items) ? initialTableData.items : [];
+            const newCartItems: CartItem[] = [];
+            items.forEach((item: any) => {
+                if (item.id !== 'meta-customer') {
+                    newCartItems.push(normalizeTableItem(item));
+                }
+            });
+            useOrderStore.getState().setCart(newCartItems);
+        }
+    }, [tableId, initialTableData]);
 
     const refreshData = async () => {
         if (isWebTable) {
@@ -287,6 +300,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
             if (webOrderData) {
                 handleSelectWebOrder(webOrderData);
+            } else if (initialTableData) {
+                // Already loaded in useLayoutEffect
+                return;
             } else if (webOrderId) {
                 // Fetch only the specific order, not the whole list
                 fetch(`/api/orders/${webOrderId}`).then(r => r.json()).then(res => {
@@ -698,67 +714,57 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center bg-gray-50">
-                <IconLoader2 className="animate-spin text-gray-400" size={32} />
+            <div className="h-full flex items-center justify-center bg-slate-50">
+                <IconLoader2 className="animate-spin text-slate-400" size={32} />
             </div>
         );
     }
 
     return (
-        <div className="h-full flex flex-col bg-gray-100 overflow-hidden">
+        <div className="h-full flex flex-col bg-slate-50 overflow-hidden">
 
-            {/* ── HEADER: Dynamic Status Widget ── */}
-            <div className="px-6 py-5 bg-white border-b border-gray-100 shrink-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] z-10">
+            {/* ── HEADER: Minimalist & Premium ── */}
+            <div className="px-8 py-6 bg-white border-b border-slate-100 shrink-0 shadow-sm z-20">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-5">
+                    <div className="flex items-center gap-6">
                         {isWebTable && currentWebOrderId && (
-                            <button onClick={handleBackToWebList} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-all active:scale-90">
-                                <IconChevronLeft size={20} className="text-gray-900" />
+                            <button onClick={handleBackToWebList} className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition-all active:scale-95">
+                                <IconChevronLeft size={22} className="text-slate-900" />
                             </button>
                         )}
                         
-                        {/* Status Circle Identifier */}
-                        <div className="w-14 h-14 bg-gray-900 rounded-[1.25rem] flex items-center justify-center text-white shadow-lg shadow-black/10 transition-transform hover:scale-105">
-                            <span className="font-black text-2xl tracking-tighter">
-                                {(() => {
-                                    const clean = customerName.replace('Cliente: ', '');
-                                    if (tableId === WEB_ORDER_TABLE_RETIRO) return 'R';
-                                    if (tableId === WEB_ORDER_TABLE_DELIVERY) return 'E';
-                                    return clean ? clean.charAt(0).toUpperCase() : tableId;
-                                })()}
-                            </span>
+                        <div className="relative group">
+                            <div className="w-16 h-16 bg-slate-900 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-slate-200 transition-all group-hover:scale-105">
+                                <span className="font-bold text-3xl tracking-tighter">
+                                    {(() => {
+                                        const clean = customerName.replace('Cliente: ', '');
+                                        if (tableId === WEB_ORDER_TABLE_RETIRO) return 'R';
+                                        if (tableId === WEB_ORDER_TABLE_DELIVERY) return 'E';
+                                        return clean ? clean.charAt(0).toUpperCase() : tableId;
+                                    })()}
+                                </span>
+                            </div>
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 border-4 border-white rounded-full" />
                         </div>
 
                         <div>
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none">
-                                    {(() => {
-                                        const clean = customerName.replace('Cliente: ', '');
-                                        if (tableId === WEB_ORDER_TABLE_RETIRO) return 'Retiro';
-                                        if (tableId === WEB_ORDER_TABLE_DELIVERY) return 'Envío';
-                                        return clean ? clean : `Mesa ${tableId}`;
-                                    })()}
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-3xl font-bold text-slate-900 tracking-tight leading-none">
+                                    {customerName || (isWebTable ? "Pedido Web" : `Mesa ${tableId}`)}
                                 </h2>
-                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                                    webOrderIsPaid ? 'bg-green-100 text-green-700' : (cart.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400')
-                                }`}>
-                                    {webOrderIsPaid ? 'YA ABONADO' : (cart.length > 0 ? 'Ocupada' : 'Libre')}
+                                {isWebTable && (
+                                    <span className="px-2.5 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-lg">Online</span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-xs font-medium text-slate-400 uppercase tracking-widest">
+                                    {orderType} • {cart.reduce((s, i) => s + i.quantity, 0)} ítems
                                 </span>
                             </div>
-                            <p className="text-sm font-bold text-gray-400 mt-1">
-                                {customerName ? `Mesa ${tableId}` : (cart.length === 0 ? 'Sincronizando...' : `${cart.reduce((s, i) => s + i.quantity, 0)} productos en comanda`)}
-                            </p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <div className="flex flex-col items-end mr-4">
-                            <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-1">Mesa {tableId}</span>
-                            <div className="flex items-center gap-2">
-                                 <select
-                                    value={selectedWaiter}
-                                    onChange={(e) => setSelectedWaiter(e.target.value)}
-                                    className="h-9 px-3 bg-gray-50/50 border border-transparent rounded-xl text-xs font-bold text-gray-600 outline-none hover:bg-gray-100 transition-colors cursor-pointer"
                                 >
                                     <option value="">Seleccionar Mozo...</option>
                                     {waiters.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
@@ -887,66 +893,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 <IconToolsKitchen2 size={60} />
                                             </div>
                                             <div className="relative z-10">
-                                                <span className="inline-block px-3 py-1 bg-gray-100 rounded-full text-[8px] font-black uppercase tracking-widest mb-2 text-gray-500">
-                                                    Categoría
-                                                </span>
-                                                <h3 className="text-xl font-black tracking-tight mb-1 text-gray-900">Platos del Día</h3>
-                                                <p className="text-gray-400 font-bold text-sm">Ver opciones →</p>
-                                            </div>
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Bento Grid de Categorías (Filtrando la que ya mostramos arriba si es necesario, o dejándola) */}
-                                <div 
-                                    className="grid gap-4 w-full h-full pb-20"
-                                    style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: 'repeat(3, 1fr)',
-                                        gridAutoRows: 'minmax(140px, auto)',
-                                        gridTemplateAreas: `
-                                            "big big s1"
-                                            "big big s2"
-                                            "s3 s4 s5"
-                                        `
-                                    }}
-                                >
-                                {categories
-                                    .filter(c => !c.name.toLowerCase().includes('plato')) // Evitamos duplicar la de arriba
-                                    .map((cat: any, idx: number) => {
-                                    const count = categoryCounts[cat.id] || 0;
-                                    // Asignar área según el índice (Bento Pattern)
-                                    const area = idx === 0 ? 'big' : idx === 1 ? 's1' : idx === 2 ? 's2' : idx === 3 ? 's3' : idx === 4 ? 's4' : idx === 5 ? 's5' : 'auto';
-
-                                    return (
-                                        <button
-                                            key={cat.id}
-                                            onClick={() => setActiveCategory(cat.id)}
-                                            style={{ gridArea: area }}
-                                            className={`group relative bg-white rounded-[24px] p-6 shadow-[0_15px_45px_rgba(0,0,0,0.06)] hover:shadow-2xl active:scale-95 transition-all text-center border border-gray-50 flex flex-col items-center justify-center gap-4 overflow-hidden ${idx === 0 ? 'min-h-[300px]' : ''}`}
-                                        >
-                                            {/* Pastel Tint */}
-                                            <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity bg-current" />
-
-                                            <motion.div
-                                                whileHover={{ scale: 1.15, rotate: [0, -5, 5, 0] }}
-                                                className="text-gray-400 group-hover:text-gray-700 transition-colors"
-                                            >
-                                                <IconToolsKitchen2 size={idx === 0 ? 72 : 48} stroke={1.5} />
-                                            </motion.div>
-
-                                            <div>
-                                                <p className={`${idx === 0 ? 'text-lg' : 'text-xs'} font-black text-gray-900 leading-tight uppercase tracking-tight`}>{cat.name}</p>
-                                                <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-wider">{count} items</p>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ) : displayProducts.length === 0 ? (
-                            <div className="h-full flex items-center justify-center text-gray-300 text-sm font-medium">
-                                Sin resultados
                             </div>
                         ) : (
                             /* Productos: Grilla Inteligente Adaptativa (v2.1) */
@@ -1120,111 +1066,53 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     />
                                     <input
                                         type="text"
-                                        placeholder="Dirección"
-                                        value={customerAddress}
-                                        onChange={(e) => setCustomerAddress(e.target.value)}
-                                        className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Lista de items */}
-                    <div className="flex-1 overflow-y-auto no-scrollbar">
-                        {cart.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center gap-2 text-gray-300 p-6 text-center">
-                                <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mb-2">
-                                    <IconCreditCard size={20} className="text-gray-300" />
-                                </div>
-                                <p className="text-sm font-medium">Seleccioná productos</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-gray-50">
-                                {cart.map((item, idx) => (
-                                    <div key={idx} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                                        <div className="w-6 h-6 bg-gray-900 rounded-lg flex items-center justify-center shrink-0">
-                                            <span className="text-white text-[10px] font-black">{item.quantity}</span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-gray-800 truncate">{item.name}</p>
-                                            {item.notes && <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">Obs: {item.notes}</p>}
-                                            <p className="text-xs text-gray-400">${Number(item.price || 0).toLocaleString()} c/u</p>
-                                        </div>
-                                        <div className="text-right shrink-0">
-                                            <p className="text-sm font-black text-gray-900">${(Number(item.price || 0) * (item.quantity || 1)).toLocaleString()}</p>
-                                        </div>
-                                        <button onClick={() => removeFromCart(idx)} className="shrink-0 p-1 rounded-lg hover:bg-red-50 transition-colors">
-                                            <IconTrash size={13} className="text-gray-300 hover:text-red-400" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
 
                     {/* Footer del carrito */}
-                    <div className="border-t border-gray-100 p-4 flex flex-col gap-3 shrink-0">
-                        <input
-                            type="text"
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Notas de cocina..."
-                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none placeholder:text-gray-300"
-                        />
-
-                        <div className="flex items-center justify-between py-1">
-                            <span className="text-sm text-gray-500">Total</span>
-                            <span className="text-2xl font-black text-gray-900">${Number(total || 0).toLocaleString()}</span>
+                    <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex flex-col gap-4">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                placeholder="Notas especiales..."
+                                className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all placeholder:text-slate-300 shadow-sm"
+                            />
                         </div>
 
-                        {/* Delivery Person Selector */}
-                        {(orderType === 'DELIVERY' || orderType === 'TAKEAWAY') && (
-                            <div className="mb-4">
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Repartidor (opcional)</label>
-                                <select 
-                                    value={selectedDeliveryPerson}
-                                    onChange={(e) => setSelectedDeliveryPerson(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-black/5"
-                                >
-                                    <option value="">-- Sin asignar --</option>
-                                    {deliveryPersons.map((p: any) => (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
+                        <div className="flex items-center justify-between px-2">
+                            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Final</span>
+                            <span className="text-4xl font-bold text-slate-900 tracking-tighter">${Number(finalTotal || 0).toLocaleString()}</span>
+                        </div>
 
                         <button
                             onClick={() => webOrderIsPaid ? finishOrder() : setShowPaymentModal(true)}
                             disabled={finalTotal === 0 || isFinishing}
-                            className={`w-full h-12 rounded-2xl font-bold text-sm active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                                webOrderIsPaid ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-900 text-white hover:bg-gray-800'
+                            className={`w-full h-16 rounded-[1.5rem] font-bold text-lg active:scale-95 transition-all shadow-xl disabled:opacity-30 disabled:cursor-not-allowed ${
+                                webOrderIsPaid ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-200'
                             }`}
                         >
                             {webOrderIsPaid 
-                                ? `Finalizar (Pago con ${webOrderPaymentMethod === 'MERCADO_PAGO' ? 'Mercado Pago' : 'Online'})` 
-                                : `Cobrar $${Number(finalTotal || 0).toLocaleString()}`
+                                ? `Finalizar Pago` 
+                                : `Ir a Cobrar`
                             }
                         </button>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-3">
                             <button
                                 onClick={() => sendToKitchen()}
                                 disabled={cart.length === 0 || isFinishing}
-                                className="h-10 bg-gray-100 text-gray-700 rounded-xl font-semibold text-xs hover:bg-gray-200 active:scale-95 transition-all disabled:opacity-30"
+                                className="h-14 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
                             >
-                                Enviar cocina
+                                Cocina
                             </button>
                             <button
                                 onClick={async () => {
-                                    // Comanda = Enviar cocina + Cerrar (Sin previu)
                                     await sendToKitchen();
                                 }}
                                 disabled={cart.length === 0 || isFinishing}
-                                className="h-10 bg-gray-900 text-white rounded-xl font-semibold text-xs hover:bg-black active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
+                                className="h-14 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200 flex items-center justify-center gap-2"
                             >
-                                <IconPrinter size={14} /> Comanda
+                                <IconPrinter size={16} /> Comanda
                             </button>
                         </div>
                     </div>
