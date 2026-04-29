@@ -666,14 +666,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     }
                 }
                 
-                // Actualizamos la mesa con los items marcados como procesados y aseguramos estado OCCUPIED
+                // ── PERSISTENCIA TOTAL (UPSERT) ──
+                // Usamos upsert para asegurar que la mesa se cree o actualice y quede OCCUPIED
                 await supabase.from("salon_tables")
-                    .update({ 
+                    .upsert({ 
+                        id: tableId,
                         items: cart,
                         status: 'OCCUPIED',
                         updated_at: new Date().toISOString()
-                    })
-                    .eq("id", tableId);
+                    });
 
             } catch (err) {
                 console.error("❌ Fallo crítico en sistema de inventario:", err);
