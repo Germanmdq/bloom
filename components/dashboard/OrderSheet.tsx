@@ -91,10 +91,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
     const [showConfigurator, setShowConfigurator] = useState(false);
     const [pendingProduct, setPendingProduct] = useState<any>(null);
-    const [configStep, setConfigStep] = useState<'drink-group' | 'drink-detail' | 'garnish' | 'notes'>('drink-group');
+    const [configStep, setConfigStep] = useState<'drink-group' | 'drink-detail' | 'garnish' | 'notes' | 'empanada-flavor'>('drink-group');
     const [selectedDrinkGroup, setSelectedDrinkGroup] = useState<string | null>(null);
     const [selectedDrink, setSelectedDrink] = useState<any>(null);
     const [selectedGarnish, setSelectedGarnish] = useState<any>(null);
+    const [selectedFlavor, setSelectedFlavor] = useState<string | null>(null);
     const [configNotes, setConfigNotes] = useState("");
 
     const handleCustomerSearch = async (q: string) => {
@@ -964,12 +965,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             key={item.id}
                                             onClick={() => {
                                                 const catNameLower = catName.toLowerCase();
-                                                if (catNameLower.includes("plato") || catNameLower.includes("menú")) {
+                                                const isEmpanada = item.name.toLowerCase().includes("empa");
+                                                
+                                                if (catNameLower.includes("plato") || catNameLower.includes("menú") || isEmpanada) {
                                                     setPendingProduct(item);
-                                                    setConfigStep('drink-group');
+                                                    if (isEmpanada) {
+                                                        setConfigStep('empanada-flavor');
+                                                    } else {
+                                                        setConfigStep('drink-group');
+                                                    }
                                                     setSelectedDrinkGroup(null);
                                                     setSelectedDrink(null);
                                                     setSelectedGarnish(null);
+                                                    setSelectedFlavor(null);
                                                     setConfigNotes("");
                                                     setShowConfigurator(true);
                                                 } else {
@@ -1339,12 +1347,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                             {/* Stepper Header */}
                             <div className="flex gap-1.5 mb-6">
-                                {['drink', 'garnish', 'notes'].map((step) => (
+                                {(pendingProduct?.name.toLowerCase().includes('empa') ? ['flavor', 'notes'] : ['drink', 'garnish', 'notes']).map((step) => (
                                     <div 
                                         key={step}
                                         className={`h-1 flex-1 rounded-full transition-all duration-500 ${
                                             ((step === 'drink') && (configStep === 'drink-group' || configStep === 'drink-detail')) ||
                                             (step === 'garnish' && configStep === 'garnish') ||
+                                            (step === 'flavor' && configStep === 'empanada-flavor') ||
                                             (step === 'notes' && configStep === 'notes')
                                                 ? 'bg-black' : 'bg-gray-100'
                                         }`}
@@ -1353,6 +1362,26 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             </div>
 
                             <div className="min-h-[300px]">
+                                {configStep === 'empanada-flavor' && (
+                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                        <h3 className="text-lg font-black mb-4 flex items-center gap-2">🥟 Sabor de Empanada</h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {['Carne', 'Pollo', 'Jamón y Queso', 'Choclo'].map(flavor => (
+                                                <button
+                                                    key={flavor}
+                                                    onClick={() => { 
+                                                        setSelectedFlavor(flavor); 
+                                                        setConfigStep('notes'); 
+                                                    }}
+                                                    className="p-6 rounded-[2rem] bg-gray-50 hover:bg-black hover:text-white transition-all text-center shadow-sm group active:scale-95"
+                                                >
+                                                    <p className="font-black text-xs uppercase tracking-widest">{flavor}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+
                                 {configStep === 'drink-group' && (
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                                         <h3 className="text-lg font-black mb-4 flex items-center gap-2">🥤 Selección de Bebida</h3>
@@ -1451,9 +1480,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             <button 
                                                 onClick={() => {
                                                     if (pendingProduct) {
+                                                        const isEmpanada = pendingProduct.name.toLowerCase().includes("empa");
+                                                        
                                                         addToCart({
                                                             id: pendingProduct.id,
-                                                            name: pendingProduct.name,
+                                                            name: isEmpanada ? `${pendingProduct.name} (${selectedFlavor || 'Varios'})` : pendingProduct.name,
                                                             price: Number(pendingProduct.price || 0),
                                                             quantity: 1,
                                                             notes: configNotes
