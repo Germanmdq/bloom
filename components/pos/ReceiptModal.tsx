@@ -57,10 +57,12 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${isKitchen ? "Comanda" : "Ticket"} ${escapeHtml(tableId)}</title>
     <style>
-      @page { margin: 0; size: 72mm auto; }
+      /* Algunos drivers de térmicas recortan el final si el alto es "auto".
+         Forzamos una "hoja" muy larga y además dejamos margen inferior. */
+      @page { margin: 0 0 25mm 0; size: 72mm 2000mm; }
       html, body { margin: 0; padding: 0; background: #fff; }
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-      .ticket { width: 72mm; padding: 12px 12px 18px 12px; box-sizing: border-box; }
+      body { width: 72mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+      .ticket { width: 72mm; padding: 12px 12px 30mm 12px; box-sizing: border-box; }
       .center { text-align: center; }
       .h1 { font-weight: 900; font-size: 22px; letter-spacing: -0.02em; line-height: 1; }
       .sub { font-weight: 800; font-size: 10px; text-transform: uppercase; margin-top: 4px; }
@@ -84,7 +86,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
       .end .msg { font-size: 11px; font-weight: 800; }
       .end .site { font-size: 9px; margin-top: 2px; }
       /* Extra padding real para evitar que el corte se coma el final */
-      .pad { height: 14mm; }
+      .pad { height: 40mm; }
     </style>
   </head>
   <body>
