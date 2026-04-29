@@ -771,12 +771,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     </div>
 
                     <div className="flex items-center gap-3">
-                                >
-                                    <option value="">Seleccionar Mozo...</option>
-                                    {waiters.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
-                                </select>
-                            </div>
-                        </div>
+                        <select
+                            value={selectedWaiter}
+                            onChange={(e) => setSelectedWaiter(e.target.value)}
+                            className="h-10 px-3 bg-slate-50 border border-transparent rounded-xl text-xs font-bold text-slate-600 outline-none hover:bg-slate-100 transition-colors cursor-pointer"
+                        >
+                            <option value="">Mozo...</option>
+                            {waiters.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
+                        </select>
+                    </div>
 
                         <div className="h-10 w-[1px] bg-gray-100 mx-2" />
 
