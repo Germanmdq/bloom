@@ -4,6 +4,7 @@
 
 DO $$
 DECLARE
+    cat_menu_dia uuid;
     cat_platos uuid;
     cat_postres uuid;
     cat_bebidas uuid;
@@ -29,11 +30,15 @@ DECLARE
     opt_salsa_pasta jsonb := '[{"name": "Salsa", "values": ["Bolognesa", "Filetto", "Blanca", "Mixta"]}]';
 
 BEGIN
-    -- 1. Limpiar para recargar con IDs frescos
+    -- 1. Desvincular el Plato del Día para evitar el error de Foreign Key
+    UPDATE app_settings SET plato_del_dia_id = NULL;
+
+    -- 2. Limpiar para recargar con IDs frescos
     DELETE FROM products;
     DELETE FROM categories;
 
-    -- 2. Crear Categorías
+    -- 3. Crear Categorías
+    INSERT INTO categories (name) VALUES ('Menú del Día') RETURNING id INTO cat_menu_dia;
     INSERT INTO categories (name) VALUES ('Platos Diarios') RETURNING id INTO cat_platos;
     INSERT INTO categories (name) VALUES ('Postres') RETURNING id INTO cat_postres;
     INSERT INTO categories (name) VALUES ('Bebidas') RETURNING id INTO cat_bebidas;
@@ -51,7 +56,11 @@ BEGIN
     INSERT INTO categories (name) VALUES ('Panificados') RETURNING id INTO cat_panificados;
     INSERT INTO categories (name) VALUES ('Pastelería') RETURNING id INTO cat_pasteleria;
 
-    -- 3. Insertar Productos con PRECIOS ACTUALIZADOS
+    -- 4. Insertar Productos con PRECIOS ACTUALIZADOS
+
+    -- MENÚ DEL DÍA (Incluye bebida)
+    INSERT INTO products (name, price, category_id, description) VALUES
+    ('Menú del Día Completo', 13500, cat_menu_dia, 'Plato del día + Bebida incluida');
 
     -- CAFETERÍA
     INSERT INTO products (name, price, category_id, options) VALUES

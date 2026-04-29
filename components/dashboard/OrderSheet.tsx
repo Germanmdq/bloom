@@ -762,8 +762,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     type="text"
                                     value={customerName.replace('Cliente: ', '')}
                                     onChange={(e) => setCustomerName(e.target.value)}
-                                    placeholder={`Mesa ${tableId < 100 ? tableId : ''}`}
-                                    className="text-4xl font-black text-slate-900 tracking-tighter leading-none bg-transparent border-none outline-none p-0 w-full placeholder:text-slate-200 uppercase"
+                                    placeholder={tableId < 100 ? `Mesa ${tableId}` : "Nombre del pedido..."}
+                                    className="text-4xl font-black text-slate-900 tracking-tighter leading-none bg-transparent border-none outline-none p-0 w-full placeholder:text-slate-200"
                                 />
                             </div>
                             <div className="flex items-center gap-2 mt-1">
