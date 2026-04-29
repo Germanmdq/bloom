@@ -667,16 +667,22 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 }
                 
                 // ── PERSISTENCIA TOTAL (UPSERT) ──
-                // Usamos upsert de forma ultra-segura para que la mesa se quede abierta
+                // Usamos Number(tableId) para asegurar que la DB no lo rechace si viene como string
                 const { error: upsertError } = await supabase.from("salon_tables")
                     .upsert({ 
-                        id: tableId,
+                        id: Number(tableId),
                         items: cart,
                         status: 'OCCUPIED',
                         updated_at: new Date().toISOString()
-                    });
+                    }, { onConflict: 'id' });
                 
-                if (upsertError) console.error("Error en upsert mesa:", upsertError);
+                if (upsertError) {
+                    console.error("❌ Error crítico al abrir mesa en DB:", upsertError.message);
+                    // Intento de rescate: solo actualizar estado si el upsert completo falló
+                    await supabase.from("salon_tables")
+                        .update({ status: 'OCCUPIED' })
+                        .eq('id', Number(tableId));
+                }
 
             } catch (err) {
                 console.error("❌ Fallo crítico en proceso de cocina:", err);
@@ -684,7 +690,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
             setFeedback({ message: "Enviado a cocina", type: 'success' });
             
-            // FORZAMOS EL CIERRE DEL PANEL PASE LO QUE PASE
+            // Cierre controlado
             setTimeout(() => {
                 setFeedback(null);
                 onClose(); 
@@ -695,7 +701,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             setFeedback({ message: `Error: ${error.message}`, type: 'error' });
             setTimeout(() => {
                 setFeedback(null);
-                onClose(); // Cerramos igual para no trabar la UI
+                onClose();
             }, 2000);
         }
         setIsFinishing(false);
