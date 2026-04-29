@@ -1144,10 +1144,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 <IconPrinter size={16} /> Comanda
                             </button>
                         </div>
-                    </div>
                 </div>
             </div>
-        </div>
 
                 {/* ── PANTALLA DE ÉXITO Y TICKET POST-COBRO ── */}
             <AnimatePresence>
