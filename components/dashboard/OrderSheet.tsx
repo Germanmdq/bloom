@@ -176,9 +176,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 setWebOrders([]);
             }
         } else {
-            const [{ data: tableData, error: tableError }, { data: tickets }] = await Promise.all([
-                supabase.from("salon_tables").select("*").eq("id", tableId).single(),
-                supabase.from("kitchen_tickets").select("*").eq("table_id", tableId).eq("status", "pending")
+            const [{ data: tableData }, { data: tickets }] = await Promise.all([
+                supabase.from("salon_tables").select("id, status, items, order_type").eq("id", tableId).single(),
+                supabase.from("kitchen_tickets").select("items").eq("table_id", tableId).eq("status", "pending")
             ]);
 
             if (tableData) {
@@ -278,28 +278,20 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     useEffect(() => {
         const init = async () => {
-            // Load waiters in parallel, don't block UI
-            supabase.from('profiles').select('id, full_name').eq('role', 'WAITER').then(({ data: waiterData }) => {
-                if (waiterData) {
-                    setWaiters(waiterData);
-                }
-            });
+            // Load waiters only if not already loaded
+            if (waiters.length === 0) {
+                supabase.from('profiles').select('id, full_name').eq('role', 'WAITER').then(({ data }) => {
+                    if (data) setWaiters(data);
+                });
+            }
 
             if (webOrderData) {
-                // ✅ Data already in memory — load instantly, no fetch needed
                 handleSelectWebOrder(webOrderData);
             } else if (webOrderId) {
-                // Fallback: fetch by ID if data wasn't passed as prop
-                try {
-                    const resp = await fetch("/api/orders/list", { credentials: "include" });
-                    const res = await resp.json();
-                    if (resp.ok && Array.isArray(res.data)) {
-                        const order = res.data.find((o: any) => o.id === webOrderId);
-                        if (order) handleSelectWebOrder(order);
-                    }
-                } catch (e) {
-                    console.error('[OrderSheet] fetch order by id failed', e);
-                }
+                // Fetch only the specific order, not the whole list
+                fetch(`/api/orders/${webOrderId}`).then(r => r.json()).then(res => {
+                    if (res.data) handleSelectWebOrder(res.data);
+                }).catch(console.error);
             } else {
                 await refreshData();
             }
@@ -589,20 +581,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         try {
             await sendKitchenTicket.mutateAsync({
                 table_id: String(tableId),
-                items: cart.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
-                notes: notes
-            });
-            // PERSISTIMOS LOS ITEMS EN LA MESA ANTES DE CERRAR
-            await supabase.from("salon_tables")
-                .update({ 
-                    status: 'OCCUPIED',
-                    items: cart, 
-                    total: cart.reduce((acc, item) => acc + (item.price * item.quantity), 0),
-                    updated_at: new Date().toISOString()
-                })
-                .eq("id", tableId);
-            await sendKitchenTicket.mutateAsync({
-                table_id: String(tableId),
                 items: cart,
                 notes: notes || "",
             });
@@ -711,6 +689,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             ? products.find((p: any) => p.id === appSettings.plato_del_dia_id)
             : products.find((p: any) => p.kind === 'plato_del_dia');
     }, [appSettings, products]);
+
+    const categoryMap = useMemo(() => {
+        const map: Record<string, string> = {};
+        categories.forEach((c: any) => { map[c.id] = c.name; });
+        return map;
+    }, [categories]);
 
     if (isLoading) {
         return (
@@ -997,15 +981,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         return '🍽️';
                                     };
 
-                                    const catName = categories.find((c: any) => c.id === item.category_id)?.name || "";
+                                    const catName = categoryMap[item.category_id] || "";
                                     const icon = getSmartIcon(item.name, catName);
 
                                     return (
                                         <button
                                             key={item.id}
                                             onClick={() => {
-                                                const catName = categories.find((c: any) => c.id === item.category_id)?.name?.toLowerCase() || "";
-                                                if (catName.includes("plato") || catName.includes("menú")) {
+                                                const catNameLower = catName.toLowerCase();
+                                                if (catNameLower.includes("plato") || catNameLower.includes("menú")) {
                                                     setPendingProduct(item);
                                                     setConfigStep('drink-group');
                                                     setSelectedDrinkGroup(null);
