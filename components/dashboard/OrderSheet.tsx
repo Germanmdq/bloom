@@ -877,25 +877,31 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 {/* Plato del Día Sugerido + Platos Diarios en 2 Columnas */}
                                 <div className="grid grid-cols-2 gap-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                                    {/* Botón Menú del Día - Forzado */}
-                                    <button
-                                        onClick={() => {
-                                            const cat = categories.find(c => c.name.toLowerCase().includes('men'));
-                                            if (cat) setActiveCategory(cat.id);
-                                        }}
-                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
-                                    >
-                                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                                            <IconStar size={60} />
-                                        </div>
-                                        <div className="relative z-10">
-                                            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest mb-2">
-                                                Promoción Especial
-                                            </span>
-                                            <h3 className="text-3xl font-black tracking-tight mb-1">Menú del Día</h3>
-                                            <p className="text-slate-400 font-bold text-sm">Plato + Bebida incluida →</p>
-                                        </div>
-                                    </button>
+                                    {/* Botón Menú del Día (Vinculado a Ajustes/Plato del Día) */}
+                                    {featuredProduct && (
+                                        <button
+                                            onClick={() => {
+                                                if (featuredProduct.options) {
+                                                    setPendingProduct(featuredProduct);
+                                                    setShowConfigurator(true);
+                                                } else {
+                                                    addToCart(featuredProduct);
+                                                }
+                                            }}
+                                            className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
+                                        >
+                                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                                <IconStar size={60} />
+                                            </div>
+                                            <div className="relative z-10">
+                                                <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest mb-2">
+                                                    Menú del Día (Desde Ajustes)
+                                                </span>
+                                                <h3 className="text-2xl font-black tracking-tight mb-1">{featuredProduct.name}</h3>
+                                                <p className="text-[#FFD60A] font-black text-xl">${Number(featuredProduct.price || 0).toLocaleString()}</p>
+                                            </div>
+                                        </button>
+                                    )}
 
                                     {/* Botón Platos Diarios - Forzado */}
                                     <button
