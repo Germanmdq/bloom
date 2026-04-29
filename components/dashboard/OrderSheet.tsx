@@ -877,40 +877,42 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 {/* Plato del Día Sugerido + Platos Diarios en 2 Columnas */}
                                 <div className="grid grid-cols-2 gap-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                                    {/* Botón Menú del Día */}
-                                    {categories.find(c => c.name.toLowerCase().includes('menú')) && (
-                                        <button
-                                            onClick={() => setActiveCategory(categories.find(c => c.name.toLowerCase().includes('menú'))?.id)}
-                                            className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
-                                        >
-                                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                                <IconStar size={60} />
-                                            </div>
-                                            <div className="relative z-10">
-                                                <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest mb-2">
-                                                    Promoción Especial
-                                                </span>
-                                                <h3 className="text-2xl font-black tracking-tight mb-1">Menú del Día</h3>
-                                                <p className="text-slate-400 font-bold text-sm">Incluye plato + bebida →</p>
-                                            </div>
-                                        </button>
-                                    )}
+                                    {/* Botón Menú del Día - Forzado */}
+                                    <button
+                                        onClick={() => {
+                                            const cat = categories.find(c => c.name.toLowerCase().includes('men'));
+                                            if (cat) setActiveCategory(cat.id);
+                                        }}
+                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
+                                    >
+                                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                                            <IconStar size={60} />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest mb-2">
+                                                Promoción Especial
+                                            </span>
+                                            <h3 className="text-3xl font-black tracking-tight mb-1">Menú del Día</h3>
+                                            <p className="text-slate-400 font-bold text-sm">Plato + Bebida incluida →</p>
+                                        </div>
+                                    </button>
 
-                                    {/* Botón Platos Diarios */}
-                                    {categories.find(c => c.name.toLowerCase().includes('plato')) && (
-                                        <button
-                                            onClick={() => setActiveCategory(categories.find(c => c.name.toLowerCase().includes('plato'))?.id)}
-                                            className="relative overflow-hidden p-6 rounded-[2rem] bg-white border border-gray-100 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[140px]"
-                                        >
-                                            <div className="absolute top-0 right-0 p-4 opacity-10 text-gray-400">
-                                                <IconToolsKitchen2 size={60} />
-                                            </div>
-                                            <div className="relative z-10">
-                                                <h3 className="text-2xl font-black text-slate-900 leading-tight">Platos Diarios</h3>
-                                                <p className="text-slate-400 font-bold text-sm">Ver platos de hoy →</p>
-                                            </div>
-                                        </button>
-                                    )}
+                                    {/* Botón Platos Diarios - Forzado */}
+                                    <button
+                                        onClick={() => {
+                                            const cat = categories.find(c => c.name.toLowerCase().includes('plato'));
+                                            if (cat) setActiveCategory(cat.id);
+                                        }}
+                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-white border border-gray-100 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[140px]"
+                                    >
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 text-gray-400">
+                                            <IconToolsKitchen2 size={60} />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <h3 className="text-3xl font-black text-slate-900 leading-tight">Platos Diarios</h3>
+                                            <p className="text-slate-400 font-bold text-sm">Ver platos de hoy →</p>
+                                        </div>
+                                    </button>
                                 </div>
                                 </div>
 
