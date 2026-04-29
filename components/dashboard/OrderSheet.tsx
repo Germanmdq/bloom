@@ -1427,6 +1427,5 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         </div>
             </div>
         </div>
-    </div>
-);
+    );
 }
