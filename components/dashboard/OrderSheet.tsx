@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { IconSearch, IconTrash, IconCreditCard, IconCheck, IconLoader2, IconX, IconChevronLeft, IconPrinter, IconToolsKitchen2, IconStar } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -689,20 +689,35 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const normalize = (s: string) =>
         (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-    const searchTerm = normalize(productSearch.trim());
-    
-    const displayProducts = searchTerm
-        ? products.filter((p: any) =>
-            normalize(p.name).includes(searchTerm) ||
-            normalize(p.description ?? '').includes(searchTerm)
-        )
-        : activeCategory
-            ? products.filter((p: any) => p.category_id === activeCategory)
-            : products;
+    const displayProducts = useMemo(() => {
+        const searchTerm = normalize(productSearch.trim());
+        if (searchTerm) {
+            return products.filter((p: any) =>
+                normalize(p.name).includes(searchTerm) ||
+                normalize(p.description ?? '').includes(searchTerm)
+            );
+        }
+        if (activeCategory) {
+            return products.filter((p: any) => p.category_id === activeCategory);
+        }
+        return products;
+    }, [products, productSearch, activeCategory]);
 
-    const featuredProduct = appSettings?.plato_del_dia_id 
-        ? products.find((p: any) => p.id === appSettings.plato_del_dia_id)
-        : products.find((p: any) => p.kind === 'plato_del_dia');
+    const categoryCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        products.forEach((p: any) => {
+            if (p.category_id) {
+                counts[p.category_id] = (counts[p.category_id] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [products]);
+
+    const featuredProduct = useMemo(() => {
+        return appSettings?.plato_del_dia_id 
+            ? products.find((p: any) => p.id === appSettings.plato_del_dia_id)
+            : products.find((p: any) => p.kind === 'plato_del_dia');
+    }, [appSettings, products]);
 
     return (
         <div className="h-full flex flex-col bg-gray-100 overflow-hidden">
@@ -914,7 +929,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 {categories
                                     .filter(c => !c.name.toLowerCase().includes('plato')) // Evitamos duplicar la de arriba
                                     .map((cat: any, idx: number) => {
-                                    const count = products.filter((p: any) => p.category_id === cat.id).length;
+                                    const count = categoryCounts[cat.id] || 0;
                                     // Asignar área según el índice (Bento Pattern)
                                     const area = idx === 0 ? 'big' : idx === 1 ? 's1' : idx === 2 ? 's2' : idx === 3 ? 's3' : idx === 4 ? 's4' : idx === 5 ? 's5' : 'auto';
 
@@ -1218,9 +1233,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             </button>
                             <button
                                 onClick={async () => {
-                                    // Comanda = Enviar cocina + Abrir Ticket/Comanda para imprimir
-                                    await sendToKitchen(true);
-                                    setShowReceiptModal(true);
+                                    // Comanda = Enviar cocina + Cerrar (Sin previu)
+                                    await sendToKitchen();
                                 }}
                                 disabled={cart.length === 0 || isFinishing}
                                 className="h-10 bg-gray-900 text-white rounded-xl font-semibold text-xs hover:bg-black active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
