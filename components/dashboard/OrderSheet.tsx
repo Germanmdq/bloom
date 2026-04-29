@@ -1419,8 +1419,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             </button>
                                         </div>
                                     </motion.div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </motion.div>
                     </div>
                 )}
