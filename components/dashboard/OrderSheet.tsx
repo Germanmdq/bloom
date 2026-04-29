@@ -798,6 +798,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         </button>
                     </div>
                 </div>
+            </div>
 
             {/* ── BODY ── */}
             <div className="flex-1 flex overflow-hidden">
@@ -990,6 +991,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 })}
                             </div>
                         )}
+                    </div>
                 </div>
 
                 {/* ── DERECHA: Datos Cliente + Carrito ── */}
@@ -1134,7 +1136,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             </button>
                             <button
                                 onClick={async () => {
-                                    await sendToKitchen();
+                                    await sendToKitchen(true); // Enviamos a cocina sin cerrar la mesa
+                                    setShowReceiptModal(true); // Abrimos el ticket para imprimir
                                 }}
                                 disabled={cart.length === 0 || isFinishing}
                                 className="h-14 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200 flex items-center justify-center gap-2"
@@ -1147,7 +1150,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             </div>
         </div>
 
-            {/* ── PANTALLA DE ÉXITO Y TICKET POST-COBRO ── */}
+                {/* ── PANTALLA DE ÉXITO Y TICKET POST-COBRO ── */}
             <AnimatePresence>
                 {completedOrderData && (
                     <motion.div 

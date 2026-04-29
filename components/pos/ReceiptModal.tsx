@@ -21,6 +21,11 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
 
     useEffect(() => {
         setMounted(true);
+        // Pequeño delay para asegurar que el DOM se renderizó antes de imprimir
+        const timer = setTimeout(() => {
+            window.print();
+        }, 500);
+        return () => clearTimeout(timer);
     }, []);
 
     if (!mounted) return null;
