@@ -67,6 +67,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [isFinishing, setIsFinishing] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showReceiptModal, setShowReceiptModal] = useState(false);
+    const [isKitchenReceipt, setIsKitchenReceipt] = useState(false);
     const [extraTotal] = useState(0);
     const [productSearch, setProductSearch] = useState("");
     const [waiters, setWaiters] = useState<Array<{ id: string; full_name: string }>>([]);
@@ -1194,6 +1195,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <button
                                 onClick={async () => {
                                     await sendToKitchen(true); // Enviamos a cocina sin cerrar la mesa
+                                    setIsKitchenReceipt(true); // Es comanda
                                     setShowReceiptModal(true); // Abrimos el ticket para imprimir
                                 }}
                                 disabled={cart.length === 0 || isFinishing}
@@ -1222,7 +1224,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         
                         <div className="flex flex-col gap-3 w-full max-w-xs">
                             <button
-                                onClick={() => setShowReceiptModal(true)}
+                                onClick={() => {
+                                    setIsKitchenReceipt(false); // Es ticket de pago
+                                    setShowReceiptModal(true);
+                                }}
                                 className="w-full h-14 bg-black text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-neutral-800 transition-all active:scale-95 shadow-xl shadow-black/10"
                             >
                                 <IconPrinter size={20} /> Imprimir Ticket
@@ -1251,6 +1256,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     cart={completedOrderData ? completedOrderData.cart : cart}
                     total={completedOrderData ? completedOrderData.total : total}
                     customerName={customerName}
+                    isKitchen={isKitchenReceipt}
                     onClose={() => {
                         setShowReceiptModal(false);
                         if (completedOrderData) {
