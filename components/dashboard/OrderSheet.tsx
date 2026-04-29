@@ -1426,7 +1426,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 )}
             </AnimatePresence>
         </div>
-                </div>
-            </div>
-    );
+    </div>
+</div>
+);
 }
