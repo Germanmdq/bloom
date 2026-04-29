@@ -666,9 +666,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     }
                 }
                 
-                // Actualizamos la mesa con los items marcados como procesados
+                // Actualizamos la mesa con los items marcados como procesados y aseguramos estado OCCUPIED
                 await supabase.from("salon_tables")
-                    .update({ items: cart })
+                    .update({ 
+                        items: cart,
+                        status: 'OCCUPIED',
+                        updated_at: new Date().toISOString()
+                    })
                     .eq("id", tableId);
 
             } catch (err) {
