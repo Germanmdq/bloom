@@ -22,12 +22,23 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
 
     useEffect(() => {
         setMounted(true);
+
+        const handleAfterPrint = () => {
+            onClose();
+        };
+
+        window.addEventListener('afterprint', handleAfterPrint);
+
         // Pequeño delay para asegurar que el DOM se renderizó antes de imprimir
         const timer = setTimeout(() => {
             window.print();
         }, 500);
-        return () => clearTimeout(timer);
-    }, []);
+
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('afterprint', handleAfterPrint);
+        };
+    }, [onClose]);
 
     if (!mounted) return null;
 
