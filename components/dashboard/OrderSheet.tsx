@@ -873,11 +873,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     <div className="flex-1 overflow-y-auto p-3 no-scrollbar">
                         {!searchTerm && !activeCategory ? (
                             <div className="flex flex-col gap-4">
-
-                                {/* Plato del Día Sugerido + Platos Diarios en 2 Columnas */}
-                                <div className="grid grid-cols-2 gap-4">
-                                <div className="grid grid-cols-1 gap-4 mb-8">
-                                    {/* Botón Menú del Día (Permanente) */}
+                                <div className="grid grid-cols-2 gap-4 mb-8">
+                                    {/* Botón Menú del Día - Negro */}
                                     <button
                                         onClick={() => {
                                             if (featuredProduct) {
@@ -888,22 +885,21 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                     addToCart(featuredProduct);
                                                 }
                                             } else {
-                                                // Si no hay uno elegido en ajustes, buscamos la categoría
                                                 const cat = categories.find(c => c.name.toLowerCase().includes('men'));
                                                 if (cat) setActiveCategory(cat.id);
                                             }
                                         }}
-                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
+                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[160px]"
                                     >
                                         <div className="absolute top-0 right-0 p-4 opacity-10">
                                             <IconStar size={60} />
                                         </div>
                                         <div className="relative z-10">
-                                            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest mb-2">
-                                                {featuredProduct ? "Especial de Hoy" : "Configurar en Ajustes"}
+                                            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[9px] font-bold uppercase tracking-widest mb-2">
+                                                {featuredProduct ? "Especial de Hoy" : "Menú del Día"}
                                             </span>
-                                            <h3 className="text-2xl font-black tracking-tight mb-1">
-                                                {featuredProduct ? featuredProduct.name : "Menú del Día"}
+                                            <h3 className="text-2xl font-black tracking-tight leading-none mb-1">
+                                                {featuredProduct ? featuredProduct.name : "Configurar"}
                                             </h3>
                                             <p className="text-slate-400 font-bold text-sm">
                                                 {featuredProduct ? `$${Number(featuredProduct.price).toLocaleString()}` : "Ver promociones →"}
@@ -911,23 +907,22 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         </div>
                                     </button>
 
-                                    {/* Botón Platos Diarios - Forzado */}
+                                    {/* Botón Platos Diarios - Blanco */}
                                     <button
                                         onClick={() => {
                                             const cat = categories.find(c => c.name.toLowerCase().includes('plato'));
                                             if (cat) setActiveCategory(cat.id);
                                         }}
-                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-white border border-gray-100 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[140px]"
+                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-white border border-gray-100 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[160px]"
                                     >
                                         <div className="absolute top-0 right-0 p-4 opacity-10 text-gray-400">
                                             <IconToolsKitchen2 size={60} />
                                         </div>
                                         <div className="relative z-10">
-                                            <h3 className="text-3xl font-black text-slate-900 leading-tight">Platos Diarios</h3>
-                                            <p className="text-slate-400 font-bold text-sm">Ver platos de hoy →</p>
+                                            <h3 className="text-2xl font-black text-slate-900 leading-none mb-1">Platos Diarios</h3>
+                                            <p className="text-slate-400 font-bold text-sm">Ver opciones de hoy →</p>
                                         </div>
                                     </button>
-                                </div>
                                 </div>
 
                                 {/* Grilla de Categorías */}
@@ -944,7 +939,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-black group-hover:text-white transition-all">
                                                 <IconToolsKitchen2 size={24} />
                                             </div>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-slate-900 transition-colors">
+                                            <span className="text-[12px] font-black uppercase tracking-tight text-slate-900 group-hover:text-black transition-colors">
                                                 {cat.name}
                                             </span>
                                         </button>
