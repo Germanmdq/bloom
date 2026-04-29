@@ -1003,7 +1003,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             key={item.id}
                                             onClick={() => {
                                                 const catNameLower = catName.toLowerCase();
-                                                const isEmpanada = item.name.toLowerCase().includes("empa");
+                                                const isEmpanada = item.name.toLowerCase().includes("empa") || catNameLower.includes("empa");
                                                 
                                                 if (catNameLower.includes("plato") || catNameLower.includes("menú") || isEmpanada) {
                                                     setPendingProduct(item);
@@ -1303,7 +1303,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <div className="min-h-[300px]">
                                 {configStep === 'empanada-flavor' && (
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                                        <h3 className="text-lg font-black mb-4 flex items-center gap-2">🥟 Sabor de Empanada</h3>
+                                        <h3 className="text-lg font-black mb-2 flex items-center gap-2">
+                                            {pendingProduct?.name.toLowerCase().includes('docena') ? '🥟 Gustos (Media / Docena)' : '🥟 Sabor de Empanada'}
+                                        </h3>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+                                            {pendingProduct?.name.toLowerCase().includes('docena') ? 'Elegí el gusto principal o combinalos en notas' : 'Seleccioná el gusto'}
+                                        </p>
                                         <div className="grid grid-cols-2 gap-3">
                                             {['Carne', 'Pollo', 'Jamón y Queso', 'Choclo'].map(flavor => (
                                                 <button
