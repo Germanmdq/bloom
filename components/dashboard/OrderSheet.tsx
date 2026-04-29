@@ -97,6 +97,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [selectedGarnish, setSelectedGarnish] = useState<any>(null);
     const [selectedFlavor, setSelectedFlavor] = useState<string | null>(null);
     const [configNotes, setConfigNotes] = useState("");
+    const [empanadaCounts, setEmpanadaCounts] = useState<{[flavor: string]: number}>({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
 
     const handleCustomerSearch = async (q: string) => {
         setCustomerSearchQuery(q);
@@ -365,18 +366,36 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             } as any);
         }
 
-        const { error } = await supabase
+        // Primero intentamos UPDATE (siempre tiene permiso)
+        const { error: updateErr, count } = await supabase
             .from('salon_tables')
-            .upsert({ 
-                id: tableId, 
+            .update({ 
                 status: 'OCCUPIED', 
                 total: currentTotal, 
                 items: currentCart,
                 updated_at: new Date().toISOString()
-            });
+            })
+            .eq('id', Number(tableId))
+            .select('id', { count: 'exact', head: true });
         
-        if (error) {
-            console.error("Failed to sync table:", error.message);
+        if (updateErr) {
+            console.error("❌ persistTableState UPDATE failed:", updateErr.message);
+        }
+        
+        // Si el update no afectó filas, la mesa no existe → INSERT
+        if (!updateErr && count === 0) {
+            const { error: insertErr } = await supabase
+                .from('salon_tables')
+                .insert({ 
+                    id: Number(tableId), 
+                    status: 'OCCUPIED', 
+                    total: currentTotal, 
+                    items: currentCart,
+                    updated_at: new Date().toISOString()
+                });
+            if (insertErr) {
+                console.error("❌ persistTableState INSERT fallback failed:", insertErr.message);
+            }
         }
     };
 
@@ -666,22 +685,28 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     }
                 }
                 
-                // ── PERSISTENCIA TOTAL (UPSERT) ──
-                // Usamos Number(tableId) para asegurar que la DB no lo rechace si viene como string
-                const { error: upsertError } = await supabase.from("salon_tables")
-                    .upsert({ 
-                        id: Number(tableId),
+                // ── PERSISTENCIA TOTAL (UPDATE + FALLBACK INSERT) ──
+                const { error: updErr } = await supabase.from("salon_tables")
+                    .update({ 
                         items: cart,
                         status: 'OCCUPIED',
                         updated_at: new Date().toISOString()
-                    }, { onConflict: 'id' });
+                    })
+                    .eq('id', Number(tableId));
                 
-                if (upsertError) {
-                    console.error("❌ Error crítico al abrir mesa en DB:", upsertError.message);
-                    // Intento de rescate: solo actualizar estado si el upsert completo falló
-                    await supabase.from("salon_tables")
-                        .update({ status: 'OCCUPIED' })
-                        .eq('id', Number(tableId));
+                if (updErr) {
+                    console.error("❌ UPDATE mesa falló:", updErr.message);
+                    // Fallback: intentar INSERT
+                    const { error: insErr } = await supabase.from("salon_tables")
+                        .insert({ 
+                            id: Number(tableId),
+                            items: cart,
+                            status: 'OCCUPIED',
+                            updated_at: new Date().toISOString()
+                        });
+                    if (insErr) console.error("❌ INSERT fallback también falló:", insErr.message);
+                } else {
+                    console.log("✅ Mesa", tableId, "guardada como OCCUPIED");
                 }
 
             } catch (err) {
@@ -1009,6 +1034,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                     setPendingProduct(item);
                                                     if (isEmpanada) {
                                                         setConfigStep('empanada-flavor');
+                                                        setEmpanadaCounts({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
                                                     } else {
                                                         setConfigStep('drink-group');
                                                     }
@@ -1303,25 +1329,52 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <div className="min-h-[300px]">
                                 {configStep === 'empanada-flavor' && (
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                                        <h3 className="text-lg font-black mb-2 flex items-center gap-2">
-                                            {pendingProduct?.name.toLowerCase().includes('docena') ? '🥟 Gustos (Media / Docena)' : '🥟 Sabor de Empanada'}
-                                        </h3>
+                                        <h3 className="text-lg font-black mb-2 flex items-center gap-2">🥟 Elegí los gustos</h3>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
-                                            {pendingProduct?.name.toLowerCase().includes('docena') ? 'Elegí el gusto principal o combinalos en notas' : 'Seleccioná el gusto'}
+                                            Seleccioná la cantidad de cada sabor
                                         </p>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="flex flex-col gap-3">
                                             {['Carne', 'Pollo', 'Jamón y Queso', 'Choclo'].map(flavor => (
-                                                <button
-                                                    key={flavor}
-                                                    onClick={() => { 
-                                                        setSelectedFlavor(flavor); 
-                                                        setConfigStep('notes'); 
-                                                    }}
-                                                    className="p-6 rounded-[2rem] bg-gray-50 hover:bg-black hover:text-white transition-all text-center shadow-sm group active:scale-95"
-                                                >
-                                                    <p className="font-black text-xs uppercase tracking-widest">{flavor}</p>
-                                                </button>
+                                                <div key={flavor} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50">
+                                                    <p className="font-black text-sm uppercase tracking-wide">{flavor}</p>
+                                                    <div className="flex items-center gap-3">
+                                                        <button
+                                                            onClick={() => setEmpanadaCounts(prev => ({ ...prev, [flavor]: Math.max(0, (prev[flavor] || 0) - 1) }))}
+                                                            className="w-10 h-10 rounded-xl bg-gray-200 hover:bg-gray-300 font-black text-lg active:scale-90 transition-all"
+                                                        >−</button>
+                                                        <span className="w-8 text-center font-black text-lg">{empanadaCounts[flavor] || 0}</span>
+                                                        <button
+                                                            onClick={() => setEmpanadaCounts(prev => ({ ...prev, [flavor]: (prev[flavor] || 0) + 1 }))}
+                                                            className="w-10 h-10 rounded-xl bg-black text-white font-black text-lg active:scale-90 transition-all"
+                                                        >+</button>
+                                                    </div>
+                                                </div>
                                             ))}
+                                        </div>
+                                        <div className="mt-4 flex items-center justify-between">
+                                            <p className="text-sm font-bold text-slate-500">
+                                                Total: <span className="text-black font-black">{Object.values(empanadaCounts).reduce((a, b) => a + b, 0)}</span> empanadas
+                                            </p>
+                                            <button
+                                                onClick={() => {
+                                                    const totalEmpanadas = Object.values(empanadaCounts).reduce((a, b) => a + b, 0);
+                                                    if (totalEmpanadas === 0) {
+                                                        setFeedback({ message: 'Elegí al menos un gusto', type: 'error' });
+                                                        setTimeout(() => setFeedback(null), 2000);
+                                                        return;
+                                                    }
+                                                    // Armar el detalle de gustos
+                                                    const detalles = Object.entries(empanadaCounts)
+                                                        .filter(([_, qty]) => qty > 0)
+                                                        .map(([flavor, qty]) => `${qty} ${flavor}`)
+                                                        .join(', ');
+                                                    setSelectedFlavor(detalles);
+                                                    setConfigStep('notes');
+                                                }}
+                                                className="px-6 py-3 rounded-xl bg-black text-white font-black text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+                                            >
+                                                Confirmar Gustos
+                                            </button>
                                         </div>
                                     </motion.div>
                                 )}
