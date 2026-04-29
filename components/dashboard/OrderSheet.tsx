@@ -8,7 +8,6 @@ import {
     IconSoup, IconMeat, IconPizza, IconCup, IconIceCream, IconGlassFull,
     IconBeer, IconCake, IconBread, IconCookie, IconCheese, IconFish, 
     IconCarrot, IconBottle, IconCoffee, IconGlass, IconSalad, IconBurger,
-    IconPlus, IconMinus
 } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
@@ -1128,22 +1127,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-bold text-gray-900 truncate uppercase tracking-tight">{item.name}</p>
-                                            <p className="text-[10px] font-black text-slate-400 mt-0.5">${Number(item.price).toLocaleString()} x {item.quantity}</p>
+                                            <p className="text-[10px] font-black text-slate-400 mt-0.5">
+                                                ${Number(item.price).toLocaleString()} x {item.quantity}
+                                            </p>
                                             {item.notes && <p className="text-[9px] text-emerald-500 font-bold mt-1 leading-tight">Nota: {item.notes}</p>}
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <button 
-                                                onClick={() => removeFromCart(index)}
-                                                className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all"
-                                            >
-                                                <IconMinus size={14} />
-                                            </button>
-                                            <button 
-                                                onClick={() => addToCart(item)}
-                                                className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all"
-                                            >
-                                                <IconPlus size={14} />
-                                            </button>
+                                        <div className="shrink-0 flex flex-col items-end gap-1">
+                                            <span className="px-2 py-1 rounded-lg bg-slate-50 text-slate-700 text-[10px] font-black">
+                                                x{item.quantity}
+                                            </span>
+                                            <span className="text-xs font-black text-slate-900 tracking-tight">
+                                                ${(Number(item.price || 0) * Number(item.quantity || 1)).toLocaleString()}
+                                            </span>
                                         </div>
                                     </div>
                                 ))}
