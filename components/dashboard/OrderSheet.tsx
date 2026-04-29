@@ -689,8 +689,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const normalize = (s: string) =>
         (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+    const searchTerm = normalize(productSearch.trim());
+
     const displayProducts = useMemo(() => {
-        const searchTerm = normalize(productSearch.trim());
         if (searchTerm) {
             return products.filter((p: any) =>
                 normalize(p.name).includes(searchTerm) ||
