@@ -667,12 +667,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 }
                 
                 // ── PERSISTENCIA TOTAL (UPSERT) ──
-                // Usamos upsert para asegurar que la mesa se cree o actualice y quede OCCUPIED
+                // Usamos upsert para asegurar que la mesa se cree o actualice y quede OCCUPIED con su tipo de orden
                 await supabase.from("salon_tables")
                     .upsert({ 
                         id: tableId,
                         items: cart,
                         status: 'OCCUPIED',
+                        order_type: orderType, // Mantenemos si es LOCAL, DELIVERY o TAKEAWAY
                         updated_at: new Date().toISOString()
                     });
 
