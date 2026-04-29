@@ -192,11 +192,8 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
                 }
 
                 // Esperar fonts si el navegador lo soporta (ayuda a evitar impresión vacía).
-                // @ts-expect-error: fonts no está tipado en todos los DOM libs
-                if (doc.fonts?.ready) {
-                    // @ts-expect-error: fonts no está tipado en todos los DOM libs
-                    await doc.fonts.ready;
-                }
+                const fontsReady: Promise<unknown> | undefined = (doc as any)?.fonts?.ready;
+                if (fontsReady) await fontsReady;
 
                 // 2 frames para asegurar layout final.
                 await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
