@@ -37,7 +37,7 @@ type OrderSheetProps = {
 
 export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webOrderData, initialShowPayment }: OrderSheetProps) {
     const {
-        cart, addToCart, removeFromCart, clearCart,
+        cart, addToCart, setCart, removeFromCart, clearCart,
         paymentMethod, setPaymentMethod, notes, setNotes,
         discount, setDiscount
     } = useOrderStore();
@@ -197,10 +197,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             const status = tableData?.status as string | undefined;
             
             // SECURITY: If the table is FREE, we MUST clear any legacy data in DB to prevent "ghost orders"
-            // specifically clearing from kitchen_tickets which causes the "re-appear" bug.
             if (status !== "OCCUPIED") {
-                await supabase.from("kitchen_tickets").delete().eq("table_id", tableId);
-                await supabase.from("salon_tables").update({ items: [], total: 0 }).eq("id", tableId);
+                // Non-blocking cleanup
+                supabase.from("kitchen_tickets").delete().eq("table_id", tableId).then(() => {});
+                supabase.from("salon_tables").update({ items: [], total: 0 }).eq("id", tableId).then(() => {});
             }
 
             const persisted = (status === "OCCUPIED" && Array.isArray(tableData?.items)) ? tableData.items : [];
@@ -210,6 +210,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             setCustomerName("");
             setCustomerAddress("");
             setCustomerPhone("");
+
+            const newCartItems: CartItem[] = [];
 
             if (status === "OCCUPIED" && persisted.length > 0) {
                 persisted.forEach((item: any) => {
@@ -221,7 +223,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         setCustomerPhone(item.phone || "");
                         if (item.customer_id) setSelectedCustomerId(item.customer_id);
                     } else {
-                        addToCart(normalizeTableItem(item));
+                        newCartItems.push(normalizeTableItem(item));
                     }
                 });
             } else if (status === "OCCUPIED" && tickets?.length) {
@@ -229,9 +231,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 for (const ticket of tickets) {
                     for (const raw of ticket.items || []) {
                         const item = normalizeTableItem(raw);
-                        if (item.name) addToCart(item);
+                        if (item.name) newCartItems.push(item);
                     }
                 }
+            }
+            
+            if (newCartItems.length > 0) {
+                setCart(newCartItems);
             }
         }
     };
@@ -249,9 +255,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 ? order.items 
                 : (typeof order.items === 'string' ? JSON.parse(order.items) : []);
                 
+            const newItems: CartItem[] = [];
             itemsArray.forEach((item: any) => {
                 if (!item.is_meta && item.name) {
-                    addToCart({
+                    newItems.push({
                         id: item.id || item.product_id || 'manual-' + Math.random(),
                         name: item.name,
                         price: Number(item.price),
@@ -259,6 +266,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     });
                 }
             });
+            setCart(newItems);
         }
     };
 

@@ -16,6 +16,7 @@ interface OrderState {
 
     cart: CartItem[];
     addToCart: (item: CartItem) => void;
+    setCart: (items: CartItem[]) => void;
     removeFromCart: (index: number) => void;
     updateQuantity: (index: number, delta: number) => void;
     clearCart: () => void;
@@ -50,6 +51,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         }
         return { cart: [...state.cart, item] };
     }),
+    setCart: (items) => set({ cart: items }),
     removeFromCart: (index) => set((state) => ({
         cart: state.cart.filter((_, i) => i !== index)
     })),
