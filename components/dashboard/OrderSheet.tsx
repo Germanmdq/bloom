@@ -1111,6 +1111,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Final</span>
                             <span className="text-4xl font-bold text-slate-900 tracking-tighter">${Number(finalTotal || 0).toLocaleString()}</span>
                         </div>
+                        </div>
 
                         <button
                             onClick={() => webOrderIsPaid ? finishOrder() : setShowPaymentModal(true)}
@@ -1146,6 +1147,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         </div>
                 </div>
             </div>
+        </div>
 
                 {/* ── PANTALLA DE ÉXITO Y TICKET POST-COBRO ── */}
             <AnimatePresence>
@@ -1418,14 +1420,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             </button>
                                         </div>
                                     </motion.div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
-        </div>
-            </div>
         </div>
     );
 }
