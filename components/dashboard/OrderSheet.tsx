@@ -171,7 +171,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             const items = Array.isArray(initialTableData.items) ? initialTableData.items : [];
             const newCartItems: CartItem[] = [];
             items.forEach((item: any) => {
-                if (item.id !== 'meta-customer') {
+                if (item.id === 'meta-customer') {
+                    const rawName = item.name || "";
+                    const cleanName = rawName.replace(/^Cliente:\s*/, "");
+                    setCustomerName(cleanName);
+                    setCustomerAddress(item.address || "");
+                    setCustomerPhone(item.phone || "");
+                    if (item.customer_id) setSelectedCustomerId(item.customer_id);
+                } else {
                     newCartItems.push(normalizeTableItem(item));
                 }
             });
@@ -869,17 +876,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                                 {/* Plato del Día Sugerido + Platos Diarios en 2 Columnas */}
                                 <div className="grid grid-cols-2 gap-4">
-                                    {featuredProduct && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                                    {/* Botón Menú del Día */}
+                                    {categories.find(c => c.name.toLowerCase().includes('menú')) && (
                                         <button
-                                            onClick={() => {
-                                                setPendingProduct(featuredProduct);
-                                                setConfigStep('drink-group');
-                                                setSelectedDrinkGroup(null);
-                                                setSelectedDrink(null);
-                                                setSelectedGarnish(null);
-                                                setConfigNotes("");
-                                                setShowConfigurator(true);
-                                            }}
+                                            onClick={() => setActiveCategory(categories.find(c => c.name.toLowerCase().includes('menú'))?.id)}
                                             className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[140px]"
                                         >
                                             <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -887,14 +888,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             </div>
                                             <div className="relative z-10">
                                                 <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest mb-2">
-                                                    Menú del Día (Incluye Bebida)
+                                                    Promoción Especial
                                                 </span>
-                                                <h3 className="text-xl font-black tracking-tight mb-1">{featuredProduct.name}</h3>
-                                                <p className="text-[#FFD60A] font-black text-lg">${Number(featuredProduct.price || 0).toLocaleString()}</p>
+                                                <h3 className="text-2xl font-black tracking-tight mb-1">Menú del Día</h3>
+                                                <p className="text-slate-400 font-bold text-sm">Incluye plato + bebida →</p>
                                             </div>
                                         </button>
                                     )}
 
+                                    {/* Botón Platos Diarios */}
                                     {categories.find(c => c.name.toLowerCase().includes('plato')) && (
                                         <button
                                             onClick={() => setActiveCategory(categories.find(c => c.name.toLowerCase().includes('plato'))?.id)}
@@ -904,16 +906,20 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 <IconToolsKitchen2 size={60} />
                                             </div>
                                             <div className="relative z-10">
-                                                <h3 className="text-xl font-bold text-slate-900 leading-tight">{categories.find(c => c.name.toLowerCase().includes('plato'))?.name}</h3>
-                                                <p className="text-slate-400 font-bold text-sm">Ver opciones →</p>
+                                                <h3 className="text-2xl font-black text-slate-900 leading-tight">Platos Diarios</h3>
+                                                <p className="text-slate-400 font-bold text-sm">Ver platos de hoy →</p>
                                             </div>
                                         </button>
                                     )}
                                 </div>
+                                </div>
 
                                 {/* Grilla de Categorías */}
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                                    {categories.filter(c => !c.name.toLowerCase().includes('plato')).map((cat: any) => (
+                                {categories.filter(c => 
+                                        !c.name.toLowerCase().includes('plato') && 
+                                        !c.name.toLowerCase().includes('menú')
+                                    ).map((cat: any) => (
                                         <button
                                             key={cat.id}
                                             onClick={() => setActiveCategory(cat.id)}
