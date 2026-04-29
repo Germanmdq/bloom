@@ -1464,7 +1464,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                             addToCart({ id: Math.random().toString(), name: `Guarnición: ${selectedGarnish.name}`, price: 0, quantity: 1 });
                                                         }
                                                         if (selectedDrink && selectedDrink.name !== "Sin bebida") {
-                                                            addToCart({ id: Math.random().toString(), name: `Bebida: ${selectedDrink.name}`, price: 0, quantity: 1 });
+                                                            const isMenuDelDia = pendingProduct?.id === featuredProduct?.id;
+                                                            addToCart({ 
+                                                                id: Math.random().toString(), 
+                                                                name: `Bebida: ${selectedDrink.name}`, 
+                                                                price: isMenuDelDia ? 0 : 2500, 
+                                                                quantity: 1 
+                                                            });
                                                         }
                                                         setFeedback({ message: 'Agregado correctamente', type: 'success' });
                                                         setShowConfigurator(false);
