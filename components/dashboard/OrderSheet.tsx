@@ -678,14 +678,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         setIsFinishing(false);
     };
 
-    if (isLoading) {
-        return (
-            <div className="h-full flex items-center justify-center bg-gray-50">
-                <IconLoader2 className="animate-spin text-gray-400" size={32} />
-            </div>
-        );
-    }
-
     const normalize = (s: string) =>
         (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -719,6 +711,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             ? products.find((p: any) => p.id === appSettings.plato_del_dia_id)
             : products.find((p: any) => p.kind === 'plato_del_dia');
     }, [appSettings, products]);
+
+    if (isLoading) {
+        return (
+            <div className="h-full flex items-center justify-center bg-gray-50">
+                <IconLoader2 className="animate-spin text-gray-400" size={32} />
+            </div>
+        );
+    }
 
     return (
         <div className="h-full flex flex-col bg-gray-100 overflow-hidden">
