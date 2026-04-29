@@ -7,7 +7,8 @@ import {
     IconChevronLeft, IconPrinter, IconToolsKitchen2, IconStar,
     IconSoup, IconMeat, IconPizza, IconCup, IconIceCream, IconGlassFull,
     IconBeer, IconCake, IconBread, IconCookie, IconCheese, IconFish, 
-    IconCarrot, IconBottle, IconCoffee, IconGlass, IconSalad, IconBurger
+    IconCarrot, IconBottle, IconCoffee, IconGlass, IconSalad, IconBurger,
+    IconPlus, IconMinus
 } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
