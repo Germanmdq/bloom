@@ -98,6 +98,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [selectedFlavor, setSelectedFlavor] = useState<string | null>(null);
     const [configNotes, setConfigNotes] = useState("");
     const [empanadaCounts, setEmpanadaCounts] = useState<{[flavor: string]: number}>({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
+    const [isEspecialContext, setIsEspecialContext] = useState(false);
 
     const handleCustomerSearch = async (q: string) => {
         setCustomerSearchQuery(q);
@@ -944,17 +945,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     {/* Botón Menú del Día - Negro */}
                                     <button
                                         onClick={() => {
-                                            if (featuredProduct) {
-                                                if (featuredProduct.options) {
-                                                    setPendingProduct(featuredProduct);
-                                                    setShowConfigurator(true);
-                                                } else {
-                                                    addToCart(featuredProduct);
-                                                }
-                                            } else {
-                                                const cat = categories.find(c => c.name.toLowerCase().includes('men'));
-                                                if (cat) setActiveCategory(cat.id);
-                                            }
+                                            const cat = categories.find((c: any) => c.name.toLowerCase().includes('especial') || c.name.toLowerCase().includes('oferta') || c.name.toLowerCase().includes('menú'));
+                                            if (cat) setActiveCategory(cat.id);
                                         }}
                                         className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[160px]"
                                     >
@@ -963,13 +955,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         </div>
                                         <div className="relative z-10">
                                             <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[9px] font-bold uppercase tracking-widest mb-2">
-                                                {featuredProduct ? "Especial de Hoy" : "Menú del Día"}
+                                                Promociones
                                             </span>
                                             <h3 className="text-2xl font-black tracking-tight leading-none mb-1">
-                                                {featuredProduct ? featuredProduct.name : "Configurar"}
+                                                Especiales de Hoy
                                             </h3>
                                             <p className="text-slate-400 font-bold text-sm">
-                                                {featuredProduct ? `$${Number(featuredProduct.price).toLocaleString()}` : "Ver promociones →"}
+                                                Ver opciones de hoy →
                                             </p>
                                         </div>
                                     </button>
@@ -1052,10 +1044,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 const catNameLower = catName.toLowerCase();
                                                 const itemNameLower = item.name.toLowerCase();
                                                 const isEmpanada = itemNameLower.includes("empa") || catNameLower.includes("empa");
-                                                const isMenuOrPlato = catNameLower.includes("plato") || catNameLower.includes("menú") || catNameLower.includes("especial") || itemNameLower.includes("especial") || itemNameLower.includes("plato") || itemNameLower.includes("menú");
+                                                const isMenuOrPlato = catNameLower.includes("plato") || catNameLower.includes("menú") || catNameLower.includes("especial") || catNameLower.includes("oferta") || itemNameLower.includes("especial") || itemNameLower.includes("oferta") || itemNameLower.includes("plato") || itemNameLower.includes("menú");
+                                                const isEspecialContextFlag = catNameLower.includes("especial") || catNameLower.includes("oferta") || itemNameLower.includes("especial") || itemNameLower.includes("oferta");
                                                 
                                                 if (isMenuOrPlato || isEmpanada) {
                                                     setPendingProduct(item);
+                                                    setIsEspecialContext(isEspecialContextFlag);
                                                     if (isEmpanada) {
                                                         setConfigStep('empanada-flavor');
                                                         setEmpanadaCounts({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
@@ -1407,7 +1401,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                                         <h3 className="text-lg font-black mb-4 flex items-center gap-2">🥤 Selección de Bebida</h3>
                                         <div className="grid grid-cols-2 gap-2">
-                                            {['Línea Coca-Cola', 'Línea Aquarius', 'Aguas', 'Otras'].map(group => (
+                                            {(isEspecialContext 
+                                                ? ['Línea Coca-Cola', 'Línea Aquarius', 'Aguas']
+                                                : ['Línea Coca-Cola', 'Línea Aquarius', 'Aguas', 'Otras', 'Cervezas', 'Vinos']
+                                            ).map(group => (
                                                 <button
                                                     key={group}
                                                     onClick={() => { setSelectedDrinkGroup(group); setConfigStep('drink-detail'); }}
@@ -1438,7 +1435,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 ? ['Aquarius Pera', 'Aquarius Manzana', 'Aquarius Pomelo', 'Aquarius Uva']
                                                 : selectedDrinkGroup === 'Aguas'
                                                 ? ['Agua con Gas', 'Agua sin Gas']
-                                                : ['Jugo de Naranja', 'Limonada']
+                                                : selectedDrinkGroup === 'Cervezas'
+                                                ? ['Quilmes', 'Stella Artois', 'Patagonia', 'Corona']
+                                                : selectedDrinkGroup === 'Vinos'
+                                                ? ['Vino Tinto', 'Vino Blanco', 'Copa de Vino']
+                                                : ['Jugo de Naranja', 'Limonada', 'Exprimido']
                                             ).map(drink => (
                                                 <button
                                                     key={drink}
@@ -1514,10 +1515,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                             addToCart({ id: Math.random().toString(), name: `Guarnición: ${selectedGarnish.name}`, price: 0, quantity: 1 });
                                                         }
                                                         if (selectedDrink && selectedDrink.name !== "Sin bebida") {
+                                                            let finalDrinkPrice = 0;
+                                                            if (!isEspecialContext) {
+                                                                const matchingProduct = products.find((p: any) => p.name.toLowerCase() === selectedDrink.name.toLowerCase());
+                                                                finalDrinkPrice = matchingProduct ? Number(matchingProduct.price) : 2500;
+                                                            }
                                                             addToCart({ 
                                                                 id: Math.random().toString(), 
                                                                 name: `Bebida: ${selectedDrink.name}`, 
-                                                                price: 0, 
+                                                                price: finalDrinkPrice, 
                                                                 quantity: 1 
                                                             });
                                                         }
