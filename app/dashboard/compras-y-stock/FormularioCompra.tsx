@@ -114,7 +114,7 @@ export function FormularioCompra({ proveedores }: { proveedores: Proveedor[] }) 
     };
 
     const filteredInsumos = insumosProveedor.filter((ins: any) =>
-        ins.nombre.toLowerCase().includes(searchInsumo.toLowerCase()) &&
+        ins.nombre.toLowerCase().includes(searchInsumo.trim().toLowerCase()) &&
         !items.find(i => i.insumo_id === ins.id)
     );
 
@@ -187,22 +187,37 @@ export function FormularioCompra({ proveedores }: { proveedores: Proveedor[] }) 
                                     type="text"
                                     value={searchInsumo}
                                     onChange={e => setSearchInsumo(e.target.value)}
-                                    placeholder="Buscar insumo del proveedor..."
+                                    onFocus={() => {
+                                        // Forzar el estado para abrir el dropdown
+                                        if (!searchInsumo) setSearchInsumo(" ");
+                                    }}
+                                    onBlur={() => {
+                                        // Si quedó en espacio, lo limpiamos al salir
+                                        setTimeout(() => {
+                                            if (searchInsumo === " ") setSearchInsumo("");
+                                        }, 200);
+                                    }}
+                                    placeholder="Buscar o agregar insumo..."
                                     className="w-full h-12 pl-12 pr-4 rounded-xl bg-gray-50 border-transparent font-bold outline-none text-sm"
                                 />
-                                {searchInsumo && (
+                                {searchInsumo !== "" && (
                                     <div className="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-2xl max-h-48 overflow-y-auto border border-gray-100 p-2">
                                         {filteredInsumos.map((ins: any) => (
-                                            <div key={ins.id} onClick={() => addItem(ins)} className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer flex justify-between items-center">
+                                            <div key={ins.id} onMouseDown={() => addItem(ins)} className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer flex justify-between items-center">
                                                 <span className="font-bold text-sm">{ins.nombre}</span>
                                                 <span className="text-[10px] text-gray-400 font-black uppercase">{ins.unidad}</span>
                                             </div>
                                         ))}
-                                        {filteredInsumos.length === 0 && (
-                                            <div onClick={handleCrearInsumo} className="p-3 bg-emerald-50 hover:bg-emerald-100 rounded-lg cursor-pointer text-center border border-dashed border-emerald-200">
+                                        {searchInsumo.trim().length > 0 && (
+                                            <div onMouseDown={handleCrearInsumo} className="p-3 mt-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg cursor-pointer text-center border border-dashed border-emerald-200">
                                                 <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
-                                                    <IconPlus size={12} className="inline mr-1" /> Crear &quot;{searchInsumo}&quot;
+                                                    <IconPlus size={12} className="inline mr-1" /> Crear &quot;{searchInsumo.trim()}&quot;
                                                 </span>
+                                            </div>
+                                        )}
+                                        {searchInsumo === " " && filteredInsumos.length === 0 && (
+                                            <div className="p-3 text-center">
+                                                <span className="text-xs font-bold text-gray-400">No hay insumos creados para este proveedor. Escribí para crear uno.</span>
                                             </div>
                                         )}
                                     </div>
