@@ -614,15 +614,23 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         await supabase.from('insumos')
                                             .update({ stock_actual: (Number(insumo.stock_actual) || 0) - qtyToDeduct })
                                             .eq('id', insumo.id);
+                                        
                                         console.log(`✅ DESCONTADO: ${qtyToDeduct} de ${insumo.nombre}`);
+                                        setFeedback({ 
+                                            message: `Stock: -${qtyToDeduct.toFixed(3)} ${insumo.nombre}`, 
+                                            type: 'success' 
+                                        });
                                     }
                                 }
+                            } else {
+                                console.log(`Sin receta: ${item.name}`);
                             }
                         }
                     } catch (e) { console.error("Error receta:", e); }
                 }
                 queryClient.invalidateQueries({ queryKey: ['insumos'] });
                 queryClient.invalidateQueries({ queryKey: ['stock'] });
+                setTimeout(() => setFeedback(null), 3000);
             } catch (err) {
                 console.error("Error general inventario:", err);
             }
