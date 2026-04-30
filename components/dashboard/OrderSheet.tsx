@@ -631,57 +631,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 notes: notes || "",
             });
 
-            // ── LÓGICA DE INVENTARIO DEFINITIVA (BLOOM) ──
+            // ══════════════════════════════════════════════════
+            // PASO 1: GUARDAR MESA COMO OCCUPIED (OBLIGATORIO)
+            // Esto se ejecuta SIEMPRE, antes de todo lo demás
+            // ══════════════════════════════════════════════════
             try {
-                for (const item of cart) {
-                    const nombreLower = item.name.toLowerCase();
-                    let unidadesARestar = item.quantity;
-                    
-                    // REGLA DE ORO: Café Doble = -2 Stock
-                    if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
-                        unidadesARestar = item.quantity * 2;
-                    }
-
-                    console.log(`🚀 PROCESANDO STOCK: ${item.name} (${unidadesARestar} unidades)`);
-
-                    // 1. Obtener datos actuales del producto
-                    const { data: currentProd, error: fetchError } = await supabase
-                        .from('products')
-                        .select('stock, vendidos')
-                        .eq('id', item.id)
-                        .maybeSingle();
-
-                    if (fetchError) {
-                        console.error(`❌ Error al buscar ${item.name}:`, fetchError);
-                        continue;
-                    }
-
-                    if (currentProd) {
-                        const nuevoStock = (currentProd.stock || 0) - unidadesARestar;
-                        const nuevosVendidos = (currentProd.vendidos || 0) + item.quantity;
-
-                        // 2. Aplicar descuento
-                        const { error: updateError } = await supabase
-                            .from('products')
-                            .update({ 
-                                stock: nuevoStock, 
-                                vendidos: nuevosVendidos 
-                            })
-                            .eq('id', item.id);
-
-                        if (updateError) {
-                            console.error(`❌ Error actualizando ${item.name}:`, updateError);
-                        } else {
-                            console.log(`✅ ${item.name} actualizado. Stock: ${nuevoStock}`);
-                            // Marcamos el item como procesado para no restarlo de nuevo al cobrar
-                            (item as any).stock_processed = true;
-                        }
-                    } else {
-                        console.warn(`⚠️ El producto "${item.name}" no tiene ID de base de datos válido. No se puede restar stock.`);
-                    }
-                }
-                
-                // ── PERSISTENCIA TOTAL (UPDATE + FALLBACK INSERT) ──
                 const { error: updErr } = await supabase.from("salon_tables")
                     .update({ 
                         items: cart,
@@ -693,25 +647,56 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 if (updErr) {
                     console.error("❌ UPDATE mesa falló:", updErr.message);
                     // Fallback: intentar INSERT
-                    const { error: insErr } = await supabase.from("salon_tables")
+                    await supabase.from("salon_tables")
                         .insert({ 
                             id: Number(tableId),
                             items: cart,
                             status: 'OCCUPIED',
                             updated_at: new Date().toISOString()
                         });
-                    if (insErr) console.error("❌ INSERT fallback también falló:", insErr.message);
                 } else {
                     console.log("✅ Mesa", tableId, "guardada como OCCUPIED");
                 }
-
-            } catch (err) {
-                console.error("❌ Fallo crítico en proceso de cocina:", err);
+            } catch (mesaErr) {
+                console.error("❌ Error guardando mesa:", mesaErr);
             }
 
-            setFeedback({ message: "Enviado a cocina", type: 'success' });
+            // ══════════════════════════════════════════════════
+            // PASO 2: INVENTARIO (OPCIONAL - si falla, no importa)
+            // ══════════════════════════════════════════════════
+            try {
+                for (const item of cart) {
+                    const nombreLower = item.name.toLowerCase();
+                    let unidadesARestar = item.quantity;
+                    
+                    if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
+                        unidadesARestar = item.quantity * 2;
+                    }
+
+                    const { data: currentProd, error: fetchError } = await supabase
+                        .from('products')
+                        .select('stock, vendidos')
+                        .eq('id', item.id)
+                        .maybeSingle();
+
+                    if (fetchError || !currentProd) continue;
+
+                    const nuevoStock = (currentProd.stock || 0) - unidadesARestar;
+                    const nuevosVendidos = (currentProd.vendidos || 0) + item.quantity;
+
+                    await supabase
+                        .from('products')
+                        .update({ stock: nuevoStock, vendidos: nuevosVendidos })
+                        .eq('id', item.id);
+                    
+                    (item as any).stock_processed = true;
+                }
+            } catch (stockErr) {
+                console.error("⚠️ Error en inventario (no afecta la mesa):", stockErr);
+            }
+
+            setFeedback({ message: "Enviado a cocina ✅", type: 'success' });
             
-            // Cierre controlado
             setTimeout(() => {
                 setFeedback(null);
                 onClose(); 
