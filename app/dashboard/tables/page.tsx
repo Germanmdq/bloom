@@ -297,8 +297,10 @@ export default function TablesPage() {
     };
 
     const sortedTables = [...tables]
-        .filter(t => t.status === 'OCCUPIED' && t.id >= 1 && t.id <= 1000)
+        .filter(t => t.status === 'OCCUPIED')
         .sort((a, b) => a.id - b.id);
+    
+    console.log("🔍 DEBUG TABLES PAGE — Total mesas cargadas:", tables.length, "Mesas OCCUPIED:", sortedTables.length, "IDs:", sortedTables.map(t => t.id));
 
     const getCardStyles = (table: Table) => {
         // 1. IconCheck order_type first (Most reliable)
@@ -380,7 +382,13 @@ export default function TablesPage() {
                                 tableId={selectedTable.id}
                                 initialTableData={selectedTable}
                                 initialShowPayment={autoOpenPayment}
-                                onClose={() => { setSelectedTable(null); setAutoOpenPayment(false); fetchTables(); }}
+                                onClose={() => { 
+                                    setSelectedTable(null); 
+                                    setAutoOpenPayment(false); 
+                                    console.log("🔍 DEBUG — OrderSheet cerrado, refrescando mesas...");
+                                    // Pequeño delay para que Supabase propague el cambio
+                                    setTimeout(() => fetchTables(), 300);
+                                }}
                                 onOrderComplete={() => handleOrderComplete()}
                             />
                         </div>
