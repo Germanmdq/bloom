@@ -1050,9 +1050,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             key={item.id}
                                             onClick={() => {
                                                 const catNameLower = catName.toLowerCase();
-                                                const isEmpanada = item.name.toLowerCase().includes("empa") || catNameLower.includes("empa");
+                                                const itemNameLower = item.name.toLowerCase();
+                                                const isEmpanada = itemNameLower.includes("empa") || catNameLower.includes("empa");
+                                                const isMenuOrPlato = catNameLower.includes("plato") || catNameLower.includes("menú") || catNameLower.includes("especial") || itemNameLower.includes("especial") || itemNameLower.includes("plato") || itemNameLower.includes("menú");
                                                 
-                                                if (catNameLower.includes("plato") || catNameLower.includes("menú") || isEmpanada) {
+                                                if (isMenuOrPlato || isEmpanada) {
                                                     setPendingProduct(item);
                                                     if (isEmpanada) {
                                                         setConfigStep('empanada-flavor');
