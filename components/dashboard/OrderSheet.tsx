@@ -608,15 +608,23 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             if (insumosMatched && insumosMatched.length > 0) {
                                                 const insumo = insumosMatched[0];
                                                 const qtyToDeduct = Number(recipe.qty) * unidadesARestar;
-                                                await supabase.from('insumos')
+                                                const { error: updErr } = await supabase.from('insumos')
                                                     .update({ stock_actual: (Number(insumo.stock_actual) || 0) - qtyToDeduct })
                                                     .eq('id', insumo.id);
-                                                console.log(`✅ Se descontaron ${qtyToDeduct} del insumo ID ${insumo.id} por la venta de ${item.name}`);
+                                                
+                                                if (updErr) {
+                                                    console.error(`❌ Error actualizando insumo ${insumo.id}:`, updErr.message);
+                                                } else {
+                                                    console.log(`✅ Se descontaron ${qtyToDeduct} del insumo ${insumo.id} por la venta de ${item.name}`);
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                            // Invalidar caché para que el Dashboard refleje el cambio
+                            queryClient.invalidateQueries({ queryKey: ['insumos'] });
+                            queryClient.invalidateQueries({ queryKey: ['stock'] });
                         } catch (recipeErr) {
                             console.error("Error descontando receta:", recipeErr);
                         }
