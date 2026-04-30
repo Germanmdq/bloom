@@ -565,82 +565,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     items: cart,
                 });
 
-                // ── LÓGICA DE INVENTARIO UNIVERSAL (BLOOM) ──
-                try {
-                    for (const item of cart) {
-                        // Solo descontamos si no se descontó antes (ej: al enviar a cocina)
-                        if ((item as any).stock_processed) continue;
-
-                        const nombreLower = item.name.toLowerCase();
-                        let unidadesARestar = item.quantity;
-                        
-                        if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
-                            unidadesARestar = item.quantity * 2;
-                        }
-
-                        const { data: prod } = await supabase.from('products').select('stock, vendidos').eq('id', item.id).maybeSingle();
-                        if (prod) {
-                            await supabase.from('products').update({ 
-                                stock: (prod.stock || 0) - unidadesARestar, 
-                                vendidos: (prod.vendidos || 0) + item.quantity 
-                            }).eq('id', item.id);
-                        }
-
-                        // ── NUEVO: DESCUENTO POR RECETAS (MATERIA PRIMA) ──
-                        try {
-                            console.log(`DIAGNOSTICO: Procesando ${item.name} (ID: ${item.id})`);
-                            
-                            // 1. Buscar si tiene recetas asociadas usando el ID directo del item
-                            const { data: recipes, error: recError } = await supabase.from('recipes').select('raw_product_id, qty').eq('menu_product_id', item.id);
-                            
-                            if (recError) {
-                                console.error("Error al buscar receta:", recError);
-                            }
-
-                            if (recipes && recipes.length > 0) {
-                                for (const recipe of recipes) {
-                                    // 2. Buscar el insumo que corresponda a esa materia prima
-                                    const { data: rawProd } = await supabase.from('products').select('name').eq('id', recipe.raw_product_id).maybeSingle();
-                                    
-                                    if (rawProd) {
-                                        const firstWord = rawProd.name.split(' ')[0];
-                                        const { data: insumosMatched } = await supabase.from('insumos')
-                                            .select('id, stock_actual, nombre')
-                                            .or(`nombre.ilike.%${rawProd.name}%,nombre.ilike.%${firstWord}%`)
-                                            .limit(1);
-
-                                        if (insumosMatched && insumosMatched.length > 0) {
-                                            const insumo = insumosMatched[0];
-                                            const qtyToDeduct = Number(recipe.qty) * unidadesARestar;
-                                            
-                                            const { error: updErr } = await supabase.from('insumos')
-                                                .update({ stock_actual: (Number(insumo.stock_actual) || 0) - qtyToDeduct })
-                                                .eq('id', insumo.id);
-                                            
-                                            if (!updErr) {
-                                                console.log(`✅ DESCONTADO: ${qtyToDeduct} de ${insumo.nombre}`);
-                                                // Alertamos solo una vez para no molestar tanto, o mejor lo dejamos en console.log
-                                            } else {
-                                                console.error("Error al descontar insumo:", updErr);
-                                            }
-                                        } else {
-                                            console.warn(`No se encontró insumo para la materia prima: ${rawProd.name}`);
-                                        }
-                                    }
-                                }
-                            } else {
-                                console.log(`El producto ${item.name} no tiene receta vinculada.`);
-                            }
-                            queryClient.invalidateQueries({ queryKey: ['insumos'] });
-                        } catch (recipeErr) {
-                            console.error("Error crítico receta:", recipeErr);
-                        }
-                    }
-                } catch (err) {
-                    console.error("Error en inventario (FinishOrder):", err);
-                }
-                
-                // If it's a web order, we mark it as completed and paid
                 if (webOrderId || currentWebOrderId) {
                     const idToComplete = webOrderId || currentWebOrderId;
                     const { error: updErr } = await supabase.from('orders').update({ status: 'completed' }).eq('id', idToComplete);
@@ -649,6 +573,60 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                 await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
             }
+
+            // ── LÓGICA DE INVENTARIO UNIVERSAL (AHORA FUERA DEL IF/ELSE) ──
+            try {
+                for (const item of cart) {
+                    if ((item as any).stock_processed) continue;
+
+                    const nombreLower = item.name.toLowerCase();
+                    let unidadesARestar = item.quantity;
+                    
+                    if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
+                        unidadesARestar = item.quantity * 2;
+                    }
+
+                    // 1. Descuento de Producto Terminado
+                    const { data: prod } = await supabase.from('products').select('stock, vendidos').eq('id', item.id).maybeSingle();
+                    if (prod) {
+                        await supabase.from('products').update({ 
+                            stock: (prod.stock || 0) - unidadesARestar, 
+                            vendidos: (prod.vendidos || 0) + item.quantity 
+                        }).eq('id', item.id);
+                    }
+
+                    // 2. Descuento de Materia Prima (Recetas)
+                    try {
+                        const { data: recipes } = await supabase.from('recipes').select('raw_product_id, qty').eq('menu_product_id', item.id);
+                        if (recipes && recipes.length > 0) {
+                            for (const recipe of recipes) {
+                                const { data: rawProd } = await supabase.from('products').select('name').eq('id', recipe.raw_product_id).maybeSingle();
+                                if (rawProd) {
+                                    const firstWord = rawProd.name.split(' ')[0];
+                                    const { data: insumosMatched } = await supabase.from('insumos')
+                                        .select('id, stock_actual, nombre')
+                                        .or(`nombre.ilike.%${rawProd.name}%,nombre.ilike.%${firstWord}%`)
+                                        .limit(1);
+
+                                    if (insumosMatched && insumosMatched.length > 0) {
+                                        const insumo = insumosMatched[0];
+                                        const qtyToDeduct = Number(recipe.qty) * unidadesARestar;
+                                        await supabase.from('insumos')
+                                            .update({ stock_actual: (Number(insumo.stock_actual) || 0) - qtyToDeduct })
+                                            .eq('id', insumo.id);
+                                        console.log(`✅ DESCONTADO: ${qtyToDeduct} de ${insumo.nombre}`);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) { console.error("Error receta:", e); }
+                }
+                queryClient.invalidateQueries({ queryKey: ['insumos'] });
+                queryClient.invalidateQueries({ queryKey: ['stock'] });
+            } catch (err) {
+                console.error("Error general inventario:", err);
+            }
+
             // Guardar datos para impresión post-cobro antes de limpiar el carrito
             setCompletedOrderData({ cart: [...cart], total: finalTotal });
             setFeedback({ message: "¡Venta registrada!", type: "success" });
