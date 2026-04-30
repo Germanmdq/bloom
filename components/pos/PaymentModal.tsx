@@ -401,7 +401,7 @@ export function PaymentModal({
                         {paymentMethod === "CASH" && (
                             <input
                                 type="number"
-                                placeholder={total.toString()}
+                                placeholder={Math.round(finalTotal).toString()}
                                 className="text-4xl font-black text-center bg-transparent outline-none w-full"
                                 autoFocus
                             />
