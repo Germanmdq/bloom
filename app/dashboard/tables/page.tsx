@@ -44,11 +44,15 @@ export default function TablesPage() {
     const [customerSearch, setCustomerSearch] = useState("");
     const [customerResults, setCustomerResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [showRegisterNew, setShowRegisterNew] = useState(false);
+    const [newCustomerPhone, setNewCustomerPhone] = useState("");
+    const [isRegisteringCustomer, setIsRegisteringCustomer] = useState(false);
 
     const supabase = createClient();
 
     const searchCustomers = async (q: string) => {
         setCustomerSearch(q);
+        setShowRegisterNew(false);
         if (q.length < 2) {
             setCustomerResults([]);
             return;
@@ -61,6 +65,33 @@ export default function TablesPage() {
             .limit(5);
         setCustomerResults(data || []);
         setIsSearching(false);
+        // Si no hay resultados, ofrecemos registrar
+        if (!data || data.length === 0) {
+            setShowRegisterNew(true);
+        }
+    };
+
+    const handleRegisterNewCustomer = async () => {
+        if (!customerSearch.trim()) return;
+        setIsRegisteringCustomer(true);
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .insert({ full_name: customerSearch.trim(), phone: newCustomerPhone.trim() || null })
+                .select('id, full_name, phone')
+                .single();
+            if (error) throw error;
+            setNewTableCustomerId(data.id);
+            setNewTableName(data.full_name);
+            setCustomerSearch("");
+            setCustomerResults([]);
+            setShowRegisterNew(false);
+            setNewCustomerPhone("");
+        } catch (err: any) {
+            alert('Error al registrar cliente: ' + err.message);
+        } finally {
+            setIsRegisteringCustomer(false);
+        }
     };
 
     useEffect(() => {
@@ -448,16 +479,27 @@ export default function TablesPage() {
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={() => setIsNewTableModalOpen(false)}
+                        onClick={() => {
+                            setIsNewTableModalOpen(false);
+                            setCustomerSearch("");
+                            setCustomerResults([]);
+                            setShowRegisterNew(false);
+                            setNewCustomerPhone("");
+                            setNewTableIdInput("");
+                            setNewTableName("");
+                            setNewTableCustomerId(null);
+                        }}
                     />
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className="relative bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl"
                     >
-                        <h3 className="text-2xl font-bold mb-6 text-gray-900">Abrir Nueva Mesa</h3>
+                        <h3 className="text-2xl font-bold mb-2 text-gray-900">Abrir Nueva Mesa</h3>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6">Seleccioná el tipo de pedido</p>
 
-                        <div className="space-y-4 mb-8">
+                        {/* PASO 1 — Tipo de pedido */}
+                        <div className="space-y-3 mb-6">
                             <label className="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all hover:border-black/20 has-[:checked]:border-black has-[:checked]:bg-black/5">
                                 <input
                                     type="radio" name="tableType" value="LOCAL"
@@ -465,97 +507,162 @@ export default function TablesPage() {
                                     onChange={() => setNewTableType('LOCAL')}
                                     className="w-5 h-5 accent-black"
                                 />
-                                <span className="font-bold text-gray-800">Mesa en Local</span>
+                                <span className="font-bold text-gray-800">🍽️ Mesa en Local</span>
                             </label>
 
-                            <div className="pl-12 pr-4 pb-2">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Identificador (Nº Mesa o Nombre)</p>
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    placeholder={
-                                        newTableType === 'LOCAL' ? "Ej: 5, Germán, Barra..." :
-                                        newTableType === 'DELIVERY' ? "Ej: 101, Juan..." :
-                                        "Ej: 201, Retiro 1..."
-                                    }
-                                    value={newTableIdInput}
-                                    onChange={(e) => {
-                                        setNewTableIdInput(e.target.value);
-                                        // Si es texto, lo seteamos como nombre también
-                                        if (isNaN(parseInt(e.target.value))) {
-                                            setNewTableName(e.target.value);
-                                        } else {
-                                            setNewTableName("");
-                                        }
-                                    }}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') handleOpenTable(); }}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 font-black text-lg outline-none focus:ring-2 ring-black/5 transition-all"
-                                />
-                            </div>
-
-                            <div className="pl-12 pr-4 pb-2 relative">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Vincular Cliente (Opcional)</p>
-                                {newTableCustomerId ? (
-                                    <div className="flex items-center justify-between p-3 bg-gray-900 rounded-xl">
-                                        <span className="text-xs font-black text-white truncate">{newTableName || 'Cliente Vinculado'}</span>
-                                        <button onClick={() => { setNewTableCustomerId(null); setNewTableName(""); }} className="text-white/40 hover:text-white"><IconX size={14}/></button>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <input
-                                            type="text"
-                                            placeholder="Buscar por nombre..."
-                                            value={customerSearch}
-                                            onChange={(e) => searchCustomers(e.target.value)}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold outline-none focus:border-black text-sm"
-                                        />
-                                        {isSearching && <IconLoader2 className="absolute right-8 top-10 animate-spin text-gray-300" size={16} />}
-                                        {customerResults.length > 0 && (
-                                            <div className="absolute left-12 right-4 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-2xl z-[70] overflow-hidden">
-                                                {customerResults.map(c => (
-                                                    <button
-                                                        key={c.id}
-                                                        onClick={() => {
-                                                            setNewTableCustomerId(c.id);
-                                                            setNewTableName(c.full_name);
-                                                            setCustomerResults([]);
-                                                            setCustomerSearch("");
-                                                        }}
-                                                        className="w-full px-4 py-3 text-left hover:bg-gray-50 text-xs font-bold border-b border-gray-50 last:border-0"
-                                                    >
-                                                        {c.full_name}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-
-                            <label className="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all hover:border-black/20 has-[:checked]:border-green-500 has-[:checked]:bg-green-50">
+                            <label className="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all hover:border-black/20 has-[:checked]:border-red-500 has-[:checked]:bg-red-50">
                                 <input
                                     type="radio" name="tableType" value="DELIVERY"
                                     checked={newTableType === 'DELIVERY'}
                                     onChange={() => setNewTableType('DELIVERY')}
-                                    className="w-5 h-5 accent-green-600"
+                                    className="w-5 h-5 accent-red-500"
                                 />
-                                <span className="font-bold text-gray-800">Delivery</span>
+                                <span className="font-bold text-gray-800">🛵 Delivery</span>
                             </label>
 
-                            <label className="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all hover:border-black/20 has-[:checked]:border-yellow-400 has-[:checked]:bg-yellow-50">
+                            <label className="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all hover:border-black/20 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
                                 <input
                                     type="radio" name="tableType" value="TAKEAWAY"
                                     checked={newTableType === 'TAKEAWAY'}
                                     onChange={() => setNewTableType('TAKEAWAY')}
-                                    className="w-5 h-5 accent-yellow-500"
+                                    className="w-5 h-5 accent-emerald-600"
                                 />
-                                <span className="font-bold text-gray-800">Retiro en Local</span>
+                                <span className="font-bold text-gray-800">🏃 Retiro en Local</span>
                             </label>
                         </div>
 
+                        {/* Divider */}
+                        <div className="border-t border-gray-100 mb-6" />
+
+                        {/* PASO 2 — Identificador */}
+                        <div className="mb-4">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                                {newTableType === 'LOCAL' ? 'Nº Mesa o Nombre' : 'Nombre del cliente'}
+                            </p>
+                            {newTableCustomerId ? (
+                                /* Cliente ya vinculado */
+                                <div className="flex items-center justify-between p-3 bg-gray-900 rounded-xl">
+                                    <span className="text-sm font-black text-white truncate">✓ {newTableName}</span>
+                                    <button
+                                        onClick={() => { setNewTableCustomerId(null); setNewTableName(""); setNewTableIdInput(""); setCustomerSearch(""); setShowRegisterNew(false); }}
+                                        className="text-white/40 hover:text-white ml-2"
+                                    >
+                                        <IconX size={14}/>
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="relative">
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        placeholder={
+                                            newTableType === 'LOCAL'
+                                                ? "Ej: 5, Barra, Germán..."
+                                                : "Nombre o buscar cliente..."
+                                        }
+                                        value={newTableType === 'LOCAL' ? newTableIdInput : customerSearch}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (newTableType === 'LOCAL') {
+                                                setNewTableIdInput(val);
+                                                if (isNaN(parseInt(val))) setNewTableName(val);
+                                                else setNewTableName("");
+                                                // también busca cliente para local
+                                                searchCustomers(val);
+                                            } else {
+                                                setCustomerSearch(val);
+                                                setNewTableIdInput(val);
+                                                setNewTableName(val);
+                                                searchCustomers(val);
+                                            }
+                                        }}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' && !showRegisterNew) handleOpenTable(); }}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-bold text-base outline-none focus:border-black focus:ring-2 ring-black/5 transition-all"
+                                    />
+                                    {isSearching && (
+                                        <IconLoader2 className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-gray-300" size={16} />
+                                    )}
+
+                                    {/* Resultados de búsqueda */}
+                                    {customerResults.length > 0 && (
+                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-2xl z-[70] overflow-hidden">
+                                            {customerResults.map(c => (
+                                                <button
+                                                    key={c.id}
+                                                    onClick={() => {
+                                                        setNewTableCustomerId(c.id);
+                                                        setNewTableName(c.full_name);
+                                                        setNewTableIdInput(c.full_name);
+                                                        setCustomerResults([]);
+                                                        setCustomerSearch("");
+                                                        setShowRegisterNew(false);
+                                                    }}
+                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 border-b border-gray-50 last:border-0"
+                                                >
+                                                    <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-black text-gray-500">
+                                                        {c.full_name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-800">{c.full_name}</p>
+                                                        {c.phone && <p className="text-xs text-gray-400">{c.phone}</p>}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Registro de nuevo cliente inline */}
+                        {showRegisterNew && !newTableCustomerId && (
+                            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-4">
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">
+                                    ✦ Registrar nuevo cliente
+                                </p>
+                                <p className="text-sm font-bold text-gray-700 mb-3">
+                                    &ldquo;{customerSearch}&rdquo; no está registrado. ¿Querés guardarlo?
+                                </p>
+                                <input
+                                    type="tel"
+                                    placeholder="Teléfono (opcional)"
+                                    value={newCustomerPhone}
+                                    onChange={(e) => setNewCustomerPhone(e.target.value)}
+                                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 font-bold text-sm outline-none focus:border-black mb-3 transition-all"
+                                />
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setShowRegisterNew(false);
+                                            // Usar igual sin registro
+                                        }}
+                                        className="flex-1 py-2.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-all"
+                                    >
+                                        Usar sin registrar
+                                    </button>
+                                    <button
+                                        onClick={handleRegisterNewCustomer}
+                                        disabled={isRegisteringCustomer}
+                                        className="flex-1 py-2.5 text-xs font-bold text-white bg-gray-900 hover:bg-black rounded-xl transition-all disabled:opacity-50"
+                                    >
+                                        {isRegisteringCustomer ? 'Guardando...' : 'Guardar cliente'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex gap-4">
                             <button
-                                onClick={() => setIsNewTableModalOpen(false)}
+                                onClick={() => {
+                                    setIsNewTableModalOpen(false);
+                                    setCustomerSearch("");
+                                    setCustomerResults([]);
+                                    setShowRegisterNew(false);
+                                    setNewCustomerPhone("");
+                                    setNewTableIdInput("");
+                                    setNewTableName("");
+                                    setNewTableCustomerId(null);
+                                }}
                                 className="flex-1 py-4 font-bold text-gray-500 hover:bg-gray-100 rounded-2xl transition-all"
                             >
                                 Cancelar
