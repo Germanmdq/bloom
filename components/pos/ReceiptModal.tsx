@@ -50,46 +50,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
 
         const itemsCount = cart.reduce((s, i) => s + (Number(i.quantity) || 0), 0);
 
-        const html = `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${isKitchen ? "Comanda" : "Ticket"} ${escapeHtml(tableId)}</title>
-    <style>
-      /* Algunos drivers de térmicas recortan el final si el alto es "auto".
-         Forzamos una "hoja" muy larga y además dejamos margen inferior. */
-      @page { margin: 0 0 25mm 0; size: 72mm auto; }
-      html, body { margin: 0; padding: 0; background: #fff; }
-      body { width: 72mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-      .ticket { width: 72mm; padding: 12px 12px 30mm 12px; box-sizing: border-box; }
-      .center { text-align: center; }
-      .h1 { font-weight: 900; font-size: 22px; letter-spacing: -0.02em; line-height: 1; }
-      .sub { font-weight: 800; font-size: 10px; text-transform: uppercase; margin-top: 4px; }
-      .dash { border-bottom: 1px dashed #000; margin: 8px 0; }
-      .meta { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; }
-      .head { margin-bottom: 8px; }
-      .cols { display: grid; grid-template-columns: ${isKitchen ? "1fr 40px" : "1fr 20px 60px"}; gap: 6px; align-items: start; }
-      .cols.header { font-size: 10px; font-weight: 900; border-bottom: 1px solid #000; padding-bottom: 4px; }
-      .row { display: grid; grid-template-columns: ${isKitchen ? "1fr 40px" : "1fr 20px 60px"}; gap: 6px; padding: 6px 0; border-bottom: 1px solid #f3f4f6; font-size: 12px; line-height: 1.15; }
-      .name { min-width: 0; }
-      .item-name { font-weight: 800; }
-      .note { font-size: 9px; font-style: italic; color: #4b5563; margin-top: 2px; }
-      .qty, .total { text-align: right; font-weight: 900; }
-      .total { font-weight: 800; }
-      .sum { border-top: 2px solid #000; padding-top: 8px; margin-top: 6px; }
-      .sumline { display: flex; justify-content: space-between; align-items: baseline; }
-      .sumline .label { font-weight: 900; font-size: 18px; letter-spacing: -0.02em; }
-      .sumline .value { font-weight: 900; font-size: 18px; letter-spacing: -0.02em; }
-      .sumsub { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; opacity: 0.6; margin-top: 2px; }
-      .end { text-align: center; opacity: 0.85; padding: 14px 0 0 0; border-top: 1px dashed #000; margin-top: 10px; }
-      .end .msg { font-size: 11px; font-weight: 800; }
-      .end .site { font-size: 9px; margin-top: 2px; }
-      /* Extra padding real para evitar que el corte se coma el final */
-      .pad { height: 40mm; }
-    </style>
-  </head>
-  <body>
+        const html = `
     <div class="ticket">
       <div class="head center">
         <div class="h1">${isKitchen ? "COMANDA" : "BLOOM"}</div>
@@ -125,92 +86,104 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
         <div class="msg">${isKitchen ? "--- FIN DE COMANDA ---" : "¡GRACIAS POR TU VISITA!"}</div>
         ${isKitchen ? "" : `<div class="site">bloommdp.com</div>`}
       </div>
+    </div>`;
 
-      <div class="pad"></div>
-    </div>
-  </body>
-</html>`;
+        // 1. Crear el contenedor principal
+        const printContainer = document.createElement("div");
+        printContainer.id = "bloom-print-container";
+        printContainer.innerHTML = html;
+        document.body.appendChild(printContainer);
 
-        const iframe = document.createElement("iframe");
-        iframe.setAttribute("aria-hidden", "true");
-        iframe.tabIndex = -1;
-        iframe.style.position = "fixed";
-        iframe.style.right = "0";
-        iframe.style.bottom = "0";
-        iframe.style.width = "0";
-        iframe.style.height = "0";
-        iframe.style.border = "0";
-        iframe.style.opacity = "0";
-        iframe.style.pointerEvents = "none";
-        document.body.appendChild(iframe);
+        // 2. Crear los estilos de impresión
+        const style = document.createElement("style");
+        style.id = "bloom-print-styles";
+        style.textContent = `
+          @media print {
+            /* Ocultar TODO lo demás de la app */
+            body > *:not(#bloom-print-container) {
+              display: none !important;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+              background: #fff;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            @page { margin: 0 0 5mm 0; size: 72mm auto; }
+            #bloom-print-container {
+              display: block !important;
+              width: 72mm;
+              font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+              color: #000;
+            }
+            .ticket { width: 72mm; padding: 6px 6px 15mm 6px; box-sizing: border-box; }
+            .center { text-align: center; }
+            .h1 { font-weight: 900; font-size: 22px; letter-spacing: -0.02em; line-height: 1; margin: 0; }
+            .sub { font-weight: 800; font-size: 10px; text-transform: uppercase; margin-top: 4px; }
+            .dash { border-bottom: 1px dashed #000; margin: 8px 0; }
+            .meta { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; }
+            .head { margin-bottom: 8px; }
+            .cols { display: grid; grid-template-columns: ${isKitchen ? "1fr 40px" : "1fr 20px 60px"}; gap: 6px; align-items: start; }
+            .cols.header { font-size: 10px; font-weight: 900; border-bottom: 1px solid #000; padding-bottom: 4px; }
+            .row { display: grid; grid-template-columns: ${isKitchen ? "1fr 40px" : "1fr 20px 60px"}; gap: 6px; padding: 6px 0; border-bottom: 1px dashed #e5e7eb; font-size: 12px; line-height: 1.15; }
+            .name { min-width: 0; }
+            .item-name { font-weight: 800; margin: 0; }
+            .note { font-size: 9px; font-style: italic; color: #374151; margin-top: 2px; }
+            .qty, .total { text-align: right; font-weight: 900; }
+            .total { font-weight: 800; }
+            .sum { border-top: 2px solid #000; padding-top: 8px; margin-top: 6px; }
+            .sumline { display: flex; justify-content: space-between; align-items: baseline; }
+            .sumline .label { font-weight: 900; font-size: 18px; letter-spacing: -0.02em; }
+            .sumline .value { font-weight: 900; font-size: 18px; letter-spacing: -0.02em; }
+            .sumsub { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; opacity: 0.6; margin-top: 2px; }
+            .end { text-align: center; opacity: 0.85; padding: 14px 0 0 0; border-top: 1px dashed #000; margin-top: 10px; }
+            .end .msg { font-size: 11px; font-weight: 800; }
+            .end .site { font-size: 9px; margin-top: 2px; }
+          }
+          /* Ocultar en pantalla normal */
+          @media screen {
+            #bloom-print-container {
+              display: none !important;
+            }
+          }
+        `;
+        document.head.appendChild(style);
 
         const cleanup = () => {
             try {
-                iframe.remove();
+                if (printContainer.parentNode) document.body.removeChild(printContainer);
+                if (style.parentNode) document.head.removeChild(style);
             } catch {}
         };
-
-        // Cargamos el HTML por srcdoc y esperamos onload para evitar impresión en blanco.
-        iframe.srcdoc = html;
-
-        const win = iframe.contentWindow;
-        if (!win) {
-            cleanup();
-            onClose();
-            return;
-        }
 
         const handleAfterPrint = () => {
             try {
-                win.removeEventListener("afterprint", handleAfterPrint);
+                window.removeEventListener("afterprint", handleAfterPrint);
             } catch {}
             cleanup();
             onClose();
         };
 
-        win.addEventListener("afterprint", handleAfterPrint);
+        window.addEventListener("afterprint", handleAfterPrint);
 
         const timer = window.setTimeout(() => {
-            // Fallback si onload no dispara (raro): evitamos dejar el iframe colgado.
             handleAfterPrint();
         }, 15000);
 
-        iframe.onload = async () => {
+        // Imprimir desde la ventana principal (Kiosk funciona mucho mejor aquí)
+        setTimeout(() => {
             try {
-                // Esperar a que el documento esté completamente listo.
-                const doc = win.document;
-                if (doc.readyState !== "complete") {
-                    await new Promise<void>((resolve) => {
-                        const onReady = () => {
-                            if (doc.readyState === "complete") {
-                                doc.removeEventListener("readystatechange", onReady);
-                                resolve();
-                            }
-                        };
-                        doc.addEventListener("readystatechange", onReady);
-                    });
-                }
-
-                // Esperar fonts si el navegador lo soporta (ayuda a evitar impresión vacía).
-                const fontsReady: Promise<unknown> | undefined = (doc as any)?.fonts?.ready;
-                if (fontsReady) await fontsReady;
-
-                // 2 frames para asegurar layout final.
-                await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
-
-                // Fuerza reflow.
-                void doc.body?.offsetHeight;
-                win.focus();
-                win.print();
+                window.print();
             } catch {
                 handleAfterPrint();
             }
-        };
+        }, 100);
 
         return () => {
             window.clearTimeout(timer);
             try {
-                win.removeEventListener("afterprint", handleAfterPrint);
+                window.removeEventListener("afterprint", handleAfterPrint);
             } catch {}
             cleanup();
         };
