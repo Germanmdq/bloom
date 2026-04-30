@@ -585,6 +585,41 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 vendidos: (prod.vendidos || 0) + item.quantity 
                             }).eq('id', item.id);
                         }
+
+                        // ── NUEVO: DESCUENTO POR RECETAS (MATERIA PRIMA) ──
+                        try {
+                            // 1. Buscar el producto en la tabla products por su nombre
+                            const { data: menuProd } = await supabase.from('products').select('id').ilike('name', item.name).maybeSingle();
+                            if (menuProd) {
+                                // 2. Buscar si tiene recetas asociadas
+                                const { data: recipes } = await supabase.from('recipes').select('raw_product_id, qty').eq('menu_product_id', menuProd.id);
+                                if (recipes && recipes.length > 0) {
+                                    for (const recipe of recipes) {
+                                        // 3. Obtener el nombre del insumo original
+                                        const { data: rawProd } = await supabase.from('products').select('name').eq('id', recipe.raw_product_id).maybeSingle();
+                                        if (rawProd && rawProd.name) {
+                                            // Buscar en la tabla insumos (ej: si es "Café en Grano", buscar "Café")
+                                            const firstWord = rawProd.name.split(' ')[0];
+                                            const { data: insumosMatched } = await supabase.from('insumos')
+                                                .select('id, stock_actual')
+                                                .or(`nombre.ilike.%${rawProd.name}%,nombre.ilike.%${firstWord}%`)
+                                                .limit(1);
+
+                                            if (insumosMatched && insumosMatched.length > 0) {
+                                                const insumo = insumosMatched[0];
+                                                const qtyToDeduct = Number(recipe.qty) * unidadesARestar;
+                                                await supabase.from('insumos')
+                                                    .update({ stock_actual: (Number(insumo.stock_actual) || 0) - qtyToDeduct })
+                                                    .eq('id', insumo.id);
+                                                console.log(`✅ Se descontaron ${qtyToDeduct} del insumo ID ${insumo.id} por la venta de ${item.name}`);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (recipeErr) {
+                            console.error("Error descontando receta:", recipeErr);
+                        }
                     }
                 } catch (err) {
                     console.error("Error en inventario (FinishOrder):", err);
