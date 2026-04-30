@@ -100,7 +100,16 @@ export function AuthPageClient() {
       setError(translateAuthError(err));
       return;
     }
-    if (isAdminEmail(data?.user?.email)) {
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+
+    const isStaff = profile?.role === 'ADMIN' || profile?.role === 'WAITER' || profile?.role === 'KITCHEN' || isAdminEmail(data?.user?.email);
+
+    if (isStaff) {
       router.replace("/dashboard");
     } else {
       const redirect = safeInternalPath(searchParams.get("redirect")) ?? "/cuenta";
