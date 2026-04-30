@@ -599,6 +599,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     try {
                         const { data: recipes } = await supabase.from('recipes').select('raw_product_id, qty').eq('menu_product_id', item.id);
                         if (recipes && recipes.length > 0) {
+                            window.alert(`¡RECETA ENCONTRADA! ${item.name} lleva ${recipes.length} ingredientes.`);
                             for (const recipe of recipes) {
                                 const { data: rawProd } = await supabase.from('products').select('name').eq('id', recipe.raw_product_id).maybeSingle();
                                 if (rawProd) {
@@ -615,18 +616,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             .update({ stock_actual: (Number(insumo.stock_actual) || 0) - qtyToDeduct })
                                             .eq('id', insumo.id);
                                         
-                                        console.log(`✅ DESCONTADO: ${qtyToDeduct} de ${insumo.nombre}`);
-                                        setFeedback({ 
-                                            message: `Stock: -${qtyToDeduct.toFixed(3)} ${insumo.nombre}`, 
-                                            type: 'success' 
-                                        });
+                                        window.alert(`✅ DESCONTADO: ${qtyToDeduct} de ${insumo.nombre}`);
+                                    } else {
+                                        window.alert(`❌ No encontré el insumo "${rawProd.name}" en Compras & Stock.`);
                                     }
                                 }
-                            } else {
-                                console.log(`Sin receta: ${item.name}`);
                             }
                         }
-                    } catch (e) { console.error("Error receta:", e); }
+                    } catch (e) { window.alert("ERROR RECETA: " + (e as Error).message); }
                 }
                 queryClient.invalidateQueries({ queryKey: ['insumos'] });
                 queryClient.invalidateQueries({ queryKey: ['stock'] });
