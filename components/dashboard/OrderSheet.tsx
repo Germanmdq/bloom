@@ -633,9 +633,23 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             console.log("🔍 DEBUG MESA — tableId:", tableId, "tipo:", typeof tableId, "Number:", Number(tableId));
             console.log("🔍 DEBUG MESA — cart tiene", cart.length, "items");
 
+            // Reconstruir el item de meta-customer para no perder el nombre de la mesa
+            const metaItems = [];
+            if (customerName || selectedCustomerId) {
+                metaItems.push({
+                    id: 'meta-customer',
+                    name: `Cliente: ${customerName || 'Alias'}`,
+                    customer_id: selectedCustomerId,
+                    price: 0,
+                    quantity: 1,
+                    category: 'METADATA'
+                });
+            }
+            const fullCartItems = [...metaItems, ...cart];
+
             const { data: updData, error: updErr } = await supabase.from("salon_tables")
                 .update({ 
-                    items: cart,
+                    items: fullCartItems,
                     status: 'OCCUPIED',
                     total: cart.reduce((sum, i) => sum + (i.price * i.quantity), 0),
                     updated_at: new Date().toISOString()
@@ -652,7 +666,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 const { data: insData, error: insErr } = await supabase.from("salon_tables")
                     .insert({ 
                         id: Number(tableId),
-                        items: cart,
+                        items: fullCartItems,
                         status: 'OCCUPIED',
                         total: cart.reduce((sum, i) => sum + (i.price * i.quantity), 0),
                         updated_at: new Date().toISOString()
@@ -669,7 +683,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 const { data: insData2, error: insErr2 } = await supabase.from("salon_tables")
                     .insert({ 
                         id: Number(tableId),
-                        items: cart,
+                        items: fullCartItems,
                         status: 'OCCUPIED',
                         total: cart.reduce((sum, i) => sum + (i.price * i.quantity), 0),
                         updated_at: new Date().toISOString()
