@@ -102,19 +102,52 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
 
     return (
         <section className="mb-10 relative">
-            <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-2xl bg-red-100 flex items-center justify-center">
-                    <IconAlertTriangle size={20} className="text-red-600" />
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center">
+                        <IconCalendarDue size={20} className="text-gray-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Próximos Vencimientos</h2>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gastos fijos del mes</p>
+                    </div>
                 </div>
-                <div>
-                    <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Próximos Vencimientos</h2>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gastos fijos del mes</p>
+
+                {/* REFERENCIA DE COLORES */}
+                <div className="hidden sm:flex items-center gap-4 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
+                        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Vencido</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+                        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">7 Días o menos</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+                        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">+7 Días</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* REFERENCIA MOVILE */}
+            <div className="flex sm:hidden flex-wrap items-center gap-3 mb-6 bg-white px-4 py-3 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                    <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Vencido</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+                    <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">≤ 7 Días</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
+                    <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">+7 Días</span>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {proximos.map((g, i) => {
-                    const esUrgente = g.categoria === 'urgente';
                     const vencido = diasRestantes(g.fecha_vencimiento) === 'VENCIDO';
                     const hasHistory = Array.isArray(g.historial_pagos) && g.historial_pagos.length > 0;
                     return (
@@ -125,9 +158,7 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                             transition={{ delay: i * 0.05 }}
                             onClick={() => setHistoryModal(g)}
                             className={`p-6 rounded-[1.5rem] border-2 cursor-pointer transition-all hover:scale-[1.02] ${
-                                vencido ? 'border-red-300 bg-red-50 hover:bg-red-100' :
-                                esUrgente ? 'border-red-200 bg-red-50/60 hover:bg-red-100/60' :
-                                'border-amber-200 bg-amber-50/60 hover:bg-amber-100/60'
+                                vencido ? 'border-red-300 bg-red-50 hover:bg-red-100' : 'border-amber-200 bg-amber-50/60 hover:bg-amber-100/60'
                             } relative group`}
                         >
                             {vencido && (
@@ -137,13 +168,13 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                             )}
                             <div className="flex items-start justify-between mb-3">
                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                    esUrgente ? 'bg-red-200 text-red-700' : 'bg-amber-200 text-amber-700'
+                                    vencido ? 'bg-red-200 text-red-700' : 'bg-amber-200 text-amber-700'
                                 }`}>
                                     <IconCalendarDue size={16} />
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                     <span className={`text-[9px] font-black uppercase tracking-widest ${
-                                        vencido ? 'text-red-600' : esUrgente ? 'text-red-500' : 'text-amber-600'
+                                        vencido ? 'text-red-600' : 'text-amber-600'
                                     }`}>
                                         {diasRestantes(g.fecha_vencimiento)}
                                     </span>
