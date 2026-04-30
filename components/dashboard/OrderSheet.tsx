@@ -624,92 +624,97 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             return;
         }
         setIsFinishing(true);
+
+        // ══════════════════════════════════════════════════════════
+        // PASO 0: GUARDAR MESA COMO OCCUPIED — ANTES QUE TODO
+        // Esto se ejecuta PRIMERO, independiente de cocina/inventario
+        // ══════════════════════════════════════════════════════════
+        try {
+            const { error: updErr } = await supabase.from("salon_tables")
+                .update({ 
+                    items: cart,
+                    status: 'OCCUPIED',
+                    total: cart.reduce((sum, i) => sum + (i.price * i.quantity), 0),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', Number(tableId));
+            
+            if (updErr) {
+                console.error("❌ UPDATE mesa falló:", updErr.message);
+                // Fallback: INSERT por si la mesa no existe aún
+                const { error: insErr } = await supabase.from("salon_tables")
+                    .insert({ 
+                        id: Number(tableId),
+                        items: cart,
+                        status: 'OCCUPIED',
+                        total: cart.reduce((sum, i) => sum + (i.price * i.quantity), 0),
+                        updated_at: new Date().toISOString()
+                    });
+                if (insErr) {
+                    console.error("❌ INSERT también falló:", insErr.message);
+                    setFeedback({ message: `Error DB: ${insErr.message}`, type: 'error' });
+                }
+            } else {
+                console.log("✅ Mesa", tableId, "guardada como OCCUPIED con", cart.length, "items");
+            }
+        } catch (mesaErr: any) {
+            console.error("❌ Excepción guardando mesa:", mesaErr);
+            setFeedback({ message: `Error mesa: ${mesaErr.message}`, type: 'error' });
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // PASO 1: ENVIAR TICKET A COCINA
+        // ══════════════════════════════════════════════════════════
         try {
             await sendKitchenTicket.mutateAsync({
                 table_id: String(tableId),
                 items: cart,
                 notes: notes || "",
             });
-
-            // ══════════════════════════════════════════════════
-            // PASO 1: GUARDAR MESA COMO OCCUPIED (OBLIGATORIO)
-            // Esto se ejecuta SIEMPRE, antes de todo lo demás
-            // ══════════════════════════════════════════════════
-            try {
-                const { error: updErr } = await supabase.from("salon_tables")
-                    .update({ 
-                        items: cart,
-                        status: 'OCCUPIED',
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', Number(tableId));
-                
-                if (updErr) {
-                    console.error("❌ UPDATE mesa falló:", updErr.message);
-                    // Fallback: intentar INSERT
-                    await supabase.from("salon_tables")
-                        .insert({ 
-                            id: Number(tableId),
-                            items: cart,
-                            status: 'OCCUPIED',
-                            updated_at: new Date().toISOString()
-                        });
-                } else {
-                    console.log("✅ Mesa", tableId, "guardada como OCCUPIED");
-                }
-            } catch (mesaErr) {
-                console.error("❌ Error guardando mesa:", mesaErr);
-            }
-
-            // ══════════════════════════════════════════════════
-            // PASO 2: INVENTARIO (OPCIONAL - si falla, no importa)
-            // ══════════════════════════════════════════════════
-            try {
-                for (const item of cart) {
-                    const nombreLower = item.name.toLowerCase();
-                    let unidadesARestar = item.quantity;
-                    
-                    if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
-                        unidadesARestar = item.quantity * 2;
-                    }
-
-                    const { data: currentProd, error: fetchError } = await supabase
-                        .from('products')
-                        .select('stock, vendidos')
-                        .eq('id', item.id)
-                        .maybeSingle();
-
-                    if (fetchError || !currentProd) continue;
-
-                    const nuevoStock = (currentProd.stock || 0) - unidadesARestar;
-                    const nuevosVendidos = (currentProd.vendidos || 0) + item.quantity;
-
-                    await supabase
-                        .from('products')
-                        .update({ stock: nuevoStock, vendidos: nuevosVendidos })
-                        .eq('id', item.id);
-                    
-                    (item as any).stock_processed = true;
-                }
-            } catch (stockErr) {
-                console.error("⚠️ Error en inventario (no afecta la mesa):", stockErr);
-            }
-
-            setFeedback({ message: "Enviado a cocina ✅", type: 'success' });
-            
-            setTimeout(() => {
-                setFeedback(null);
-                onClose(); 
-            }, 800);
-
-        } catch (error: any) {
-            console.error("Error general en sendToKitchen:", error);
-            setFeedback({ message: `Error: ${error.message}`, type: 'error' });
-            setTimeout(() => {
-                setFeedback(null);
-                onClose();
-            }, 2000);
+        } catch (ticketErr: any) {
+            console.error("⚠️ Error enviando ticket a cocina:", ticketErr.message);
+            // No bloqueamos — la mesa ya está guardada
         }
+
+        // ══════════════════════════════════════════════════════════
+        // PASO 2: INVENTARIO (OPCIONAL)
+        // ══════════════════════════════════════════════════════════
+        try {
+            for (const item of cart) {
+                const nombreLower = item.name.toLowerCase();
+                let unidadesARestar = item.quantity;
+                
+                if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
+                    unidadesARestar = item.quantity * 2;
+                }
+
+                const { data: currentProd, error: fetchError } = await supabase
+                    .from('products')
+                    .select('stock, vendidos')
+                    .eq('id', item.id)
+                    .maybeSingle();
+
+                if (fetchError || !currentProd) continue;
+
+                await supabase
+                    .from('products')
+                    .update({ 
+                        stock: (currentProd.stock || 0) - unidadesARestar, 
+                        vendidos: (currentProd.vendidos || 0) + item.quantity 
+                    })
+                    .eq('id', item.id);
+                
+                (item as any).stock_processed = true;
+            }
+        } catch (stockErr) {
+            console.error("⚠️ Error en inventario (no afecta la mesa):", stockErr);
+        }
+
+        setFeedback({ message: "Enviado a cocina ✅", type: 'success' });
+        setTimeout(() => {
+            setFeedback(null);
+            onClose(); 
+        }, 800);
         setIsFinishing(false);
     };
 
