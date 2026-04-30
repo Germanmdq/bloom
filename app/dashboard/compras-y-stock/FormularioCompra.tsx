@@ -232,13 +232,15 @@ export function FormularioCompra({ proveedores }: { proveedores: Proveedor[] }) 
                                                 <p className="font-black text-sm text-gray-900">{item.nombre}</p>
                                                 <p className="text-[9px] font-bold text-gray-400 uppercase">{item.unidad}</p>
                                             </div>
-                                            <div className="col-span-3 md:col-span-2">
-                                                <input type="number" step="0.01" value={item.cantidad} onChange={e => updateItem(idx, 'cantidad', e.target.value)} placeholder="Cant" className="w-full h-10 px-3 rounded-lg bg-white font-bold text-sm outline-none text-center" />
+                                            <div className="col-span-3 md:col-span-2 relative">
+                                                <label className="absolute -top-3 left-0 w-full text-center text-[8px] font-black text-gray-400 uppercase tracking-widest">CANTIDAD</label>
+                                                <input type="number" step="0.01" value={item.cantidad} onChange={e => updateItem(idx, 'cantidad', e.target.value)} placeholder="Cant" className="w-full h-10 px-3 mt-1 rounded-lg bg-white font-bold text-sm outline-none text-center" />
                                             </div>
-                                            <div className="col-span-3 md:col-span-3">
-                                                <input type="number" step="0.01" value={item.precio_unitario} onChange={e => updateItem(idx, 'precio_unitario', e.target.value)} placeholder="$/u" className="w-full h-10 px-3 rounded-lg bg-white font-bold text-sm outline-none text-center" />
+                                            <div className="col-span-3 md:col-span-3 relative">
+                                                <label className="absolute -top-3 left-0 w-full text-center text-[8px] font-black text-gray-400 uppercase tracking-widest">PRECIO UNIDAD</label>
+                                                <input type="number" step="0.01" value={item.precio_unitario} onChange={e => updateItem(idx, 'precio_unitario', e.target.value)} placeholder="$/u" className="w-full h-10 px-3 mt-1 rounded-lg bg-white font-bold text-sm outline-none text-center" />
                                             </div>
-                                            <div className="col-span-1">
+                                            <div className="col-span-1 pt-1">
                                                 <button onClick={() => removeItem(idx)} className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50">
                                                     <IconX size={14} />
                                                 </button>
