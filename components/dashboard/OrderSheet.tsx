@@ -309,7 +309,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         const init = async () => {
             // Load waiters only if not already loaded
             if (waiters.length === 0) {
-                supabase.from('profiles').select('id, full_name').eq('role', 'WAITER').then(({ data }) => {
+                supabase.from('profiles').select('id, full_name').eq('is_customer', false).then(({ data }) => {
                     if (data) setWaiters(data);
                 });
             }
