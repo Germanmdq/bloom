@@ -206,6 +206,7 @@ INSERT INTO public.gastos_fijos (nombre, monto, fecha_vencimiento, estado, categ
 ('Expensas', 248000, '2026-05-05', 'pendiente', 'urgente'),
 ('Gas', 120000, '2026-05-15', 'pendiente', 'normal'),
 ('Contenedor', 120000, '2026-05-05', 'pendiente', 'urgente'),
+('Diariero', 33000, '2026-05-05', 'pendiente', 'normal'),
 ('OSSE Obras Sanitarias', 0, '2026-05-15', 'pendiente', 'normal'),
 ('Guido Ricicol - Retiro aceites', 0, '2026-05-15', 'pendiente', 'normal'),
 ('TSU Tasas Municipales', 27000, '2026-05-15', 'pendiente', 'normal'),

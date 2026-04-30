@@ -945,8 +945,26 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     {/* Botón Menú del Día - Negro */}
                                     <button
                                         onClick={() => {
-                                            const cat = categories.find((c: any) => c.name.toLowerCase().includes('especial') || c.name.toLowerCase().includes('oferta') || c.name.toLowerCase().includes('menú'));
-                                            if (cat) setActiveCategory(cat.id);
+                                            if (featuredProduct) {
+                                                setPendingProduct(featuredProduct);
+                                                setIsEspecialContext(true); // Bebida incluida a $0, límite de opciones
+                                                const isEmpanada = featuredProduct.name.toLowerCase().includes("empa");
+                                                if (isEmpanada) {
+                                                    setConfigStep('empanada-flavor');
+                                                    setEmpanadaCounts({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
+                                                } else {
+                                                    setConfigStep('drink-group');
+                                                }
+                                                setSelectedDrinkGroup(null);
+                                                setSelectedDrink(null);
+                                                setSelectedGarnish(null);
+                                                setSelectedFlavor(null);
+                                                setConfigNotes("");
+                                                setShowConfigurator(true);
+                                            } else {
+                                                const cat = categories.find(c => c.name.toLowerCase().includes('men'));
+                                                if (cat) setActiveCategory(cat.id);
+                                            }
                                         }}
                                         className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[160px]"
                                     >
@@ -955,13 +973,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         </div>
                                         <div className="relative z-10">
                                             <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[9px] font-bold uppercase tracking-widest mb-2">
-                                                Promociones
+                                                {featuredProduct ? "Especial de Hoy" : "Menú del Día"}
                                             </span>
                                             <h3 className="text-2xl font-black tracking-tight leading-none mb-1">
-                                                Especiales de Hoy
+                                                {featuredProduct ? featuredProduct.name : "Configurar"}
                                             </h3>
                                             <p className="text-slate-400 font-bold text-sm">
-                                                Ver opciones de hoy →
+                                                {featuredProduct ? `$${Number(featuredProduct.price).toLocaleString()}` : "Ver promociones →"}
                                             </p>
                                         </div>
                                     </button>
