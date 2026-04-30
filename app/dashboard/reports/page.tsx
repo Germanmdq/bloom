@@ -40,7 +40,7 @@ export default function ReportsPage() {
         } else if (timeframe === 'WEEK') {
             const day = now.getDay();
             const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-            const startOfWeek = new Date(now.setDate(diff));
+            const startOfWeek = new Date(now.getFullYear(), now.getMonth(), diff);
             startOfWeek.setHours(0, 0, 0, 0);
             thresholdDate = startOfWeek.toISOString();
         } else {
@@ -49,20 +49,23 @@ export default function ReportsPage() {
         }
 
         try {
-            const [salesRes, expensesRes, productsRes] = await Promise.all([
+            const [salesRes, comprasRes, gastosFijosRes, productsRes] = await Promise.all([
                 supabase.from('orders').select('total, payment_method, items').gte('created_at', thresholdDate),
-                supabase.from('expenses').select('amount, category').gte('expense_date', thresholdDate.split('T')[0]),
+                supabase.from('compras').select('total, created_at').gte('created_at', thresholdDate),
+                supabase.from('gastos_fijos').select('nombre, historial_pagos, categoria'),
                 supabase.from('products').select('name, categories(name)')
             ]);
 
             if (salesRes.error) throw salesRes.error;
-            if (expensesRes.error) throw expensesRes.error;
+            if (comprasRes.error) throw comprasRes.error;
+            if (gastosFijosRes.error) throw gastosFijosRes.error;
 
             const productMappings = (productsRes.data || []).reduce((acc, p) => {
                 acc[p.name] = (p.categories as any)?.name || "Otros";
                 return acc;
             }, {} as Record<string, string>);
 
+            // Procesar Ventas
             const prodByCat: Record<string, Record<string, number>> = {};
             const totals = (salesRes.data || []).reduce((acc, order) => {
                 const amount = Number(order.total);
@@ -80,21 +83,31 @@ export default function ReportsPage() {
                 return acc;
             }, { cash: 0, card: 0, mercadoPago: 0, totalSales: 0, salesCount: 0 });
 
-            let totalExp = 0;
-            let totalPurch = 0;
+            // Procesar Compras (Mercadería)
+            const totalPurchases = (comprasRes.data || []).reduce((sum, c) => sum + Number(c.total), 0);
+
+            // Procesar Gastos Fijos (Pagos realizados en el periodo)
+            let totalFixedExpenses = 0;
             const expByCat: Record<string, number> = {};
-            (expensesRes.data || []).forEach(exp => {
-                const amount = Number(exp.amount);
-                if (exp.category === 'Mercadería') totalPurch += amount;
-                else totalExp += amount;
-                expByCat[exp.category] = (expByCat[exp.category] || 0) + amount;
+            
+            (gastosFijosRes.data || []).forEach(g => {
+                if (Array.isArray(g.historial_pagos)) {
+                    g.historial_pagos.forEach((p: any) => {
+                        if (p.fecha >= thresholdDate) {
+                            const monto = Number(p.monto);
+                            totalFixedExpenses += monto;
+                            const cat = g.categoria || 'General';
+                            expByCat[cat] = (expByCat[cat] || 0) + monto;
+                        }
+                    });
+                }
             });
 
             setStats({
                 ...totals,
-                totalExpenses: totalExp,
-                totalPurchases: totalPurch,
-                netBalance: totals.totalSales - (totalExp + totalPurch),
+                totalExpenses: totalFixedExpenses,
+                totalPurchases: totalPurchases,
+                netBalance: totals.totalSales - (totalFixedExpenses + totalPurchases),
                 expensesByCategory: expByCat,
                 productsByCategory: prodByCat
             });
