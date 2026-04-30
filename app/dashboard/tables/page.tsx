@@ -706,52 +706,50 @@ export default function TablesPage() {
                                 if (minutesElapsed < 0) minutesElapsed = 0;
                                 const displayTime = minutesElapsed > 1440 ? '--' : `${minutesElapsed} min`;
                                 
+                                // Determinar nombre o ID para mostrar
+                                const metaCust = table.items?.find((i: any) => i.id === 'meta-customer');
+                                const hasName = metaCust?.name;
+                                const displayName = hasName ? metaCust.name.replace('Cliente: ', '') : String(table.id);
+                                const itemCount = (table.items || []).filter((i: any) => i.id !== 'meta-customer').length;
+                                const orderLabel = table.order_type === 'DELIVERY' ? 'Delivery' : table.order_type === 'TAKEAWAY' ? 'Retiro' : 'Salón';
+
                                 return (
                                     <motion.div
                                         key={table.id}
                                         layoutId={`table-${table.id}`}
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
+                                        whileHover={{ scale: 1.03 }}
+                                        whileTap={{ scale: 0.97 }}
                                         onClick={() => setSelectedTable(table)}
-                                        className={`rounded-[2.5rem] p-8 flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[400px] ${styles.bg}`}
+                                        className={`rounded-3xl p-6 flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[220px] ${styles.bg}`}
                                     >
-                                        {/* IconClock Centered Top */}
-                                            <div className="flex flex-col items-center gap-1 z-10">
-                                                <span className={`text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 ${styles.textColor}`}>Minutos</span>
-                                                <span className={`text-xl font-medium ${styles.textColor}`}>{displayTime}</span>
-                                            </div>
-
-                                        {/* Single Large Centered ID/Name - Refined Apple Typography */}
-                                        <div className="flex-1 flex flex-col items-center justify-center z-10 w-full px-4 text-center">
-                                            {(() => {
-                                                const metaCust = table.items?.find((i: any) => i.id === 'meta-customer');
-                                                const hasName = metaCust?.name;
-                                                const displayName = hasName ? metaCust.name.replace('Cliente: ', '') : table.id.toString();
-                                                
-                                                return (
-                                                    <>
-                                                        {/* Eliminado: Ya no mostramos el número si hay un nombre/alias */}
-                                                        <span className={`font-semibold leading-[0.9] tracking-tighter break-all w-full ${styles.textColor} ${
-                                                            displayName.length > 20 ? 'text-[1.8rem]' :
-                                                            displayName.length > 15 ? 'text-[2.5rem]' :
-                                                            displayName.length > 12 ? 'text-[3rem]' :
-                                                            displayName.length > 10 ? 'text-[4rem]' :
-                                                            displayName.length > 6  ? 'text-[6rem]' : 
-                                                            displayName.length > 4  ? 'text-[8rem]' : 
-                                                            'text-[10rem]'
-                                                        }`}>
-                                                            {displayName}
-                                                        </span>
-                                                    </>
-                                                );
-                                            })()}
+                                        {/* Badge tipo + tiempo */}
+                                        <div className="flex items-center justify-between w-full z-10">
+                                            <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1 rounded-full ${styles.badgeBg}`}>
+                                                {orderLabel}
+                                            </span>
+                                            <span className={`text-xs font-bold opacity-70 ${styles.textColor}`}>
+                                                {displayTime}
+                                            </span>
                                         </div>
 
-                                        {/* Total Centered Bottom */}
-                                        <div className="flex flex-col items-center z-10 w-full">
-                                            <div className="h-px w-16 bg-black/5 mb-6" />
-                                            <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-1 opacity-60 ${styles.textColor}`}>Total de la Mesa</p>
-                                            <div className={`text-4xl font-semibold tracking-tight ${styles.textColor}`}>
+                                        {/* Número / Nombre de mesa */}
+                                        <div className="flex-1 flex items-center justify-center z-10">
+                                            <span className={`font-black leading-none tracking-tighter ${styles.textColor} ${
+                                                displayName.length > 10 ? 'text-2xl' :
+                                                displayName.length > 6  ? 'text-4xl' : 
+                                                displayName.length > 3  ? 'text-6xl' : 
+                                                'text-7xl'
+                                            }`}>
+                                                {displayName}
+                                            </span>
+                                        </div>
+
+                                        {/* Info inferior */}
+                                        <div className="flex flex-col items-center z-10 w-full gap-1">
+                                            <p className={`text-[9px] font-bold uppercase tracking-[0.15em] opacity-50 ${styles.textColor}`}>
+                                                {itemCount > 0 ? `${itemCount} items` : 'Sin items'}
+                                            </p>
+                                            <div className={`text-2xl font-black tracking-tight ${styles.textColor}`}>
                                                 ${Number(table.total || 0).toLocaleString("es-AR")}
                                             </div>
                                         </div>
