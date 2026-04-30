@@ -630,32 +630,54 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         // Esto se ejecuta PRIMERO, independiente de cocina/inventario
         // ══════════════════════════════════════════════════════════
         try {
-            const { error: updErr } = await supabase.from("salon_tables")
+            console.log("🔍 DEBUG MESA — tableId:", tableId, "tipo:", typeof tableId, "Number:", Number(tableId));
+            console.log("🔍 DEBUG MESA — cart tiene", cart.length, "items");
+
+            const { data: updData, error: updErr } = await supabase.from("salon_tables")
                 .update({ 
                     items: cart,
                     status: 'OCCUPIED',
                     total: cart.reduce((sum, i) => sum + (i.price * i.quantity), 0),
                     updated_at: new Date().toISOString()
                 })
-                .eq('id', Number(tableId));
+                .eq('id', Number(tableId))
+                .select();
             
+            console.log("🔍 DEBUG MESA — UPDATE resultado:", { data: updData, error: updErr });
+            console.log("🔍 DEBUG MESA — Filas actualizadas:", updData?.length || 0);
+
             if (updErr) {
-                console.error("❌ UPDATE mesa falló:", updErr.message);
+                console.error("❌ UPDATE mesa falló:", updErr.message, updErr.details, updErr.hint);
                 // Fallback: INSERT por si la mesa no existe aún
-                const { error: insErr } = await supabase.from("salon_tables")
+                const { data: insData, error: insErr } = await supabase.from("salon_tables")
                     .insert({ 
                         id: Number(tableId),
                         items: cart,
                         status: 'OCCUPIED',
                         total: cart.reduce((sum, i) => sum + (i.price * i.quantity), 0),
                         updated_at: new Date().toISOString()
-                    });
+                    })
+                    .select();
+                console.log("🔍 DEBUG MESA — INSERT resultado:", { data: insData, error: insErr });
                 if (insErr) {
-                    console.error("❌ INSERT también falló:", insErr.message);
+                    console.error("❌ INSERT también falló:", insErr.message, insErr.details, insErr.hint);
                     setFeedback({ message: `Error DB: ${insErr.message}`, type: 'error' });
                 }
+            } else if (!updData || updData.length === 0) {
+                console.warn("⚠️ UPDATE no afectó ninguna fila — la mesa", tableId, "no existe en salon_tables");
+                // La mesa no existe, intentar INSERT
+                const { data: insData2, error: insErr2 } = await supabase.from("salon_tables")
+                    .insert({ 
+                        id: Number(tableId),
+                        items: cart,
+                        status: 'OCCUPIED',
+                        total: cart.reduce((sum, i) => sum + (i.price * i.quantity), 0),
+                        updated_at: new Date().toISOString()
+                    })
+                    .select();
+                console.log("🔍 DEBUG MESA — INSERT (mesa no existía):", { data: insData2, error: insErr2 });
             } else {
-                console.log("✅ Mesa", tableId, "guardada como OCCUPIED con", cart.length, "items");
+                console.log("✅ Mesa", tableId, "guardada como OCCUPIED con", cart.length, "items. Data:", updData);
             }
         } catch (mesaErr: any) {
             console.error("❌ Excepción guardando mesa:", mesaErr);
