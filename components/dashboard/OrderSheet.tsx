@@ -367,7 +367,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         }
 
         // Primero intentamos UPDATE (siempre tiene permiso)
-        const { error: updateErr, count } = await supabase
+        const { error: updateErr } = await supabase
             .from('salon_tables')
             .update({ 
                 status: 'OCCUPIED', 
@@ -375,15 +375,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 items: currentCart,
                 updated_at: new Date().toISOString()
             })
-            .eq('id', Number(tableId))
-            .select('id', { count: 'exact', head: true });
+            .eq('id', Number(tableId));
         
         if (updateErr) {
             console.error("❌ persistTableState UPDATE failed:", updateErr.message);
-        }
-        
-        // Si el update no afectó filas, la mesa no existe → INSERT
-        if (!updateErr && count === 0) {
+            // Fallback: intentar INSERT por si la mesa no existe
             const { error: insertErr } = await supabase
                 .from('salon_tables')
                 .insert({ 
