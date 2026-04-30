@@ -588,19 +588,25 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                         // ── NUEVO: DESCUENTO POR RECETAS (MATERIA PRIMA) ──
                         try {
-                            // 1. Buscar si tiene recetas asociadas usando el ID directo del item
-                            const { data: recipes } = await supabase.from('recipes').select('raw_product_id, qty').eq('menu_product_id', item.id);
+                            console.log(`DIAGNOSTICO: Procesando ${item.name} (ID: ${item.id})`);
                             
+                            // 1. Buscar si tiene recetas asociadas usando el ID directo del item
+                            const { data: recipes, error: recError } = await supabase.from('recipes').select('raw_product_id, qty').eq('menu_product_id', item.id);
+                            
+                            if (recError) {
+                                console.error("Error al buscar receta:", recError);
+                            }
+
                             if (recipes && recipes.length > 0) {
                                 for (const recipe of recipes) {
                                     // 2. Buscar el insumo que corresponda a esa materia prima
-                                    // Primero intentamos por ID exacto de producto si es que existe en insumos
                                     const { data: rawProd } = await supabase.from('products').select('name').eq('id', recipe.raw_product_id).maybeSingle();
                                     
                                     if (rawProd) {
+                                        const firstWord = rawProd.name.split(' ')[0];
                                         const { data: insumosMatched } = await supabase.from('insumos')
                                             .select('id, stock_actual, nombre')
-                                            .ilike('nombre', `%${rawProd.name.split(' ')[0]}%`)
+                                            .or(`nombre.ilike.%${rawProd.name}%,nombre.ilike.%${firstWord}%`)
                                             .limit(1);
 
                                         if (insumosMatched && insumosMatched.length > 0) {
@@ -613,10 +619,17 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             
                                             if (!updErr) {
                                                 console.log(`✅ DESCONTADO: ${qtyToDeduct} de ${insumo.nombre}`);
+                                                // Alertamos solo una vez para no molestar tanto, o mejor lo dejamos en console.log
+                                            } else {
+                                                console.error("Error al descontar insumo:", updErr);
                                             }
+                                        } else {
+                                            console.warn(`No se encontró insumo para la materia prima: ${rawProd.name}`);
                                         }
                                     }
                                 }
+                            } else {
+                                console.log(`El producto ${item.name} no tiene receta vinculada.`);
                             }
                             queryClient.invalidateQueries({ queryKey: ['insumos'] });
                         } catch (recipeErr) {
