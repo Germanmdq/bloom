@@ -40,8 +40,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
     const filteredLinks = links.filter(link => {
         if (HIDDEN_SECTIONS.includes(link.label)) return false;
-        if (link.label === "Reporte Diario") return role === 'ADMIN';
-        return true;
+        
+        // Administrador ve todo (menos las secciones ocultas)
+        if (role === 'ADMIN') return true;
+
+        // Mozo y Cocinero solo ven "Mesas" (carga de mesas y cobrar)
+        if (link.label === "Mesas") return true;
+
+        return false;
     });
 
     return (
