@@ -82,6 +82,10 @@ SELECT 'Factura', 'un', 0, 50, 'Panificados'
 WHERE NOT EXISTS (SELECT 1 FROM public.insumos WHERE nombre = 'Factura');
 
 INSERT INTO public.insumos (nombre, unidad, stock_actual, stock_minimo, categoria)
+SELECT 'Medialuna Manteca', 'un', 0, 50, 'Panificados'
+WHERE NOT EXISTS (SELECT 1 FROM public.insumos WHERE nombre = 'Medialuna Manteca');
+
+INSERT INTO public.insumos (nombre, unidad, stock_actual, stock_minimo, categoria)
 SELECT 'Feta Jamón', 'un', 0, 100, 'Fiambres'
 WHERE NOT EXISTS (SELECT 1 FROM public.insumos WHERE nombre = 'Feta Jamón');
 
@@ -133,6 +137,10 @@ WHERE NOT EXISTS (SELECT 1 FROM public.insumos WHERE nombre = 'Frutilla (porció
 INSERT INTO public.insumos (nombre, unidad, stock_actual, stock_minimo, categoria)
 SELECT 'Granola (porción)', 'un', 0, 20, 'Almacén'
 WHERE NOT EXISTS (SELECT 1 FROM public.insumos WHERE nombre = 'Granola (porción)');
+
+INSERT INTO public.insumos (nombre, unidad, stock_actual, stock_minimo, categoria)
+SELECT 'Huevo Blanco', 'un', 0, 60, 'Avícola'
+WHERE NOT EXISTS (SELECT 1 FROM public.insumos WHERE nombre = 'Huevo Blanco');
 
 -- 🍹 JUGOS Y LICUADOS
 INSERT INTO public.insumos (nombre, unidad, stock_actual, stock_minimo, categoria)
@@ -233,6 +241,10 @@ WHERE NOT EXISTS (SELECT 1 FROM public.insumos WHERE nombre = 'Guarnición (porc
 INSERT INTO public.insumos (nombre, unidad, stock_actual, stock_minimo, categoria)
 SELECT 'Pan Francés/Baguette', 'un', 0, 20, 'Panificados'
 WHERE NOT EXISTS (SELECT 1 FROM public.insumos WHERE nombre = 'Pan Francés/Baguette');
+
+INSERT INTO public.insumos (nombre, unidad, stock_actual, stock_minimo, categoria)
+SELECT 'Pan Burger Brioche', 'un', 0, 20, 'Panificados'
+WHERE NOT EXISTS (SELECT 1 FROM public.insumos WHERE nombre = 'Pan Burger Brioche');
 
 INSERT INTO public.insumos (nombre, unidad, stock_actual, stock_minimo, categoria)
 SELECT 'Mayonesa (individual)', 'un', 0, 50, 'Aderezos'
