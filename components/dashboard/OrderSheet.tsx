@@ -531,9 +531,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                     const stampsActuales = Number(prof?.coffee_stamps || 0);
                     const stampsNuevos = stampsActuales + coffeeCount;
-                    // Si llegó o superó 10, usó su café gratis → reset a 0
-                    // (el mozo ya le descontó el café del total manualmente)
-                    const stampsFinales = stampsNuevos >= 10 ? 0 : stampsNuevos;
+                    // Al llegar a 10 se usa el café gratis → guardar el resto (ej: 11 → 1)
+                    const stampsFinales = stampsNuevos >= 10 ? stampsNuevos - 10 : stampsNuevos;
 
                     let newBalance = Number(prof?.balance || 0);
                     if (paymentMethod === "CUENTA_CORRIENTE") newBalance += finalTotal;

@@ -91,6 +91,18 @@ export function PaymentModal({
             .then(({ data }) => setClienteStamps(data?.coffee_stamps ?? null));
     }, [selectedCustomerId]);
 
+    // Cafés en el carrito actual
+    const coffeeCountInCart = cart.reduce((acc, item) => {
+        const n = item.name.toLowerCase();
+        const esCafe = n.includes('café') || n.includes('cafe') ||
+            n.includes('capuccino') || n.includes('submarino') ||
+            n.includes('chocolatada') || n.includes('lágrima') || n.includes('lagrima');
+        return esCafe ? acc + item.quantity : acc;
+    }, 0);
+
+    const stampsConCarrito = (clienteStamps ?? 0) + coffeeCountInCart;
+    const cafeGratisDisponible = clienteStamps !== null && stampsConCarrito >= 10;
+
     const onMpOrderReadyRef = useRef(onMpOrderReady);
     onMpOrderReadyRef.current = onMpOrderReady;
 
@@ -362,7 +374,7 @@ export function PaymentModal({
                                         <div>
                                             <p className="text-sm font-black text-white leading-none">{customerName}</p>
                                             <p className="text-[10px] font-bold text-white/40 mt-1 uppercase tracking-wider">
-                                                {clienteStamps !== null ? `${clienteStamps}/10 cafés` : 'Cliente Vinculado'}
+                                                {clienteStamps !== null ? `${Math.min(stampsConCarrito, 10)}/10 cafés` : 'Cliente Vinculado'}
                                             </p>
                                         </div>
                                     </div>
@@ -378,10 +390,10 @@ export function PaymentModal({
                                         <IconX size={18} />
                                     </button>
                                 </div>
-                                {clienteStamps !== null && clienteStamps >= 10 && (
+                                {cafeGratisDisponible && (
                                     <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm animate-pulse">
                                         <span className="text-xl">☕</span>
-                                        <span>¡CAFÉ GRATIS disponible! Descontalo del total antes de cobrar.</span>
+                                        <span>¡CAFÉ GRATIS! Descontá 1 café del total antes de cobrar.</span>
                                     </div>
                                 )}
                             </div>
