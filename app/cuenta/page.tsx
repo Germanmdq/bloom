@@ -166,7 +166,7 @@ export default function CuentaPage() {
   const [sessionPending, setSessionPending] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [profile, setProfile] = useState<{ coffee_stamps: number; balance: number; birthday?: string } | null>(null);
+  const [profile, setProfile] = useState<{ coffee_stamps: number; balance: number; birthday?: string; full_name?: string; customer_number?: string } | null>(null);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [section, setSection] = useState<SectionId>("inicio");
   const [orderFilter, setOrderFilter] = useState<OrderFilter>("todos");
@@ -195,7 +195,7 @@ export default function CuentaPage() {
           .order("created_at", { ascending: false }),
         supabase
           .from("profiles")
-          .select("coffee_stamps, balance, birthday")
+          .select("coffee_stamps, balance, birthday, full_name, customer_number")
           .eq("id", uid)
           .single()
       ]);
@@ -205,6 +205,10 @@ export default function CuentaPage() {
       
       setOrders((listRes.data as OrderRow[]) ?? []);
       setProfile(profRes.data);
+      // Si el nombre no estaba en user_metadata, tomarlo del perfil
+      if (profRes.data?.full_name) {
+        setEditFullName((prev) => prev || profRes.data!.full_name!);
+      }
       setOrdersLoading(false);
     },
     [supabase]
@@ -262,7 +266,8 @@ export default function CuentaPage() {
     };
   }, [router, supabase, loadData, hydrateProfileFields]);
 
-  const displayName = editFullName.trim() || "Cliente Bloom";
+  const displayName = editFullName.trim() || profile?.full_name?.trim() || metaStr(user, "full_name") || "Cliente Bloom";
+  const customerNumber = profile?.customer_number || metaStr(user, "customer_number");
   const { filled: loyaltyFilled, pct: loyaltyPct } = loyaltyProgress(profile?.coffee_stamps || 0);
   const birthdayActive = isBirthdayThisMonth(editBirthdate);
 
@@ -651,8 +656,8 @@ export default function CuentaPage() {
             )}
           </div>
           <p className="line-clamp-2 w-full px-1 text-sm font-semibold leading-tight text-white">{displayName}</p>
-          {metaStr(user, "customer_number") && (
-            <p className="text-xs font-medium text-white/50">Nº {metaStr(user, "customer_number")}</p>
+          {customerNumber && (
+            <p className="text-xs font-medium text-white/50">Nº socio: <span className="font-black text-white/80">{customerNumber}</span></p>
           )}
         </div>
         <nav className="mt-8 flex min-h-0 flex-1 flex-col gap-0.5 px-2">
@@ -680,6 +685,17 @@ export default function CuentaPage() {
 
   const SectionInicio = () => (
     <div className="space-y-6">
+      {customerNumber && (
+        <div className="flex items-center justify-between rounded-2xl px-6 py-4 shadow-sm" style={{ backgroundColor: GREEN }}>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-white/50">Tu Nº de Socio</p>
+            <p className="mt-1 text-3xl font-black tracking-[0.2em] text-white tabular-nums">{customerNumber}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-medium text-white/50 leading-snug max-w-[140px]">Presentalo en el local para usar tus beneficios</p>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className={statMiniCls}>
           <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Pedidos realizados</p>
@@ -1116,12 +1132,15 @@ export default function CuentaPage() {
                 </label>
                 <input id="pf-phone" className={inputCls} inputMode="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
               </div>
-              <div>
-                <label htmlFor="pf-mail" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                  Email
-                </label>
-                <input id="pf-mail" type="email" className={inputCls} value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
-              </div>
+              {customerNumber && (
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-neutral-500">Nº de Socio</label>
+                  <div className="mt-1.5 w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-xl font-black tracking-[0.2em] tabular-nums" style={{ color: GREEN }}>
+                    {customerNumber}
+                  </div>
+                  <p className="mt-1 text-[11px] text-neutral-400">Usá este número junto con tu teléfono para ingresar</p>
+                </div>
+              )}
               <div>
                 <label htmlFor="pf-bd" className="text-xs font-bold uppercase tracking-wider text-neutral-500">
                   Fecha de nacimiento
@@ -1160,11 +1179,11 @@ export default function CuentaPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-          {metaStr(user, "customer_number") && (
+          {customerNumber && (
             <div className={statMiniCls}>
-              <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Nº de cliente</p>
-              <p className="mt-2 text-2xl font-black tabular-nums" style={{ color: TEXT_DARK }}>
-                {metaStr(user, "customer_number")}
+              <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Nº de socio</p>
+              <p className="mt-2 text-2xl font-black tabular-nums tracking-widest" style={{ color: GREEN }}>
+                {customerNumber}
               </p>
             </div>
           )}
