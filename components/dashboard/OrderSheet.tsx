@@ -512,43 +512,36 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 
                 if (customerIdForDb) {
                     console.log('🔔 [FinishOrder] Procesando cliente vinculando:', customerIdForDb);
-                    // 1. Contar cafés para el sistema de fidelidad
+                    // 1. Contar cafés para fidelidad (solo items con café en el nombre)
                     const coffeeCount = cart.reduce((acc, item) => {
                         const n = item.name.toLowerCase();
-                        if (n.includes('cafe') || n.includes('café') || n.includes('medialuna') || n.includes('factura')) {
-                            return acc + item.quantity;
-                        }
-                        return acc;
+                        const esCafe = n.includes('café') || n.includes('cafe') ||
+                            n.includes('capuccino') || n.includes('submarino') ||
+                            n.includes('chocolatada') || n.includes('lágrima') ||
+                            n.includes('lagrima');
+                        return esCafe ? acc + item.quantity : acc;
                     }, 0);
 
-                    // 2. Actualizar stamps y saldo (si es cuenta corriente)
-                    const { data: prof, error: getError } = await supabase.from('profiles').select('full_name, coffee_stamps, balance').eq('id', customerIdForDb).single();
-                    
-                    if (getError) {
-                        console.error('❌ [FinishOrder] Error al obtener perfil:', getError.message);
-                    } else {
-                        console.log('👤 [FinishOrder] Cliente encontrado:', prof?.full_name, '| Saldo actual:', prof?.balance);
-                    }
+                    // 2. Actualizar stamps y saldo
+                    const { data: prof } = await supabase
+                        .from('profiles')
+                        .select('full_name, coffee_stamps, balance')
+                        .eq('id', customerIdForDb)
+                        .single();
 
-                    let newStamps = (prof?.coffee_stamps || 0) + coffeeCount;
+                    const stampsActuales = Number(prof?.coffee_stamps || 0);
+                    const stampsNuevos = stampsActuales + coffeeCount;
+                    // Si llegó o superó 10, usó su café gratis → reset a 0
+                    // (el mozo ya le descontó el café del total manualmente)
+                    const stampsFinales = stampsNuevos >= 10 ? 0 : stampsNuevos;
+
                     let newBalance = Number(prof?.balance || 0);
+                    if (paymentMethod === "CUENTA_CORRIENTE") newBalance += finalTotal;
 
-                    if (paymentMethod === "CUENTA_CORRIENTE") {
-                        console.log('🏦 [FinishOrder] Aplicando deuda CC:', finalTotal);
-                        newBalance += finalTotal;
-                    }
-
-                    const { error: updError } = await supabase.from('profiles').update({
-                        coffee_stamps: newStamps % 11,
+                    await supabase.from('profiles').update({
+                        coffee_stamps: stampsFinales,
                         balance: newBalance
                     }).eq('id', customerIdForDb);
-
-                    if (updError) {
-                        console.error('❌ [FinishOrder] Error al actualizar saldo/puntos:', updError.message);
-                        alert("Error al actualizar saldo del cliente: " + updError.message);
-                    } else {
-                        console.log('✅ [FinishOrder] Saldo actualizado con éxito. Nuevo saldo:', newBalance);
-                    }
                 } else {
                     console.warn('⚠️ [FinishOrder] No hay customerId vinculado, se omite balance/puntos.');
                 }
@@ -592,7 +585,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         }).eq('id', item.id);
                     }
 
-                    // 2. Descuento de Insumos via recetas_insumos (UUID directo, sin name-matching)
+                    // 2. Descuento de Insumos via recetas_insumos (RPC SECURITY DEFINER, sin SELECT previo)
                     try {
                         const { data: recetas } = await supabase
                             .from('recetas_insumos')
@@ -600,17 +593,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             .eq('menu_product_id', item.id);
                         if (recetas && recetas.length > 0) {
                             for (const receta of recetas) {
-                                const { data: insumo } = await supabase
-                                    .from('insumos')
-                                    .select('stock_actual')
-                                    .eq('id', receta.insumo_id)
-                                    .maybeSingle();
-                                if (insumo !== null) {
-                                    await supabase
-                                        .from('insumos')
-                                        .update({ stock_actual: Number(insumo.stock_actual || 0) - (Number(receta.qty) * item.quantity) })
-                                        .eq('id', receta.insumo_id);
-                                }
+                                await supabase.rpc('deduct_insumo_stock', {
+                                    p_insumo_id: receta.insumo_id,
+                                    p_qty: Number(receta.qty) * item.quantity
+                                });
                             }
                         }
                     } catch (e) {

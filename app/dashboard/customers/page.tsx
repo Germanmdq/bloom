@@ -177,6 +177,7 @@ export default function DashboardCustomersPage() {
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 text-xs font-black uppercase tracking-wide text-gray-500">
                   <th className="px-4 py-3">Nombre</th>
+                  <th className="px-4 py-3 text-center whitespace-nowrap">Nº Socio</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Teléfono</th>
                   <th className="px-4 py-3 whitespace-nowrap">Cumpleaños</th>
@@ -200,6 +201,13 @@ export default function DashboardCustomersPage() {
                           </span>
                         ) : null}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {r.customer_number ? (
+                        <span className="inline-block rounded-lg bg-amber-50 border border-amber-200 px-2 py-1 text-sm font-black tabular-nums text-amber-800 tracking-widest">
+                          {r.customer_number}
+                        </span>
+                      ) : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="max-w-[200px] truncate px-4 py-3 text-gray-700">{r.email}</td>
                     <td className="px-4 py-3 text-gray-700">{r.phone}</td>

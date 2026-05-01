@@ -3,6 +3,7 @@ export type DashboardCustomerRow = {
   displayName: string;
   email: string;
   phone: string;
+  customer_number: string;
   /** ISO fecha (YYYY-MM-DD) desde auth.users.user_metadata.birthdate */
   birthdate: string | null;
   defaultAddress: string;

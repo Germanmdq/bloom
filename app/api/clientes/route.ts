@@ -49,6 +49,7 @@ export async function GET() {
                     full_name: p.full_name || "Cliente S/N",
                     email: p.email || "",
                     phone: p.phone || "",
+                    customer_number: p.customer_number || "",
                     points: p.points || 0,
                     balance: Number(p.balance || 0),
                     coffee_stamps: p.coffee_stamps || 0,

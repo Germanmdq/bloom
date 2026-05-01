@@ -73,16 +73,59 @@ export default function TablesPage() {
 
     const handleRegisterNewCustomer = async () => {
         if (!customerSearch.trim()) return;
+
+        // Si no hay teléfono, simplemente usamos el nombre como alias de mesa sin crear perfil
+        if (!newCustomerPhone.trim()) {
+            setNewTableName(customerSearch.trim());
+            setCustomerSearch("");
+            setCustomerResults([]);
+            setShowRegisterNew(false);
+            return;
+        }
+
         setIsRegisteringCustomer(true);
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .insert({ full_name: customerSearch.trim(), phone: newCustomerPhone.trim() || null })
-                .select('id, full_name, phone')
-                .single();
-            if (error) throw error;
-            setNewTableCustomerId(data.id);
-            setNewTableName(data.full_name);
+            const res = await fetch('/api/auth/register-phone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ full_name: customerSearch.trim(), phone: newCustomerPhone.trim(), birthdate: null }),
+            });
+            const json = await res.json() as { customer_number?: string; error?: string };
+
+            if (!res.ok) {
+                if (json.error === 'already_exists') {
+                    // El cliente ya existe — buscarlo y vincularlo
+                    const phoneClean = newCustomerPhone.replace(/\D/g, '');
+                    const { data: existing } = await supabase
+                        .from('profiles')
+                        .select('id, full_name, phone')
+                        .eq('phone', newCustomerPhone.trim())
+                        .maybeSingle();
+                    if (existing) {
+                        setNewTableCustomerId(existing.id);
+                        setNewTableName(existing.full_name);
+                    } else {
+                        setNewTableName(customerSearch.trim());
+                    }
+                } else {
+                    alert('Error al registrar cliente: ' + (json.error ?? 'Error desconocido'));
+                    return;
+                }
+            } else {
+                // Buscar el perfil recién creado por teléfono
+                const { data: created } = await supabase
+                    .from('profiles')
+                    .select('id, full_name')
+                    .eq('phone', newCustomerPhone.trim())
+                    .maybeSingle();
+                if (created) {
+                    setNewTableCustomerId(created.id);
+                    setNewTableName(created.full_name);
+                } else {
+                    setNewTableName(customerSearch.trim());
+                }
+            }
+
             setCustomerSearch("");
             setCustomerResults([]);
             setShowRegisterNew(false);
@@ -633,8 +676,8 @@ export default function TablesPage() {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => {
+                                            setNewTableName(customerSearch.trim());
                                             setShowRegisterNew(false);
-                                            // Usar igual sin registro
                                         }}
                                         className="flex-1 py-2.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-all"
                                     >
@@ -645,7 +688,7 @@ export default function TablesPage() {
                                         disabled={isRegisteringCustomer}
                                         className="flex-1 py-2.5 text-xs font-bold text-white bg-gray-900 hover:bg-black rounded-xl transition-all disabled:opacity-50"
                                     >
-                                        {isRegisteringCustomer ? 'Guardando...' : 'Guardar cliente'}
+                                        {isRegisteringCustomer ? 'Guardando...' : newCustomerPhone.trim() ? 'Guardar cliente' : 'Usar como alias'}
                                     </button>
                                 </div>
                             </div>
