@@ -103,6 +103,30 @@ export function PaymentModal({
     const stampsConCarrito = (clienteStamps ?? 0) + coffeeCountInCart;
     const cafeGratisDisponible = clienteStamps !== null && stampsConCarrito >= 10;
 
+    // Precio del jarrito o pocillo en el carrito (café gratis = 1 unidad de estos)
+    // Primero busca jarrito/pocillo; si no hay, el café más barato del carrito
+    const freeCoffeePrice = (() => {
+        if (!cafeGratisDisponible) return 0;
+        const jarroPocillo = cart.find(item => {
+            const n = item.name.toLowerCase();
+            return n.includes('jarrito') || n.includes('pocillo');
+        });
+        if (jarroPocillo) return jarroPocillo.price;
+        // fallback: café más barato
+        return cart.reduce((min, item) => {
+            const n = item.name.toLowerCase();
+            const esCafe = n.includes('café') || n.includes('cafe') || n.includes('capuccino') ||
+                n.includes('submarino') || n.includes('chocolatada') || n.includes('lágrima') || n.includes('lagrima');
+            if (!esCafe) return min;
+            return min === 0 ? item.price : Math.min(min, item.price);
+        }, 0);
+    })();
+
+    // Para MP: total ya con el café gratis descontado (1 jarrito/pocillo)
+    const finalTotalMP = cafeGratisDisponible && freeCoffeePrice > 0
+        ? Math.max(0, finalTotal - freeCoffeePrice)
+        : finalTotal;
+
     const onMpOrderReadyRef = useRef(onMpOrderReady);
     onMpOrderReadyRef.current = onMpOrderReady;
 
@@ -144,7 +168,7 @@ export function PaymentModal({
                             quantity: i.quantity,
                         })),
                         subtotal: total,
-                        final_total: finalTotal,
+                        final_total: finalTotalMP,
                         waiter_id: waiterId || null,
                     }),
                 });
@@ -174,7 +198,7 @@ export function PaymentModal({
         return () => {
             cancelled = true;
         };
-    }, [paymentMethod, showQrOption, finalTotal, total, cartKey, tableId, waiterId]);
+    }, [paymentMethod, showQrOption, finalTotalMP, total, cartKey, tableId, waiterId]);
 
     useEffect(() => {
         if (paymentMethod !== "MERCADO_PAGO") {
@@ -269,15 +293,15 @@ export function PaymentModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 md:p-20">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-12">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="relative bg-white w-full max-w-5xl h-full max-h-[600px] rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row"
+                className="relative bg-white w-full max-w-5xl max-h-[96dvh] rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row"
             >
                 {/* Left panel: total + discount */}
-                <div className="md:w-1/3 bg-[#FFD60A] p-10 flex flex-col justify-between relative overflow-hidden">
+                <div className="md:w-1/3 bg-[#FFD60A] p-7 flex flex-col justify-between relative overflow-hidden">
                     <div>
                         <h3 className="text-lg font-black uppercase tracking-widest opacity-40 mb-2">Total a Cobrar</h3>
                         <p className="text-6xl font-black tracking-tighter text-black mb-8">${finalTotal.toLocaleString()}</p>
@@ -308,7 +332,7 @@ export function PaymentModal({
                 </div>
 
                 {/* Right panel: payment method + action */}
-                <div className="flex-1 p-12 bg-white flex flex-col">
+                <div className="flex-1 p-6 md:p-8 bg-white flex flex-col overflow-y-auto">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-2xl font-black uppercase tracking-tighter">Método de Pago</h3>
                         {waiterId && (
@@ -400,34 +424,34 @@ export function PaymentModal({
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
                         <button
                             onClick={() => setPaymentMethod("CASH")}
-                            className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === "CASH" ? "border-[#FFD60A] bg-[#FFD60A]/5" : "border-gray-100"}`}
+                            className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "CASH" ? "border-[#FFD60A] bg-[#FFD60A]/5" : "border-gray-100"}`}
                         >
-                            <p className="font-black text-lg">Efectivo</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Cash / Delivery</p>
+                            <p className="font-black text-base">Efectivo</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Cash / Delivery</p>
                         </button>
                         <button
                             onClick={handleSelectMercadoPago}
-                            className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === "MERCADO_PAGO" ? "border-sky-500 bg-sky-50" : "border-gray-100"}`}
+                            className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "MERCADO_PAGO" ? "border-sky-500 bg-sky-50" : "border-gray-100"}`}
                         >
-                            <p className="font-black text-lg">Mercado Pago</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Point / QR / Online</p>
+                            <p className="font-black text-base">Mercado Pago</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Point / QR / Online</p>
                         </button>
                         <button
                             onClick={() => setPaymentMethod("BANK_TRANSFER")}
-                            className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === "BANK_TRANSFER" ? "border-purple-500 bg-purple-50" : "border-gray-100"}`}
+                            className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "BANK_TRANSFER" ? "border-purple-500 bg-purple-50" : "border-gray-100"}`}
                         >
-                            <p className="font-black text-lg">Transferencia</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">CBU / Alias</p>
+                            <p className="font-black text-base">Transferencia</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">CBU / Alias</p>
                         </button>
                         <button
                             onClick={() => setPaymentMethod("CUENTA_CORRIENTE")}
-                            className={`p-6 rounded-3xl border-2 text-left transition-all ${paymentMethod === "CUENTA_CORRIENTE" ? "border-orange-500 bg-orange-50" : "border-gray-100"}`}
+                            className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "CUENTA_CORRIENTE" ? "border-orange-500 bg-orange-50" : "border-gray-100"}`}
                         >
-                            <p className="font-black text-lg">Cuenta Corriente</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Clientes Frecuentes</p>
+                            <p className="font-black text-base">Cuenta Corriente</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Clientes Frecuentes</p>
                         </button>
                     </div>
 
@@ -453,7 +477,13 @@ export function PaymentModal({
                             </div>
                         )}
                         {paymentMethod === "MERCADO_PAGO" && (
-                            <div className="text-center w-full max-w-sm space-y-5">
+                            <div className="text-center w-full max-w-sm space-y-4">
+                                {cafeGratisDisponible && freeCoffeePrice > 0 && (
+                                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                                        <span>☕</span>
+                                        <span>Café gratis aplicado automáticamente: <span className="font-black">-${freeCoffeePrice.toLocaleString()}</span></span>
+                                    </div>
+                                )}
                                 {pointWaiting ? (
                                     <div className="flex flex-col items-center gap-3">
                                         <IconLoader2 className="animate-spin h-10 w-10 text-sky-600" />
@@ -520,19 +550,19 @@ export function PaymentModal({
                         )}
                     </div>
 
-                    <div className="flex gap-4">
+                    <div className="flex gap-3 mt-2">
                         <button
                             onClick={onClose}
-                            className="flex-1 py-6 rounded-3xl bg-gray-50 text-gray-400 font-bold hover:bg-gray-100"
+                            className="flex-1 py-4 rounded-2xl bg-gray-50 text-gray-400 font-bold hover:bg-gray-100"
                         >
                             Volver
                         </button>
                         <button
                             disabled={isFinishing || pointWaiting || pointBusy || (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId)}
                             onClick={() => onConfirm({ customerId: selectedCustomerId })}
-                            className={`flex-[2] py-6 rounded-[2rem] font-black hover:scale-[1.03] disabled:opacity-20 shadow-2xl transition-all ${
-                                paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId 
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
+                            className={`flex-[2] py-4 rounded-2xl font-black hover:scale-[1.02] disabled:opacity-20 shadow-xl transition-all ${
+                                paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId
+                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                                 : "bg-black text-[#FFD60A]"
                             }`}
                         >
