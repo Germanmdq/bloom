@@ -178,7 +178,6 @@ export default function DashboardCustomersPage() {
                 <tr className="border-b border-gray-200 bg-gray-50 text-xs font-black uppercase tracking-wide text-gray-500">
                   <th className="px-4 py-3">Nombre</th>
                   <th className="px-4 py-3 text-center whitespace-nowrap">Nº Socio</th>
-                  <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Teléfono</th>
                   <th className="px-4 py-3 whitespace-nowrap">Cumpleaños</th>
                   <th className="px-4 py-3">Dirección habitual</th>
@@ -209,7 +208,6 @@ export default function DashboardCustomersPage() {
                         </span>
                       ) : <span className="text-gray-300">—</span>}
                     </td>
-                    <td className="max-w-[200px] truncate px-4 py-3 text-gray-700">{r.email}</td>
                     <td className="px-4 py-3 text-gray-700">{r.phone}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-gray-700">{fmtBirthday(r.birthdate)}</td>
                     <td className="max-w-[220px] truncate px-4 py-3 text-gray-600">{r.defaultAddress}</td>

@@ -217,7 +217,6 @@ export default function CuentaPage() {
   const hydrateProfileFields = useCallback((u: User) => {
     setEditFullName(metaStr(u, "full_name") || metaStr(u, "name") || "");
     setEditPhone(metaStr(u, "phone") || (u.phone ?? "").trim());
-    setEditEmail(u.email ?? "");
     setEditBirthdate(metaStr(u, "birthdate"));
     const floorMeta = metaStr(u, "address_floor");
     const lineMeta = metaStr(u, "address_line");
