@@ -574,62 +574,53 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
             }
 
-            // ── LÓGICA DE INVENTARIO UNIVERSAL (AHORA FUERA DEL IF/ELSE) ──
+            // ── LÓGICA DE INVENTARIO UNIVERSAL ──
             try {
                 for (const item of cart) {
                     if ((item as any).stock_processed) continue;
 
-                    const nombreLower = item.name.toLowerCase();
-                    let unidadesARestar = item.quantity;
-                    
-                    if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
-                        unidadesARestar = item.quantity * 2;
-                    }
-
-                    // 1. Descuento de Producto Terminado
-                    const { data: prod } = await supabase.from('products').select('stock, vendidos').eq('id', item.id).maybeSingle();
+                    // 1. Descuento de Producto Terminado (stock y vendidos del menú)
+                    const { data: prod } = await supabase
+                        .from('products')
+                        .select('stock, vendidos')
+                        .eq('id', item.id)
+                        .maybeSingle();
                     if (prod) {
-                        await supabase.from('products').update({ 
-                            stock: (prod.stock || 0) - unidadesARestar, 
-                            vendidos: (prod.vendidos || 0) + item.quantity 
+                        await supabase.from('products').update({
+                            stock: (prod.stock || 0) - item.quantity,
+                            vendidos: (prod.vendidos || 0) + item.quantity
                         }).eq('id', item.id);
                     }
 
-                    // 2. Descuento de Materia Prima (Recetas)
+                    // 2. Descuento de Insumos via recetas_insumos (UUID directo, sin name-matching)
                     try {
-                        const { data: recipes } = await supabase.from('recipes').select('raw_product_id, qty').eq('menu_product_id', item.id);
-                        if (recipes && recipes.length > 0) {
-                            window.alert(`¡RECETA ENCONTRADA! ${item.name} lleva ${recipes.length} ingredientes.`);
-                            for (const recipe of recipes) {
-                                const { data: rawProd } = await supabase.from('products').select('name').eq('id', recipe.raw_product_id).maybeSingle();
-                                if (rawProd) {
-                                    const firstWord = rawProd.name.split(' ')[0];
-                                    const { data: insumosMatched } = await supabase.from('insumos')
-                                        .select('id, stock_actual, nombre')
-                                        .or(`nombre.ilike.%${rawProd.name}%,nombre.ilike.%${firstWord}%`)
-                                        .limit(1);
-
-                                    if (insumosMatched && insumosMatched.length > 0) {
-                                        const insumo = insumosMatched[0];
-                                        const qtyToDeduct = Number(recipe.qty) * unidadesARestar;
-                                        await supabase.from('insumos')
-                                            .update({ stock_actual: (Number(insumo.stock_actual) || 0) - qtyToDeduct })
-                                            .eq('id', insumo.id);
-                                        
-                                        window.alert(`✅ DESCONTADO: ${qtyToDeduct} de ${insumo.nombre}`);
-                                    } else {
-                                        window.alert(`❌ No encontré el insumo "${rawProd.name}" en Compras & Stock.`);
-                                    }
+                        const { data: recetas } = await supabase
+                            .from('recetas_insumos')
+                            .select('insumo_id, qty')
+                            .eq('menu_product_id', item.id);
+                        if (recetas && recetas.length > 0) {
+                            for (const receta of recetas) {
+                                const { data: insumo } = await supabase
+                                    .from('insumos')
+                                    .select('stock_actual')
+                                    .eq('id', receta.insumo_id)
+                                    .maybeSingle();
+                                if (insumo !== null) {
+                                    await supabase
+                                        .from('insumos')
+                                        .update({ stock_actual: Number(insumo.stock_actual || 0) - (Number(receta.qty) * item.quantity) })
+                                        .eq('id', receta.insumo_id);
                                 }
                             }
                         }
-                    } catch (e) { window.alert("ERROR RECETA: " + (e as Error).message); }
+                    } catch (e) {
+                        console.error('[Stock] Error descuento insumos:', (e as Error).message);
+                    }
                 }
                 queryClient.invalidateQueries({ queryKey: ['insumos'] });
                 queryClient.invalidateQueries({ queryKey: ['stock'] });
-                setTimeout(() => setFeedback(null), 3000);
             } catch (err) {
-                console.error("Error general inventario:", err);
+                console.error('[Stock] Error general inventario:', err);
             }
 
             // Guardar datos para impresión post-cobro antes de limpiar el carrito
