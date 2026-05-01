@@ -21,7 +21,7 @@ export async function GET() {
 
     const { data: profiles, error: pErr } = await svc
       .from("profiles")
-      .select("id, full_name, balance, coffee_stamps")
+      .select("id, full_name, balance, coffee_stamps, customer_number")
       .eq("is_customer", true);
     if (pErr) {
       console.error("[dashboard/customers] profiles", pErr);
@@ -76,12 +76,13 @@ export async function GET() {
       page = next;
     }
 
-    const profileDataById = new Map<string, { name: string; balance: number; stamps: number }>();
+    const profileDataById = new Map<string, { name: string; balance: number; stamps: number; customer_number: string }>();
     for (const pr of profiles ?? []) {
       profileDataById.set(pr.id as string, {
         name: String(pr.full_name ?? "").trim(),
         balance: Number(pr.balance || 0),
-        stamps: Number(pr.coffee_stamps || 0)
+        stamps: Number(pr.coffee_stamps || 0),
+        customer_number: String(pr.customer_number ?? "")
       });
     }
 
@@ -112,6 +113,7 @@ export async function GET() {
         defaultAddress: metaString(user, "default_address") || "—",
         orderCount: agg?.total ?? 0,
         lastOrderAt: last,
+        customer_number: pInfo?.customer_number ?? "",
         loyaltyPoints: pInfo?.stamps ?? 0,
         balance: pInfo?.balance ?? 0,
         isSocio: paidCount >= 1,
