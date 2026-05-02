@@ -246,6 +246,7 @@ export default function TablesPage() {
             const { data, error } = await supabase
                 .from('salon_tables')
                 .select('*')
+                .eq('status', 'OCCUPIED')
                 .order('id', { ascending: true });
 
             if (error) {
@@ -381,7 +382,6 @@ export default function TablesPage() {
         .filter(t => t.status === 'OCCUPIED')
         .sort((a, b) => a.id - b.id);
     
-    console.log("🔍 DEBUG TABLES PAGE — Total mesas cargadas:", tables.length, "Mesas OCCUPIED:", sortedTables.length, "IDs:", sortedTables.map(t => t.id));
 
     const getCardStyles = (table: Table) => {
         // 1. IconCheck order_type first (Most reliable)
@@ -463,11 +463,9 @@ export default function TablesPage() {
                                 tableId={selectedTable.id}
                                 initialTableData={selectedTable}
                                 initialShowPayment={autoOpenPayment}
-                                onClose={() => { 
-                                    setSelectedTable(null); 
-                                    setAutoOpenPayment(false); 
-                                    console.log("🔍 DEBUG — OrderSheet cerrado, refrescando mesas...");
-                                    // Pequeño delay para que Supabase propague el cambio
+                                onClose={() => {
+                                    setSelectedTable(null);
+                                    setAutoOpenPayment(false);
                                     setTimeout(() => fetchTables(), 300);
                                 }}
                                 onOrderComplete={() => handleOrderComplete()}

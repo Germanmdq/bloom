@@ -6,6 +6,7 @@ import fs from 'fs';
 /**
  * API para facturación electrónica ARCA (AFIP) - MODO LOCAL 100% GRATIS
  * POST /api/facturar
+ * Certs are read from env vars AFIP_CERT_B64 and AFIP_KEY_B64 (base64-encoded)
  */
 export async function POST(request: Request) {
   try {
@@ -16,14 +17,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Monto inválido' }, { status: 400 });
     }
 
-    const certPath = path.join(process.cwd(), 'certs', '23354207184.crt');
-    const keyPath = path.join(process.cwd(), 'certs', 'privada.key');
-    const tokensPath = path.join(process.cwd(), 'certs', 'tokens.json');
+    // Resolve cert paths: prefer /tmp (Vercel) written from env vars, fallback to local /certs dir
+    const certB64 = process.env.AFIP_CERT_B64;
+    const keyB64  = process.env.AFIP_KEY_B64;
 
-    // Asegurar que existe la carpeta para tokens
-    if (!fs.existsSync(path.dirname(tokensPath))) {
-        fs.mkdirSync(path.dirname(tokensPath), { recursive: true });
+    let certPath: string;
+    let keyPath: string;
+
+    if (certB64 && keyB64) {
+      // Vercel / production: write to /tmp on each cold start
+      certPath = '/tmp/afip.crt';
+      keyPath  = '/tmp/afip.key';
+      if (!fs.existsSync(certPath)) {
+        fs.writeFileSync(certPath, Buffer.from(certB64, 'base64').toString('utf8'));
+      }
+      if (!fs.existsSync(keyPath)) {
+        fs.writeFileSync(keyPath, Buffer.from(keyB64, 'base64').toString('utf8'));
+      }
+    } else {
+      // Local dev: read from /certs directory
+      certPath = path.join(process.cwd(), 'certs', '23354207184.crt');
+      keyPath  = path.join(process.cwd(), 'certs', 'privada.key');
     }
+
+    const tokensPath = '/tmp/afip_tokens.json';
 
     const afip = new AfipServices({
       homo: false,
@@ -31,8 +48,8 @@ export async function POST(request: Request) {
       certPath: certPath,
       privateKeyPath: keyPath,
       cacheTokensPath: tokensPath,
-      tokensExpireInHours: 12, // Duración de los tokens (12 horas)
-      useLegacyTls: true 
+      tokensExpireInHours: 12,
+      useLegacyTls: true
     });
 
     const puntoDeVenta = 4;
@@ -48,7 +65,7 @@ export async function POST(request: Request) {
         CbteTipo: tipoDeComprobante
       }
     });
-    
+
     const lastNumber = resLast.CbteNro;
     const nextVoucher = lastNumber + 1;
     const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
@@ -100,9 +117,9 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('--- ERROR FACTURAJS ---', error);
-    return NextResponse.json({ 
-      error: 'Error al procesar la factura local', 
-      details: error.message 
+    return NextResponse.json({
+      error: 'Error al procesar la factura local',
+      details: error.message
     }, { status: 500 });
   }
 }
