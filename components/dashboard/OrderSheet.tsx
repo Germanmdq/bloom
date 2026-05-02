@@ -1029,8 +1029,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     {/* Botón Ofertas del Día - Gris/Premium */}
                                     <button
                                         onClick={() => {
-                                            const cat = categories.find(c => c.name.toLowerCase().includes('oferta'));
-                                            if (cat) setActiveCategory(cat.id);
+                                            const cat = categories.find(c => 
+                                                c.name.toLowerCase().includes('oferta') || 
+                                                c.name.toLowerCase().includes('promo') ||
+                                                c.name.toLowerCase().includes('combo') ||
+                                                c.name.toLowerCase().includes('pack')
+                                            );
+                                            if (cat) {
+                                                setActiveCategory(cat.id);
+                                            } else {
+                                                setProductSearch('oferta');
+                                                setSearchTerm('oferta');
+                                            }
                                         }}
                                         className="relative overflow-hidden p-6 rounded-[2rem] bg-slate-100 text-slate-900 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[160px]"
                                     >
