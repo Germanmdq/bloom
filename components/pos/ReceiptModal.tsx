@@ -114,7 +114,8 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-            @page { margin: 0 0 5mm 0; size: 72mm auto; }
+            @page { margin: 0; size: 80mm auto; }
+            html, body { margin: 0; padding: 0; }
             #bloom-print-container {
               display: block !important;
               width: 72mm;
