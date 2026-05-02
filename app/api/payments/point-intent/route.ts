@@ -128,26 +128,30 @@ export async function POST(req: Request) {
     };
 
     let mpResp = await pointCreatePaymentIntent(deviceId, mpBodyPrimary);
-    let mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string };
-    console.log("[point-intent] MP response status:", mpResp.status, "body:", JSON.stringify(mpJson));
+    let mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string; status?: number };
+    console.log("[PI] status=" + mpResp.status);
+    console.log("[PI] msg=" + (mpJson.message ?? "none"));
+    console.log("[PI] err=" + (mpJson.error ?? "none"));
+    console.log("[PI] keys=" + Object.keys(mpJson).join(","));
 
-    // Si hay un intent colgado, cancelarlo y reintentar una vez
+    // Si hay un intent colgado, cancelarlo y reintentar
     const isQueued =
       !mpResp.ok &&
       (String(mpJson.message ?? "").toLowerCase().includes("queued") ||
         String(mpJson.error ?? "").toLowerCase().includes("queued"));
 
     if (isQueued) {
-      console.warn("[point-intent] intent colgado detectado — cancelando y reintentando");
-      await pointCancelCurrentIntent(deviceId).catch(() => null);
-      await new Promise((r) => setTimeout(r, 800));
+      console.warn("[PI] queued — cancelando");
+      await pointCancelCurrentIntent(deviceId).catch((e) => console.warn("[PI] cancel error:", e));
+      await new Promise((r) => setTimeout(r, 3000)); // esperar 3s para que MP libere
       mpResp = await pointCreatePaymentIntent(deviceId, mpBodyPrimary);
-      mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string };
+      mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string; status?: number };
+      console.log("[PI] retry status=" + mpResp.status + " msg=" + (mpJson.message ?? "none"));
     }
 
     // Fallback sin campo payment si MP rechaza el body completo
     if (!mpResp.ok && !isQueued) {
-      console.warn("[point-intent] primary body rejected:", mpResp.status, mpJson);
+      console.warn("[PI] fallback body — status=" + mpResp.status);
       const mpBodyFallback = {
         amount: amountCents,
         additional_info: {
@@ -157,7 +161,8 @@ export async function POST(req: Request) {
         },
       };
       mpResp = await pointCreatePaymentIntent(deviceId, mpBodyFallback);
-      mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string };
+      mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string; status?: number };
+      console.log("[PI] fallback result status=" + mpResp.status + " msg=" + (mpJson.message ?? "none"));
     }
 
     if (!mpResp.ok) {
