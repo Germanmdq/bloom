@@ -53,3 +53,12 @@ export async function pointGetPaymentIntent(paymentIntentId: string): Promise<Re
     headers: pointApiAuthHeaders(),
   });
 }
+
+export async function pointSetOperatingMode(deviceId: string, mode: "PDV" | "STANDALONE"): Promise<Response> {
+  const enc = encodeURIComponent(deviceId);
+  return fetch(`${POINT_API}/devices/${enc}`, {
+    method: "PATCH",
+    headers: pointApiHeaders(),
+    body: JSON.stringify({ operating_mode: mode }),
+  });
+}

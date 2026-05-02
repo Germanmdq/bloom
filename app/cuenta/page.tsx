@@ -183,6 +183,7 @@ export default function CuentaPage() {
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [payAmount, setPayAmount] = useState("");
   const [isPaying, setIsPaying] = useState(false);
+  const [debtPayMethod, setDebtPayMethod] = useState<'MERCADO_PAGO' | 'BANK_TRANSFER' | 'CASH'>('MERCADO_PAGO');
 
   const loadData = useCallback(
     async (uid: string) => {
@@ -466,9 +467,9 @@ export default function CuentaPage() {
 
   const handleDebtPayment = async (mode: 'TOTAL' | 'PARTIAL') => {
     if (!user || !profile) return;
-    
+
     const amountToPay = mode === 'TOTAL' ? profile.balance : parseFloat(payAmount);
-    
+
     if (!amountToPay || amountToPay < 10) {
         toast.error("Ingresá un monto válido (mínimo $10)");
         return;
@@ -479,10 +480,10 @@ export default function CuentaPage() {
         return;
     }
 
+    if (debtPayMethod !== 'MERCADO_PAGO') return;
+
     setIsPaying(true);
     try {
-        // En lugar de llamar a pay-debt (que es manual), generamos una preferencia de Mercado Pago
-        // Usamos el mismo API que para los pedidos pero con un flag o ítems descriptivos
         const res = await fetch('/api/payments/create-preference', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -774,35 +775,89 @@ export default function CuentaPage() {
 
             {/* Payment Form */}
             <div className="mt-5 border-t border-emerald-100 bg-white/50 p-5">
-                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-3">Módulo de Pago Online</p>
-                <div className="flex flex-col gap-3">
-                    <div className="flex gap-2">
-                        <input 
-                            type="number"
-                            placeholder="Monto a pagar..."
-                            value={payAmount}
-                            onChange={(e) => setPayAmount(e.target.value)}
-                            className="flex-1 h-12 px-4 rounded-xl border border-emerald-100 bg-white font-bold text-sm outline-none focus:ring-2 ring-emerald-500/20 transition-all"
-                        />
-                        <button 
-                            disabled={isPaying}
-                            onClick={() => handleDebtPayment('TOTAL')}
-                            className="h-12 px-6 bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-3">Medio de Pago</p>
+
+                {/* Method selector */}
+                <div className="flex gap-2 mb-4">
+                    {([
+                        { id: 'MERCADO_PAGO', label: 'Mercado Pago', emoji: '📱' },
+                        { id: 'BANK_TRANSFER', label: 'Transferencia', emoji: '🏦' },
+                        { id: 'CASH', label: 'Efectivo', emoji: '💵' },
+                    ] as const).map(m => (
+                        <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => setDebtPayMethod(m.id)}
+                            className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 rounded-xl border-2 text-[10px] font-black uppercase tracking-wider transition-all ${
+                                debtPayMethod === m.id
+                                    ? 'border-emerald-600 bg-emerald-600 text-white shadow-md'
+                                    : 'border-emerald-100 bg-white text-emerald-700 hover:border-emerald-300'
+                            }`}
                         >
-                            Pagar Total
+                            <span className="text-base leading-none">{m.emoji}</span>
+                            {m.label}
                         </button>
-                    </div>
-                    <button 
-                        disabled={isPaying || !payAmount}
-                        onClick={() => handleDebtPayment('PARTIAL')}
-                        className="w-full h-12 bg-white border-2 border-emerald-600 text-emerald-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:border-emerald-200 disabled:text-emerald-200"
-                    >
-                        {isPaying ? 'Procesando...' : 'Pagar Monto Parcial'}
-                    </button>
+                    ))}
                 </div>
-                <p className="mt-3 text-[9px] font-bold text-emerald-400 uppercase tracking-tighter text-center italic">
-                    Al confirmar, serás redirigido a Mercado Pago para completar la operación.
-                </p>
+
+                {/* Mercado Pago flow */}
+                {debtPayMethod === 'MERCADO_PAGO' && (
+                    <div className="flex flex-col gap-3">
+                        <div className="flex gap-2">
+                            <input
+                                type="number"
+                                placeholder="Monto a pagar..."
+                                value={payAmount}
+                                onChange={(e) => setPayAmount(e.target.value)}
+                                className="flex-1 h-12 px-4 rounded-xl border border-emerald-100 bg-white font-bold text-sm outline-none focus:ring-2 ring-emerald-500/20 transition-all"
+                            />
+                            <button
+                                disabled={isPaying}
+                                onClick={() => handleDebtPayment('TOTAL')}
+                                className="h-12 px-6 bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                            >
+                                Pagar Total
+                            </button>
+                        </div>
+                        <button
+                            disabled={isPaying || !payAmount}
+                            onClick={() => handleDebtPayment('PARTIAL')}
+                            className="w-full h-12 bg-white border-2 border-emerald-600 text-emerald-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:border-emerald-200 disabled:text-emerald-200"
+                        >
+                            {isPaying ? 'Procesando...' : 'Pagar Monto Parcial'}
+                        </button>
+                        <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-tighter text-center italic">
+                            Serás redirigido a Mercado Pago para completar la operación.
+                        </p>
+                    </div>
+                )}
+
+                {/* Bank transfer info */}
+                {debtPayMethod === 'BANK_TRANSFER' && (
+                    <div className="rounded-xl border border-emerald-100 bg-white p-4 space-y-2">
+                        <p className="text-xs font-black uppercase tracking-widest text-emerald-700">Datos para transferencia</p>
+                        <div className="space-y-1 text-sm font-bold text-gray-800">
+                            <p>Alias: <span className="font-black text-emerald-700 select-all">bloom.cafe</span></p>
+                            <p>Banco: Mercado Pago</p>
+                        </div>
+                        <p className="text-[10px] text-gray-500 font-medium leading-snug mt-2">
+                            Una vez realizada la transferencia, avisanos por WhatsApp con el comprobante para que acreditemos el pago en tu cuenta.
+                        </p>
+                    </div>
+                )}
+
+                {/* Cash info */}
+                {debtPayMethod === 'CASH' && (
+                    <div className="rounded-xl border border-emerald-100 bg-white p-4">
+                        <p className="text-xs font-black uppercase tracking-widest text-emerald-700 mb-2">Pago en efectivo</p>
+                        <p className="text-sm font-medium text-gray-700 leading-snug">
+                            Acercate al local y aboná en efectivo. El saldo se actualiza en el momento.
+                        </p>
+                        <p className="mt-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                            También podés avisarnos por WhatsApp para coordinar.
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
       )}
