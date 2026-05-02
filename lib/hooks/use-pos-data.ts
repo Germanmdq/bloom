@@ -66,7 +66,8 @@ export function useAppSettings() {
             if (error && error.code !== 'PGRST116') throw error;
             return data;
         },
-        staleTime: 1000 * 60 * 5,
+        staleTime: 0,
+        refetchOnWindowFocus: true,
     });
 }
 
