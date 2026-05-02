@@ -1126,12 +1126,11 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
 
     if (orderSent) return (
         <div className="min-h-screen flex items-center justify-center p-6 bg-[#f7f5ef]">
-            <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl space-y-5">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-4xl">✅</div>
-                <h1 className="text-3xl font-black text-gray-900">¡Pedido enviado!</h1>
-                <div className="bg-[#f0f7f4] rounded-2xl py-3 px-5">
-                    <p className="text-xs font-black uppercase tracking-widest text-[#2d4a3e]">{tableLabel}</p>
-                    <p className="text-sm text-gray-500 mt-1">El mozo se acerca en un momento.</p>
+            <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-xl space-y-6">
+                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto text-5xl">✅</div>
+                <div>
+                    <h1 className="text-3xl font-black text-gray-900">¡Gracias por tu pedido!</h1>
+                    <p className="text-gray-400 mt-2 text-base">Ya lo recibimos, enseguida te lo llevamos.</p>
                 </div>
                 <button onClick={() => setOrderSent(false)} className="w-full py-4 bg-[#2d4a3e] text-white font-black rounded-2xl text-lg">
                     Seguir eligiendo
