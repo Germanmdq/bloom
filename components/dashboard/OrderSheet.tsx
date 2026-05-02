@@ -96,7 +96,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
     const [showConfigurator, setShowConfigurator] = useState(false);
     const [pendingProduct, setPendingProduct] = useState<any>(null);
-    const [configStep, setConfigStep] = useState<'drink-group' | 'drink-detail' | 'garnish' | 'notes' | 'empanada-flavor' | 'fish-style'>('drink-group');
+    const [configStep, setConfigStep] = useState<'drink-group' | 'drink-detail' | 'garnish' | 'notes' | 'empanada-flavor' | 'fish-style' | 'sandwich-filling'>('drink-group');
     const [selectedDrinkGroup, setSelectedDrinkGroup] = useState<string | null>(null);
     const [selectedDrink, setSelectedDrink] = useState<any>(null);
     const [selectedGarnish, setSelectedGarnish] = useState<any>(null);
@@ -104,6 +104,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [configNotes, setConfigNotes] = useState("");
     const [empanadaCounts, setEmpanadaCounts] = useState<{[flavor: string]: number}>({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
     const [fishStyle, setFishStyle] = useState<string | null>(null);
+    const [sandwichFilling, setSandwichFilling] = useState<string | null>(null);
     const [isEspecialContext, setIsEspecialContext] = useState(false); // drink is free
     const [isPlatoDiaContext, setIsPlatoDiaContext] = useState(false);  // price overridden by plato_dia_price
     const [shouldSkipGarnish, setShouldSkipGarnish] = useState(false);
@@ -1238,29 +1239,16 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 const catNameLower = catName.toLowerCase();
                                                 const itemNameLower = item.name.toLowerCase();
 
-                                                // "empanada/empanadas" → flavor picker. "empanado" (cooking style) must NOT match.
                                                 const isEmpanada = itemNameLower.includes("empanada") || catNameLower.includes("empanada");
                                                 const isFilet = itemNameLower.includes("filet") || itemNameLower.includes("merluza");
+                                                const isSandwich = catNameLower.includes("sandwich") || catNameLower.includes("sanguche") ||
+                                                                   itemNameLower.includes("pebete") || itemNameLower.includes("sacramento");
+                                                const isTarta = catNameLower.includes("tarta") || itemNameLower.includes("tarta");
 
                                                 const isCoffee = itemNameLower.includes("café") || itemNameLower.includes("cafe") ||
                                                                itemNameLower.includes("jarrito") || itemNameLower.includes("submarino") ||
                                                                itemNameLower.includes("té") || (itemNameLower === "te") ||
                                                                catNameLower.includes("cafetería") || catNameLower.includes("cafeteria");
-
-                                                const isFood = !isCoffee && (
-                                                    catNameLower.includes("plato") || catNameLower.includes("menú") ||
-                                                    catNameLower.includes("especial") || catNameLower.includes("oferta") ||
-                                                    catNameLower.includes("promo") || catNameLower.includes("sandwich") ||
-                                                    catNameLower.includes("sanguche") || catNameLower.includes("tarta") ||
-                                                    catNameLower.includes("empanada") ||
-                                                    itemNameLower.includes("bife") || itemNameLower.includes("filet") ||
-                                                    itemNameLower.includes("milanesa") || itemNameLower.includes("churrasco") ||
-                                                    itemNameLower.includes("pollo") || itemNameLower.includes("merluza") ||
-                                                    itemNameLower.includes("lentejas") || itemNameLower.includes("guiso") ||
-                                                    itemNameLower.includes("pasta") || itemNameLower.includes("ñoqui") ||
-                                                    itemNameLower.includes("tarta") || itemNameLower.includes("sandwich") ||
-                                                    itemNameLower.includes("pebete") || itemNameLower.includes("sacramento")
-                                                );
 
                                                 const hasGarnish = itemNameLower.includes("guarnicion") || itemNameLower.includes("guarnición") ||
                                                                    itemNameLower.includes("c/guarn") || itemNameLower.includes("con guarn");
@@ -1269,7 +1257,24 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                                                catNameLower.includes("oferta") || catNameLower.includes("promo") ||
                                                                                itemNameLower.includes("especial") || itemNameLower.includes("oferta");
 
-                                                const needsConfig = isFood || isEmpanada || isFilet;
+                                                // Tartas → directo al carrito, sin configurador
+                                                if (isTarta) {
+                                                    addToCart({ id: item.id, name: item.name, price: item.price, quantity: 1 });
+                                                    return;
+                                                }
+
+                                                const isFood = !isCoffee && !isTarta && !isSandwich && (
+                                                    catNameLower.includes("plato") || catNameLower.includes("menú") ||
+                                                    catNameLower.includes("especial") || catNameLower.includes("oferta") ||
+                                                    catNameLower.includes("promo") || catNameLower.includes("empanada") ||
+                                                    itemNameLower.includes("bife") || itemNameLower.includes("filet") ||
+                                                    itemNameLower.includes("milanesa") || itemNameLower.includes("churrasco") ||
+                                                    itemNameLower.includes("pollo") || itemNameLower.includes("merluza") ||
+                                                    itemNameLower.includes("lentejas") || itemNameLower.includes("guiso") ||
+                                                    itemNameLower.includes("pasta") || itemNameLower.includes("ñoqui")
+                                                );
+
+                                                const needsConfig = isFood || isEmpanada || isFilet || isSandwich;
 
                                                 if (needsConfig) {
                                                     setPendingProduct(item);
@@ -1281,6 +1286,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                     setSelectedGarnish(null);
                                                     setSelectedFlavor(null);
                                                     setFishStyle(null);
+                                                    setSandwichFilling(null);
                                                     setConfigNotes("");
 
                                                     if (isEmpanada) {
@@ -1288,6 +1294,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                         setEmpanadaCounts({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
                                                     } else if (isFilet) {
                                                         setConfigStep('fish-style');
+                                                    } else if (isSandwich) {
+                                                        setConfigStep('sandwich-filling');
                                                     } else {
                                                         setConfigStep('drink-detail');
                                                     }
@@ -1616,12 +1624,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     const n = pendingProduct?.name.toLowerCase() ?? '';
                                     if (n.includes('empanada')) return ['flavor', 'notes'];
                                     if (n.includes('filet') || n.includes('merluza')) return ['estilo', 'bebida', 'guarnicion', 'notas'];
+                                    if (configStep === 'sandwich-filling' || n.includes('pebete') || n.includes('sacramento')) return ['relleno', 'notas'];
                                     return ['bebida', 'guarnicion', 'notas'];
                                 })().map((step) => (
                                     <div
                                         key={step}
                                         className={`h-1 flex-1 rounded-full transition-all duration-500 ${
                                             (step === 'estilo' && configStep === 'fish-style') ||
+                                            (step === 'relleno' && configStep === 'sandwich-filling') ||
                                             (step === 'bebida' && (configStep === 'drink-group' || configStep === 'drink-detail')) ||
                                             (step === 'guarnicion' && configStep === 'garnish') ||
                                             (step === 'flavor' && configStep === 'empanada-flavor') ||
@@ -1648,6 +1658,26 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                     className="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-black hover:text-white hover:border-black transition-all text-left font-black text-base"
                                                 >
                                                     {style}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {configStep === 'sandwich-filling' && (
+                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                        <h3 className="text-lg font-black mb-4 flex items-center gap-2">🥪 ¿Con qué relleno?</h3>
+                                        <div className="flex flex-col gap-3">
+                                            {['Salame y Queso', 'Jamón y Queso'].map(filling => (
+                                                <button
+                                                    key={filling}
+                                                    onClick={() => {
+                                                        setSandwichFilling(filling);
+                                                        setConfigStep('notes');
+                                                    }}
+                                                    className="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-black hover:text-white hover:border-black transition-all text-left font-black text-base"
+                                                >
+                                                    {filling}
                                                 </button>
                                             ))}
                                         </div>
@@ -1780,7 +1810,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         
                                         <div className="mt-6 flex gap-2">
                                             <button
-                                                onClick={() => setConfigStep(shouldSkipGarnish ? 'drink-detail' : 'garnish')}
+                                                onClick={() => {
+                                                    const n = pendingProduct?.name.toLowerCase() ?? '';
+                                                    const isSandwichBack = n.includes('pebete') || n.includes('sacramento') || n.includes('sandwich');
+                                                    if (isSandwichBack) setConfigStep('sandwich-filling');
+                                                    else if (shouldSkipGarnish) setConfigStep('drink-detail');
+                                                    else setConfigStep('garnish');
+                                                }}
                                                 className="flex-1 py-4 rounded-xl bg-gray-100 text-gray-500 font-black text-[10px] uppercase tracking-widest"
                                             >
                                                 Volver
@@ -1795,11 +1831,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                             ? Number(appSettings.plato_dia_price)
                                                             : Number(pendingProduct.price || 0);
 
+                                                        const isSandwichProduct = pNameLower.includes("pebete") || pNameLower.includes("sacramento") ||
+                                                                                    pNameLower.includes("sandwich");
                                                         const cartName = isEmpanada
                                                             ? `${pendingProduct.name} (${selectedFlavor || 'Varios'})`
                                                             : isFiletProduct && fishStyle
                                                                 ? `Filet ${fishStyle} con guarnición`
-                                                                : pendingProduct.name;
+                                                                : isSandwichProduct && sandwichFilling
+                                                                    ? `${pendingProduct.name} ${sandwichFilling}`
+                                                                    : pendingProduct.name;
 
                                                         addToCart({
                                                             id: pendingProduct.id,
