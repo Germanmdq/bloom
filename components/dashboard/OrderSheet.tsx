@@ -1076,6 +1076,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             if (featuredProduct) {
                                                 setPendingProduct(featuredProduct);
                                                 const isEmpanada = featuredProduct.name.toLowerCase().includes("empa");
+                                                const nameLower = featuredProduct.name.toLowerCase();
+                                                const platoDiaHasGarnish = nameLower.includes("guarnicion") || nameLower.includes("guarnición") ||
+                                                                            nameLower.includes("c/guarn") || nameLower.includes("con guarn");
                                                 if (isEmpanada) {
                                                     setConfigStep('empanada-flavor');
                                                     setEmpanadaCounts({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
@@ -1087,6 +1090,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 setSelectedGarnish(null);
                                                 setSelectedFlavor(null);
                                                 setConfigNotes("");
+                                                setShouldSkipGarnish(!platoDiaHasGarnish);
                                                 setIsEspecialContext(true);
                                                 setIsPlatoDiaContext(true);
                                                 setShowConfigurator(true);
@@ -1228,41 +1232,42 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 const catNameLower = catName.toLowerCase();
                                                 const itemNameLower = item.name.toLowerCase();
                                                 const isEmpanada = itemNameLower.includes("empa") || catNameLower.includes("empa");
-                                                
-                                                // Definimos qué platos llevan guarnición/bebida (carnes/pescados/especiales)
-                                                const isMeatOrFish = 
-                                                    itemNameLower.includes("bife") || itemNameLower.includes("filet") ||
-                                                    itemNameLower.includes("pechu") || itemNameLower.includes("pata") ||
-                                                    itemNameLower.includes("muslo") || itemNameLower.includes("costilla") ||
-                                                    itemNameLower.includes("milanesa") || itemNameLower.includes("churrasco") ||
-                                                    itemNameLower.includes("merluza") || itemNameLower.includes("salmon") ||
-                                                    itemNameLower.includes("pollo");
 
-                                                const isMenuOrPromoCategory = 
-                                                    catNameLower.includes("menú") || catNameLower.includes("especial") || 
-                                                    catNameLower.includes("oferta") || catNameLower.includes("promo");
-
-                                                const isCoffee = itemNameLower.includes("café") || itemNameLower.includes("cafe") || 
+                                                const isCoffee = itemNameLower.includes("café") || itemNameLower.includes("cafe") ||
                                                                itemNameLower.includes("jarrito") || itemNameLower.includes("submarino") ||
-                                                               itemNameLower.includes("té") || itemNameLower.includes("te") ||
+                                                               itemNameLower.includes("té") || (itemNameLower === "te") ||
                                                                catNameLower.includes("cafetería") || catNameLower.includes("cafeteria");
-                                                
-                                                // Los Platos Diarios (Guisos, Lentejas, etc.) piden bebida pero NO guarnición obligatoria
-                                                const isPlatoDiario = catNameLower.includes("plato") || itemNameLower.includes("lentejas") || 
-                                                                    itemNameLower.includes("guiso") || itemNameLower.includes("pastel") ||
-                                                                    itemNameLower.includes("pasta") || itemNameLower.includes("ravi") ||
-                                                                    itemNameLower.includes("talla") || itemNameLower.includes("sorren") ||
-                                                                    itemNameLower.includes("ñoqui") || itemNameLower.includes("noqui");
 
-                                                const needsConfig = (isMenuOrPromoCategory || isMeatOrFish) && !isCoffee;
+                                                const isFood = !isCoffee && (
+                                                    catNameLower.includes("plato") || catNameLower.includes("menú") ||
+                                                    catNameLower.includes("especial") || catNameLower.includes("oferta") ||
+                                                    catNameLower.includes("promo") || catNameLower.includes("sandwich") ||
+                                                    catNameLower.includes("sanguche") || catNameLower.includes("tarta") ||
+                                                    catNameLower.includes("empan") ||
+                                                    itemNameLower.includes("bife") || itemNameLower.includes("filet") ||
+                                                    itemNameLower.includes("milanesa") || itemNameLower.includes("churrasco") ||
+                                                    itemNameLower.includes("pollo") || itemNameLower.includes("merluza") ||
+                                                    itemNameLower.includes("lentejas") || itemNameLower.includes("guiso") ||
+                                                    itemNameLower.includes("pasta") || itemNameLower.includes("ñoqui") ||
+                                                    itemNameLower.includes("tarta") || itemNameLower.includes("sandwich") ||
+                                                    itemNameLower.includes("pebete") || itemNameLower.includes("sacramento")
+                                                );
 
-                                                const isEspecialContextFlag = isMenuOrPromoCategory || itemNameLower.includes("especial") || itemNameLower.includes("oferta");
-                                                
+                                                // Garnish only when the product name explicitly mentions it
+                                                const hasGarnish = itemNameLower.includes("guarnicion") || itemNameLower.includes("guarnición") ||
+                                                                   itemNameLower.includes("c/guarn") || itemNameLower.includes("con guarn");
+
+                                                const isEspecialContextFlag = catNameLower.includes("menú") || catNameLower.includes("especial") ||
+                                                                               catNameLower.includes("oferta") || catNameLower.includes("promo") ||
+                                                                               itemNameLower.includes("especial") || itemNameLower.includes("oferta");
+
+                                                const needsConfig = isFood;
+
                                                 if (needsConfig || isEmpanada) {
                                                     setPendingProduct(item);
                                                     setIsEspecialContext(isEspecialContextFlag);
-                                                    setIsPlatoDiaContext(false); // category items always use their own price
-                                                    setShouldSkipGarnish(isPlatoDiario && !isMeatOrFish && !isMenuOrPromoCategory);
+                                                    setIsPlatoDiaContext(false);
+                                                    setShouldSkipGarnish(!hasGarnish);
 
                                                     if (isEmpanada) {
                                                         setConfigStep('empanada-flavor');
