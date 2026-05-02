@@ -990,7 +990,8 @@ function ProductRow({ p, onAdd, inCart, isCombo }: { p: any; onAdd: () => void; 
                 {p.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{p.description}</p>}
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <p className="text-sm font-black text-[#2d4a3e]">{formatCurrency(Number(p.price))}</p>
-                    {isCombo && <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">· bebida + guarnición incluidas</span>}
+                    {p._isCartaLibre && <span className="text-[10px] font-black bg-green-100 text-green-700 px-2 py-0.5 rounded-full">· Carta Libre · Bebida gratis</span>}
+                    {isCombo && !p._isCartaLibre && <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">· bebida + guarnición incluidas</span>}
                 </div>
             </div>
             <button
@@ -1019,6 +1020,12 @@ type ConfigStep = 'drink-group' | 'drink-detail' | 'garnish' | 'notes';
 
 function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: string }) {
     const supabase = createClient();
+    const isSaturday = new Date().getDay() === 6;
+    const CARTA_LIBRE_PRICE = 14500;
+    const isCartaLibreCat = (catName: string) => {
+        const cn = (catName || "").toLowerCase();
+        return cn.includes("plato") || cn.includes("hamburguesa") || cn.includes("milanesa") || cn.includes("pasta") || cn.includes("menú") || cn.includes("menu");
+    };
     const [sections, setSections] = useState<TableSection[]>([]);
     const [openSections, setOpenSections] = useState<Set<string>>(new Set());
     const [cart, setCart] = useState<any[]>([]);
@@ -1083,13 +1090,20 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
             }
 
             // helper para agregar categoría por palabra clave
+            const applyCartaLibre = (p: any, catName: string) => {
+                if (isSaturday && isCartaLibreCat(catName)) {
+                    return { ...p, price: CARTA_LIBRE_PRICE, _isCombo: true, _isCartaLibre: true };
+                }
+                return p;
+            };
+
             const pushCat = (keyword: string, emoji: string) => {
                 const cat = uniqueCats.find((c: any) => c.name.toLowerCase().includes(keyword) && !usedCatIds.has(c.id));
                 if (!cat) return;
-                const catProds = prods.filter((p: any) => p.category_id === cat.id).map((p: any) => ({
-                    ...p,
-                    _isCombo: p._isCombo || isPlato(p, cat.name)
-                }));
+                const catProds = prods.filter((p: any) => p.category_id === cat.id).map((p: any) => {
+                    const base = { ...p, _isCombo: p._isCombo || isPlato(p, cat.name) };
+                    return applyCartaLibre(base, cat.name);
+                });
                 if (catProds.length === 0) return;
                 usedCatIds.add(cat.id);
                 built.push({ id: cat.id, label: cat.name, emoji, products: catProds });
@@ -1105,10 +1119,10 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
             // 5 — Resto de categorías en su orden
             for (const c of uniqueCats) {
                 if (usedCatIds.has(c.id)) continue;
-                const catProds = prods.filter((p: any) => p.category_id === c.id).map((p: any) => ({
-                    ...p,
-                    _isCombo: p._isCombo || isPlato(p, c.name)
-                }));
+                const catProds = prods.filter((p: any) => p.category_id === c.id).map((p: any) => {
+                    const base = { ...p, _isCombo: p._isCombo || isPlato(p, c.name) };
+                    return applyCartaLibre(base, c.name);
+                });
                 if (catProds.length === 0) continue;
                 built.push({ id: c.id, label: c.name, emoji: "", products: catProds });
             }
@@ -1152,7 +1166,7 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
         if (selectedDrink && selectedDrink !== 'Sin bebida')
             items.push({ id: `d-${Date.now()}`, name: `Bebida: ${selectedDrink}`, price: 0 });
         pushToCart(items);
-        toast.success('Plato del Día agregado', { duration: 1400 });
+        toast.success(configuringProduct._isCartaLibre ? 'Carta Libre agregado' : 'Plato del Día agregado', { duration: 1400 });
         setConfiguringProduct(null);
     };
 
@@ -1250,6 +1264,24 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
                     <p className="text-xs text-gray-400 font-medium">Elegí lo que querés</p>
                 )}
             </div>
+
+            {/* Banner Carta Libre — solo sábados */}
+            {isSaturday && (
+                <div className="mx-4 mt-4 mb-2 rounded-[2rem] overflow-hidden bg-[#1a3a2a] text-white p-6 shadow-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-white/15 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">Hoy Sábado</span>
+                    </div>
+                    <h3 className="text-3xl font-black tracking-tighter leading-none mb-1">Carta Libre</h3>
+                    <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-3">Platos · Hamburguesas · Milanesas · Pastas</p>
+                    <div className="flex items-end justify-between">
+                        <div>
+                            <p className="text-4xl font-black tracking-tighter">${(14500).toLocaleString('es-AR')}</p>
+                            <p className="text-white/60 text-xs font-bold mt-0.5">Bebida gratis incluida</p>
+                        </div>
+                        <span className="text-3xl">🥂</span>
+                    </div>
+                </div>
+            )}
 
             {/* Lista de secciones accordion */}
             <div className="pb-32">
