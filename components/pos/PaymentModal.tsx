@@ -510,7 +510,7 @@ export function PaymentModal({
                                             </p>
                                         )}
 
-                                        <div className="border-t border-gray-200 pt-4">
+                                        <div className="border-t border-gray-200 pt-4 flex flex-col gap-2">
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -519,12 +519,12 @@ export function PaymentModal({
                                                 }}
                                                 className="text-xs font-bold uppercase tracking-wide text-sky-700 underline-offset-2 hover:underline"
                                             >
-                                                {showQrOption ? "Ocultar QR (celular)" : "Pagar con QR en el celular"}
+                                                {showQrOption ? "Ocultar QR" : "Mostrar QR para escanear"}
                                             </button>
                                         </div>
 
                                         {showQrOption && (
-                                            <div className="pt-2">
+                                            <div className="pt-2 flex flex-col gap-3">
                                                 {isGeneratingQR ? (
                                                     <div className="flex flex-col items-center gap-3">
                                                         <IconLoader2 className="animate-spin mx-auto h-8 w-8 text-sky-600" />
@@ -533,14 +533,26 @@ export function PaymentModal({
                                                 ) : qrError ? (
                                                     <p className="text-sm font-semibold text-red-600 leading-snug">{qrError}</p>
                                                 ) : qrCodeUrl ? (
-                                                    <div className="flex flex-col items-center gap-4">
-                                                        <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
-                                                            Escaneá con la app de Mercado Pago
-                                                        </p>
-                                                        <div className="rounded-[2rem] bg-white p-4 shadow-xl">
-                                                            <QRCode value={qrCodeUrl} size={180} />
+                                                    <>
+                                                        <div className="flex flex-col items-center gap-3">
+                                                            <div className="rounded-2xl bg-white p-3 shadow-xl border border-gray-100">
+                                                                <QRCode value={qrCodeUrl} size={160} />
+                                                            </div>
+                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                                                Escaneá con Mercado Pago
+                                                            </p>
                                                         </div>
-                                                    </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const url = `/qr-display?url=${encodeURIComponent(qrCodeUrl)}&amount=%24${Math.round(finalTotalMP).toLocaleString()}`;
+                                                                window.open(url, "qr-cliente", "width=480,height=760,toolbar=no,menubar=no");
+                                                            }}
+                                                            className="w-full py-2.5 rounded-xl bg-gray-900 text-white font-black text-xs uppercase tracking-widest hover:bg-black transition-all"
+                                                        >
+                                                            📱 Abrir pantalla QR para el cliente
+                                                        </button>
+                                                    </>
                                                 ) : null}
                                             </div>
                                         )}
