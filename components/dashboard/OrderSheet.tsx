@@ -1002,13 +1002,30 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         <button
                                             key={promo.id}
                                             onClick={() => {
-                                                addToCart({
-                                                    id: `promo-${promo.id}`,
-                                                    name: promo.name,
-                                                    price: promo.price || 0,
-                                                    quantity: 1
-                                                });
-                                                setFeedback({ message: `Agregado: ${promo.name}`, type: 'success' });
+                                                const nameLower = (promo.name || "").toLowerCase();
+                                                const isCoffee = nameLower.includes("café") || nameLower.includes("cafe") || 
+                                                               nameLower.includes("jarrito") || nameLower.includes("té") || 
+                                                               nameLower.includes("te") || nameLower.includes("submarino");
+                                                
+                                                if (isCoffee) {
+                                                    addToCart({
+                                                        id: `promo-${promo.id}`,
+                                                        name: promo.name,
+                                                        price: promo.price || 0,
+                                                        quantity: 1
+                                                    });
+                                                    setFeedback({ message: `Agregado: ${promo.name}`, type: 'success' });
+                                                } else {
+                                                    setPendingProduct({
+                                                        id: `promo-${promo.id}`,
+                                                        name: promo.name,
+                                                        price: promo.price || 0
+                                                    } as any);
+                                                    setShouldSkipGarnish(true); // Las ofertas de hoy solo piden bebida
+                                                    setIsEspecialContext(true);
+                                                    setConfigStep('drink-detail');
+                                                    setShowConfigurator(true);
+                                                }
                                             }}
                                             className="p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm text-left hover:scale-[1.02] active:scale-98 transition-all group"
                                         >
@@ -1204,7 +1221,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 
                                                 // Los Platos Diarios (Guisos, Lentejas, etc.) piden bebida pero NO guarnición obligatoria
                                                 const isPlatoDiario = catNameLower.includes("plato") || itemNameLower.includes("lentejas") || 
-                                                                    itemNameLower.includes("guiso") || itemNameLower.includes("pastel");
+                                                                    itemNameLower.includes("guiso") || itemNameLower.includes("pastel") ||
+                                                                    itemNameLower.includes("pasta") || itemNameLower.includes("ravi") ||
+                                                                    itemNameLower.includes("talla") || itemNameLower.includes("sorren") ||
+                                                                    itemNameLower.includes("ñoqui") || itemNameLower.includes("noqui");
 
                                                 const needsConfig = (isMenuOrPromoCategory || isMeatOrFish || isPlatoDiario) && !isCoffee;
 
