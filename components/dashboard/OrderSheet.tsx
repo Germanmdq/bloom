@@ -1195,8 +1195,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 const isMenuOrPromoCategory = 
                                                     catNameLower.includes("menú") || catNameLower.includes("especial") || 
                                                     catNameLower.includes("oferta") || catNameLower.includes("promo");
-
-                                                const needsConfig = isMenuOrPromoCategory || isMeatOrFish;
+                                                const isCoffee = itemNameLower.includes("café") || itemNameLower.includes("cafe") || catNameLower.includes("café") || catNameLower.includes("cafe");
+                                                const needsConfig = (isMenuOrPromoCategory || isMeatOrFish) && !isCoffee;
 
                                                 const isEspecialContextFlag = isMenuOrPromoCategory || itemNameLower.includes("especial") || itemNameLower.includes("oferta");
                                                 
