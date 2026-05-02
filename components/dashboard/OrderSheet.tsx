@@ -461,7 +461,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     const subtotal = useOrderStore(state => state.getTotal());
     const total = subtotal + extraTotal;
-    const finalTotal = total - (total * (discount / 100));
+    const discountAmount = Math.round(total * (discount / 100));
+    const finalTotal = total - discountAmount;
     const isLoading = catLoading || prodLoading;
 
     useEffect(() => {
@@ -614,6 +615,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     discount: discount,
                     status: (isWebTable || tableId >= 100) ? 'completed' : 'paid',
                     customer_id: customerIdForDb,
+                    customer_name: customerName || null,
                     delivery_person_id: selectedDeliveryPerson ? parseInt(selectedDeliveryPerson) : null,
                     items: cart,
                 });
@@ -1376,21 +1378,65 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     </div>
 
                     {/* Footer del carrito */}
-                    <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex flex-col gap-4">
+                    <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex flex-col gap-4 shrink-0">
                         <div className="relative">
                             <input
                                 type="text"
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                placeholder="Notas especiales..."
+                                placeholder="Notas de cocina..."
                                 className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all placeholder:text-slate-300 shadow-sm"
                             />
                         </div>
 
                         <div className="flex items-center justify-between px-2">
-                            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Final</span>
-                            <span className="text-4xl font-bold text-slate-900 tracking-tighter">${Number(finalTotal || 0).toLocaleString()}</span>
+                            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Subtotal</span>
+                            <span className="text-2xl font-bold text-slate-900 tracking-tighter">${total.toLocaleString()}</span>
                         </div>
+
+                        {/* Descuento en pesos */}
+                        <div className="flex items-center gap-4 px-2">
+                            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest shrink-0">Descuento $</span>
+                            <input
+                                type="number"
+                                min="0"
+                                max={total}
+                                value={discountAmount === 0 ? "" : discountAmount}
+                                onChange={(e) => {
+                                    const pesos = Math.min(total, Math.max(0, Number(e.target.value)));
+                                    const pct = total > 0 ? (pesos / total) * 100 : 0;
+                                    setDiscount(Math.round(pct * 100) / 100);
+                                }}
+                                placeholder="0"
+                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-black text-right outline-none focus:border-slate-900 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between px-2">
+                            <span className={`text-sm font-bold uppercase tracking-widest ${discount > 0 ? 'text-emerald-500' : 'text-slate-400'}`}>
+                                {discount > 0 ? 'Total con descuento' : 'Total Final'}
+                            </span>
+                            <span className={`text-4xl font-bold tracking-tighter ${discount > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+                                ${finalTotal.toLocaleString()}
+                            </span>
+                        </div>
+
+                        {/* Delivery Person Selector */}
+                        {(orderType === 'DELIVERY' || orderType === 'TAKEAWAY') && (
+                            <div className="mt-2">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Repartidor (opcional)</label>
+                                <select 
+                                    value={selectedDeliveryPerson}
+                                    onChange={(e) => setSelectedDeliveryPerson(e.target.value)}
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all"
+                                >
+                                    <option value="">-- Sin asignar --</option>
+                                    {deliveryPersons.map((p: any) => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         <button
                             onClick={() => webOrderIsPaid ? finishOrder() : setShowPaymentModal(true)}

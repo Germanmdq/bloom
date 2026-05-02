@@ -307,21 +307,12 @@ export function PaymentModal({
                         <p className="text-6xl font-black tracking-tighter text-black mb-8">${finalTotal.toLocaleString()}</p>
                     </div>
 
-                    <div className="flex flex-col gap-2 bg-black/5 p-4 rounded-xl">
-                        <label className="text-[10px] font-black uppercase opacity-40">Descuento (%)</label>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                value={discount === 0 ? "" : discount}
-                                onChange={(e) => setDiscount(Math.min(100, Math.max(0, Number(e.target.value))))}
-                                placeholder="0"
-                                className="w-full bg-transparent text-2xl font-black outline-none border-b-2 border-black/10 focus:border-black/50 transition-colors py-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                            <span className="text-xl font-black opacity-40">%</span>
+                    {discount > 0 && (
+                        <div className="flex flex-col gap-1 bg-black/5 p-4 rounded-xl">
+                            <span className="text-[10px] font-black uppercase opacity-40">Descuento aplicado</span>
+                            <span className="text-2xl font-black text-black">-${Math.round(total * (discount / 100)).toLocaleString()}</span>
                         </div>
-                    </div>
+                    )}
 
                     <div className="mt-8">
                         <p className="text-xs font-bold uppercase tracking-widest opacity-40 mb-2">Detalles</p>
