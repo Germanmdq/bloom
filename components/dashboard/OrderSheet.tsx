@@ -109,6 +109,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [isPlatoDiaContext, setIsPlatoDiaContext] = useState(false);  // price overridden by plato_dia_price
     const [shouldSkipGarnish, setShouldSkipGarnish] = useState(false);
 
+    // Varios Modal State
+    const [showVariosModal, setShowVariosModal] = useState(false);
+    const [variosName, setVariosName] = useState("");
+    const [variosPrice, setVariosPrice] = useState("");
+    const [variosQuantity, setVariosQuantity] = useState("1");
+
     const handleCustomerSearch = async (q: string) => {
         setCustomerSearchQuery(q);
         if (q.length < 2) {
@@ -978,21 +984,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         </div>
                         <button
                             onClick={() => {
-                                const desc = prompt("Descripción del ítem (opcional):", "");
-                                if (desc === null) return;
-                                const priceStr = prompt("Precio final ($):", "");
-                                if (priceStr === null) return;
-                                const price = parseFloat(priceStr.replace(',', '.'));
-                                if (isNaN(price) || price < 0) {
-                                    alert("Precio inválido");
-                                    return;
-                                }
-                                addToCart({ 
-                                    id: `varios-${Date.now()}`, 
-                                    name: desc.trim() ? `Varios - ${desc.trim()}` : 'Varios', 
-                                    price: price, 
-                                    quantity: 1 
-                                });
+                                setVariosName("");
+                                setVariosPrice("");
+                                setVariosQuantity("1");
+                                setShowVariosModal(true);
                             }}
                             className="bg-gray-900 text-white px-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black active:scale-95 transition-all shadow-md shrink-0 flex items-center"
                         >
@@ -1921,6 +1916,103 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         </div>
                                     </motion.div>
                                 )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Varios Modal */}
+            <AnimatePresence>
+                {showVariosModal && (
+                    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            exit={{ opacity: 0 }} 
+                            className="absolute inset-0 bg-black/70 backdrop-blur-xl"
+                            onClick={() => setShowVariosModal(false)}
+                        />
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9, y: 30 }} 
+                            animate={{ opacity: 1, scale: 1, y: 0 }} 
+                            exit={{ opacity: 0, scale: 0.9, y: 30 }} 
+                            className="relative bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden p-10"
+                        >
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">Agregar Varios</h2>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Ítem manual</p>
+                                </div>
+                                <button
+                                    onClick={() => setShowVariosModal(false)}
+                                    className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-black transition-colors"
+                                >
+                                    <IconX size={24} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nombre / Descripción</label>
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        value={variosName}
+                                        onChange={(e) => setVariosName(e.target.value)}
+                                        placeholder="Ej: Plato Especial, Postre Extra..."
+                                        className="w-full px-5 py-4 bg-gray-50 border-transparent rounded-2xl font-bold text-lg focus:bg-white focus:ring-4 ring-black/5 outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Precio Unitario ($)</label>
+                                        <input
+                                            type="number"
+                                            value={variosPrice}
+                                            onChange={(e) => setVariosPrice(e.target.value)}
+                                            placeholder="0"
+                                            className="w-full px-5 py-4 bg-gray-50 border-transparent rounded-2xl font-bold text-lg focus:bg-white focus:ring-4 ring-black/5 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cantidad</label>
+                                        <input
+                                            type="number"
+                                            value={variosQuantity}
+                                            onChange={(e) => setVariosQuantity(e.target.value)}
+                                            placeholder="1"
+                                            className="w-full px-5 py-4 bg-gray-50 border-transparent rounded-2xl font-bold text-lg focus:bg-white focus:ring-4 ring-black/5 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        const price = parseFloat(variosPrice.replace(',', '.'));
+                                        const qty = parseInt(variosQuantity);
+                                        if (isNaN(price) || price < 0) {
+                                            setFeedback({ message: 'Precio inválido', type: 'error' });
+                                            return;
+                                        }
+                                        if (isNaN(qty) || qty <= 0) {
+                                            setFeedback({ message: 'Cantidad inválida', type: 'error' });
+                                            return;
+                                        }
+                                        addToCart({ 
+                                            id: `varios-${Date.now()}`, 
+                                            name: variosName.trim() ? `Varios - ${variosName.trim()}` : 'Varios', 
+                                            price: price, 
+                                            quantity: qty 
+                                        });
+                                        setShowVariosModal(false);
+                                        setFeedback({ message: 'Ítem agregado', type: 'success' });
+                                    }}
+                                    className="w-full py-5 bg-black text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-black/10 active:scale-95 transition-all mt-4"
+                                >
+                                    Agregar al Pedido
+                                </button>
                             </div>
                         </motion.div>
                     </div>
