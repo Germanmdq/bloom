@@ -979,8 +979,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     <div className="flex-1 overflow-y-auto p-3 no-scrollbar">
                         {!searchTerm && !activeCategory ? (
                             <div className="flex flex-col gap-4">
-                                <div className="grid grid-cols-2 gap-4 mb-8">
-                                    {/* Botón Menú del Día - Negro */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                                    {/* Botón Plato del Día - Negro */}
                                     <button
                                         onClick={() => {
                                             if (featuredProduct) {
@@ -1000,7 +1000,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 setConfigNotes("");
                                                 setShowConfigurator(true);
                                             } else {
-                                                const cat = categories.find(c => c.name.toLowerCase().includes('men'));
+                                                const cat = categories.find(c => c.name.toLowerCase().includes('plato'));
                                                 if (cat) setActiveCategory(cat.id);
                                             }
                                         }}
@@ -1011,7 +1011,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         </div>
                                         <div className="relative z-10">
                                             <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[9px] font-bold uppercase tracking-widest mb-2">
-                                                {featuredProduct ? "Especial de Hoy" : "Menú del Día"}
+                                                Plato del Día
                                             </span>
                                             <h3 className="text-2xl font-black tracking-tight leading-none mb-1">
                                                 {featuredProduct ? featuredProduct.name : "Configurar"}
@@ -1021,15 +1021,32 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                     ? appSettings?.plato_dia_price && Number(appSettings.plato_dia_price) > 0
                                                         ? `$${Number(appSettings.plato_dia_price).toLocaleString()} · con bebida`
                                                         : `$${Number(featuredProduct.price).toLocaleString()}`
-                                                    : "Ver promociones →"}
+                                                    : "Ver opciones →"}
                                             </p>
+                                        </div>
+                                    </button>
+
+                                    {/* Botón Ofertas del Día - Gris/Premium */}
+                                    <button
+                                        onClick={() => {
+                                            const cat = categories.find(c => c.name.toLowerCase().includes('oferta'));
+                                            if (cat) setActiveCategory(cat.id);
+                                        }}
+                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-slate-100 text-slate-900 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[160px]"
+                                    >
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 text-slate-400">
+                                            <IconStar size={60} />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <h3 className="text-2xl font-black leading-none mb-1">Ofertas del Día</h3>
+                                            <p className="text-slate-500 font-bold text-sm">Ver promociones →</p>
                                         </div>
                                     </button>
 
                                     {/* Botón Platos Diarios - Blanco */}
                                     <button
                                         onClick={() => {
-                                            const cat = categories.find(c => c.name.toLowerCase().includes('plato'));
+                                            const cat = categories.find(c => c.name.toLowerCase().includes('plato') && !c.name.toLowerCase().includes('día'));
                                             if (cat) setActiveCategory(cat.id);
                                         }}
                                         className="relative overflow-hidden p-6 rounded-[2rem] bg-white border border-gray-100 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[160px]"
@@ -1039,7 +1056,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         </div>
                                         <div className="relative z-10">
                                             <h3 className="text-2xl font-black text-slate-900 leading-none mb-1">Platos Diarios</h3>
-                                            <p className="text-slate-400 font-bold text-sm">Ver opciones de hoy →</p>
+                                            <p className="text-slate-400 font-bold text-sm">Opciones de hoy →</p>
                                         </div>
                                     </button>
                                 </div>
@@ -1199,40 +1216,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             {item.notes && <p className="text-[9px] text-emerald-500 font-bold mt-1 leading-tight">Nota: {item.notes}</p>}
                                         </div>
                                         <div className="shrink-0 flex items-center gap-1.5">
-                                            <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-0.5">
-                                                <button
-                                                    onClick={() => {
-                                                        if (item.quantity <= 1) {
-                                                            removeFromCart(index);
-                                                        } else {
-                                                            const updated = cart.map((c, i) => i === index ? { ...c, quantity: c.quantity - 1 } : c);
-                                                            setCart(updated);
-                                                        }
-                                                    }}
-                                                    className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-slate-500 shadow-sm hover:bg-red-50 hover:text-red-500 active:scale-90 transition-all text-xs font-black"
-                                                >
-                                                    −
-                                                </button>
-                                                <span className="w-5 text-center text-[10px] font-black text-slate-700">{item.quantity}</span>
-                                                <button
-                                                    onClick={() => {
-                                                        const updated = cart.map((c, i) => i === index ? { ...c, quantity: c.quantity + 1 } : c);
-                                                        setCart(updated);
-                                                    }}
-                                                    className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-slate-500 shadow-sm hover:bg-slate-100 active:scale-90 transition-all text-xs font-black"
-                                                >
-                                                    +
-                                                </button>
+                                            <div className="flex items-center gap-1 px-3 py-2 bg-slate-50 rounded-xl">
+                                                <span className="text-xs font-black text-slate-700">x{item.quantity}</span>
                                             </div>
-                                            <span className="text-xs font-black text-slate-900 tracking-tight w-16 text-right">
+                                            <span className="text-xs font-black text-slate-900 tracking-tight w-20 text-right">
                                                 ${(Number(item.price || 0) * Number(item.quantity || 1)).toLocaleString()}
                                             </span>
                                             <button
                                                 onClick={() => removeFromCart(index)}
-                                                className="w-7 h-7 flex items-center justify-center rounded-md text-slate-300 hover:bg-red-50 hover:text-red-500 active:scale-90 transition-all"
+                                                className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-300 hover:bg-red-50 hover:text-red-500 active:scale-90 transition-all"
                                                 title="Quitar"
                                             >
-                                                <IconX size={14} />
+                                                <IconTrash size={16} />
                                             </button>
                                         </div>
                                     </div>
@@ -1518,7 +1513,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 <button
                                                     key={drink}
                                                     onClick={() => { setSelectedDrink({ name: drink }); setConfigStep('garnish'); }}
-                                                    className="p-3 rounded-xl bg-gray-50 hover:bg-black hover:text-white transition-all text-left"
+                                                    className="p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-black hover:text-white hover:border-black transition-all text-left"
                                                 >
                                                     <p className="font-bold text-xs">{drink}</p>
                                                 </button>
@@ -1537,7 +1532,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                                         <h3 className="text-lg font-black mb-4 flex items-center gap-2">🥗 Guarnición</h3>
                                         <div className="grid grid-cols-2 gap-2">
-                                            {['Puré de Papas', 'Papas Fritas', 'Mixto', 'Ensalada'].map(g => (
+                                            {['Puré de Papas', 'Papas Fritas', 'Puré Mixto', 'Ensalada'].map(g => (
                                                 <button
                                                     key={g}
                                                     onClick={() => { 
@@ -1545,7 +1540,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                         setConfigStep('notes'); 
                                                         if (g === 'Ensalada') setFeedback({ message: 'Recordá poner el sabor de la ensalada en notas', type: 'success' });
                                                     }}
-                                                    className="p-4 rounded-2xl bg-gray-50 hover:bg-black hover:text-white transition-all text-left"
+                                                    className="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-black hover:text-white hover:border-black transition-all text-left"
                                                 >
                                                     <p className="font-black text-xs uppercase tracking-wider">{g}</p>
                                                 </button>
