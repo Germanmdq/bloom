@@ -96,7 +96,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
     const [showConfigurator, setShowConfigurator] = useState(false);
     const [pendingProduct, setPendingProduct] = useState<any>(null);
-    const [configStep, setConfigStep] = useState<'drink-group' | 'drink-detail' | 'garnish' | 'notes' | 'empanada-flavor' | 'fish-style' | 'sandwich-filling'>('drink-group');
+    const [configStep, setConfigStep] = useState<'drink-group' | 'drink-detail' | 'garnish' | 'notes' | 'empanada-flavor' | 'fish-style' | 'sandwich-filling' | 'db-options'>('drink-group');
+    const [dbOptionSelections, setDbOptionSelections] = useState<Record<string, string>>({});
     const [selectedDrinkGroup, setSelectedDrinkGroup] = useState<string | null>(null);
     const [selectedDrink, setSelectedDrink] = useState<any>(null);
     const [selectedGarnish, setSelectedGarnish] = useState<any>(null);
@@ -1232,6 +1233,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 const catNameLower = catName.toLowerCase();
                                                 const itemNameLower = item.name.toLowerCase();
 
+                                                // Productos con opciones configuradas en DB
+                                                if (item.options?.groups?.length > 0) {
+                                                    setPendingProduct(item);
+                                                    setDbOptionSelections({});
+                                                    setConfigStep('db-options');
+                                                    setShowConfigurator(true);
+                                                    return;
+                                                }
+
                                                 const isEmpanada = itemNameLower.includes("empanada") || catNameLower.includes("empanada");
                                                 const isFilet = itemNameLower.includes("filet") || itemNameLower.includes("merluza");
                                                 const isSandwich = catNameLower.includes("sandwich") || catNameLower.includes("sanguche") ||
@@ -1614,6 +1624,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             {/* Stepper Header */}
                             <div className="flex gap-1.5 mb-6">
                                 {(() => {
+                                    if (configStep === 'db-options') return pendingProduct?.options?.groups?.map((g: any) => g.name) ?? [];
                                     const n = pendingProduct?.name.toLowerCase() ?? '';
                                     if (n.includes('empanada')) return ['flavor', 'notes'];
                                     if (n.includes('filet') || n.includes('merluza')) return ['estilo', 'bebida', 'guarnicion', 'notas'];
@@ -1623,6 +1634,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     <div
                                         key={step}
                                         className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                                            (configStep === 'db-options' && dbOptionSelections[step] !== undefined) ||
                                             (step === 'estilo' && configStep === 'fish-style') ||
                                             (step === 'relleno' && configStep === 'sandwich-filling') ||
                                             (step === 'bebida' && (configStep === 'drink-group' || configStep === 'drink-detail')) ||
@@ -1637,6 +1649,55 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             </div>
 
                             <div className="min-h-[300px]">
+                                {configStep === 'db-options' && pendingProduct?.options?.groups && (
+                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                                        {pendingProduct.options.groups.map((group: any) => (
+                                            <div key={group.name}>
+                                                <h3 className="text-base font-black mb-3 text-gray-900">{group.name}</h3>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {group.options.map((opt: string) => {
+                                                        const selected = dbOptionSelections[group.name] === opt;
+                                                        return (
+                                                            <button
+                                                                key={opt}
+                                                                onClick={() => setDbOptionSelections(prev => ({ ...prev, [group.name]: opt }))}
+                                                                className={`px-4 py-2.5 rounded-2xl font-bold text-sm transition-all border ${selected ? 'bg-black text-white border-black' : 'bg-slate-50 text-slate-700 border-slate-100 hover:border-slate-300'}`}
+                                                            >
+                                                                {opt}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <div className="flex gap-2 pt-2">
+                                            <button
+                                                onClick={() => setShowConfigurator(false)}
+                                                className="flex-1 py-4 rounded-xl bg-gray-100 text-gray-500 font-black text-[10px] uppercase tracking-widest"
+                                            >
+                                                Cancelar
+                                            </button>
+                                            <button
+                                                disabled={pendingProduct.options.groups.some((g: any) => g.min > 0 && !dbOptionSelections[g.name])}
+                                                onClick={() => {
+                                                    const variantLabel = Object.entries(dbOptionSelections).map(([, v]) => v).join(' · ');
+                                                    addToCart({
+                                                        id: pendingProduct.id,
+                                                        name: variantLabel ? `${pendingProduct.name} (${variantLabel})` : pendingProduct.name,
+                                                        price: Number(pendingProduct.price || 0),
+                                                        quantity: 1,
+                                                    });
+                                                    setFeedback({ message: 'Agregado correctamente', type: 'success' });
+                                                    setShowConfigurator(false);
+                                                }}
+                                                className="flex-[2] py-4 rounded-xl bg-black text-white font-black text-sm uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed"
+                                            >
+                                                Agregar al pedido
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
+
                                 {configStep === 'fish-style' && (
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                                         <h3 className="text-lg font-black mb-4 flex items-center gap-2">🐟 ¿Cómo lo querés?</h3>
