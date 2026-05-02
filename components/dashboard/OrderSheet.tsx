@@ -1100,7 +1100,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                         setConfigStep('empanada-flavor');
                                                         setEmpanadaCounts({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
                                                     } else {
-                                                        setConfigStep('drink-group');
+                                                        setConfigStep('drink-detail');
                                                     }
                                                     setSelectedDrinkGroup(null);
                                                     setSelectedDrink(null);
@@ -1472,49 +1472,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     </motion.div>
                                 )}
 
-                                {configStep === 'drink-group' && (
-                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                                        <h3 className="text-lg font-black mb-4 flex items-center gap-2">🥤 Selección de Bebida</h3>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {(isEspecialContext 
-                                                ? ['Línea Coca-Cola', 'Línea Aquarius', 'Aguas']
-                                                : ['Línea Coca-Cola', 'Línea Aquarius', 'Aguas', 'Otras', 'Cervezas', 'Vinos']
-                                            ).map(group => (
-                                                <button
-                                                    key={group}
-                                                    onClick={() => { setSelectedDrinkGroup(group); setConfigStep('drink-detail'); }}
-                                                    className="p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-all text-left"
-                                                >
-                                                    <p className="font-black text-xs uppercase tracking-wider">{group}</p>
-                                                </button>
-                                            ))}
-                                            <button
-                                                onClick={() => { setSelectedDrink({ name: "Sin bebida" }); setConfigStep('garnish'); }}
-                                                className="p-4 rounded-2xl bg-gray-100 text-gray-400 font-black text-[10px] uppercase tracking-widest hover:bg-gray-200"
-                                            >
-                                                Sin bebida
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                )}
-
                                 {configStep === 'drink-detail' && (
                                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                                         <h3 className="text-lg font-black mb-4 flex items-center gap-2">
-                                            🥤 {selectedDrinkGroup}
+                                            🥤 Selección de Bebida
                                         </h3>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {(selectedDrinkGroup === 'Línea Coca-Cola' 
-                                                ? ['Coca-Cola', 'Coca Zero', 'Sprite', 'Sprite Zero', 'Schweppes Pomelo']
-                                                : selectedDrinkGroup === 'Línea Aquarius'
-                                                ? ['Aquarius Pera', 'Aquarius Manzana', 'Aquarius Pomelo', 'Aquarius Uva']
-                                                : selectedDrinkGroup === 'Aguas'
-                                                ? ['Agua con Gas', 'Agua sin Gas']
-                                                : selectedDrinkGroup === 'Cervezas'
-                                                ? ['Quilmes', 'Stella Artois', 'Patagonia', 'Corona']
-                                                : selectedDrinkGroup === 'Vinos'
-                                                ? ['Vino Tinto', 'Vino Blanco', 'Copa de Vino']
-                                                : ['Jugo de Naranja', 'Limonada', 'Exprimido']
+                                        <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2 pb-4">
+                                            {(isEspecialContext 
+                                                ? ["Coca-Cola", "Coca Zero", "Sprite", "Sprite Zero", "Schweppes Pomelo", "Aquarius Pera", "Aquarius Manzana", "Aquarius Pomelo", "Aquarius Uva", "Agua sin Gas", "Agua con Gas"]
+                                                : ["Coca-Cola", "Coca Zero", "Sprite", "Sprite Zero", "Schweppes Pomelo", "Aquarius Pera", "Aquarius Manzana", "Aquarius Pomelo", "Aquarius Uva", "Agua sin Gas", "Agua con Gas", "Quilmes", "Stella Artois", "Patagonia", "Corona", "Vino Tinto", "Vino Blanco", "Copa de Vino", "Jugo de Naranja", "Limonada", "Exprimido"]
                                             ).map(drink => (
                                                 <button
                                                     key={drink}
@@ -1524,8 +1490,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                     <p className="font-bold text-xs">{drink}</p>
                                                 </button>
                                             ))}
+                                            <button
+                                                onClick={() => { setSelectedDrink({ name: "Sin bebida" }); setConfigStep('garnish'); }}
+                                                className="p-3 rounded-xl bg-gray-100 text-gray-400 font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 text-left col-span-2 text-center mt-2"
+                                            >
+                                                Sin bebida
+                                            </button>
                                         </div>
-                                        <button onClick={() => setConfigStep('drink-group')} className="mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-black">← Volver</button>
                                     </motion.div>
                                 )}
 
@@ -1553,7 +1524,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 Sin guarnición
                                             </button>
                                         </div>
-                                        <button onClick={() => setConfigStep('drink-group')} className="mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-black">← Volver</button>
+                                        <button onClick={() => setConfigStep('drink-detail')} className="mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-black">← Volver a bebida</button>
                                     </motion.div>
                                 )}
 
