@@ -1045,20 +1045,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                     });
                                                     setFeedback({ message: `Agregado: ${promo.name}`, type: 'success' });
                                                 } else {
-                                                    setPendingProduct({
+                                                    addToCart({
                                                         id: `promo-${promo.id}`,
                                                         name: promo.name,
-                                                        price: promo.price || 0
-                                                    } as any);
-                                                    setShouldSkipGarnish(true);
-                                                    setIsEspecialContext(true);  // drink free
-                                                    setIsPlatoDiaContext(false); // use promo's own price
-                                                    setSelectedDrinkGroup(null);
-                                                    setSelectedDrink(null);
-                                                    setSelectedGarnish(null);
-                                                    setConfigNotes("");
-                                                    setConfigStep('drink-detail');
-                                                    setShowConfigurator(true);
+                                                        price: promo.price || 0,
+                                                        quantity: 1
+                                                    });
+                                                    setFeedback({ message: `Agregado: ${promo.name}`, type: 'success' });
                                                 }
                                             }}
                                             className="p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm text-left hover:scale-[1.02] active:scale-98 transition-all group"

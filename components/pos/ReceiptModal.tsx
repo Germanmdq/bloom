@@ -187,8 +187,8 @@ function renderAndPrint(ticketHtml: string, _unused: string, onClose: () => void
     const css = `
       * { box-sizing:border-box; margin:0; padding:0; }
       @page { margin:0; size:80mm auto; }
-      body { width:80mm; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; color:#000; background:#fff; }
-      .ticket { width:72mm; padding:4mm; position:relative; }
+      body { width:80mm; margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; color:#000; background:#fff; }
+      .ticket { width:100%; padding:2mm 4mm; position:relative; }
       .center { text-align:center; }
       .h1 { font-size:22px; font-weight:900; letter-spacing:-0.03em; line-height:1; }
       .sub { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; margin-top:3px; }
