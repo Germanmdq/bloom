@@ -1030,15 +1030,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     <button
                                         onClick={() => {
                                             const cat = categories.find(c => 
-                                                c.name.toLowerCase().includes('oferta') || 
                                                 c.name.toLowerCase().includes('promo') ||
-                                                c.name.toLowerCase().includes('combo') ||
-                                                c.name.toLowerCase().includes('pack')
+                                                c.name.toLowerCase().includes('oferta')
                                             );
                                             if (cat) {
                                                 setActiveCategory(cat.id);
                                             } else {
-                                                setProductSearch('oferta');
+                                                setProductSearch('promo');
                                             }
                                         }}
                                         className="relative overflow-hidden p-6 rounded-[2rem] bg-slate-100 text-slate-900 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[160px]"
@@ -1146,17 +1144,22 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 const itemNameLower = item.name.toLowerCase();
                                                 const isEmpanada = itemNameLower.includes("empa") || catNameLower.includes("empa");
                                                 
-                                                // Productos que llevan guarnición/bebida: bife, filet, pechuga, pata muslo o categorías especiales
-                                                const needsConfig = 
-                                                    catNameLower.includes("plato") || catNameLower.includes("menú") || 
-                                                    catNameLower.includes("especial") || catNameLower.includes("oferta") || 
-                                                    itemNameLower.includes("especial") || itemNameLower.includes("oferta") || 
-                                                    itemNameLower.includes("plato") || itemNameLower.includes("menú") ||
+                                                // Definimos qué platos llevan guarnición/bebida (carnes/pescados/especiales)
+                                                const isMeatOrFish = 
                                                     itemNameLower.includes("bife") || itemNameLower.includes("filet") ||
                                                     itemNameLower.includes("pechu") || itemNameLower.includes("pata") ||
-                                                    itemNameLower.includes("costilla");
+                                                    itemNameLower.includes("muslo") || itemNameLower.includes("costilla") ||
+                                                    itemNameLower.includes("milanesa") || itemNameLower.includes("churrasco") ||
+                                                    itemNameLower.includes("merluza") || itemNameLower.includes("salmon") ||
+                                                    itemNameLower.includes("pollo");
 
-                                                const isEspecialContextFlag = catNameLower.includes("especial") || catNameLower.includes("oferta") || itemNameLower.includes("especial") || itemNameLower.includes("oferta");
+                                                const isMenuOrPromoCategory = 
+                                                    catNameLower.includes("menú") || catNameLower.includes("especial") || 
+                                                    catNameLower.includes("oferta") || catNameLower.includes("promo");
+
+                                                const needsConfig = isMenuOrPromoCategory || isMeatOrFish;
+
+                                                const isEspecialContextFlag = isMenuOrPromoCategory || itemNameLower.includes("especial") || itemNameLower.includes("oferta");
                                                 
                                                 if (needsConfig || isEmpanada) {
                                                     setPendingProduct(item);
