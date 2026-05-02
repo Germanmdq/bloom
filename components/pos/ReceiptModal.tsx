@@ -134,9 +134,9 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
             .dash { border-bottom: 1px dashed #000; margin: 8px 0; }
             .meta { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; }
             .head { margin-bottom: 8px; }
-            .cols { display: grid; grid-template-columns: 1fr 25px 65px; gap: 6px; align-items: start; }
+            .cols { display: grid; grid-template-columns: ${isKitchen ? "1fr 40px" : "1fr 20px 60px"}; gap: 6px; align-items: start; }
             .cols.header { font-size: 10px; font-weight: 900; border-bottom: 1px solid #000; padding-bottom: 4px; }
-            .row { display: grid; grid-template-columns: 1fr 25px 65px; gap: 6px; padding: 6px 0; border-bottom: 1px dashed #e5e7eb; font-size: 12px; line-height: 1.15; }
+            .row { display: grid; grid-template-columns: ${isKitchen ? "1fr 40px" : "1fr 20px 60px"}; gap: 6px; padding: 6px 0; border-bottom: 1px dashed #e5e7eb; font-size: 12px; line-height: 1.15; }
             .name { min-width: 0; }
             .item-name { font-weight: 800; margin: 0; }
             .note { font-size: 9px; font-style: italic; color: #374151; margin-top: 2px; }

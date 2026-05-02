@@ -785,7 +785,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         setFeedback({ message: "Enviado a cocina ✅", type: 'success' });
         
         // Snapshot para el ticket (evita que se borre si el cart se limpia por un re-render)
-        if (skipClose) {
+        // No mostramos la pantalla de éxito si es solo una comanda de cocina
+        if (skipClose && !isKitchenReceipt) {
             setCompletedOrderData({ cart: [...cart], total: total });
         }
 
