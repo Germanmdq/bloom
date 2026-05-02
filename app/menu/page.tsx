@@ -969,7 +969,7 @@ type TableSection = {
     products: any[];
 };
 
-function ProductRow({ p, onAdd, inCart }: { p: any; onAdd: () => void; inCart: number }) {
+function ProductRow({ p, onAdd, inCart, isCombo }: { p: any; onAdd: () => void; inCart: number; isCombo?: boolean }) {
     return (
         <div className="flex items-center gap-3 py-3 px-4 border-b border-gray-50 last:border-0 active:bg-gray-50 transition-colors">
             {p.image_url && (
@@ -978,11 +978,14 @@ function ProductRow({ p, onAdd, inCart }: { p: any; onAdd: () => void; inCart: n
             <div className="flex-1 min-w-0">
                 <p className="font-bold text-gray-900 text-[15px] leading-snug">{p.name}</p>
                 {p.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{p.description}</p>}
-                <p className="text-sm font-black text-[#2d4a3e] mt-1">{formatCurrency(Number(p.price))}</p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <p className="text-sm font-black text-[#2d4a3e]">{formatCurrency(Number(p.price))}</p>
+                    {isCombo && <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">· bebida + guarnición incluidas</span>}
+                </div>
             </div>
             <button
                 onClick={onAdd}
-                className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-black active:scale-90 transition-all shadow-sm relative ${inCart > 0 ? "bg-[#2d4a3e]" : "bg-[#2d4a3e]"}`}
+                className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-black active:scale-90 transition-all shadow-sm relative bg-[#2d4a3e]"
             >
                 <IconPlus size={18} className="text-white" />
                 {inCart > 0 && (
@@ -995,6 +998,15 @@ function ProductRow({ p, onAdd, inCart }: { p: any; onAdd: () => void; inCart: n
     );
 }
 
+const DRINK_GROUPS: Record<string, string[]> = {
+    'Línea Coca-Cola': ['Coca-Cola', 'Coca Zero', 'Sprite', 'Sprite Zero', 'Schweppes Pomelo'],
+    'Línea Aquarius':  ['Aquarius Pera', 'Aquarius Manzana', 'Aquarius Pomelo', 'Aquarius Uva'],
+    'Aguas':           ['Agua con Gas', 'Agua sin Gas'],
+};
+const GARNISHES = ['Puré de Papas', 'Papas Fritas', 'Mixto', 'Ensalada'];
+
+type ConfigStep = 'drink-group' | 'drink-detail' | 'garnish' | 'notes';
+
 function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: string }) {
     const supabase = createClient();
     const [sections, setSections] = useState<TableSection[]>([]);
@@ -1004,6 +1016,14 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
     const [isPaying, setIsPaying] = useState(false);
     const [orderSent, setOrderSent] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // Configurador de combo (Plato del Día)
+    const [configuringProduct, setConfiguringProduct] = useState<any | null>(null);
+    const [configStep, setConfigStep] = useState<ConfigStep>('drink-group');
+    const [selectedDrinkGroup, setSelectedDrinkGroup] = useState('');
+    const [selectedDrink, setSelectedDrink] = useState('');
+    const [selectedGarnish, setSelectedGarnish] = useState('');
+    const [configNotes, setConfigNotes] = useState('');
 
     useEffect(() => {
         Promise.all([
@@ -1023,6 +1043,7 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
             });
 
             const built: TableSection[] = [];
+            const usedCatIds = new Set<string>();
 
             // 1 — Plato del Día
             const platoDiaId = settings?.plato_del_dia_id;
@@ -1030,38 +1051,43 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
             if (platoDiaId) {
                 const platoProd = prods.find((p: any) => p.id === platoDiaId);
                 if (platoProd) {
-                    const p = platoDiaPrice ? { ...platoProd, price: platoDiaPrice, _comboLabel: "· con bebida" } : platoProd;
+                    const p = platoDiaPrice ? { ...platoProd, price: platoDiaPrice, _isCombo: true } : platoProd;
                     built.push({ id: "__plato_dia__", label: "Plato del Día", emoji: "⭐", accent: "text-amber-600", products: [p] });
                 }
             }
 
             // 2 — Promoción del Día
             if (promos && promos.length > 0) {
-                const promoProds = promos
-                    .filter((pr: any) => pr.name)
+                const promoProds = promos.filter((pr: any) => pr.name)
                     .map((pr: any) => ({ id: pr.id, name: pr.name, price: Number(pr.price) || 0, description: pr.description || '', image_url: pr.image_url || null }));
-                if (promoProds.length > 0) {
+                if (promoProds.length > 0)
                     built.push({ id: "__promos__", label: "Promoción del Día", emoji: "🔥", accent: "text-orange-500", products: promoProds });
-                }
             }
 
-            // 3 — Cafetería primero (busca por nombre)
-            const cafCat = uniqueCats.find((c: any) => c.name.toLowerCase().includes("cafetería") || c.name.toLowerCase().includes("cafeteria") || c.name.toLowerCase().includes("café") || c.name.toLowerCase().includes("cafe"));
-            if (cafCat) {
-                const cafProds = prods.filter((p: any) => p.category_id === cafCat.id);
-                if (cafProds.length > 0) built.push({ id: cafCat.id, label: cafCat.name, emoji: "☕", products: cafProds });
-            }
+            // helper para agregar categoría por palabra clave
+            const pushCat = (keyword: string, emoji: string) => {
+                const cat = uniqueCats.find((c: any) => c.name.toLowerCase().includes(keyword) && !usedCatIds.has(c.id));
+                if (!cat) return;
+                const catProds = prods.filter((p: any) => p.category_id === cat.id);
+                if (catProds.length === 0) return;
+                usedCatIds.add(cat.id);
+                built.push({ id: cat.id, label: cat.name, emoji, products: catProds });
+            };
 
-            // 4 — Resto de categorías
+            // 3 — Desayunos
+            pushCat("desayuno", "🥐");
+            // 4 — Cafetería
+            pushCat("cafetería", "☕"); pushCat("cafeteria", "☕"); pushCat("café", "☕"); pushCat("cafe", "☕");
+
+            // 5 — Resto de categorías en su orden
             for (const c of uniqueCats) {
-                if (cafCat && c.id === cafCat.id) continue;
+                if (usedCatIds.has(c.id)) continue;
                 const catProds = prods.filter((p: any) => p.category_id === c.id);
                 if (catProds.length === 0) continue;
                 built.push({ id: c.id, label: c.name, emoji: "", products: catProds });
             }
 
             setSections(built);
-            // Abrir las primeras 2 secciones por defecto
             if (built.length > 0) setOpenSections(new Set(built.slice(0, 2).map(s => s.id)));
             setLoading(false);
         });
@@ -1071,7 +1097,41 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
     const cartCount = cart.reduce((acc, i) => acc + i.quantity, 0);
     const cartQtyFor = (id: string) => cart.find(i => i.id === id)?.quantity ?? 0;
 
+    const pushToCart = (items: any[]) => {
+        setCart(prev => {
+            let next = [...prev];
+            for (const item of items) {
+                const idx = next.findIndex(i => i.id === item.id);
+                if (idx >= 0) next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };
+                else next.push({ ...item, quantity: 1 });
+            }
+            return next;
+        });
+    };
+
+    const openConfigurator = (product: any) => {
+        setConfiguringProduct(product);
+        setConfigStep('drink-group');
+        setSelectedDrinkGroup('');
+        setSelectedDrink('');
+        setSelectedGarnish('');
+        setConfigNotes('');
+    };
+
+    const finishCombo = () => {
+        if (!configuringProduct) return;
+        const items: any[] = [{ id: configuringProduct.id, name: configuringProduct.name, price: configuringProduct.price, notes: configNotes }];
+        if (selectedGarnish && selectedGarnish !== 'Sin guarnición')
+            items.push({ id: `g-${Date.now()}`, name: `Guarnición: ${selectedGarnish}`, price: 0 });
+        if (selectedDrink && selectedDrink !== 'Sin bebida')
+            items.push({ id: `d-${Date.now()}`, name: `Bebida: ${selectedDrink}`, price: 0 });
+        pushToCart(items);
+        toast.success('Plato del Día agregado', { duration: 1400 });
+        setConfiguringProduct(null);
+    };
+
     const addToCart = (product: any) => {
+        if (product._isCombo) { openConfigurator(product); return; }
         setCart(prev => {
             const existing = prev.find(i => i.id === product.id);
             if (existing) return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
@@ -1211,6 +1271,7 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
                                                     p={p}
                                                     inCart={cartQtyFor(p.id)}
                                                     onAdd={() => addToCart(p)}
+                                                    isCombo={!!p._isCombo}
                                                 />
                                             ))}
                                         </div>
@@ -1303,6 +1364,108 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
                                     {isPaying ? "Enviando…" : "Enviar pedido a cocina"}
                                 </button>
                                 <p className="text-center text-xs text-gray-400">El mozo trae todo a tu mesa · no necesitás pagar ahora</p>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* ── Configurador Plato del Día ── */}
+            <AnimatePresence>
+                {configuringProduct && (
+                    <>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setConfiguringProduct(null)} className="fixed inset-0 bg-black/50 z-[70]" />
+                        <motion.div
+                            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+                            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+                            className="fixed bottom-0 left-0 right-0 z-[80] bg-white rounded-t-3xl shadow-2xl max-h-[90vh] flex flex-col"
+                        >
+                            <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-gray-200 rounded-full" /></div>
+                            <div className="flex items-center justify-between px-5 pb-3 border-b border-gray-100">
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-widest text-amber-500">Plato del Día</p>
+                                    <p className="text-lg font-black text-gray-900">{configuringProduct.name}</p>
+                                    <p className="text-sm font-black text-[#2d4a3e]">{formatCurrency(configuringProduct.price)} · bebida + guarnición incluidas</p>
+                                </div>
+                                <button onClick={() => setConfiguringProduct(null)} className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <IconX size={18} className="text-gray-500" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto px-5 py-5">
+                                <AnimatePresence mode="wait">
+                                    {configStep === 'drink-group' && (
+                                        <motion.div key="dg" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
+                                            <p className="font-black text-gray-900 text-base">🥤 ¿Qué bebida querés?</p>
+                                            <div className="space-y-2">
+                                                {Object.keys(DRINK_GROUPS).map(g => (
+                                                    <button key={g} onClick={() => { setSelectedDrinkGroup(g); setConfigStep('drink-detail'); }}
+                                                        className="w-full text-left px-4 py-4 rounded-2xl bg-gray-50 active:bg-gray-100 font-bold text-gray-800 flex items-center justify-between">
+                                                        {g} <IconChevronLeft size={16} className="rotate-180 text-gray-400" />
+                                                    </button>
+                                                ))}
+                                                <button onClick={() => { setSelectedDrink('Sin bebida'); setConfigStep('garnish'); }}
+                                                    className="w-full text-left px-4 py-4 rounded-2xl bg-gray-100 font-bold text-gray-400">
+                                                    Sin bebida
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                    {configStep === 'drink-detail' && (
+                                        <motion.div key="dd" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
+                                            <p className="font-black text-gray-900 text-base">🥤 {selectedDrinkGroup}</p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {(DRINK_GROUPS[selectedDrinkGroup] ?? []).map(d => (
+                                                    <button key={d} onClick={() => { setSelectedDrink(d); setConfigStep('garnish'); }}
+                                                        className="px-3 py-4 rounded-2xl bg-gray-50 active:bg-[#2d4a3e] active:text-white font-bold text-gray-800 text-sm text-left transition-colors">
+                                                        {d}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <button onClick={() => setConfigStep('drink-group')} className="text-xs font-black text-gray-400 uppercase tracking-widest mt-2">← Volver</button>
+                                        </motion.div>
+                                    )}
+                                    {configStep === 'garnish' && (
+                                        <motion.div key="gr" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
+                                            <p className="font-black text-gray-900 text-base">🥗 ¿Qué guarnición?</p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {GARNISHES.map(g => (
+                                                    <button key={g} onClick={() => { setSelectedGarnish(g); setConfigStep('notes'); }}
+                                                        className="px-3 py-4 rounded-2xl bg-gray-50 active:bg-[#2d4a3e] active:text-white font-bold text-gray-800 text-sm text-left transition-colors">
+                                                        {g}
+                                                    </button>
+                                                ))}
+                                                <button onClick={() => { setSelectedGarnish('Sin guarnición'); setConfigStep('notes'); }}
+                                                    className="px-3 py-4 rounded-2xl bg-gray-100 font-bold text-gray-400 text-sm text-left">
+                                                    Sin guarnición
+                                                </button>
+                                            </div>
+                                            <button onClick={() => setConfigStep('drink-group')} className="text-xs font-black text-gray-400 uppercase tracking-widest mt-2">← Volver</button>
+                                        </motion.div>
+                                    )}
+                                    {configStep === 'notes' && (
+                                        <motion.div key="nt" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
+                                            <p className="font-black text-gray-900 text-base">📝 Aclaraciones {selectedGarnish === 'Ensalada' && <span className="text-amber-600">(¿Qué sabor de ensalada?)</span>}</p>
+                                            <div className="bg-gray-50 rounded-2xl p-3 text-sm text-gray-500">
+                                                <p>🥤 Bebida: <strong className="text-gray-800">{selectedDrink || '—'}</strong></p>
+                                                <p>🥗 Guarnición: <strong className="text-gray-800">{selectedGarnish || '—'}</strong></p>
+                                            </div>
+                                            <textarea
+                                                value={configNotes}
+                                                onChange={e => setConfigNotes(e.target.value)}
+                                                placeholder={selectedGarnish === 'Ensalada' ? 'Especificá el sabor de la ensalada...' : 'Ej: sin sal, carne bien cocida... (opcional)'}
+                                                className="w-full px-4 py-3 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#2d4a3e] outline-none font-medium text-sm min-h-[90px] resize-none"
+                                            />
+                                            <div className="flex gap-2 pt-1">
+                                                <button onClick={() => setConfigStep('garnish')} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-500 font-black text-sm">← Volver</button>
+                                                <button onClick={finishCombo} className="flex-[2] py-4 rounded-2xl bg-[#2d4a3e] text-white font-black text-sm shadow-lg active:scale-[0.98]">
+                                                    Agregar al pedido
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </motion.div>
                     </>
