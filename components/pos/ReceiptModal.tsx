@@ -129,24 +129,24 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
             }
             .ticket { width: 72mm; padding: 6px 6px 15mm 12px; box-sizing: border-box; }
             .center { text-align: center; }
-            .h1 { font-weight: 900; font-size: 22px; letter-spacing: -0.02em; line-height: 1; margin: 0; }
-            .sub { font-weight: 800; font-size: 10px; text-transform: uppercase; margin-top: 4px; }
+            .h1 { font-weight: 900; font-size: 26px; letter-spacing: -0.02em; line-height: 1; margin: 0; }
+            .sub { font-weight: 800; font-size: 11px; text-transform: uppercase; margin-top: 4px; }
             .dash { border-bottom: 1px dashed #000; margin: 8px 0; }
-            .meta { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; }
-            .head { margin-bottom: 8px; }
-            .cols { display: grid; grid-template-columns: ${isKitchen ? "1fr 40px" : "1fr 20px 60px"}; gap: 6px; align-items: start; }
-            .cols.header { font-size: 10px; font-weight: 900; border-bottom: 1px solid #000; padding-bottom: 4px; }
-            .row { display: grid; grid-template-columns: ${isKitchen ? "1fr 40px" : "1fr 20px 60px"}; gap: 6px; padding: 6px 0; border-bottom: 1px dashed #e5e7eb; font-size: 12px; line-height: 1.15; }
+            .meta { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; }
+            .head { margin-bottom: 10px; }
+            .cols { display: grid; grid-template-columns: ${isKitchen ? "1fr 45px" : "1fr 20px 65px"}; gap: 6px; align-items: start; }
+            .cols.header { font-size: 11px; font-weight: 900; border-bottom: 1px solid #000; padding-bottom: 4px; }
+            .row { display: grid; grid-template-columns: ${isKitchen ? "1fr 45px" : "1fr 20px 65px"}; gap: 6px; padding: 6px 0; border-bottom: 1px dashed #e5e7eb; font-size: 14px; line-height: 1.2; }
             .name { min-width: 0; }
             .item-name { font-weight: 800; margin: 0; }
-            .note { font-size: 9px; font-style: italic; color: #374151; margin-top: 2px; }
+            .note { font-size: 10px; font-style: italic; color: #374151; margin-top: 2px; }
             .qty, .total { text-align: right; font-weight: 900; }
             .total { font-weight: 800; }
-            .sum { border-top: 2px solid #000; padding-top: 8px; margin-top: 6px; }
+            .sum { border-top: 2px solid #000; padding-top: 10px; margin-top: 8px; }
             .sumline { display: flex; justify-content: space-between; align-items: baseline; }
-            .sumline .label { font-weight: 900; font-size: 18px; letter-spacing: -0.02em; }
-            .sumline .value { font-weight: 900; font-size: 18px; letter-spacing: -0.02em; }
-            .sumsub { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; opacity: 0.6; margin-top: 2px; }
+            .sumline .label { font-weight: 900; font-size: 22px; letter-spacing: -0.02em; }
+            .sumline .value { font-weight: 900; font-size: 22px; letter-spacing: -0.02em; }
+            .sumsub { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; opacity: 0.6; margin-top: 2px; }
             .end { text-align: center; opacity: 0.85; padding: 14px 0 0 0; border-top: 1px dashed #000; margin-top: 10px; }
             .end .msg { font-size: 11px; font-weight: 800; }
             .end .site { font-size: 9px; margin-top: 2px; }
