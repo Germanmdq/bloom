@@ -9,6 +9,7 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import {
   amountToPointApiCents,
   getMercadoPagoDeviceId,
+  pointCancelCurrentIntent,
   pointCreatePaymentIntent,
   pointGetPaymentIntent,
 } from "@/lib/mercadopago-point";
@@ -127,9 +128,25 @@ export async function POST(req: Request) {
     };
 
     let mpResp = await pointCreatePaymentIntent(deviceId, mpBodyPrimary);
-    if (!mpResp.ok) {
-      const errBody = await mpResp.text();
-      console.warn("[point-intent] primary body rejected:", mpResp.status, errBody);
+    let mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string };
+
+    // Si hay un intent colgado, cancelarlo y reintentar una vez
+    const isQueued =
+      !mpResp.ok &&
+      (String(mpJson.message ?? "").toLowerCase().includes("queued") ||
+        String(mpJson.error ?? "").toLowerCase().includes("queued"));
+
+    if (isQueued) {
+      console.warn("[point-intent] intent colgado detectado — cancelando y reintentando");
+      await pointCancelCurrentIntent(deviceId).catch(() => null);
+      await new Promise((r) => setTimeout(r, 800));
+      mpResp = await pointCreatePaymentIntent(deviceId, mpBodyPrimary);
+      mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string };
+    }
+
+    // Fallback sin campo payment si MP rechaza el body completo
+    if (!mpResp.ok && !isQueued) {
+      console.warn("[point-intent] primary body rejected:", mpResp.status, mpJson);
       const mpBodyFallback = {
         amount: amountCents,
         additional_info: {
@@ -139,9 +156,8 @@ export async function POST(req: Request) {
         },
       };
       mpResp = await pointCreatePaymentIntent(deviceId, mpBodyFallback);
+      mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string };
     }
-
-    const mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string };
 
     if (!mpResp.ok) {
       await svc.from("orders").delete().eq("id", orderId);

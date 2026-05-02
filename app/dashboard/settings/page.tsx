@@ -12,6 +12,8 @@ const POINT_DEVICE_ID = "NEWLAND_N950__N950NCC503378011";
 function PointActivateButton() {
     const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
     const [msg, setMsg] = useState("");
+    const [cancelling, setCancelling] = useState(false);
+    const [cancelMsg, setCancelMsg] = useState("");
 
     const activate = async () => {
         setStatus("loading");
@@ -33,6 +35,20 @@ function PointActivateButton() {
         } catch {
             setStatus("error");
             setMsg("Error de red");
+        }
+    };
+
+    const cancelIntent = async () => {
+        setCancelling(true);
+        setCancelMsg("");
+        try {
+            const res = await fetch("/api/payments/point-cancel", { method: "POST" });
+            const json = await res.json();
+            setCancelMsg(res.ok ? "Intent cancelado. Podés cobrar de nuevo." : (json.error || "Error al cancelar"));
+        } catch {
+            setCancelMsg("Error de red");
+        } finally {
+            setCancelling(false);
         }
     };
 
@@ -58,6 +74,17 @@ function PointActivateButton() {
             {msg && (
                 <p className={`text-xs font-bold ${status === "ok" ? "text-emerald-600" : "text-red-500"}`}>{msg}</p>
             )}
+            <div className="border-t border-gray-100 pt-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Si el Point quedó bloqueado</p>
+                <button
+                    onClick={cancelIntent}
+                    disabled={cancelling}
+                    className="w-full h-10 rounded-xl font-black text-xs uppercase tracking-widest bg-orange-50 text-orange-600 hover:bg-orange-100 transition-all border border-orange-100 disabled:opacity-50"
+                >
+                    {cancelling ? "Cancelando..." : "Liberar Intent Colgado"}
+                </button>
+                {cancelMsg && <p className="mt-1 text-xs font-bold text-gray-500">{cancelMsg}</p>}
+            </div>
         </div>
     );
 }

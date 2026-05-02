@@ -62,3 +62,12 @@ export async function pointSetOperatingMode(deviceId: string, mode: "PDV" | "STA
     body: JSON.stringify({ operating_mode: mode }),
   });
 }
+
+/** Cancela el payment intent activo del dispositivo (si hay uno colgado). */
+export async function pointCancelCurrentIntent(deviceId: string): Promise<Response> {
+  const enc = encodeURIComponent(deviceId);
+  return fetch(`${POINT_API}/devices/${enc}/payment-intents`, {
+    method: "DELETE",
+    headers: pointApiAuthHeaders(),
+  });
+}
