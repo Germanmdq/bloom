@@ -190,37 +190,37 @@ function renderAndPrint(ticketHtml: string, _unused: string, onClose: () => void
       body { width:80mm; margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; color:#000; background:#fff; }
       .ticket { width:100%; padding:2mm 4mm; position:relative; }
       .center { text-align:center; }
-      .h1 { font-size:22px; font-weight:900; letter-spacing:-0.03em; line-height:1; }
-      .sub { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; margin-top:3px; }
-      .addr { font-size:9px; margin-top:2px; }
-      .cuit { font-size:9px; font-weight:700; margin-top:1px; }
+      .h1 { font-size:28px; font-weight:900; letter-spacing:-0.03em; line-height:1; }
+      .sub { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; margin-top:3px; }
+      .addr { font-size:11px; margin-top:2px; }
+      .cuit { font-size:11px; font-weight:700; margin-top:1px; }
       .dash { border-bottom:1px dashed #000; margin:6px 0; }
-      .meta { display:flex; justify-content:space-between; font-size:10px; font-weight:700; }
+      .meta { display:flex; justify-content:space-between; font-size:13px; font-weight:700; }
       .comp-box { margin:6px 0 2px; border:1px solid #000; padding:4px 6px; display:inline-block; }
-      .comp-type { font-size:13px; font-weight:900; letter-spacing:.05em; }
-      .comp-num { font-size:10px; font-weight:700; }
-      .comp-date { font-size:9px; margin-top:2px; }
-      .comp-cf { font-size:9px; font-weight:700; margin-top:1px; }
-      .cols-header { display:grid; grid-template-columns:${cols}; gap:4px; font-size:9px; font-weight:900; border-bottom:1px solid #000; padding-bottom:3px; margin-bottom:2px; }
-      .row { display:grid; grid-template-columns:${cols}; gap:4px; padding:4px 0; border-bottom:1px dashed #e5e7eb; font-size:11px; line-height:1.2; align-items:start; }
+      .comp-type { font-size:16px; font-weight:900; letter-spacing:.05em; }
+      .comp-num { font-size:13px; font-weight:700; }
+      .comp-date { font-size:11px; margin-top:2px; }
+      .comp-cf { font-size:11px; font-weight:700; margin-top:1px; }
+      .cols-header { display:grid; grid-template-columns:${cols}; gap:4px; font-size:11px; font-weight:900; border-bottom:1px solid #000; padding-bottom:3px; margin-bottom:2px; }
+      .row { display:grid; grid-template-columns:${cols}; gap:4px; padding:4px 0; border-bottom:1px dashed #e5e7eb; font-size:14px; line-height:1.3; align-items:start; }
       .name { min-width:0; }
       .item-name { font-weight:800; display:block; }
-      .note { font-size:8px; font-style:italic; color:#555; margin-top:1px; }
+      .note { font-size:11px; font-style:italic; color:#555; margin-top:1px; }
       .qty, .price { text-align:right; font-weight:700; }
       .sum { border-top:2px solid #000; padding-top:6px; margin-top:4px; }
-      .sumline { display:flex; justify-content:space-between; font-size:17px; font-weight:900; letter-spacing:-0.02em; }
-      .sumsub { display:flex; justify-content:space-between; font-size:9px; font-weight:700; opacity:.6; margin-top:1px; }
+      .sumline { display:flex; justify-content:space-between; font-size:22px; font-weight:900; letter-spacing:-0.02em; }
+      .sumsub { display:flex; justify-content:space-between; font-size:11px; font-weight:700; opacity:.6; margin-top:1px; }
       .legal-block { border-top:1px dashed #000; margin-top:8px; padding-top:6px; text-align:center; }
-      .legal-row { display:flex; justify-content:space-between; font-size:9px; padding:1px 0; }
+      .legal-row { display:flex; justify-content:space-between; font-size:11px; padding:1px 0; }
       .label-sm { font-weight:900; }
       .value-sm { font-weight:700; }
       .qr-wrap { display:flex; justify-content:center; margin:6px 0 4px; }
       .qr-wrap img { width:150px; height:150px; image-rendering:pixelated; }
-      .hint-sm { font-size:8px; color:#555; }
-      .end { text-align:center; font-size:10px; font-weight:800; padding:10px 0 0; border-top:1px dashed #000; margin-top:8px; }
-      .site { font-size:8px; margin-top:2px; opacity:.7; }
-      .no-fiscal { font-size:9px; font-weight:900; margin-top:4px; }
-      .watermark { font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; text-align:center; border:1px solid #000; padding:3px; margin-bottom:6px; }
+      .hint-sm { font-size:10px; color:#555; }
+      .end { text-align:center; font-size:13px; font-weight:800; padding:10px 0 0; border-top:1px dashed #000; margin-top:8px; }
+      .site { font-size:11px; margin-top:2px; opacity:.7; }
+      .no-fiscal { font-size:12px; font-weight:900; margin-top:4px; }
+      .watermark { font-size:12px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; text-align:center; border:1px solid #000; padding:3px; margin-bottom:6px; }
     `;
 
     const iframe = document.createElement("iframe");
