@@ -1,7 +1,7 @@
 "use client";
 
 import { CartItem } from "@/lib/store/order-store";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface ReceiptModalProps {
     tableId: number;
