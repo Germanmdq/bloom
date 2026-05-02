@@ -985,19 +985,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         onClick={() => {
                                             if (featuredProduct) {
                                                 setPendingProduct(featuredProduct);
-                                                setIsEspecialContext(false);
                                                 const isEmpanada = featuredProduct.name.toLowerCase().includes("empa");
                                                 if (isEmpanada) {
                                                     setConfigStep('empanada-flavor');
                                                     setEmpanadaCounts({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
                                                 } else {
-                                                    setConfigStep('drink-group');
+                                                    setConfigStep('drink-detail');
                                                 }
                                                 setSelectedDrinkGroup(null);
                                                 setSelectedDrink(null);
                                                 setSelectedGarnish(null);
                                                 setSelectedFlavor(null);
                                                 setConfigNotes("");
+                                                setIsEspecialContext(true); // Forzamos contexto especial para el botón Plato del Día
                                                 setShowConfigurator(true);
                                             } else {
                                                 const cat = categories.find(c => c.name.toLowerCase().includes('plato'));
@@ -1136,10 +1136,20 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 const catNameLower = catName.toLowerCase();
                                                 const itemNameLower = item.name.toLowerCase();
                                                 const isEmpanada = itemNameLower.includes("empa") || catNameLower.includes("empa");
-                                                const isMenuOrPlato = catNameLower.includes("plato") || catNameLower.includes("menú") || catNameLower.includes("especial") || catNameLower.includes("oferta") || itemNameLower.includes("especial") || itemNameLower.includes("oferta") || itemNameLower.includes("plato") || itemNameLower.includes("menú");
+                                                
+                                                // Productos que llevan guarnición/bebida: bife, filet, pechuga, pata muslo o categorías especiales
+                                                const needsConfig = 
+                                                    catNameLower.includes("plato") || catNameLower.includes("menú") || 
+                                                    catNameLower.includes("especial") || catNameLower.includes("oferta") || 
+                                                    itemNameLower.includes("especial") || itemNameLower.includes("oferta") || 
+                                                    itemNameLower.includes("plato") || itemNameLower.includes("menú") ||
+                                                    itemNameLower.includes("bife") || itemNameLower.includes("filet") ||
+                                                    itemNameLower.includes("pechu") || itemNameLower.includes("pata") ||
+                                                    itemNameLower.includes("costilla");
+
                                                 const isEspecialContextFlag = catNameLower.includes("especial") || catNameLower.includes("oferta") || itemNameLower.includes("especial") || itemNameLower.includes("oferta");
                                                 
-                                                if (isMenuOrPlato || isEmpanada) {
+                                                if (needsConfig || isEmpanada) {
                                                     setPendingProduct(item);
                                                     setIsEspecialContext(isEspecialContextFlag);
                                                     if (isEmpanada) {
