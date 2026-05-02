@@ -956,7 +956,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         onClick={() => {
                                             if (featuredProduct) {
                                                 setPendingProduct(featuredProduct);
-                                                setIsEspecialContext(true); // Bebida incluida a $0, límite de opciones
+                                                setIsEspecialContext(false);
                                                 const isEmpanada = featuredProduct.name.toLowerCase().includes("empa");
                                                 if (isEmpanada) {
                                                     setConfigStep('empanada-flavor');
@@ -1017,10 +1017,24 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                                 {/* Grilla de Categorías */}
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {categories.filter(c => 
+                                {(() => {
+                                    // Ordenar categorías: prioridad fija para Plato del Día, Promociones, Desayunos y Meriendas
+                                    const priorityOrder = (name: string): number => {
+                                        const n = name.toLowerCase().trim();
+                                        if (n.includes('plato')) return 0;
+                                        if (n.includes('promoci') || n.includes('oferta')) return 1;
+                                        if (n.includes('desayuno') || n.includes('merienda')) return 2;
+                                        return 99;
+                                    };
+                                    return categories.filter(c => 
                                         !c.name.toLowerCase().includes('plato') && 
                                         !c.name.toLowerCase().includes('menú')
-                                    ).map((cat: any) => (
+                                    ).sort((a: any, b: any) => {
+                                        const prioA = priorityOrder(a.name);
+                                        const prioB = priorityOrder(b.name);
+                                        if (prioA !== prioB) return prioA - prioB;
+                                        return (a.sort_order || 0) - (b.sort_order || 0);
+                                    }).map((cat: any) => (
                                         <button
                                             key={cat.id}
                                             onClick={() => setActiveCategory(cat.id)}
@@ -1033,7 +1047,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 {cat.name}
                                             </span>
                                         </button>
-                                    ))}
+                                    ));
+                                })()}
                                 </div>
                             </div>
                         ) : (
@@ -1154,13 +1169,42 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             </p>
                                             {item.notes && <p className="text-[9px] text-emerald-500 font-bold mt-1 leading-tight">Nota: {item.notes}</p>}
                                         </div>
-                                        <div className="shrink-0 flex flex-col items-end gap-1">
-                                            <span className="px-2 py-1 rounded-lg bg-slate-50 text-slate-700 text-[10px] font-black">
-                                                x{item.quantity}
-                                            </span>
-                                            <span className="text-xs font-black text-slate-900 tracking-tight">
+                                        <div className="shrink-0 flex items-center gap-1.5">
+                                            <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-0.5">
+                                                <button
+                                                    onClick={() => {
+                                                        if (item.quantity <= 1) {
+                                                            removeFromCart(item.id);
+                                                        } else {
+                                                            const updated = cart.map((c, i) => i === index ? { ...c, quantity: c.quantity - 1 } : c);
+                                                            setCart(updated);
+                                                        }
+                                                    }}
+                                                    className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-slate-500 shadow-sm hover:bg-red-50 hover:text-red-500 active:scale-90 transition-all text-xs font-black"
+                                                >
+                                                    −
+                                                </button>
+                                                <span className="w-5 text-center text-[10px] font-black text-slate-700">{item.quantity}</span>
+                                                <button
+                                                    onClick={() => {
+                                                        const updated = cart.map((c, i) => i === index ? { ...c, quantity: c.quantity + 1 } : c);
+                                                        setCart(updated);
+                                                    }}
+                                                    className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-slate-500 shadow-sm hover:bg-slate-100 active:scale-90 transition-all text-xs font-black"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                            <span className="text-xs font-black text-slate-900 tracking-tight w-16 text-right">
                                                 ${(Number(item.price || 0) * Number(item.quantity || 1)).toLocaleString()}
                                             </span>
+                                            <button
+                                                onClick={() => removeFromCart(item.id)}
+                                                className="w-7 h-7 flex items-center justify-center rounded-md text-slate-300 hover:bg-red-50 hover:text-red-500 active:scale-90 transition-all"
+                                                title="Quitar"
+                                            >
+                                                <IconX size={14} />
+                                            </button>
                                         </div>
                                     </div>
                                 ))}

@@ -321,6 +321,7 @@ function ProductCard({
   added,
   isLoggedIn,
   onEncargar,
+  onRemove,
   onLoginClick,
   onAuthClick,
 }: {
@@ -328,6 +329,7 @@ function ProductCard({
   added: boolean;
   isLoggedIn: boolean;
   onEncargar: (observations: string, quantity: number, choice?: VariantChoice) => void;
+  onRemove?: () => void;
   onLoginClick: () => void;
   onAuthClick?: () => void;
 }) {
@@ -405,9 +407,21 @@ function ProductCard({
               )}
               <h4 className="font-bold text-neutral-900 leading-[1.1] text-base">{product.name}</h4>
               {added && (
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm mt-1">
-                  <IconCheck className="h-3 w-3" strokeWidth={4} />
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+                    <IconCheck className="h-3 w-3" strokeWidth={4} />
+                  </span>
+                  {onRemove && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-500 text-[10px] font-bold hover:bg-red-100 transition-all active:scale-95"
+                    >
+                      <IconX className="h-3 w-3" strokeWidth={3} />
+                      Quitar
+                    </button>
+                  )}
+                </div>
               )}
             </div>
             {product.description && (
@@ -1933,6 +1947,10 @@ export const BloomChat = forwardRef<BloomChatHandle>(function BloomChat(_props, 
                           isLoggedIn={!!session}
                           added={!productHasConfigurableOptions(p) && addedProductIds.has(p.id)}
                           onEncargar={(obs, qty, choice) => addLine(p, obs, qty, choice)}
+                          onRemove={() => {
+                            setCart(prev => prev.filter(l => l.product_id !== p.id));
+                            setAddedProductIds(prev => { const next = new Set(prev); next.delete(p.id); return next; });
+                          }}
                           onLoginClick={persistCartAndGoToRegistro}
                           onAuthClick={persistCartAndGoToAuth}
                         />

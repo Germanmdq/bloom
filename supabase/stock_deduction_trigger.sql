@@ -37,12 +37,13 @@ BEGIN
 
             v_quantity := COALESCE((v_item->>'quantity')::NUMERIC, 1);
 
-            -- Buscar receta del producto (hacemos JOIN para tener el nombre)
+            -- Buscar receta del producto (comparamos por nombre del producto de menú por si los IDs cambiaron)
             FOR v_recipe IN
-                SELECT r.raw_product_id, r.qty, p.name as raw_name
+                SELECT r.raw_product_id, r.qty, raw_p.name as raw_name
                 FROM public.recipes r
-                JOIN public.products p ON p.id = r.raw_product_id
-                WHERE r.menu_product_id = v_product_id
+                JOIN public.products raw_p ON raw_p.id = r.raw_product_id
+                JOIN public.products menu_p ON menu_p.id = r.menu_product_id
+                WHERE menu_p.name ILIKE (v_item->>'name')
             LOOP
                 -- 1. Insertar movimiento en sistema viejo
                 INSERT INTO public.inventory_movements

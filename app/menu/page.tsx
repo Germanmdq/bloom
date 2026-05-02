@@ -155,8 +155,18 @@ function PublicMenuPage() {
                     return true;
                 });
 
-                // Ordenar por popularidad (descendente) y luego por sort_order original
+                // Ordenar: prioridad fija para categorías clave, luego por popularidad
+                const priorityOrder = (name: string): number => {
+                    const n = name.toLowerCase().trim();
+                    if (n.includes('plato')) return 0; // "Platos Diarios" / "Plato del Día"
+                    if (n.includes('promoci') || n.includes('oferta')) return 1;
+                    if (n.includes('desayuno') || n.includes('merienda')) return 2;
+                    return 99;
+                };
                 unique.sort((a, b) => {
+                    const prioA = priorityOrder(a.name);
+                    const prioB = priorityOrder(b.name);
+                    if (prioA !== prioB) return prioA - prioB;
                     const popA = popularityMap[a.id] || 0;
                     const popB = popularityMap[b.id] || 0;
                     if (popB !== popA) return popB - popA;
