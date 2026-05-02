@@ -182,68 +182,66 @@ export function ReceiptModal({
 
 function renderAndPrint(ticketHtml: string, _unused: string, onClose: () => void) {
     const isKitchen = ticketHtml.includes("COMANDA");
-
-    const container = document.createElement("div");
-    container.id = "bloom-print-container";
-    container.innerHTML = ticketHtml;
-    document.body.appendChild(container);
-
-    const style = document.createElement("style");
-    style.id = "bloom-print-styles";
     const cols = isKitchen ? "1fr 40px" : "1fr 28px 64px";
-    style.textContent = `
-      @media print {
-        body > *:not(#bloom-print-container) { display:none!important; }
-        body { margin:0; padding:0; background:#fff; }
-        @page { margin:0; size:80mm auto; }
-        #bloom-print-container { display:block!important; width:72mm; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; color:#000; }
-        .ticket { width:72mm; padding:4mm; box-sizing:border-box; position:relative; }
-        .center { text-align:center; }
-        .h1 { font-size:22px; font-weight:900; letter-spacing:-0.03em; line-height:1; margin:0; }
-        .sub { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; margin-top:3px; }
-        .addr { font-size:9px; margin-top:2px; }
-        .cuit { font-size:9px; font-weight:700; margin-top:1px; }
-        .dash { border-bottom:1px dashed #000; margin:6px 0; }
-        .meta { display:flex; justify-content:space-between; font-size:10px; font-weight:700; }
-        .comp-box { margin:6px 0 2px; border:1px solid #000; padding:4px 6px; display:inline-block; }
-        .comp-type { font-size:13px; font-weight:900; letter-spacing:.05em; }
-        .comp-num { font-size:10px; font-weight:700; }
-        .comp-date { font-size:9px; margin-top:2px; }
-        .comp-cf { font-size:9px; font-weight:700; margin-top:1px; }
-        .cols-header { display:grid; grid-template-columns:${cols}; gap:4px; font-size:9px; font-weight:900; border-bottom:1px solid #000; padding-bottom:3px; margin-bottom:2px; }
-        .row { display:grid; grid-template-columns:${cols}; gap:4px; padding:4px 0; border-bottom:1px dashed #e5e7eb; font-size:11px; line-height:1.2; align-items:start; }
-        .name { min-width:0; }
-        .item-name { font-weight:800; display:block; }
-        .note { font-size:8px; font-style:italic; color:#555; margin-top:1px; }
-        .qty, .price { text-align:right; font-weight:700; }
-        .sum { border-top:2px solid #000; padding-top:6px; margin-top:4px; }
-        .sumline { display:flex; justify-content:space-between; font-size:17px; font-weight:900; letter-spacing:-0.02em; }
-        .sumsub { display:flex; justify-content:space-between; font-size:9px; font-weight:700; opacity:.6; margin-top:1px; }
-        .legal-block { border-top:1px dashed #000; margin-top:8px; padding-top:6px; text-align:center; }
-        .legal-row { display:flex; justify-content:space-between; font-size:9px; padding:1px 0; }
-        .label-sm { font-weight:900; }
-        .value-sm { font-weight:700; }
-        .qr-wrap { display:flex; justify-content:center; margin:6px 0 4px; }
-        .qr-wrap img { width:150px; height:150px; image-rendering:pixelated; }
-        .hint-sm { font-size:8px; color:#555; }
-        .end { text-align:center; font-size:10px; font-weight:800; padding:10px 0 0; border-top:1px dashed #000; margin-top:8px; }
-        .site { font-size:8px; margin-top:2px; opacity:.7; }
-        .no-fiscal { font-size:9px; font-weight:900; margin-top:4px; }
-        .watermark { font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; text-align:center; border:1px solid #000; padding:3px; margin-bottom:6px; }
-      }
-      @media screen { #bloom-print-container { display:none!important; } }
-    `;
-    document.head.appendChild(style);
 
-    const cleanup = () => {
-        try { if (container.parentNode) document.body.removeChild(container); } catch {}
-        try { if (style.parentNode) document.head.removeChild(style); } catch {}
+    const css = `
+      * { box-sizing:border-box; margin:0; padding:0; }
+      @page { margin:0; size:80mm auto; }
+      body { width:80mm; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; color:#000; background:#fff; }
+      .ticket { width:72mm; padding:4mm; position:relative; }
+      .center { text-align:center; }
+      .h1 { font-size:22px; font-weight:900; letter-spacing:-0.03em; line-height:1; }
+      .sub { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; margin-top:3px; }
+      .addr { font-size:9px; margin-top:2px; }
+      .cuit { font-size:9px; font-weight:700; margin-top:1px; }
+      .dash { border-bottom:1px dashed #000; margin:6px 0; }
+      .meta { display:flex; justify-content:space-between; font-size:10px; font-weight:700; }
+      .comp-box { margin:6px 0 2px; border:1px solid #000; padding:4px 6px; display:inline-block; }
+      .comp-type { font-size:13px; font-weight:900; letter-spacing:.05em; }
+      .comp-num { font-size:10px; font-weight:700; }
+      .comp-date { font-size:9px; margin-top:2px; }
+      .comp-cf { font-size:9px; font-weight:700; margin-top:1px; }
+      .cols-header { display:grid; grid-template-columns:${cols}; gap:4px; font-size:9px; font-weight:900; border-bottom:1px solid #000; padding-bottom:3px; margin-bottom:2px; }
+      .row { display:grid; grid-template-columns:${cols}; gap:4px; padding:4px 0; border-bottom:1px dashed #e5e7eb; font-size:11px; line-height:1.2; align-items:start; }
+      .name { min-width:0; }
+      .item-name { font-weight:800; display:block; }
+      .note { font-size:8px; font-style:italic; color:#555; margin-top:1px; }
+      .qty, .price { text-align:right; font-weight:700; }
+      .sum { border-top:2px solid #000; padding-top:6px; margin-top:4px; }
+      .sumline { display:flex; justify-content:space-between; font-size:17px; font-weight:900; letter-spacing:-0.02em; }
+      .sumsub { display:flex; justify-content:space-between; font-size:9px; font-weight:700; opacity:.6; margin-top:1px; }
+      .legal-block { border-top:1px dashed #000; margin-top:8px; padding-top:6px; text-align:center; }
+      .legal-row { display:flex; justify-content:space-between; font-size:9px; padding:1px 0; }
+      .label-sm { font-weight:900; }
+      .value-sm { font-weight:700; }
+      .qr-wrap { display:flex; justify-content:center; margin:6px 0 4px; }
+      .qr-wrap img { width:150px; height:150px; image-rendering:pixelated; }
+      .hint-sm { font-size:8px; color:#555; }
+      .end { text-align:center; font-size:10px; font-weight:800; padding:10px 0 0; border-top:1px dashed #000; margin-top:8px; }
+      .site { font-size:8px; margin-top:2px; opacity:.7; }
+      .no-fiscal { font-size:9px; font-weight:900; margin-top:4px; }
+      .watermark { font-size:9px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; text-align:center; border:1px solid #000; padding:3px; margin-bottom:6px; }
+    `;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:80mm;height:1px;border:0;visibility:hidden;";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument ?? iframe.contentWindow!.document;
+    doc.open();
+    doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${ticketHtml}</body></html>`);
+    doc.close();
+
+    const doClose = () => {
+        try { document.body.removeChild(iframe); } catch {}
+        onClose();
     };
 
-    const doClose = () => { cleanup(); onClose(); };
+    iframe.contentWindow!.addEventListener("afterprint", () => setTimeout(doClose, 300), { once: true });
+    setTimeout(doClose, 10000); // fallback
 
-    window.addEventListener("afterprint", () => { setTimeout(doClose, 800); }, { once: true });
-    setTimeout(doClose, 18000); // fallback
-
-    setTimeout(() => { try { window.print(); } catch { doClose(); } }, 300);
+    // Small delay for iframe to finish layout before printing
+    setTimeout(() => {
+        try { iframe.contentWindow!.print(); } catch { doClose(); }
+    }, 80);
 }
