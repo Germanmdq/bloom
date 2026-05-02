@@ -1055,13 +1055,21 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
             const built: TableSection[] = [];
             const usedCatIds = new Set<string>();
 
+            const isPlato = (p: any, cName: string) => {
+                const cn = (cName || "").toLowerCase();
+                const pn = (p.name || "").toLowerCase();
+                return cn.includes("plato") || cn.includes("menú") || cn.includes("especial") || cn.includes("oferta") ||
+                       pn.includes("plato") || pn.includes("menú") || pn.includes("especial") || pn.includes("oferta");
+            };
+
             // 1 — Plato del Día
             const platoDiaId = settings?.plato_del_dia_id;
             const platoDiaPrice = settings?.plato_dia_price ? Number(settings.plato_dia_price) : null;
             if (platoDiaId) {
                 const platoProd = prods.find((p: any) => p.id === platoDiaId);
                 if (platoProd) {
-                    const p = platoDiaPrice ? { ...platoProd, price: platoDiaPrice, _isCombo: true } : platoProd;
+                    const p = { ...platoProd, _isCombo: true };
+                    if (platoDiaPrice) p.price = platoDiaPrice;
                     built.push({ id: "__plato_dia__", label: "Plato del Día", emoji: "⭐", accent: "text-amber-600", products: [p] });
                 }
             }
@@ -1069,7 +1077,7 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
             // 2 — Promoción del Día
             if (promos && promos.length > 0) {
                 const promoProds = promos.filter((pr: any) => pr.name)
-                    .map((pr: any) => ({ id: pr.id, name: pr.name, price: Number(pr.price) || 0, description: pr.description || '', image_url: pr.image_url || null }));
+                    .map((pr: any) => ({ id: pr.id, name: pr.name, price: Number(pr.price) || 0, description: pr.description || '', image_url: pr.image_url || null, _isCombo: true }));
                 if (promoProds.length > 0)
                     built.push({ id: "__promos__", label: "Promoción del Día", emoji: "🔥", accent: "text-orange-500", products: promoProds });
             }
@@ -1078,7 +1086,10 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
             const pushCat = (keyword: string, emoji: string) => {
                 const cat = uniqueCats.find((c: any) => c.name.toLowerCase().includes(keyword) && !usedCatIds.has(c.id));
                 if (!cat) return;
-                const catProds = prods.filter((p: any) => p.category_id === cat.id);
+                const catProds = prods.filter((p: any) => p.category_id === cat.id).map((p: any) => ({
+                    ...p,
+                    _isCombo: p._isCombo || isPlato(p, cat.name)
+                }));
                 if (catProds.length === 0) return;
                 usedCatIds.add(cat.id);
                 built.push({ id: cat.id, label: cat.name, emoji, products: catProds });
@@ -1088,11 +1099,16 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
             pushCat("desayuno", "🥐");
             // 4 — Cafetería
             pushCat("cafetería", "☕"); pushCat("cafeteria", "☕"); pushCat("café", "☕"); pushCat("cafe", "☕");
+            // Platos Diarios
+            pushCat("plato", "🍽️"); pushCat("menú", "🍽️"); pushCat("menu", "🍽️");
 
             // 5 — Resto de categorías en su orden
             for (const c of uniqueCats) {
                 if (usedCatIds.has(c.id)) continue;
-                const catProds = prods.filter((p: any) => p.category_id === c.id);
+                const catProds = prods.filter((p: any) => p.category_id === c.id).map((p: any) => ({
+                    ...p,
+                    _isCombo: p._isCombo || isPlato(p, c.name)
+                }));
                 if (catProds.length === 0) continue;
                 built.push({ id: c.id, label: c.name, emoji: "", products: catProds });
             }
