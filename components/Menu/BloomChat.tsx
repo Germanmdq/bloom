@@ -98,7 +98,7 @@ function isPlatoOrMenu(p: ProductRow) {
   return catNameLower.includes("plato") || catNameLower.includes("menú") || catNameLower.includes("especial") || catNameLower.includes("oferta") || itemNameLower.includes("especial") || itemNameLower.includes("oferta") || itemNameLower.includes("plato") || itemNameLower.includes("menú") || p.kind === 'plato_del_dia' || p.kind === 'oferta_del_dia';
 }
 
-function getInjectedOptionGroups(p: ProductRow): OptionGroup[] {
+function getInjectedOptionGroups(p: ProductRow): ProductOptionGroup[] {
   if (isPlatoOrMenu(p)) {
     return [
       {
