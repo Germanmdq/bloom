@@ -165,8 +165,16 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     }, [webOrderId]);
 
     /** Al cambiar de mesa, vaciar el store ya (evita mezclar pedidos entre mesas). */
+    const lastTableIdRef = useRef<number | null>(null);
     useLayoutEffect(() => {
-        useOrderStore.getState().clearCart();
+        // Solo limpiamos y recargamos si cambiamos de mesa físicamente
+        if (lastTableIdRef.current !== tableId) {
+            useOrderStore.getState().clearCart();
+            lastTableIdRef.current = tableId;
+        } else {
+            // Si es la misma mesa, no limpiamos el carrito (evita borrarlo al refrescar mesas)
+            return;
+        }
         
         // INSTANT LOAD: If we have data from parent, use it NOW
         if (initialTableData && initialTableData.status === 'OCCUPIED') {
@@ -771,6 +779,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         }
 
         setFeedback({ message: "Enviado a cocina ✅", type: 'success' });
+        
+        // Snapshot para el ticket (evita que se borre si el cart se limpia por un re-render)
+        if (skipClose) {
+            setCompletedOrderData({ cart: [...cart], total: total });
+        }
+
         if (onOrderComplete) onOrderComplete();
         
         setTimeout(() => {
