@@ -496,7 +496,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 body: JSON.stringify({ amount: completedOrderData.total }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || data.details || 'Error al facturar');
+            if (!res.ok) {
+                console.error('[ARCA] Error del servidor:', data);
+                throw new Error(data.details || data.error || 'Error al facturar');
+            }
+            console.log('[ARCA] Respuesta OK → CAE:', data.cae, '| Comprobante:', data.voucher_number);
             const cae = { cae: String(data.cae), expiration: String(data.expiration), voucherNumber: Number(data.voucher_number) };
             setCaeData(cae);
             setInvoiceType('Factura C');
@@ -509,8 +513,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             setIsKitchenReceipt(false);
             setShowReceiptModal(true);
         } catch (err: any) {
-            setFeedback({ message: err.message, type: 'error' });
-            setTimeout(() => setFeedback(null), 4000);
+            console.error('[ARCA] Excepción:', err.message);
+            setFeedback({ message: `ARCA: ${err.message}`, type: 'error' });
+            setTimeout(() => setFeedback(null), 8000);
         } finally {
             setIsFetchingCAE(false);
         }
