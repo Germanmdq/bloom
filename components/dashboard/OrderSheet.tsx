@@ -1489,7 +1489,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                                         <h3 className="text-lg font-black mb-4 flex items-center gap-2">🥗 Guarnición</h3>
                                         <div className="grid grid-cols-2 gap-2">
-                                            {['Puré de Papas', 'Papas Fritas', 'Mixta', 'Ensalada'].map(g => (
+                                            {['Puré de Papas', 'Papas Fritas', 'Mixto', 'Ensalada'].map(g => (
                                                 <button
                                                     key={g}
                                                     onClick={() => { 
