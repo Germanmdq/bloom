@@ -1630,7 +1630,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     if (n.includes('filet') || n.includes('merluza')) return ['estilo', 'bebida', 'guarnicion', 'notas'];
                                     if (configStep === 'sandwich-filling' || n.includes('pebete') || n.includes('sacramento')) return ['relleno', 'notas'];
                                     return ['bebida', 'guarnicion', 'notas'];
-                                })().map((step) => (
+                                })().map((step: string) => (
                                     <div
                                         key={step}
                                         className={`h-1 flex-1 rounded-full transition-all duration-500 ${
