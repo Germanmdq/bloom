@@ -92,8 +92,34 @@ function parseProductOptionsRow(options: unknown): Pick<ProductRow, "variants" |
   return {};
 }
 
+function isPlatoOrMenu(p: ProductRow) {
+  const catNameLower = (p.category_name || "").toLowerCase();
+  const itemNameLower = (p.name || "").toLowerCase();
+  return catNameLower.includes("plato") || catNameLower.includes("menú") || catNameLower.includes("especial") || catNameLower.includes("oferta") || itemNameLower.includes("especial") || itemNameLower.includes("oferta") || itemNameLower.includes("plato") || itemNameLower.includes("menú") || p.kind === 'plato_del_dia' || p.kind === 'oferta_del_dia';
+}
+
+function getInjectedOptionGroups(p: ProductRow): OptionGroup[] {
+  if (isPlatoOrMenu(p)) {
+    return [
+      {
+        name: "Bebida",
+        min: 1,
+        max: 1,
+        options: ["Coca-Cola", "Coca Zero", "Sprite", "Sprite Zero", "Schweppes Pomelo", "Aquarius Pera", "Aquarius Manzana", "Aquarius Pomelo", "Aquarius Uva", "Agua Sin Gas", "Agua Con Gas", "Cerveza Patagonia", "Cerveza Stella Artois", "Copa de Vino", "Sin bebida"]
+      },
+      {
+        name: "Guarnición",
+        min: 1,
+        max: 1,
+        options: ["Papas Fritas", "Puré de Papas", "Puré de Calabaza", "Mix de Verdes", "Sin guarnición"]
+      }
+    ];
+  }
+  return [];
+}
+
 function productHasConfigurableOptions(p: ProductRow): boolean {
-  return (p.variants?.length ?? 0) > 0 || (p.optionGroups?.length ?? 0) > 0;
+  return (p.variants?.length ?? 0) > 0 || (p.optionGroups?.length ?? 0) > 0 || getInjectedOptionGroups(p).length > 0;
 }
 
 export type OpenCategoryOpts = {
@@ -341,7 +367,15 @@ function ProductCard({
   const [groupMulti, setGroupMulti] = useState<Record<string, string[]>>({});
 
   const variantList = product.variants ?? [];
-  const groups = product.optionGroups ?? [];
+  const baseGroups = product.optionGroups ?? [];
+  const injectedGroups = getInjectedOptionGroups(product);
+  
+  const groups = [...baseGroups];
+  for (const ig of injectedGroups) {
+    if (!groups.some(g => g.name === ig.name)) {
+      groups.push(ig);
+    }
+  }
   const hasFlat = variantList.length > 0;
   const hasGroups = groups.length > 0;
   const needsPicker = hasFlat || hasGroups;

@@ -144,8 +144,22 @@ export default function TablesPage() {
         // Listen to salon_tables changes (POS tables)
         const tableChannel = supabase
             .channel('salon_tables_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'salon_tables' }, () => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'salon_tables' }, (payload) => {
                 fetchTables();
+                if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+                    const row = payload.new as Table;
+                    if (row && row.status === 'OCCUPIED' && row.items && row.items.length > 0) {
+                        setSelectedTable((currentSelected) => {
+                            if (!currentSelected) {
+                                return row;
+                            }
+                            if (currentSelected.id === row.id) {
+                                return row;
+                            }
+                            return currentSelected;
+                        });
+                    }
+                }
             })
             .subscribe();
 
