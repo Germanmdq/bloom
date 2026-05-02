@@ -101,6 +101,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [configNotes, setConfigNotes] = useState("");
     const [empanadaCounts, setEmpanadaCounts] = useState<{[flavor: string]: number}>({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
     const [isEspecialContext, setIsEspecialContext] = useState(false);
+    const [shouldSkipGarnish, setShouldSkipGarnish] = useState(false);
 
     const handleCustomerSearch = async (q: string) => {
         setCustomerSearchQuery(q);
@@ -1195,14 +1196,25 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 const isMenuOrPromoCategory = 
                                                     catNameLower.includes("menú") || catNameLower.includes("especial") || 
                                                     catNameLower.includes("oferta") || catNameLower.includes("promo");
-                                                const isCoffee = itemNameLower.includes("café") || itemNameLower.includes("cafe") || catNameLower.includes("café") || catNameLower.includes("cafe");
-                                                const needsConfig = (isMenuOrPromoCategory || isMeatOrFish) && !isCoffee;
+
+                                                const isCoffee = itemNameLower.includes("café") || itemNameLower.includes("cafe") || 
+                                                               itemNameLower.includes("jarrito") || itemNameLower.includes("submarino") ||
+                                                               itemNameLower.includes("té") || itemNameLower.includes("te") ||
+                                                               catNameLower.includes("cafetería") || catNameLower.includes("cafeteria");
+                                                
+                                                // Los Platos Diarios (Guisos, Lentejas, etc.) piden bebida pero NO guarnición obligatoria
+                                                const isPlatoDiario = catNameLower.includes("plato") || itemNameLower.includes("lentejas") || 
+                                                                    itemNameLower.includes("guiso") || itemNameLower.includes("pastel");
+
+                                                const needsConfig = (isMenuOrPromoCategory || isMeatOrFish || isPlatoDiario) && !isCoffee;
 
                                                 const isEspecialContextFlag = isMenuOrPromoCategory || itemNameLower.includes("especial") || itemNameLower.includes("oferta");
                                                 
                                                 if (needsConfig || isEmpanada) {
                                                     setPendingProduct(item);
                                                     setIsEspecialContext(isEspecialContextFlag);
+                                                    setShouldSkipGarnish(isPlatoDiario && !isMeatOrFish && !isMenuOrPromoCategory);
+
                                                     if (isEmpanada) {
                                                         setConfigStep('empanada-flavor');
                                                         setEmpanadaCounts({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
@@ -1573,14 +1585,20 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             ).map(drink => (
                                                 <button
                                                     key={drink}
-                                                    onClick={() => { setSelectedDrink({ name: drink }); setConfigStep('garnish'); }}
+                                                    onClick={() => { 
+                                                        setSelectedDrink({ name: drink }); 
+                                                        setConfigStep(shouldSkipGarnish ? 'notes' : 'garnish'); 
+                                                    }}
                                                     className="p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-black hover:text-white hover:border-black transition-all text-left"
                                                 >
                                                     <p className="font-bold text-xs">{drink}</p>
                                                 </button>
                                             ))}
                                             <button
-                                                onClick={() => { setSelectedDrink({ name: "Sin bebida" }); setConfigStep('garnish'); }}
+                                                onClick={() => { 
+                                                    setSelectedDrink({ name: "Sin bebida" }); 
+                                                    setConfigStep(shouldSkipGarnish ? 'notes' : 'garnish'); 
+                                                }}
                                                 className="p-3 rounded-xl bg-gray-100 text-gray-400 font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 text-left col-span-2 text-center mt-2"
                                             >
                                                 Sin bebida
