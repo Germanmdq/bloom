@@ -129,6 +129,7 @@ export async function POST(req: Request) {
 
     let mpResp = await pointCreatePaymentIntent(deviceId, mpBodyPrimary);
     let mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string };
+    console.log("[point-intent] MP response status:", mpResp.status, "body:", JSON.stringify(mpJson));
 
     // Si hay un intent colgado, cancelarlo y reintentar una vez
     const isQueued =
