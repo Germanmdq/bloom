@@ -54,6 +54,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const { data: categories = [], isLoading: catLoading } = useCategories();
     const { data: products = [], isLoading: prodLoading } = useProducts();
     const { data: appSettings } = useAppSettings();
+    const [dailyPromos, setDailyPromos] = useState<any[]>([]);
+    const [isShowingDailyOffers, setIsShowingDailyOffers] = useState(false);
     const queryClient = useQueryClient();
     const createOrder = useCreateOrder();
     const sendKitchenTicket = useSendKitchenTicket();
@@ -128,6 +130,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         fetch("/api/delivery-persons").then(r => r.json()).then(data => {
             if (Array.isArray(data)) setDeliveryPersons(data);
         }).catch(console.error);
+
+        // Cargar Ofertas del Día (daily_promotions)
+        supabase.from('daily_promotions').select('*').eq('active', true).then(({ data }) => {
+            if (data) setDailyPromos(data);
+        });
     }, []);
 
     const onMpOrderReady = useCallback((id: string | null) => {
@@ -977,7 +984,44 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
                     {/* Área principal: categorías o productos */}
                     <div className="flex-1 overflow-y-auto p-3 no-scrollbar">
-                        {!searchTerm && !activeCategory ? (
+                        {isShowingDailyOffers ? (
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-xl font-black text-slate-900">Ofertas del Día</h3>
+                                    <button 
+                                        onClick={() => setIsShowingDailyOffers(false)}
+                                        className="text-xs font-bold text-slate-400 hover:text-slate-900"
+                                    >
+                                        Volver ←
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {dailyPromos.map(promo => (
+                                        <button
+                                            key={promo.id}
+                                            onClick={() => {
+                                                addToCart({
+                                                    id: `promo-${promo.id}`,
+                                                    name: promo.name,
+                                                    price: promo.price || 0,
+                                                    quantity: 1
+                                                });
+                                                setFeedback({ message: `Agregado: ${promo.name}`, type: 'success' });
+                                            }}
+                                            className="p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm text-left hover:scale-[1.02] active:scale-98 transition-all group"
+                                        >
+                                            <h4 className="text-lg font-black text-slate-900 mb-1 group-hover:text-blue-600">{promo.name}</h4>
+                                            <p className="text-2xl font-black text-slate-900">${(promo.price || 0).toLocaleString()}</p>
+                                        </button>
+                                    ))}
+                                    {dailyPromos.length === 0 && (
+                                        <div className="col-span-2 py-12 text-center">
+                                            <p className="text-slate-400 font-bold">No hay ofertas cargadas hoy.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : !searchTerm && !activeCategory ? (
                             <div className="flex flex-col gap-4">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                                     {/* Botón Plato del Día - Negro */}
@@ -1029,15 +1073,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     {/* Botón Ofertas del Día - Gris/Premium */}
                                     <button
                                         onClick={() => {
-                                            const cat = categories.find(c => 
-                                                c.name.toLowerCase().includes('oferta del día') ||
-                                                c.name.toLowerCase().includes('oferta')
-                                            );
-                                            if (cat) {
-                                                setActiveCategory(cat.id);
-                                            } else {
-                                                setProductSearch('oferta');
-                                            }
+                                            setIsShowingDailyOffers(true);
+                                            setActiveCategory(null);
+                                            setProductSearch("");
                                         }}
                                         className="relative overflow-hidden p-6 rounded-[2rem] bg-slate-100 text-slate-900 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[160px]"
                                     >
