@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconLayoutGrid, IconCoffee, IconListCheck, IconSettings, IconUsers, IconChartPie, IconReceipt, IconToolsKitchen, IconPackage, IconMessageCircle, IconBriefcase, IconX, IconLogout, IconHome, IconHistory} from "@tabler/icons-react";
+import { IconLayoutGrid, IconCoffee, IconListCheck, IconSettings, IconUsers, IconChartPie, IconReceipt, IconToolsKitchen, IconPackage, IconMessageCircle, IconBriefcase, IconX, IconLogout, IconHome, IconHistory, IconQrcode} from "@tabler/icons-react";
 import { useUserRole } from "@/lib/hooks/use-pos-data";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,7 @@ const links = [
     { href: "/dashboard/reports",  label: "Reporte Diario", icon: IconChartPie },
     { href: "/dashboard/kitchen",  label: "Cocina",    icon: IconToolsKitchen },
     { href: "/dashboard/whatsapp", label: "WhatsApp",  icon: IconMessageCircle },
+    { href: "/dashboard/qr",       label: "QR Mesas",  icon: IconQrcode },
     { href: "/dashboard/settings", label: "Ajustes",   icon: IconSettings },
 ];
 
