@@ -1174,7 +1174,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 <button
                                                     onClick={() => {
                                                         if (item.quantity <= 1) {
-                                                            removeFromCart(item.id);
+                                                            removeFromCart(index);
                                                         } else {
                                                             const updated = cart.map((c, i) => i === index ? { ...c, quantity: c.quantity - 1 } : c);
                                                             setCart(updated);
@@ -1199,7 +1199,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 ${(Number(item.price || 0) * Number(item.quantity || 1)).toLocaleString()}
                                             </span>
                                             <button
-                                                onClick={() => removeFromCart(item.id)}
+                                                onClick={() => removeFromCart(index)}
                                                 className="w-7 h-7 flex items-center justify-center rounded-md text-slate-300 hover:bg-red-50 hover:text-red-500 active:scale-90 transition-all"
                                                 title="Quitar"
                                             >
