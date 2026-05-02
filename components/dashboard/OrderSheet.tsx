@@ -28,7 +28,8 @@ function normalizeTableItem(raw: any): CartItem {
         raw?.id != null && String(raw.id).length > 0
             ? String(raw.id)
             : `qr-${name}-${price}`;
-    return { id, name, price, quantity };
+    const notes = raw?.notes ? String(raw.notes) : undefined;
+    return { id, name, price, quantity, ...(notes ? { notes } : {}) };
 }
 
 type OrderSheetProps = {
@@ -314,7 +315,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         id: item.id || item.product_id || 'manual-' + Math.random(),
                         name: item.name,
                         price: Number(item.price),
-                        quantity: Number(item.quantity)
+                        quantity: Number(item.quantity),
+                        ...(item.notes ? { notes: String(item.notes) } : {})
                     });
                 }
             });
