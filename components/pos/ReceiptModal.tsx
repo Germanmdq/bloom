@@ -87,9 +87,11 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
       <div class="end">
         <div class="msg">${isKitchen ? "--- FIN DE COMANDA ---" : "¡GRACIAS POR TU VISITA!"}</div>
         ${isKitchen ? "" : `<div class="site">bloommdp.com</div>`}
-      </div>
     </div>`;
 
+        console.log("🖨️ [ReceiptModal] Cart content:", JSON.stringify(cart, null, 2));
+        console.log("🖨️ [ReceiptModal] Items HTML length:", itemsHtml.length);
+        
         // 1. Crear el contenedor principal
         const printContainer = document.createElement("div");
         printContainer.id = "bloom-print-container";
