@@ -1030,13 +1030,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     <button
                                         onClick={() => {
                                             const cat = categories.find(c => 
-                                                c.name.toLowerCase().includes('promo') ||
+                                                c.name.toLowerCase().includes('oferta del día') ||
                                                 c.name.toLowerCase().includes('oferta')
                                             );
                                             if (cat) {
                                                 setActiveCategory(cat.id);
                                             } else {
-                                                setProductSearch('promo');
+                                                setProductSearch('oferta');
                                             }
                                         }}
                                         className="relative overflow-hidden p-6 rounded-[2rem] bg-slate-100 text-slate-900 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[160px]"
