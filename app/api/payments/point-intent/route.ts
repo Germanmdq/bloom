@@ -116,10 +116,6 @@ export async function POST(req: Request) {
     const mpBodyPrimary = {
       amount: amountCents,
       description,
-      payment: {
-        installments: 1,
-        type: "credit_card",
-      },
       additional_info: {
         external_reference: orderId,
         print_on_terminal: false,
@@ -149,21 +145,6 @@ export async function POST(req: Request) {
       console.log("[PI] retry status=" + mpResp.status + " msg=" + (mpJson.message ?? "none"));
     }
 
-    // Fallback sin campo payment si MP rechaza el body completo
-    if (!mpResp.ok && !isQueued) {
-      console.warn("[PI] fallback body — status=" + mpResp.status);
-      const mpBodyFallback = {
-        amount: amountCents,
-        additional_info: {
-          external_reference: orderId,
-          print_on_terminal: false,
-          ticket_number: buildTicketNumber(),
-        },
-      };
-      mpResp = await pointCreatePaymentIntent(deviceId, mpBodyFallback);
-      mpJson = (await mpResp.json().catch(() => ({}))) as { id?: string; message?: string; error?: string; status?: number };
-      console.log("[PI] fallback result status=" + mpResp.status + " msg=" + (mpJson.message ?? "none"));
-    }
 
     if (!mpResp.ok) {
       await svc.from("orders").delete().eq("id", orderId);
