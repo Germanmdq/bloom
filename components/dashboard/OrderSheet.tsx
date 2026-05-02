@@ -103,7 +103,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [selectedFlavor, setSelectedFlavor] = useState<string | null>(null);
     const [configNotes, setConfigNotes] = useState("");
     const [empanadaCounts, setEmpanadaCounts] = useState<{[flavor: string]: number}>({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
-    const [isEspecialContext, setIsEspecialContext] = useState(false);
+    const [isEspecialContext, setIsEspecialContext] = useState(false); // drink is free
+    const [isPlatoDiaContext, setIsPlatoDiaContext] = useState(false);  // price overridden by plato_dia_price
     const [shouldSkipGarnish, setShouldSkipGarnish] = useState(false);
 
     const handleCustomerSearch = async (q: string) => {
@@ -1042,8 +1043,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                         name: promo.name,
                                                         price: promo.price || 0
                                                     } as any);
-                                                    setShouldSkipGarnish(true); // Las ofertas de hoy solo piden bebida
-                                                    setIsEspecialContext(true);
+                                                    setShouldSkipGarnish(true);
+                                                    setIsEspecialContext(true);  // drink free
+                                                    setIsPlatoDiaContext(false); // use promo's own price
+                                                    setSelectedDrinkGroup(null);
+                                                    setSelectedDrink(null);
+                                                    setSelectedGarnish(null);
+                                                    setConfigNotes("");
                                                     setConfigStep('drink-detail');
                                                     setShowConfigurator(true);
                                                 }
@@ -1081,7 +1087,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 setSelectedGarnish(null);
                                                 setSelectedFlavor(null);
                                                 setConfigNotes("");
-                                                setIsEspecialContext(true); // Forzamos contexto especial para el botón Plato del Día
+                                                setIsEspecialContext(true);
+                                                setIsPlatoDiaContext(true);
                                                 setShowConfigurator(true);
                                             } else {
                                                 const cat = categories.find(c => c.name.toLowerCase().includes('plato'));
@@ -1254,6 +1261,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 if (needsConfig || isEmpanada) {
                                                     setPendingProduct(item);
                                                     setIsEspecialContext(isEspecialContextFlag);
+                                                    setIsPlatoDiaContext(false); // category items always use their own price
                                                     setShouldSkipGarnish(isPlatoDiario && !isMeatOrFish && !isMenuOrPromoCategory);
 
                                                     if (isEmpanada) {
@@ -1562,8 +1570,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             initial={{ opacity: 0 }} 
                             animate={{ opacity: 1 }} 
                             exit={{ opacity: 0 }} 
-                            className="absolute inset-0 bg-black/70 backdrop-blur-xl" 
-                            onClick={() => setShowConfigurator(false)} 
+                            className="absolute inset-0 bg-black/70 backdrop-blur-xl"
+                            onClick={() => { setShowConfigurator(false); setIsPlatoDiaContext(false); }}
                         />
                         <motion.div 
                             initial={{ opacity: 0, scale: 0.9, y: 30 }} 
@@ -1578,8 +1586,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         {pendingProduct?.name}
                                     </p>
                                 </div>
-                                <button 
-                                    onClick={() => setShowConfigurator(false)}
+                                <button
+                                    onClick={() => { setShowConfigurator(false); setIsPlatoDiaContext(false); }}
                                     className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-black transition-colors"
                                 >
                                     <IconX size={28} />
@@ -1738,7 +1746,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 onClick={() => {
                                                     if (pendingProduct) {
                                                         const isEmpanada = pendingProduct.name.toLowerCase().includes("empa");
-                                                        const comboPrice = isEspecialContext && appSettings?.plato_dia_price
+                                                        const comboPrice = isPlatoDiaContext && appSettings?.plato_dia_price
                                                             ? Number(appSettings.plato_dia_price)
                                                             : Number(pendingProduct.price || 0);
 
@@ -1773,6 +1781,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                         }
                                                         setFeedback({ message: 'Agregado correctamente', type: 'success' });
                                                         setShowConfigurator(false);
+                                                        setIsPlatoDiaContext(false);
                                                     }
                                                 }}
                                                 className="flex-[2] py-4 rounded-xl bg-black text-white font-black text-[10px] uppercase tracking-widest shadow-xl"
