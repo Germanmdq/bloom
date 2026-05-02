@@ -63,11 +63,33 @@ export async function pointSetOperatingMode(deviceId: string, mode: "PDV" | "STA
   });
 }
 
-/** Cancela el payment intent activo del dispositivo (si hay uno colgado). */
-export async function pointCancelCurrentIntent(deviceId: string): Promise<Response> {
+/** Obtiene el payment intent activo del dispositivo. */
+export async function pointGetDeviceCurrentIntent(deviceId: string): Promise<Response> {
   const enc = encodeURIComponent(deviceId);
   return fetch(`${POINT_API}/devices/${enc}/payment-intents`, {
+    method: "GET",
+    headers: pointApiAuthHeaders(),
+  });
+}
+
+/** Cancela un payment intent por su ID. */
+export async function pointDeleteIntent(paymentIntentId: string): Promise<Response> {
+  const enc = encodeURIComponent(paymentIntentId);
+  return fetch(`${POINT_API}/payment-intents/${enc}`, {
     method: "DELETE",
     headers: pointApiAuthHeaders(),
   });
+}
+
+/**
+ * Cancela el intent activo del dispositivo:
+ * 1. GET intent actual → obtiene el ID
+ * 2. DELETE ese intent por ID
+ */
+export async function pointCancelCurrentIntent(deviceId: string): Promise<void> {
+  const getResp = await pointGetDeviceCurrentIntent(deviceId);
+  if (!getResp.ok) return; // no hay intent activo
+  const data = (await getResp.json().catch(() => ({}))) as { id?: string };
+  if (!data.id) return;
+  await pointDeleteIntent(data.id).catch(() => null);
 }

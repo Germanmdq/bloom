@@ -16,13 +16,7 @@ export async function POST() {
       return NextResponse.json({ error: "Falta MERCADOPAGO_DEVICE_ID" }, { status: 500 });
     }
 
-    const resp = await pointCancelCurrentIntent(deviceId);
-    const body = await resp.json().catch(() => ({}));
-
-    if (!resp.ok && resp.status !== 404) {
-      return NextResponse.json({ error: "No se pudo cancelar el intent", details: body }, { status: 502 });
-    }
-
+    await pointCancelCurrentIntent(deviceId);
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Error";
