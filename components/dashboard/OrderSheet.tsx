@@ -1039,7 +1039,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 setActiveCategory(cat.id);
                                             } else {
                                                 setProductSearch('oferta');
-                                                setSearchTerm('oferta');
                                             }
                                         }}
                                         className="relative overflow-hidden p-6 rounded-[2rem] bg-slate-100 text-slate-900 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[160px]"
