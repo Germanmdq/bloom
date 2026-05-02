@@ -115,7 +115,6 @@ export async function POST(req: Request) {
 
     const mpBodyPrimary = {
       amount: amountCents,
-      payment: { type: "qr_code" },
       additional_info: {
         external_reference: orderId,
         print_on_terminal: false,
