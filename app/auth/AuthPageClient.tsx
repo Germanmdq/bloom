@@ -69,6 +69,7 @@ export function AuthPageClient() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const [regName, setRegName] = useState("");
   const [regPhone, setRegPhone] = useState("");
@@ -261,6 +262,15 @@ export function AuthPageClient() {
                     {showPassword ? <IconEyeOff className="h-5 w-5" /> : <IconEye className="h-5 w-5" />}
                 </button>
               </div>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded accent-[#2d4a3e] cursor-pointer"
+                />
+                <span className="text-sm font-medium text-neutral-500">Recordarme</span>
+              </label>
               {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
               {info ? <p className="text-sm font-medium text-[#2d4a3e]">{info}</p> : null}
               <button

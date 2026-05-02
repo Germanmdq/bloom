@@ -194,13 +194,28 @@ function PublicMenuPage() {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
                 setCurrentUser(session.user);
+                const meta = session.user.user_metadata ?? {};
+                // Pre-fill checkout form from saved profile
+                setCheckoutInfo(prev => ({
+                    ...prev,
+                    name: meta.full_name || prev.name,
+                    phone: meta.phone || prev.phone,
+                    address: meta.default_address || prev.address,
+                }));
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('balance')
+                    .select('balance, full_name, phone, default_address')
                     .eq('id', session.user.id)
                     .single();
-                if (profile && profile.balance > 0) {
-                    setUserBalance(Number(profile.balance));
+                if (profile) {
+                    if (profile.balance > 0) setUserBalance(Number(profile.balance));
+                    // Override with DB profile if richer
+                    setCheckoutInfo(prev => ({
+                        ...prev,
+                        name: profile.full_name || prev.name,
+                        phone: profile.phone || prev.phone,
+                        address: profile.default_address || prev.address,
+                    }));
                 }
             }
         };
