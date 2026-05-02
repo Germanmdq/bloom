@@ -61,7 +61,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
     <div class="ticket">
       <div class="head center">
         <div class="h1">${isKitchen ? "COMANDA" : "BLOOM"}</div>
-        <div class="sub">${isKitchen ? "ORDEN DE PRODUCCIÓN" : "IconCoffee & More"}</div>
+        <div class="sub">${isKitchen ? "ORDEN DE PRODUCCIÓN" : "Coffee & More"}</div>
         <div class="dash"></div>
         <div class="meta">
           <div>${escapeHtml(headerLeft)}</div>

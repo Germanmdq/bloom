@@ -503,7 +503,7 @@ export default function HomePage() {
               <div className="relative aspect-square rounded-3xl overflow-hidden shadow-[0_28px_64px_-12px_rgba(0,0,0,0.55),0_12px_36px_-6px_rgba(0,0,0,0.35)] ring-1 ring-white/10">
                 <Image
                   src={U.sobreBloom}
-                  alt="Vasos Bloom IconCoffee & More y pastelería sobre mantel verde"
+                  alt="Vasos Bloom Coffee & More y pastelería sobre mantel verde"
                   fill
                   className="object-cover object-center"
                   sizes="(max-width: 1024px) 100vw, 50vw"

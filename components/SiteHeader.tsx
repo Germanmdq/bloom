@@ -136,7 +136,7 @@ export function SiteHeader({
           <Link href="/" className="flex items-center shrink-0 min-w-0">
             <IconPhoto
               src={HERO_LOGO_SRC}
-              alt="Bloom IconCoffee & More"
+              alt="Bloom Coffee & More"
               width={168}
               height={56}
               className="h-9 sm:h-10 w-auto max-w-[min(168px,42vw)] object-contain object-left"
