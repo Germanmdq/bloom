@@ -108,6 +108,7 @@ export default function SettingsPage() {
 
     const [platoDiaProducts, setPlatoDiaProducts] = useState<any[]>([]);
     const [selectedPlatoDia, setSelectedPlatoDia] = useState<string | null>(null);
+    const [platoDiaPrice, setPlatoDiaPrice] = useState<string>("");
     const [savingPlatoDia, setSavingPlatoDia] = useState(false);
     
     // Promociones States
@@ -121,7 +122,7 @@ export default function SettingsPage() {
             try {
                 const { data, error } = await supabase
                     .from("app_settings")
-                    .select("id, mesas, barra, whatsapp, plato_del_dia_id")
+                    .select("id, mesas, barra, whatsapp, plato_del_dia_id, plato_dia_price")
                     .eq("id", 1)
                     .single();
 
@@ -129,6 +130,7 @@ export default function SettingsPage() {
                     setMesas(data.mesas);
                     setBarra(data.barra);
                     if (data.plato_del_dia_id) setSelectedPlatoDia(data.plato_del_dia_id);
+                    if (data.plato_dia_price) setPlatoDiaPrice(String(data.plato_dia_price));
                 }
             } catch (err: any) {
                 console.error('[IconSettings] Error en loadSettings:', err.message);
@@ -247,17 +249,24 @@ export default function SettingsPage() {
     const handleSavePlatoDia = async (productId: string) => {
         setSavingPlatoDia(true);
         setSelectedPlatoDia(productId);
-        // Guardar en app_settings
+        const price = parseFloat(platoDiaPrice) || 0;
         const { error } = await supabase
             .from('app_settings')
-            .update({ plato_del_dia_id: productId, updated_at: new Date().toISOString() })
+            .update({ plato_del_dia_id: productId, plato_dia_price: price, updated_at: new Date().toISOString() })
             .eq('id', 1);
         if (error) {
-            // Si la columna no existe aún, intentar con kind en products
             await supabase.from('products').update({ kind: 'plato_del_dia' }).eq('id', productId);
             console.error('app_settings error:', error.message);
         }
         setSavingPlatoDia(false);
+    };
+
+    const handleSavePlatoDiaPrice = async () => {
+        const price = parseFloat(platoDiaPrice) || 0;
+        await supabase
+            .from('app_settings')
+            .update({ plato_dia_price: price, updated_at: new Date().toISOString() })
+            .eq('id', 1);
     };
 
     const handleSavePromo = async (e: React.FormEvent) => {
@@ -441,6 +450,26 @@ export default function SettingsPage() {
                         </div>
                         {savingPlatoDia && <span className="ml-auto text-xs text-gray-400 animate-pulse">Guardando...</span>}
                     </div>
+
+                    {/* Precio combo con bebida */}
+                    <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-100">
+                        <div className="flex-1">
+                            <p className="text-xs font-black uppercase tracking-widest text-amber-700 mb-1">Precio Menú del Día (con bebida)</p>
+                            <p className="text-[11px] text-amber-600 font-medium">Precio combo que aparece en el POS cuando el mozo lo agrega</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-black text-amber-700">$</span>
+                            <input
+                                type="number"
+                                value={platoDiaPrice}
+                                onChange={e => setPlatoDiaPrice(e.target.value)}
+                                onBlur={handleSavePlatoDiaPrice}
+                                placeholder="14500"
+                                className="w-28 h-10 px-3 rounded-xl bg-white border border-amber-200 font-black text-sm outline-none focus:ring-2 ring-amber-400/30 text-right"
+                            />
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                         {platoDiaProducts.map(product => {
                             const isSelected = selectedPlatoDia === product.id;

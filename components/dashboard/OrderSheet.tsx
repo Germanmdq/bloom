@@ -988,7 +988,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 {featuredProduct ? featuredProduct.name : "Configurar"}
                                             </h3>
                                             <p className="text-slate-400 font-bold text-sm">
-                                                {featuredProduct ? `$${Number(featuredProduct.price).toLocaleString()}` : "Ver promociones →"}
+                                                {featuredProduct
+                                                    ? appSettings?.plato_dia_price && Number(appSettings.plato_dia_price) > 0
+                                                        ? `$${Number(appSettings.plato_dia_price).toLocaleString()} · con bebida`
+                                                        : `$${Number(featuredProduct.price).toLocaleString()}`
+                                                    : "Ver promociones →"}
                                             </p>
                                         </div>
                                     </button>
@@ -1530,11 +1534,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 onClick={() => {
                                                     if (pendingProduct) {
                                                         const isEmpanada = pendingProduct.name.toLowerCase().includes("empa");
-                                                        
+                                                        const comboPrice = isEspecialContext && appSettings?.plato_dia_price
+                                                            ? Number(appSettings.plato_dia_price)
+                                                            : Number(pendingProduct.price || 0);
+
                                                         addToCart({
                                                             id: pendingProduct.id,
                                                             name: isEmpanada ? `${pendingProduct.name} (${selectedFlavor || 'Varios'})` : pendingProduct.name,
-                                                            price: Number(pendingProduct.price || 0),
+                                                            price: comboPrice,
                                                             quantity: 1,
                                                             notes: configNotes
                                                         });
