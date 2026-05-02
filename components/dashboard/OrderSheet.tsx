@@ -1223,7 +1223,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             <p className="text-[10px] font-black text-slate-400 mt-0.5">
                                                 ${Number(item.price).toLocaleString()} x {item.quantity}
                                             </p>
-                                            {item.notes && <p className="text-[9px] text-emerald-500 font-bold mt-1 leading-tight">Nota: {item.notes}</p>}
+                                            {item.notes && <p className="text-[9px] text-slate-900 font-bold mt-1 leading-tight">{item.notes}</p>}
                                         </div>
                                         <div className="shrink-0 flex items-center gap-1.5">
                                             <div className="flex items-center gap-1 px-3 py-2 bg-slate-50 rounded-xl">
@@ -1596,10 +1596,16 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                             name: isEmpanada ? `${pendingProduct.name} (${selectedFlavor || 'Varios'})` : pendingProduct.name,
                                                             price: comboPrice,
                                                             quantity: 1,
-                                                            notes: configNotes
+                                                            notes: (selectedGarnish && selectedGarnish.name !== "Sin guarnición") ? "" : configNotes // Si hay guarnición, la nota va ahí
                                                         });
                                                         if (selectedGarnish && selectedGarnish.name !== "Sin guarnición") {
-                                                            addToCart({ id: `combo-garnish-${Math.random().toString(36).substr(2, 5)}`, name: `Guarnición: ${selectedGarnish.name}`, price: 0, quantity: 1 });
+                                                            addToCart({ 
+                                                                id: `combo-garnish-${Math.random().toString(36).substr(2, 5)}`, 
+                                                                name: `Guarnición: ${selectedGarnish.name}`, 
+                                                                price: 0, 
+                                                                quantity: 1,
+                                                                notes: configNotes // La nota (tomate, lechuga, etc) va en la guarnición
+                                                            });
                                                         }
                                                         if (selectedDrink && selectedDrink.name !== "Sin bebida") {
                                                             let finalDrinkPrice = 0;
