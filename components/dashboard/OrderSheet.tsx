@@ -759,7 +759,9 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         setFeedback({ message: "Enviado a cocina ✅", type: 'success' });
         setTimeout(() => {
             setFeedback(null);
-            onClose(); 
+            if (!skipClose) {
+                onClose(); 
+            }
         }, 800);
         setIsFinishing(false);
     };
