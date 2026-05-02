@@ -648,7 +648,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         }
     };
 
-    const sendToKitchen = async (skipClose = false) => {
+    const sendToKitchen = async (skipClose = false, onlyKitchen = false) => {
         if (cart.length === 0) {
             setFeedback({ message: "La comanda está vacía", type: 'error' });
             setTimeout(() => setFeedback(null), 2000);
@@ -785,9 +785,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
         setFeedback({ message: "Enviado a cocina ✅", type: 'success' });
         
-        // Snapshot para el ticket (evita que se borre si el cart se limpia por un re-render)
         // No mostramos la pantalla de éxito si es solo una comanda de cocina
-        if (skipClose && !isKitchenReceipt) {
+        if (skipClose && !onlyKitchen) {
             setCompletedOrderData({ cart: [...cart], total: total });
         }
 
@@ -1226,7 +1225,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                                     itemNameLower.includes("talla") || itemNameLower.includes("sorren") ||
                                                                     itemNameLower.includes("ñoqui") || itemNameLower.includes("noqui");
 
-                                                const needsConfig = (isMenuOrPromoCategory || isMeatOrFish || isPlatoDiario) && !isCoffee;
+                                                const needsConfig = (isMenuOrPromoCategory || isMeatOrFish) && !isCoffee;
 
                                                 const isEspecialContextFlag = isMenuOrPromoCategory || itemNameLower.includes("especial") || itemNameLower.includes("oferta");
                                                 
@@ -1370,7 +1369,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <button
                                 onClick={async () => {
                                     setIsKitchenReceipt(true); // Es comanda mozo
-                                    await sendToKitchen(true); // Enviamos a cocina sin cerrar todavía (esperamos al modal)
+                                    await sendToKitchen(true, true); // Enviamos a cocina sin cerrar todavía (esperamos al modal)
                                     setShowReceiptModal(true); // Abrimos el ticket para imprimir
                                 }}
                                 disabled={cart.length === 0 || isFinishing}
