@@ -1248,7 +1248,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 disabled={cart.length === 0 || isFinishing}
                                 className="h-14 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
                             >
-                                Cocina
+                                Enviar pedido
                             </button>
                             <button
                                 onClick={async () => {
