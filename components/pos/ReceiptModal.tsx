@@ -2,6 +2,7 @@
 
 import { CartItem } from "@/lib/store/order-store";
 import { useEffect, useRef } from "react";
+import QRCode from "qrcode";
 
 interface ReceiptModalProps {
     tableId: number;
@@ -81,22 +82,6 @@ export function ReceiptModal({
 
         const itemsCount = cart.reduce((s, i) => s + (Number(i.quantity) || 0), 0);
 
-        const afipQrSection = isLegal
-            ? `<div class="legal-block">
-                <div class="legal-row"><span class="label-sm">CAE</span><span class="value-sm">${esc(cae)}</span></div>
-                <div class="legal-row"><span class="label-sm">Vto. CAE</span><span class="value-sm">${esc(caeExpiration ?? "")}</span></div>
-                <div id="afip-qr" class="qr-wrap"></div>
-                <div class="hint-sm">Verificar en ARCA / AFIP</div>
-              </div>`
-            : "";
-
-        const afipQrScript = isLegal
-            ? `<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-               <script>
-                 QRCode.toCanvas(document.createElement('canvas'),"${buildAfipQrUrl(cae!, voucherNumber!, total)}",{width:90,margin:1},function(e,c){if(!e)document.getElementById('afip-qr').appendChild(c);});
-               </script>`
-            : "";
-
         // ── COMANDA ──────────────────────────────────────────
         if (isKitchen) {
             const html = `<div class="ticket">
@@ -110,7 +95,7 @@ export function ReceiptModal({
   ${itemsHtml}
   <div class="end">--- FIN DE COMANDA ---</div>
 </div>`;
-            renderAndPrint(html, false, "", onClose);
+            renderAndPrint(html, "", onClose);
             return;
         }
 
@@ -132,12 +117,23 @@ export function ReceiptModal({
   </div>
   <div class="end no-fiscal">DOCUMENTO NO VÁLIDO COMO FACTURA<br/>Solo para control interno del establecimiento</div>
 </div>`;
-            renderAndPrint(html, false, "", onClose);
+            renderAndPrint(html, "", onClose);
             return;
         }
 
         // ── FACTURA C ─────────────────────────────────────────
-        const html = `<div class="ticket">
+        // Generate AFIP QR as data URL before injecting HTML so it's ready when the print dialog opens
+        const buildFacturaHtml = (qrDataUrl: string) => {
+            const afipQrSection = isLegal
+                ? `<div class="legal-block">
+                    <div class="legal-row"><span class="label-sm">CAE</span><span class="value-sm">${esc(cae)}</span></div>
+                    <div class="legal-row"><span class="label-sm">Vto. CAE</span><span class="value-sm">${esc(caeExpiration ?? "")}</span></div>
+                    ${qrDataUrl ? `<div class="qr-wrap"><img src="${qrDataUrl}" width="150" height="150" alt="QR AFIP"/></div>` : ""}
+                    <div class="hint-sm">Verificar en ARCA / AFIP</div>
+                  </div>`
+                : "";
+
+            return `<div class="ticket">
   <div class="center head">
     <div class="h1">BLOOM</div>
     <div class="sub">Coffee &amp; More</div>
@@ -163,18 +159,29 @@ export function ReceiptModal({
     <div>¡GRACIAS POR TU VISITA!</div>
     <div class="site">bloommdp.com</div>
   </div>
-</div>
-${afipQrScript}`;
+</div>`;
+        };
 
-        renderAndPrint(html, isLegal, afipQrScript, onClose);
+        if (isLegal) {
+            const qrUrl = buildAfipQrUrl(cae!, voucherNumber!, total);
+            QRCode.toDataURL(qrUrl, { width: 150, margin: 1, errorCorrectionLevel: "M" })
+                .then((dataUrl) => {
+                    renderAndPrint(buildFacturaHtml(dataUrl), "kitchen", onClose);
+                })
+                .catch(() => {
+                    // fallback: print without QR rather than blocking
+                    renderAndPrint(buildFacturaHtml(""), "", onClose);
+                });
+        } else {
+            renderAndPrint(buildFacturaHtml(""), "", onClose);
+        }
     }, [cart, customerName, isKitchen, onClose, tableId, total, cae, voucherNumber, caeExpiration, invoiceType]);
 
     return null;
 }
 
-function renderAndPrint(ticketHtml: string, hasQr: boolean, _qrScript: string, onClose: () => void) {
+function renderAndPrint(ticketHtml: string, _unused: string, onClose: () => void) {
     const isKitchen = ticketHtml.includes("COMANDA");
-    const isSinValidez = ticketHtml.includes("NO VÁLIDO COMO FACTURA");
 
     const container = document.createElement("div");
     container.id = "bloom-print-container";
@@ -217,6 +224,7 @@ function renderAndPrint(ticketHtml: string, hasQr: boolean, _qrScript: string, o
         .label-sm { font-weight:900; }
         .value-sm { font-weight:700; }
         .qr-wrap { display:flex; justify-content:center; margin:6px 0 4px; }
+        .qr-wrap img { width:150px; height:150px; image-rendering:pixelated; }
         .hint-sm { font-size:8px; color:#555; }
         .end { text-align:center; font-size:10px; font-weight:800; padding:10px 0 0; border-top:1px dashed #000; margin-top:8px; }
         .site { font-size:8px; margin-top:2px; opacity:.7; }
@@ -237,6 +245,5 @@ function renderAndPrint(ticketHtml: string, hasQr: boolean, _qrScript: string, o
     window.addEventListener("afterprint", () => { setTimeout(doClose, 800); }, { once: true });
     setTimeout(doClose, 18000); // fallback
 
-    const printDelay = hasQr ? 900 : 300;
-    setTimeout(() => { try { window.print(); } catch { doClose(); } }, printDelay);
+    setTimeout(() => { try { window.print(); } catch { doClose(); } }, 300);
 }
