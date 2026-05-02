@@ -22,6 +22,13 @@ export default function ReportsPage() {
     });
     const [timeframe, setTimeframe] = useState<Timeframe>('TODAY');
     const [loading, setLoading] = useState(true);
+    const [fondoCaja, setFondoCaja] = useState<number>(() => {
+        if (typeof window === 'undefined') return 0;
+        const today = new Date().toISOString().slice(0, 10);
+        const saved = localStorage.getItem(`bloom_fondo_caja_${today}`);
+        return saved ? Number(saved) : 0;
+    });
+    const [fondoInput, setFondoInput] = useState<string>('');
 
     const supabase = createClient();
 
@@ -118,6 +125,15 @@ export default function ReportsPage() {
         }
     }
 
+    const saveFondo = (value: number) => {
+        const today = new Date().toISOString().slice(0, 10);
+        localStorage.setItem(`bloom_fondo_caja_${today}`, String(value));
+        setFondoCaja(value);
+        setFondoInput('');
+    };
+
+    const totalEfectivoCaja = stats.cash + (timeframe === 'TODAY' ? fondoCaja : 0);
+
     const cashPercentage = stats.totalSales > 0 ? (stats.cash / stats.totalSales) * 100 : 0;
     const cardPercentage = stats.totalSales > 0 ? (stats.card / stats.totalSales) * 100 : 0;
     const mpPercentage = stats.totalSales > 0 ? (stats.mercadoPago / stats.totalSales) * 100 : 0;
@@ -152,6 +168,39 @@ export default function ReportsPage() {
                     ))}
                 </div>
             </header>
+
+            {/* Apertura de Caja — solo visible en vista Hoy */}
+            {timeframe === 'TODAY' && (
+                <div className="mb-10 bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center shrink-0">
+                            <IconWallet size={22} className="text-emerald-600" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Apertura de Caja</p>
+                            <p className="text-2xl font-black text-gray-900 tracking-tighter">
+                                ${fondoCaja.toLocaleString()}
+                                {fondoCaja > 0 && <span className="text-xs font-bold text-gray-400 ml-2">Fondo de inicio del día</span>}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <input
+                            type="number"
+                            value={fondoInput}
+                            onChange={e => setFondoInput(e.target.value)}
+                            placeholder="Ingresar monto..."
+                            className="flex-1 sm:w-40 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 font-bold text-sm outline-none focus:border-black transition-colors"
+                        />
+                        <button
+                            onClick={() => { const v = parseFloat(fondoInput); if (!isNaN(v) && v >= 0) saveFondo(v); }}
+                            className="bg-black text-white px-5 py-3 rounded-2xl font-black text-sm hover:scale-105 active:scale-95 transition-all"
+                        >
+                            Guardar
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-40 gap-4">
@@ -208,6 +257,26 @@ export default function ReportsPage() {
                                 <PaymentRow label="Efectivo" amount={stats.cash} percentage={cashPercentage} icon={IconWallet} color="bg-emerald-500" textColor="text-emerald-600" bgColor="bg-emerald-50" />
                                 <PaymentRow label="Tarjeta" amount={stats.card} percentage={cardPercentage} icon={IconCreditCard} color="bg-blue-500" textColor="text-blue-600" bgColor="bg-blue-50" />
                                 <PaymentRow label="Mercado Pago" amount={stats.mercadoPago} percentage={mpPercentage} icon={IconCurrencyDollar} color="bg-sky-500" textColor="text-sky-600" bgColor="bg-sky-50" />
+                                {timeframe === 'TODAY' && fondoCaja > 0 && (
+                                    <div className="pt-6 border-t border-gray-50">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-2xl bg-gray-50 text-gray-400 flex items-center justify-center">
+                                                    <IconWallet size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-black uppercase tracking-widest text-gray-400 leading-none">Fondo de Inicio</p>
+                                                    <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mt-1.5">Apertura de caja</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-xl font-black text-gray-400">+${fondoCaja.toLocaleString()}</p>
+                                        </div>
+                                        <div className="mt-4 flex justify-between items-center bg-emerald-50 px-6 py-4 rounded-2xl">
+                                            <p className="text-xs font-black uppercase tracking-widest text-emerald-800">Total Efectivo en Caja</p>
+                                            <p className="text-2xl font-black text-emerald-700">${totalEfectivoCaja.toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
