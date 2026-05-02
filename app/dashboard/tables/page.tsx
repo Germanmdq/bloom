@@ -149,15 +149,8 @@ export default function TablesPage() {
                 if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
                     const row = payload.new as Table;
                     if (row && row.status === 'OCCUPIED' && row.items && row.items.length > 0) {
-                        setSelectedTable((currentSelected) => {
-                            if (!currentSelected) {
-                                return row;
-                            }
-                            if (currentSelected.id === row.id) {
-                                return row;
-                            }
-                            return currentSelected;
-                        });
+                        // REVERTIDO: No hacer auto-pop de la mesa. El usuario prefiere clickearla manualmente.
+                        // Solo actualizamos el state de las mesas (arriba en fetchTables).
                     }
                 }
             })
