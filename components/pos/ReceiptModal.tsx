@@ -15,7 +15,12 @@ interface ReceiptModalProps {
 }
 
 export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, customerName, isKitchen = false, onClose }: ReceiptModalProps) {
+    const printedRef = useRef(false);
+
     useEffect(() => {
+        if (printedRef.current) return;
+        printedRef.current = true;
+
         const escapeHtml = (s: unknown) =>
             String(s ?? "")
                 .replaceAll("&", "&amp;")
