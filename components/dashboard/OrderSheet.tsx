@@ -107,6 +107,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [fishStyle, setFishStyle] = useState<string | null>(null);
     const [sandwichFilling, setSandwichFilling] = useState<string | null>(null);
     const [isEspecialContext, setIsEspecialContext] = useState(false); // drink is free
+    const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
+    const [editingNoteText, setEditingNoteText] = useState('');
     const [isPlatoDiaContext, setIsPlatoDiaContext] = useState(false);  // price overridden by plato_dia_price
     const [shouldSkipGarnish, setShouldSkipGarnish] = useState(false);
 
@@ -1353,32 +1355,74 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         ) : (
                             <div className="flex flex-col gap-2">
                                 {cart.map((item, index) => (
-                                    <div key={index} className="group relative bg-white border border-gray-100 p-3 rounded-2xl flex gap-3 items-center hover:border-black transition-all">
-                                        <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition-all shrink-0">
-                                            <IconToolsKitchen2 size={18} />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold text-gray-900 truncate uppercase tracking-tight">{item.name}</p>
-                                            <p className="text-[10px] font-black text-slate-400 mt-0.5">
-                                                ${Number(item.price).toLocaleString()} x {item.quantity}
-                                            </p>
-                                            {item.notes && <p className="text-[9px] text-slate-900 font-bold mt-1 leading-tight">{item.notes}</p>}
-                                        </div>
-                                        <div className="shrink-0 flex items-center gap-1.5">
-                                            <div className="flex items-center gap-1 px-3 py-2 bg-slate-50 rounded-xl">
-                                                <span className="text-xs font-black text-slate-700">x{item.quantity}</span>
+                                    <div key={index} className="group relative bg-white border border-gray-100 rounded-2xl hover:border-black transition-all overflow-hidden">
+                                        <div className="p-3 flex gap-3 items-center">
+                                            <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition-all shrink-0">
+                                                <IconToolsKitchen2 size={18} />
                                             </div>
-                                            <span className="text-xs font-black text-slate-900 tracking-tight w-20 text-right">
-                                                ${(Number(item.price || 0) * Number(item.quantity || 1)).toLocaleString()}
-                                            </span>
-                                            <button
-                                                onClick={() => removeFromCart(index)}
-                                                className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-300 hover:bg-red-50 hover:text-red-500 active:scale-90 transition-all"
-                                                title="Quitar"
-                                            >
-                                                <IconTrash size={16} />
-                                            </button>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-bold text-gray-900 truncate uppercase tracking-tight">{item.name}</p>
+                                                <p className="text-[10px] font-black text-slate-400 mt-0.5">
+                                                    ${Number(item.price).toLocaleString()} x {item.quantity}
+                                                </p>
+                                                {item.notes && editingNoteIndex !== index && (
+                                                    <p className="text-[9px] text-amber-700 bg-amber-50 font-bold mt-1 leading-tight px-1.5 py-0.5 rounded-md">↳ {item.notes}</p>
+                                                )}
+                                            </div>
+                                            <div className="shrink-0 flex items-center gap-1.5">
+                                                <button
+                                                    onClick={() => {
+                                                        if (editingNoteIndex === index) { setEditingNoteIndex(null); }
+                                                        else { setEditingNoteIndex(index); setEditingNoteText(item.notes || ''); }
+                                                    }}
+                                                    className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all text-sm ${editingNoteIndex === index ? 'bg-amber-100 text-amber-700' : 'text-slate-300 hover:bg-amber-50 hover:text-amber-500'}`}
+                                                    title="Observación"
+                                                >
+                                                    ✏️
+                                                </button>
+                                                <div className="flex items-center gap-1 px-3 py-2 bg-slate-50 rounded-xl">
+                                                    <span className="text-xs font-black text-slate-700">x{item.quantity}</span>
+                                                </div>
+                                                <span className="text-xs font-black text-slate-900 tracking-tight w-20 text-right">
+                                                    ${(Number(item.price || 0) * Number(item.quantity || 1)).toLocaleString()}
+                                                </span>
+                                                <button
+                                                    onClick={() => removeFromCart(index)}
+                                                    className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-300 hover:bg-red-50 hover:text-red-500 active:scale-90 transition-all"
+                                                    title="Quitar"
+                                                >
+                                                    <IconTrash size={16} />
+                                                </button>
+                                            </div>
                                         </div>
+                                        {editingNoteIndex === index && (
+                                            <div className="px-3 pb-3 flex gap-2">
+                                                <input
+                                                    autoFocus
+                                                    type="text"
+                                                    value={editingNoteText}
+                                                    onChange={e => setEditingNoteText(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') {
+                                                            setCart(cart.map((ci, i) => i === index ? { ...ci, notes: editingNoteText.trim() || undefined } : ci));
+                                                            setEditingNoteIndex(null);
+                                                        }
+                                                        if (e.key === 'Escape') setEditingNoteIndex(null);
+                                                    }}
+                                                    placeholder="Ej: sin cebolla, extra queso..."
+                                                    className="flex-1 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:border-amber-400"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        setCart(cart.map((ci, i) => i === index ? { ...ci, notes: editingNoteText.trim() || undefined } : ci));
+                                                        setEditingNoteIndex(null);
+                                                    }}
+                                                    className="bg-amber-500 text-white px-3 py-2 rounded-xl text-xs font-black"
+                                                >
+                                                    OK
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -1900,15 +1944,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                             name: cartName,
                                                             price: comboPrice,
                                                             quantity: 1,
-                                                            notes: (selectedGarnish && selectedGarnish.name !== "Sin guarnición") ? "" : configNotes // Si hay guarnición, la nota va ahí
+                                                            notes: configNotes || undefined
                                                         });
                                                         if (selectedGarnish && selectedGarnish.name !== "Sin guarnición") {
-                                                            addToCart({ 
-                                                                id: `combo-garnish-${Math.random().toString(36).substr(2, 5)}`, 
-                                                                name: `Guarnición: ${selectedGarnish.name}`, 
-                                                                price: 0, 
+                                                            addToCart({
+                                                                id: `combo-garnish-${Math.random().toString(36).substr(2, 5)}`,
+                                                                name: `Guarnición: ${selectedGarnish.name}`,
+                                                                price: 0,
                                                                 quantity: 1,
-                                                                notes: configNotes // La nota (tomate, lechuga, etc) va en la guarnición
                                                             });
                                                         }
                                                         if (selectedDrink && selectedDrink.name !== "Sin bebida") {

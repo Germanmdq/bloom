@@ -74,7 +74,8 @@ export function ReceiptModal({
         const itemsHtml = cart.map((item) => {
             const qty = Number(item.quantity || 1);
             const price = Number((item as any)?.price || 0);
-            const notes = (item as any)?.notes ? `<div class="note">↳ ${esc((item as any).notes)}</div>` : "";
+            const rawNotes = (item as any)?.notes;
+            const notes = rawNotes ? `<div class="note">↳ ${esc(rawNotes)}</div>` : "";
             return isKitchen
                 ? `<div class="row"><div class="name"><span class="item-name">${esc(item.name)}</span>${notes}</div><div class="qty">×${qty}</div></div>`
                 : `<div class="row"><div class="name"><span class="item-name">${esc(item.name)}</span>${notes}</div><div class="qty">×${qty}</div><div class="price">$${(price * qty).toLocaleString("es-AR")}</div></div>`;
@@ -188,7 +189,7 @@ function renderAndPrint(ticketHtml: string, _unused: string, onClose: () => void
       * { box-sizing:border-box; margin:0; padding:0; }
       @page { margin:0; size:80mm auto; }
       body { width:80mm; margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; color:#000; background:#fff; }
-      .ticket { width:100%; padding:2mm 4mm; position:relative; }
+      .ticket { width:100%; padding:2mm 4mm 20mm; position:relative; }
       .center { text-align:center; }
       .h1 { font-size:28px; font-weight:900; letter-spacing:-0.03em; line-height:1; }
       .sub { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; margin-top:3px; }
@@ -202,11 +203,12 @@ function renderAndPrint(ticketHtml: string, _unused: string, onClose: () => void
       .comp-date { font-size:11px; margin-top:2px; }
       .comp-cf { font-size:11px; font-weight:700; margin-top:1px; }
       .cols-header { display:grid; grid-template-columns:${cols}; gap:4px; font-size:11px; font-weight:900; border-bottom:1px solid #000; padding-bottom:3px; margin-bottom:2px; }
-      .row { display:grid; grid-template-columns:${cols}; gap:4px; padding:4px 0; border-bottom:1px dashed #e5e7eb; font-size:14px; line-height:1.3; align-items:start; }
+      .row { display:grid; grid-template-columns:${cols}; gap:4px; padding:6px 0; border-bottom:1px dashed #ccc; font-size:15px; line-height:1.4; align-items:start; }
       .name { min-width:0; }
-      .item-name { font-weight:800; display:block; }
-      .note { font-size:11px; font-style:italic; color:#555; margin-top:1px; }
-      .qty, .price { text-align:right; font-weight:700; }
+      .item-name { font-weight:900; display:block; font-size:15px; }
+      .note { font-size:13px; font-weight:700; color:#000; margin-top:3px; border-left:2px solid #000; padding-left:4px; }
+      .qty { text-align:right; font-weight:900; font-size:16px; }
+      .price { text-align:right; font-weight:700; }
       .sum { border-top:2px solid #000; padding-top:6px; margin-top:4px; }
       .sumline { display:flex; justify-content:space-between; font-size:22px; font-weight:900; letter-spacing:-0.02em; }
       .sumsub { display:flex; justify-content:space-between; font-size:11px; font-weight:700; opacity:.6; margin-top:1px; }
