@@ -647,7 +647,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         }
     };
 
-    const sendToKitchen = async (skipClose = false) => {
+    const sendToKitchen = async (skipClose = false, isComanda = false) => {
         if (cart.length === 0) {
             setFeedback({ message: "La comanda está vacía", type: 'error' });
             setTimeout(() => setFeedback(null), 2000);
@@ -785,7 +785,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         setFeedback({ message: "Enviado a cocina ✅", type: 'success' });
         
         // Snapshot para el ticket (evita que se borre si el cart se limpia por un re-render)
-        if (skipClose) {
+        // Solo seteamos completedOrderData si NO es una comanda (para mostrar la pantalla de cobro exitoso)
+        if (skipClose && !isComanda) {
             setCompletedOrderData({ cart: [...cart], total: total });
         }
 
@@ -1337,7 +1338,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <button
                                 onClick={async () => {
                                     setIsKitchenReceipt(true); // Es comanda mozo
-                                    await sendToKitchen(true); // Enviamos a cocina sin cerrar todavía (esperamos al modal)
+                                    await sendToKitchen(true, true); // Enviamos a cocina (isComanda=true)
                                     setShowReceiptModal(true); // Abrimos el ticket para imprimir
                                 }}
                                 disabled={cart.length === 0 || isFinishing}
