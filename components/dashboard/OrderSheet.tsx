@@ -571,6 +571,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 for (const item of cart) {
                     if ((item as any).stock_processed) continue;
 
+                    // Si el ID no es un UUID válido (ej: combos, random IDs, QR IDs), omitimos la deducción directa
+                    // para evitar errores 400 en la base de datos.
+                    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(item.id));
+                    if (!isUuid) {
+                        console.log('📦 [Stock] Ítem omitido (no UUID):', item.id, item.name);
+                        continue;
+                    }
+
                     // 1. Descuento de Producto Terminado (stock y vendidos del menú)
                     const { data: prod } = await supabase
                         .from('products')
@@ -727,6 +735,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         // ══════════════════════════════════════════════════════════
         try {
             for (const item of cart) {
+                if ((item as any).stock_processed) continue;
+
+                // Si el ID no es un UUID válido, omitimos
+                const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(item.id));
+                if (!isUuid) continue;
+
                 const nombreLower = item.name.toLowerCase();
                 let unidadesARestar = item.quantity;
                 
@@ -757,12 +771,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         }
 
         setFeedback({ message: "Enviado a cocina ✅", type: 'success' });
+        if (onOrderComplete) onOrderComplete();
+        
         setTimeout(() => {
             setFeedback(null);
             if (!skipClose) {
                 onClose(); 
             }
-        }, 800);
+        }, 600);
         setIsFinishing(false);
     };
 
@@ -1254,14 +1270,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             </button>
                             <button
                                 onClick={async () => {
-                                    await sendToKitchen(true); // Enviamos a cocina sin cerrar la mesa
-                                    setIsKitchenReceipt(true); // Es comanda
+                                    setIsKitchenReceipt(true); // Es comanda mozo
+                                    await sendToKitchen(true); // Enviamos a cocina sin cerrar todavía (esperamos al modal)
                                     setShowReceiptModal(true); // Abrimos el ticket para imprimir
                                 }}
                                 disabled={cart.length === 0 || isFinishing}
                                 className="h-14 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200 flex items-center justify-center gap-2"
                             >
-                                <IconPrinter size={16} /> Comanda
+                                <IconPrinter size={16} /> Comanda Mozo
                             </button>
                         </div>
                 </div>
@@ -1319,7 +1335,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     isKitchen={isKitchenReceipt}
                     onClose={() => {
                         setShowReceiptModal(false);
-                        if (completedOrderData) {
+                        // Si es comanda, cerramos la mesa después de imprimir
+                        if (isKitchenReceipt) {
+                            setIsKitchenReceipt(false);
+                            onClose();
+                        } else if (completedOrderData) {
                             setCompletedOrderData(null);
                             if (onOrderComplete) onOrderComplete();
                             onClose();
@@ -1563,7 +1583,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                             notes: configNotes
                                                         });
                                                         if (selectedGarnish && selectedGarnish.name !== "Sin guarnición") {
-                                                            addToCart({ id: Math.random().toString(), name: `Guarnición: ${selectedGarnish.name}`, price: 0, quantity: 1 });
+                                                            addToCart({ id: `combo-garnish-${Math.random().toString(36).substr(2, 5)}`, name: `Guarnición: ${selectedGarnish.name}`, price: 0, quantity: 1 });
                                                         }
                                                         if (selectedDrink && selectedDrink.name !== "Sin bebida") {
                                                             let finalDrinkPrice = 0;
@@ -1572,7 +1592,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                                 finalDrinkPrice = matchingProduct ? Number(matchingProduct.price) : 2500;
                                                             }
                                                             addToCart({ 
-                                                                id: Math.random().toString(), 
+                                                                id: `combo-drink-${Math.random().toString(36).substr(2, 5)}`, 
                                                                 name: `Bebida: ${selectedDrink.name}`, 
                                                                 price: finalDrinkPrice, 
                                                                 quantity: 1 
