@@ -959,13 +959,46 @@ function PublicMenuPage() {
     );
 }
 
-// ─── TABLA QR — experiencia simplificada para clientes sentados ───────────────
+// ─── TABLA QR — experiencia móvil para clientes sentados ─────────────────────
+
+type TableSection = {
+    id: string;
+    label: string;
+    emoji: string;
+    accent?: string;
+    products: any[];
+};
+
+function ProductRow({ p, onAdd, inCart }: { p: any; onAdd: () => void; inCart: number }) {
+    return (
+        <div className="flex items-center gap-3 py-3 px-4 border-b border-gray-50 last:border-0 active:bg-gray-50 transition-colors">
+            {p.image_url && (
+                <img src={p.image_url} alt={p.name} className="w-14 h-14 rounded-xl object-cover shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-900 text-[15px] leading-snug">{p.name}</p>
+                {p.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{p.description}</p>}
+                <p className="text-sm font-black text-[#2d4a3e] mt-1">{formatCurrency(Number(p.price))}</p>
+            </div>
+            <button
+                onClick={onAdd}
+                className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-black active:scale-90 transition-all shadow-sm relative ${inCart > 0 ? "bg-[#2d4a3e]" : "bg-[#2d4a3e]"}`}
+            >
+                <IconPlus size={18} className="text-white" />
+                {inCart > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-400 text-black text-[10px] font-black rounded-full flex items-center justify-center">
+                        {inCart}
+                    </span>
+                )}
+            </button>
+        </div>
+    );
+}
 
 function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: string }) {
     const supabase = createClient();
-    const [products, setProducts] = useState<any[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
-    const [activeCat, setActiveCat] = useState<string | null>(null);
+    const [sections, setSections] = useState<TableSection[]>([]);
+    const [openSections, setOpenSections] = useState<Set<string>>(new Set());
     const [cart, setCart] = useState<any[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isPaying, setIsPaying] = useState(false);
@@ -975,38 +1008,88 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
     useEffect(() => {
         Promise.all([
             supabase.from("categories").select("id, name, sort_order").order("sort_order", { ascending: true }),
-            supabase.from("products").select("id, name, description, price, image_url, category_id, active, options").eq("active", true),
-        ]).then(([{ data: cats }, { data: prods }]) => {
-            if (cats) {
-                const seen = new Set<string>();
-                const unique = cats.filter((c: any) => {
-                    const key = c.name.toLowerCase().trim();
-                    if (seen.has(key)) return false;
-                    seen.add(key);
-                    return true;
-                });
-                setCategories(unique);
-                if (unique.length > 0) setActiveCat(unique[0].id);
+            supabase.from("products").select("id, name, description, price, image_url, category_id, active").eq("active", true),
+            supabase.from("app_settings").select("plato_del_dia_id, plato_dia_price").eq("id", 1).single(),
+            supabase.from("daily_promotions").select("*").eq("active", true).order("created_at", { ascending: true }),
+        ]).then(([{ data: cats }, { data: prods }, { data: settings }, { data: promos }]) => {
+            if (!cats || !prods) { setLoading(false); return; }
+
+            const seen = new Set<string>();
+            const uniqueCats = cats.filter((c: any) => {
+                const k = c.name.toLowerCase().trim();
+                if (seen.has(k)) return false;
+                seen.add(k);
+                return true;
+            });
+
+            const built: TableSection[] = [];
+
+            // 1 — Plato del Día
+            const platoDiaId = settings?.plato_del_dia_id;
+            const platoDiaPrice = settings?.plato_dia_price ? Number(settings.plato_dia_price) : null;
+            if (platoDiaId) {
+                const platoProd = prods.find((p: any) => p.id === platoDiaId);
+                if (platoProd) {
+                    const p = platoDiaPrice ? { ...platoProd, price: platoDiaPrice, _comboLabel: "· con bebida" } : platoProd;
+                    built.push({ id: "__plato_dia__", label: "Plato del Día", emoji: "⭐", accent: "text-amber-600", products: [p] });
+                }
             }
-            if (prods) setProducts(prods);
+
+            // 2 — Promoción del Día
+            if (promos && promos.length > 0) {
+                const promoProds = promos
+                    .filter((pr: any) => pr.name)
+                    .map((pr: any) => ({ id: pr.id, name: pr.name, price: Number(pr.price) || 0, description: pr.description || '', image_url: pr.image_url || null }));
+                if (promoProds.length > 0) {
+                    built.push({ id: "__promos__", label: "Promoción del Día", emoji: "🔥", accent: "text-orange-500", products: promoProds });
+                }
+            }
+
+            // 3 — Cafetería primero (busca por nombre)
+            const cafCat = uniqueCats.find((c: any) => c.name.toLowerCase().includes("cafetería") || c.name.toLowerCase().includes("cafeteria") || c.name.toLowerCase().includes("café") || c.name.toLowerCase().includes("cafe"));
+            if (cafCat) {
+                const cafProds = prods.filter((p: any) => p.category_id === cafCat.id);
+                if (cafProds.length > 0) built.push({ id: cafCat.id, label: cafCat.name, emoji: "☕", products: cafProds });
+            }
+
+            // 4 — Resto de categorías
+            for (const c of uniqueCats) {
+                if (cafCat && c.id === cafCat.id) continue;
+                const catProds = prods.filter((p: any) => p.category_id === c.id);
+                if (catProds.length === 0) continue;
+                built.push({ id: c.id, label: c.name, emoji: "", products: catProds });
+            }
+
+            setSections(built);
+            // Abrir las primeras 2 secciones por defecto
+            if (built.length > 0) setOpenSections(new Set(built.slice(0, 2).map(s => s.id)));
             setLoading(false);
         });
     }, []);
 
     const cartTotal = cart.reduce((acc, i) => acc + i.price * i.quantity, 0);
     const cartCount = cart.reduce((acc, i) => acc + i.quantity, 0);
+    const cartQtyFor = (id: string) => cart.find(i => i.id === id)?.quantity ?? 0;
 
     const addToCart = (product: any) => {
         setCart(prev => {
             const existing = prev.find(i => i.id === product.id);
             if (existing) return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
-            return [...prev, { ...product, quantity: 1, cartItemId: `${product.id}-${Date.now()}` }];
+            return [...prev, { ...product, quantity: 1 }];
         });
-        toast.success(`${product.name} agregado`);
+        toast.success(`${product.name} agregado`, { duration: 1200 });
     };
 
     const updateQty = (id: string, delta: number) => {
         setCart(prev => prev.map(i => i.id === id ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i).filter(i => i.quantity > 0));
+    };
+
+    const toggleSection = (id: string) => {
+        setOpenSections(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
     };
 
     const handleSend = async () => {
@@ -1045,145 +1128,170 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
         <div className="min-h-screen flex items-center justify-center p-6 bg-[#f7f5ef]">
             <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl space-y-5">
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-4xl">✅</div>
-                <div>
-                    <h1 className="text-3xl font-black text-gray-900">¡Pedido enviado!</h1>
-                    <p className="text-gray-400 mt-1 text-sm">El mozo se acerca a {tableLabel}.</p>
+                <h1 className="text-3xl font-black text-gray-900">¡Pedido enviado!</h1>
+                <div className="bg-[#f0f7f4] rounded-2xl py-3 px-5">
+                    <p className="text-xs font-black uppercase tracking-widest text-[#2d4a3e]">{tableLabel}</p>
+                    <p className="text-sm text-gray-500 mt-1">El mozo se acerca en un momento.</p>
                 </div>
-                <div className="bg-gray-50 rounded-2xl py-3 px-5">
-                    <p className="text-xs text-gray-400 uppercase tracking-widest font-black">{tableLabel}</p>
-                    <p className="text-sm text-gray-500 mt-1">Podés seguir agregando cosas cuando quieras.</p>
-                </div>
-                <button
-                    onClick={() => setOrderSent(false)}
-                    className="w-full py-3.5 bg-[#2d4a3e] text-white font-black rounded-2xl"
-                >
+                <button onClick={() => setOrderSent(false)} className="w-full py-4 bg-[#2d4a3e] text-white font-black rounded-2xl text-lg">
                     Seguir eligiendo
                 </button>
             </div>
         </div>
     );
 
-    const visibleProducts = activeCat ? products.filter(p => p.category_id === activeCat) : [];
-    const activeCatName = categories.find(c => c.id === activeCat)?.name ?? "";
-
     return (
-        <div className="min-h-screen bg-[#f7f5ef] flex flex-col">
-            {/* Header */}
-            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <img src="/logo.png" alt="Bloom" className="h-7 object-contain" onError={e => (e.currentTarget.style.display = "none")} />
-                    <span className="text-sm font-black text-gray-900">{tableLabel}</span>
+        <div className="min-h-screen bg-[#f7f5ef]">
+            {/* Header fijo */}
+            <div className="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                    <img src="/logo.png" alt="Bloom" className="h-8 object-contain" onError={e => (e.currentTarget.style.display = "none")} />
+                    <div>
+                        <p className="text-[11px] font-black uppercase tracking-widest text-gray-400 leading-none">Bloom Café</p>
+                        <p className="text-sm font-black text-gray-900 leading-tight">{tableLabel}</p>
+                    </div>
                 </div>
-                {cartCount > 0 && (
+                {cartCount > 0 ? (
                     <button
                         onClick={() => setIsCartOpen(true)}
-                        className="flex items-center gap-2 bg-[#2d4a3e] text-white text-sm font-black px-4 py-2 rounded-full"
+                        className="flex items-center gap-2 bg-[#2d4a3e] text-white text-sm font-black px-4 py-2.5 rounded-2xl active:scale-95 transition-transform"
                     >
                         <IconShoppingBag size={15} />
-                        {cartCount} · {formatCurrency(cartTotal)}
-                    </button>
-                )}
-            </div>
-
-            {/* Category tabs */}
-            <div className="sticky top-[57px] z-20 bg-[#f7f5ef] border-b border-gray-100">
-                <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-none">
-                    {categories.map(c => (
-                        <button
-                            key={c.id}
-                            onClick={() => setActiveCat(c.id)}
-                            className={`shrink-0 px-4 py-2 rounded-full text-xs font-black transition-all ${activeCat === c.id ? "bg-[#2d4a3e] text-white" : "bg-white text-gray-600 border border-gray-200"}`}
-                        >
-                            {c.name.replace(/^\p{Extended_Pictographic}\s*/u, "").trim() || c.name}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Products */}
-            <div className="flex-1 p-4 pb-32">
-                <h2 className="text-lg font-black text-gray-900 mb-4">{activeCatName}</h2>
-                {visibleProducts.length === 0 ? (
-                    <p className="text-gray-400 text-sm text-center py-12">Sin productos en esta categoría</p>
-                ) : (
-                    <div className="space-y-3">
-                        {visibleProducts.map(p => (
-                            <div key={p.id} className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm">
-                                {p.image_url && (
-                                    <img src={p.image_url} alt={p.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
-                                )}
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-black text-gray-900 leading-tight">{p.name}</p>
-                                    {p.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{p.description}</p>}
-                                    <p className="text-sm font-black text-[#2d4a3e] mt-1">{formatCurrency(Number(p.price))}</p>
-                                </div>
-                                <button
-                                    onClick={() => addToCart(p)}
-                                    className="shrink-0 w-9 h-9 bg-[#2d4a3e] text-white rounded-full flex items-center justify-center font-black text-lg active:scale-90 transition-transform"
-                                >
-                                    <IconPlus size={18} />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Sticky bottom cart */}
-            {cartCount > 0 && !isCartOpen && (
-                <div className="fixed bottom-6 left-4 right-4 z-40">
-                    <button
-                        onClick={() => setIsCartOpen(true)}
-                        className="w-full bg-[#2d4a3e] text-white py-4 rounded-2xl font-black text-base shadow-2xl flex items-center justify-between px-6 active:scale-[0.98] transition-transform"
-                    >
-                        <span className="bg-white/20 rounded-full px-2.5 py-0.5 text-sm">{cartCount}</span>
-                        <span>Ver pedido</span>
+                        <span>{cartCount}</span>
+                        <span className="opacity-60">·</span>
                         <span>{formatCurrency(cartTotal)}</span>
                     </button>
-                </div>
-            )}
+                ) : (
+                    <p className="text-xs text-gray-400 font-medium">Elegí lo que querés</p>
+                )}
+            </div>
 
-            {/* Cart drawer */}
+            {/* Lista de secciones accordion */}
+            <div className="pb-32">
+                {sections.map((section) => {
+                    const isOpen = openSections.has(section.id);
+                    const isSpecial = section.id === "__plato_dia__" || section.id === "__promos__";
+
+                    return (
+                        <div key={section.id} className="border-b border-gray-100">
+                            {/* Fila de categoría — tappable */}
+                            <button
+                                onClick={() => toggleSection(section.id)}
+                                className={`w-full flex items-center justify-between px-4 py-4 text-left active:bg-gray-50 transition-colors ${isSpecial ? "bg-white" : "bg-white"}`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    {section.emoji && <span className="text-2xl leading-none">{section.emoji}</span>}
+                                    <div>
+                                        <p className={`font-black text-[16px] leading-tight ${section.accent ?? "text-gray-900"}`}>
+                                            {section.label}
+                                        </p>
+                                        <p className="text-xs text-gray-400 font-medium mt-0.5">
+                                            {section.products.length} {section.products.length === 1 ? "opción" : "opciones"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                                    <IconChevronLeft size={20} className="text-gray-400 -rotate-90" />
+                                </motion.div>
+                            </button>
+
+                            {/* Productos expandidos */}
+                            <AnimatePresence initial={false}>
+                                {isOpen && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                                        className="overflow-hidden bg-white"
+                                    >
+                                        <div className="ml-4 border-l-2 border-gray-100">
+                                            {section.products.map((p: any) => (
+                                                <ProductRow
+                                                    key={p.id}
+                                                    p={p}
+                                                    inCart={cartQtyFor(p.id)}
+                                                    onAdd={() => addToCart(p)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Botón flotante carrito */}
+            <AnimatePresence>
+                {cartCount > 0 && !isCartOpen && (
+                    <motion.div
+                        initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+                        className="fixed bottom-6 left-4 right-4 z-40"
+                    >
+                        <button
+                            onClick={() => setIsCartOpen(true)}
+                            className="w-full bg-[#2d4a3e] text-white py-4 rounded-2xl font-black text-base shadow-2xl flex items-center justify-between px-5 active:scale-[0.98] transition-transform"
+                        >
+                            <span className="bg-white/20 text-white text-sm font-black w-8 h-8 rounded-full flex items-center justify-center">{cartCount}</span>
+                            <span className="text-lg">Ver pedido</span>
+                            <span className="font-black">{formatCurrency(cartTotal)}</span>
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Cart bottom sheet */}
             <AnimatePresence>
                 {isCartOpen && (
                     <>
                         <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             onClick={() => setIsCartOpen(false)}
-                            className="fixed inset-0 bg-black/40 z-50"
+                            className="fixed inset-0 bg-black/50 z-50"
                         />
                         <motion.div
                             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="fixed bottom-0 left-0 right-0 z-[60] bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col"
+                            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+                            className="fixed bottom-0 left-0 right-0 z-[60] bg-white rounded-t-3xl shadow-2xl max-h-[88vh] flex flex-col"
                         >
-                            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+                            {/* Handle */}
+                            <div className="flex justify-center pt-3 pb-1">
+                                <div className="w-10 h-1 bg-gray-200 rounded-full" />
+                            </div>
+
+                            <div className="flex items-center justify-between px-5 pb-3">
                                 <div>
                                     <p className="text-xs font-black uppercase tracking-widest text-gray-400">Tu pedido</p>
                                     <p className="text-xl font-black text-gray-900">{tableLabel}</p>
                                 </div>
-                                <button onClick={() => setIsCartOpen(false)} className="text-gray-300 hover:text-gray-700">
-                                    <IconX size={22} />
+                                <button onClick={() => setIsCartOpen(false)} className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <IconX size={18} className="text-gray-500" />
                                 </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                            <div className="flex-1 overflow-y-auto px-5 divide-y divide-gray-50">
                                 {cart.map(item => (
-                                    <div key={item.id} className="flex items-center gap-3">
-                                        <div className="flex-1">
-                                            <p className="font-bold text-gray-900">{item.name}</p>
-                                            <p className="text-sm text-gray-500">{formatCurrency(item.price * item.quantity)}</p>
+                                    <div key={item.id} className="flex items-center gap-3 py-3.5">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-gray-900 text-[15px] leading-snug">{item.name}</p>
+                                            <p className="text-sm text-[#2d4a3e] font-black mt-0.5">{formatCurrency(item.price * item.quantity)}</p>
                                         </div>
-                                        <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-2 py-1">
-                                            <button onClick={() => updateQty(item.id, -1)} className="p-1 text-gray-500"><IconMinus size={14} /></button>
-                                            <span className="w-5 text-center font-black text-sm">{item.quantity}</span>
-                                            <button onClick={() => updateQty(item.id, 1)} className="p-1 text-gray-500"><IconPlus size={14} /></button>
+                                        <div className="flex items-center gap-1 bg-gray-100 rounded-2xl px-1 py-1">
+                                            <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 flex items-center justify-center text-gray-500 active:scale-90">
+                                                <IconMinus size={14} />
+                                            </button>
+                                            <span className="w-6 text-center font-black text-sm">{item.quantity}</span>
+                                            <button onClick={() => updateQty(item.id, 1)} className="w-8 h-8 flex items-center justify-center text-gray-500 active:scale-90">
+                                                <IconPlus size={14} />
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="px-6 pb-8 pt-4 border-t border-gray-100 space-y-3">
+                            <div className="px-5 pt-4 pb-8 border-t border-gray-100 space-y-3 bg-white">
                                 <div className="flex justify-between items-center">
                                     <span className="text-gray-500 font-medium">Total</span>
                                     <span className="text-2xl font-black text-gray-900">{formatCurrency(cartTotal)}</span>
@@ -1191,11 +1299,11 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
                                 <button
                                     onClick={handleSend}
                                     disabled={isPaying}
-                                    className="w-full bg-[#2d4a3e] text-white py-4 rounded-2xl font-black text-lg disabled:opacity-50 active:scale-[0.98] transition-transform"
+                                    className="w-full bg-[#2d4a3e] text-white py-4 rounded-2xl font-black text-lg shadow-lg disabled:opacity-50 active:scale-[0.98] transition-transform"
                                 >
                                     {isPaying ? "Enviando…" : "Enviar pedido a cocina"}
                                 </button>
-                                <p className="text-center text-xs text-gray-400">El mozo trae todo a tu mesa · sin cobro por adelantado</p>
+                                <p className="text-center text-xs text-gray-400">El mozo trae todo a tu mesa · no necesitás pagar ahora</p>
                             </div>
                         </motion.div>
                     </>
