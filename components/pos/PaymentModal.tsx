@@ -594,7 +594,8 @@ export function PaymentModal({
                             {isFinishing ? "..." : (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId ? "Seleccionar Cliente" : "Confirmar Venta")}
                         </button>
                     </div>
-                </form>
+                </div>
+            </form>
             </motion.div>
         </div>
     );
