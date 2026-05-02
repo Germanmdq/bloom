@@ -46,12 +46,13 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
             description: currentProduct.description,
             price: parseFloat(currentProduct.price),
             category_id: currentProduct.category_id,
-            raw_product_id: currentProduct.raw_product_id || null,
         };
         if (currentProduct.id) {
-            await supabase.from('products').update(productData).eq('id', currentProduct.id);
+            const { error } = await supabase.from('products').update(productData).eq('id', currentProduct.id);
+            if (error) { alert(`Error al guardar: ${error.message}`); setLoading(false); return; }
         } else {
-            await supabase.from('products').insert([productData]);
+            const { error } = await supabase.from('products').insert([productData]);
+            if (error) { alert(`Error al guardar: ${error.message}`); setLoading(false); return; }
         }
         setIsEditing(false);
         await fetchData();
