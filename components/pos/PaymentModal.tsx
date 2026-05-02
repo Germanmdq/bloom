@@ -300,6 +300,15 @@ export function PaymentModal({
                 animate={{ opacity: 1, scale: 1 }}
                 className="relative bg-white w-full max-w-5xl max-h-[96dvh] rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row"
             >
+                <form 
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!isFinishing && !pointWaiting && !pointBusy && !(paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId)) {
+                            onConfirm({ customerId: selectedCustomerId });
+                        }
+                    }}
+                    className="flex flex-col md:flex-row w-full h-full"
+                >
                 {/* Left panel: total + discount */}
                 <div className="md:w-1/3 bg-[#FFD60A] p-7 flex flex-col justify-between relative overflow-hidden">
                     <div>
@@ -343,6 +352,18 @@ export function PaymentModal({
                                     type="text"
                                     value={q}
                                     onChange={(e) => handleSearch(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            if (results.length > 0) {
+                                                const cust = results[0];
+                                                setSelectedCustomerId?.(cust.id);
+                                                setCustomerName?.(cust.full_name);
+                                                setResults([]);
+                                                setQ("");
+                                                e.preventDefault();
+                                            }
+                                        }
+                                    }}
                                     placeholder="Vincular cliente seleccionado..."
                                     className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-black/5 focus:bg-white transition-all"
                                 />
@@ -555,14 +576,15 @@ export function PaymentModal({
 
                     <div className="flex gap-3 mt-2">
                         <button
+                            type="button"
                             onClick={onClose}
                             className="flex-1 py-4 rounded-2xl bg-gray-50 text-gray-400 font-bold hover:bg-gray-100"
                         >
                             Volver
                         </button>
                         <button
+                            type="submit"
                             disabled={isFinishing || pointWaiting || pointBusy || (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId)}
-                            onClick={() => onConfirm({ customerId: selectedCustomerId })}
                             className={`flex-[2] py-4 rounded-2xl font-black hover:scale-[1.02] disabled:opacity-20 shadow-xl transition-all ${
                                 paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId
                                 ? "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -572,7 +594,7 @@ export function PaymentModal({
                             {isFinishing ? "..." : (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId ? "Seleccionar Cliente" : "Confirmar Venta")}
                         </button>
                     </div>
-                </div>
+                </form>
             </motion.div>
         </div>
     );

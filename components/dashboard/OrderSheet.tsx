@@ -74,6 +74,156 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [isKitchenReceipt, setIsKitchenReceipt] = useState(false);
     const [isPrecuenta, setIsPrecuenta] = useState(false);
     const [extraTotal] = useState(0);
+
+    const handleAddVarios = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        const price = parseFloat(variosPrice.replace(',', '.'));
+        const qty = parseInt(variosQuantity);
+        if (isNaN(price) || price < 0) {
+            setFeedback({ message: 'Precio inválido', type: 'error' });
+            return;
+        }
+        if (isNaN(qty) || qty <= 0) {
+            setFeedback({ message: 'Cantidad inválida', type: 'error' });
+            return;
+        }
+        addToCart({ 
+            id: `varios-${Date.now()}`, 
+            name: variosName.trim() ? `Varios - ${variosName.trim()}` : 'Varios', 
+            price: price, 
+            quantity: qty 
+        });
+        setShowVariosModal(false);
+        setFeedback({ message: 'Ítem agregado', type: 'success' });
+    };
+
+    const handleConfirmConfig = () => {
+        if (pendingProduct) {
+            const pNameLower = pendingProduct.name.toLowerCase();
+            const isEmpanada = pNameLower.includes("empanada");
+            const isFiletProduct = pNameLower.includes("filet") || pNameLower.includes("merluza");
+            const comboPrice = isPlatoDiaContext && appSettings?.plato_dia_price
+                ? Number(appSettings.plato_dia_price)
+                : Number(pendingProduct.price || 0);
+
+            const isSandwichProduct = pNameLower.includes("pebete") || pNameLower.includes("sacramento") ||
+                                        pNameLower.includes("sandwich");
+            const cartName = isEmpanada
+                ? `${pendingProduct.name} (${selectedFlavor || 'Varios'})`
+                : isFiletProduct && fishStyle
+                    ? `Filet ${fishStyle} con guarnición`
+                    : isSandwichProduct && sandwichFilling
+                        ? `${pendingProduct.name} ${sandwichFilling}`
+                        : pendingProduct.name;
+
+            addToCart({
+                id: pendingProduct.id,
+                name: cartName,
+                price: comboPrice,
+                quantity: 1,
+                notes: (selectedGarnish && selectedGarnish.name !== "Sin guarnición") ? "" : configNotes // Si hay guarnición, la nota va ahí
+            });
+            if (selectedGarnish && selectedGarnish.name !== "Sin guarnición") {
+                addToCart({ 
+                    id: `combo-garnish-${Math.random().toString(36).substr(2, 5)}`, 
+                    name: `Guarnición: ${selectedGarnish.name}`, 
+                    price: 0, 
+                    quantity: 1,
+                    notes: configNotes // La nota (tomate, lechuga, etc) va en la guarnición
+                });
+            }
+            if (selectedDrink && selectedDrink.name !== "Sin bebida") {
+                let finalDrinkPrice = 0;
+                if (!isEspecialContext) {
+                    const matchingProduct = products.find((p: any) => p.name.toLowerCase() === selectedDrink.name.toLowerCase());
+                    finalDrinkPrice = matchingProduct ? Number(matchingProduct.price) : 2500;
+                }
+                addToCart({ 
+                    id: `combo-drink-${Math.random().toString(36).substr(2, 5)}`, 
+                    name: `Bebida: ${selectedDrink.name}`, 
+                    price: finalDrinkPrice, 
+                    quantity: 1 
+                });
+            }
+            setFeedback({ message: 'Agregado correctamente', type: 'success' });
+            setShowConfigurator(false);
+            setIsPlatoDiaContext(false);
+        }
+    };
+
+    const handleSelectProduct = (item: any) => {
+        const catName = categoryMap[item.category_id] || "";
+        const catNameLower = catName.toLowerCase();
+        const itemNameLower = item.name.toLowerCase();
+
+        const isEmpanada = itemNameLower.includes("empanada") || catNameLower.includes("empanada");
+        const isFilet = itemNameLower.includes("filet") || itemNameLower.includes("merluza");
+        const isSandwich = catNameLower.includes("sandwich") || catNameLower.includes("sanguche") ||
+                           itemNameLower.includes("pebete") || itemNameLower.includes("sacramento");
+        const isTarta = catNameLower.includes("tarta") || itemNameLower.includes("tarta");
+
+        const isCoffee = itemNameLower.includes("café") || itemNameLower.includes("cafe") ||
+                       itemNameLower.includes("jarrito") || itemNameLower.includes("submarino") ||
+                       itemNameLower.includes("té") || (itemNameLower === "te") ||
+                       catNameLower.includes("cafetería") || catNameLower.includes("cafeteria");
+
+        const hasGarnish = itemNameLower.includes("guarnicion") || itemNameLower.includes("guarnición") ||
+                           itemNameLower.includes("c/guarn") || itemNameLower.includes("con guarn");
+
+        const isEspecialContextFlag = catNameLower.includes("menú") || catNameLower.includes("especial") ||
+                                       catNameLower.includes("oferta") || catNameLower.includes("promo") ||
+                                       itemNameLower.includes("especial") || itemNameLower.includes("oferta");
+
+        // Tartas → directo al carrito, sin configurador
+        if (isTarta) {
+            addToCart({ id: item.id, name: item.name, price: item.price, quantity: 1 });
+            return;
+        }
+
+        const isFood = !isCoffee && !isTarta && !isSandwich && (
+            catNameLower.includes("plato") || catNameLower.includes("menú") ||
+            catNameLower.includes("especial") || catNameLower.includes("oferta") ||
+            catNameLower.includes("promo") || catNameLower.includes("empanada") ||
+            itemNameLower.includes("bife") || itemNameLower.includes("filet") ||
+            itemNameLower.includes("milanesa") || itemNameLower.includes("churrasco") ||
+            itemNameLower.includes("pollo") || itemNameLower.includes("merluza") ||
+            itemNameLower.includes("lentejas") || itemNameLower.includes("guiso") ||
+            itemNameLower.includes("pasta") || itemNameLower.includes("ñoqui")
+        );
+
+        const needsConfig = isFood || isEmpanada || isFilet || isSandwich;
+
+        if (needsConfig) {
+            setPendingProduct(item);
+            setIsEspecialContext(isEspecialContextFlag);
+            setIsPlatoDiaContext(false);
+            setShouldSkipGarnish(!hasGarnish);
+            setSelectedDrinkGroup(null);
+            setSelectedDrink(null);
+            setSelectedGarnish(null);
+            setSelectedFlavor(null);
+            setFishStyle(null);
+            setSandwichFilling(null);
+            setConfigNotes("");
+
+            if (isEmpanada) {
+                setConfigStep('empanada-flavor');
+                setEmpanadaCounts({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
+            } else if (isFilet) {
+                setConfigStep('fish-style');
+            } else if (isSandwich) {
+                setConfigStep('sandwich-filling');
+            } else if (hasGarnish) {
+                setConfigStep('garnish');
+            } else {
+                setConfigStep('drink-detail');
+            }
+            setShowConfigurator(true);
+        } else {
+            addToCart({ id: item.id, name: item.name, price: item.price, quantity: 1 });
+            setFeedback({ message: `Agregado: ${item.name}`, type: 'success' });
+        }
+    };
     const [productSearch, setProductSearch] = useState("");
     const [waiters, setWaiters] = useState<Array<{ id: string; full_name: string }>>([]);
     const [orderType, setOrderType] = useState<'LOCAL' | 'DELIVERY' | 'TAKEAWAY'>('LOCAL');
@@ -990,6 +1140,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 autoFocus
                                 value={productSearch}
                                 onChange={(e) => { setProductSearch(e.target.value); setActiveCategory(null); }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && displayProducts.length > 0) {
+                                        handleSelectProduct(displayProducts[0]);
+                                        setProductSearch("");
+                                    }
+                                }}
                                 placeholder="Buscar producto..."
                                 className="w-full pl-9 pr-4 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-800 border border-gray-200 outline-none focus:ring-2 focus:ring-gray-300 transition-all"
                                 autoComplete="off"
@@ -1238,80 +1394,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     return (
                                         <button
                                             key={item.id}
-                                            onClick={() => {
-                                                const catNameLower = catName.toLowerCase();
-                                                const itemNameLower = item.name.toLowerCase();
-
-                                                const isEmpanada = itemNameLower.includes("empanada") || catNameLower.includes("empanada");
-                                                const isFilet = itemNameLower.includes("filet") || itemNameLower.includes("merluza");
-                                                const isSandwich = catNameLower.includes("sandwich") || catNameLower.includes("sanguche") ||
-                                                                   itemNameLower.includes("pebete") || itemNameLower.includes("sacramento");
-                                                const isTarta = catNameLower.includes("tarta") || itemNameLower.includes("tarta");
-
-                                                const isCoffee = itemNameLower.includes("café") || itemNameLower.includes("cafe") ||
-                                                               itemNameLower.includes("jarrito") || itemNameLower.includes("submarino") ||
-                                                               itemNameLower.includes("té") || (itemNameLower === "te") ||
-                                                               catNameLower.includes("cafetería") || catNameLower.includes("cafeteria");
-
-                                                const hasGarnish = itemNameLower.includes("guarnicion") || itemNameLower.includes("guarnición") ||
-                                                                   itemNameLower.includes("c/guarn") || itemNameLower.includes("con guarn");
-
-                                                const isEspecialContextFlag = catNameLower.includes("menú") || catNameLower.includes("especial") ||
-                                                                               catNameLower.includes("oferta") || catNameLower.includes("promo") ||
-                                                                               itemNameLower.includes("especial") || itemNameLower.includes("oferta");
-
-                                                // Tartas → directo al carrito, sin configurador
-                                                if (isTarta) {
-                                                    addToCart({ id: item.id, name: item.name, price: item.price, quantity: 1 });
-                                                    return;
-                                                }
-
-                                                const isFood = !isCoffee && !isTarta && !isSandwich && (
-                                                    catNameLower.includes("plato") || catNameLower.includes("menú") ||
-                                                    catNameLower.includes("especial") || catNameLower.includes("oferta") ||
-                                                    catNameLower.includes("promo") || catNameLower.includes("empanada") ||
-                                                    itemNameLower.includes("bife") || itemNameLower.includes("filet") ||
-                                                    itemNameLower.includes("milanesa") || itemNameLower.includes("churrasco") ||
-                                                    itemNameLower.includes("pollo") || itemNameLower.includes("merluza") ||
-                                                    itemNameLower.includes("lentejas") || itemNameLower.includes("guiso") ||
-                                                    itemNameLower.includes("pasta") || itemNameLower.includes("ñoqui")
-                                                );
-
-                                                const needsConfig = isFood || isEmpanada || isFilet || isSandwich;
-
-                                                if (needsConfig) {
-                                                    setPendingProduct(item);
-                                                    setIsEspecialContext(isEspecialContextFlag);
-                                                    setIsPlatoDiaContext(false);
-                                                    setShouldSkipGarnish(!hasGarnish);
-                                                    setSelectedDrinkGroup(null);
-                                                    setSelectedDrink(null);
-                                                    setSelectedGarnish(null);
-                                                    setSelectedFlavor(null);
-                                                    setFishStyle(null);
-                                                    setSandwichFilling(null);
-                                                    setConfigNotes("");
-
-                                                    if (isEmpanada) {
-                                                        setConfigStep('empanada-flavor');
-                                                        setEmpanadaCounts({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
-                                                    } else if (isFilet) {
-                                                        setConfigStep('fish-style');
-                                                    } else if (isSandwich) {
-                                                        setConfigStep('sandwich-filling');
-                                                    } else {
-                                                        setConfigStep('drink-detail');
-                                                    }
-                                                    setShowConfigurator(true);
-                                                } else {
-                                                    addToCart({
-                                                        id: item.id,
-                                                        name: item.name,
-                                                        price: item.price,
-                                                        quantity: 1
-                                                    });
-                                                }
-                                            }}
+                                            onClick={() => handleSelectProduct(item)}
                                             className="group relative bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all border border-slate-100 flex flex-col items-center justify-center gap-6 overflow-hidden min-h-[170px]"
                                         >
                                             <motion.div 
@@ -1853,6 +1936,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         <textarea
                                             value={configNotes}
                                             onChange={(e) => setConfigNotes(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleConfirmConfig();
+                                                }
+                                            }}
                                             placeholder={selectedGarnish?.name === 'Ensalada' ? "Especificá el sabor de la ensalada..." : "Ej: Sin sal, carne bien cocida..."}
                                             className="w-full p-5 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:ring-4 ring-black/5 outline-none font-bold text-base min-h-[120px] resize-none"
                                         />
@@ -1871,59 +1960,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 Volver
                                             </button>
                                             <button 
-                                                onClick={() => {
-                                                    if (pendingProduct) {
-                                                        const pNameLower = pendingProduct.name.toLowerCase();
-                                                        const isEmpanada = pNameLower.includes("empanada");
-                                                        const isFiletProduct = pNameLower.includes("filet") || pNameLower.includes("merluza");
-                                                        const comboPrice = isPlatoDiaContext && appSettings?.plato_dia_price
-                                                            ? Number(appSettings.plato_dia_price)
-                                                            : Number(pendingProduct.price || 0);
-
-                                                        const isSandwichProduct = pNameLower.includes("pebete") || pNameLower.includes("sacramento") ||
-                                                                                    pNameLower.includes("sandwich");
-                                                        const cartName = isEmpanada
-                                                            ? `${pendingProduct.name} (${selectedFlavor || 'Varios'})`
-                                                            : isFiletProduct && fishStyle
-                                                                ? `Filet ${fishStyle} con guarnición`
-                                                                : isSandwichProduct && sandwichFilling
-                                                                    ? `${pendingProduct.name} ${sandwichFilling}`
-                                                                    : pendingProduct.name;
-
-                                                        addToCart({
-                                                            id: pendingProduct.id,
-                                                            name: cartName,
-                                                            price: comboPrice,
-                                                            quantity: 1,
-                                                            notes: (selectedGarnish && selectedGarnish.name !== "Sin guarnición") ? "" : configNotes // Si hay guarnición, la nota va ahí
-                                                        });
-                                                        if (selectedGarnish && selectedGarnish.name !== "Sin guarnición") {
-                                                            addToCart({ 
-                                                                id: `combo-garnish-${Math.random().toString(36).substr(2, 5)}`, 
-                                                                name: `Guarnición: ${selectedGarnish.name}`, 
-                                                                price: 0, 
-                                                                quantity: 1,
-                                                                notes: configNotes // La nota (tomate, lechuga, etc) va en la guarnición
-                                                            });
-                                                        }
-                                                        if (selectedDrink && selectedDrink.name !== "Sin bebida") {
-                                                            let finalDrinkPrice = 0;
-                                                            if (!isEspecialContext) {
-                                                                const matchingProduct = products.find((p: any) => p.name.toLowerCase() === selectedDrink.name.toLowerCase());
-                                                                finalDrinkPrice = matchingProduct ? Number(matchingProduct.price) : 2500;
-                                                            }
-                                                            addToCart({ 
-                                                                id: `combo-drink-${Math.random().toString(36).substr(2, 5)}`, 
-                                                                name: `Bebida: ${selectedDrink.name}`, 
-                                                                price: finalDrinkPrice, 
-                                                                quantity: 1 
-                                                            });
-                                                        }
-                                                        setFeedback({ message: 'Agregado correctamente', type: 'success' });
-                                                        setShowConfigurator(false);
-                                                        setIsPlatoDiaContext(false);
-                                                    }
-                                                }}
+                                                onClick={handleConfirmConfig}
                                                 className="flex-[2] py-4 rounded-xl bg-black text-white font-black text-[10px] uppercase tracking-widest shadow-xl"
                                             >
                                                 Finalizar y Agregar
@@ -1967,7 +2004,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 </button>
                             </div>
 
-                            <div className="space-y-6">
+                            <form onSubmit={handleAddVarios} className="space-y-6">
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nombre / Descripción</label>
                                     <input
@@ -2004,31 +2041,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 </div>
 
                                 <button
-                                    onClick={() => {
-                                        const price = parseFloat(variosPrice.replace(',', '.'));
-                                        const qty = parseInt(variosQuantity);
-                                        if (isNaN(price) || price < 0) {
-                                            setFeedback({ message: 'Precio inválido', type: 'error' });
-                                            return;
-                                        }
-                                        if (isNaN(qty) || qty <= 0) {
-                                            setFeedback({ message: 'Cantidad inválida', type: 'error' });
-                                            return;
-                                        }
-                                        addToCart({ 
-                                            id: `varios-${Date.now()}`, 
-                                            name: variosName.trim() ? `Varios - ${variosName.trim()}` : 'Varios', 
-                                            price: price, 
-                                            quantity: qty 
-                                        });
-                                        setShowVariosModal(false);
-                                        setFeedback({ message: 'Ítem agregado', type: 'success' });
-                                    }}
+                                    type="submit"
                                     className="w-full py-5 bg-black text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-black/10 active:scale-95 transition-all mt-4"
                                 >
                                     Agregar al Pedido
                                 </button>
-                            </div>
+                            </form>
                         </motion.div>
                     </div>
                 )}
