@@ -167,16 +167,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     /** Al cambiar de mesa, vaciar el store ya (evita mezclar pedidos entre mesas). */
     const lastTableIdRef = useRef<number | null>(null);
     useLayoutEffect(() => {
-        // Solo limpiamos y recargamos si cambiamos de mesa físicamente
+        // Solo limpiamos si cambiamos de mesa físicamente
         if (lastTableIdRef.current !== tableId) {
             useOrderStore.getState().clearCart();
             lastTableIdRef.current = tableId;
-        } else {
-            // Si es la misma mesa, no limpiamos el carrito (evita borrarlo al refrescar mesas)
-            return;
         }
         
-        // INSTANT LOAD: If we have data from parent, use it NOW
+        // INSTANT LOAD: If we have data from parent, use it NOW (esto SIEMPRE debe correr para sincronizar)
         if (initialTableData && initialTableData.status === 'OCCUPIED') {
             const items = Array.isArray(initialTableData.items) ? initialTableData.items : [];
             const newCartItems: CartItem[] = [];

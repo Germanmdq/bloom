@@ -49,6 +49,8 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
             .join("");
 
         const itemsCount = cart.reduce((s, i) => s + (Number(i.quantity) || 0), 0);
+        console.log(`🖨️ [ReceiptModal] Preparando ticket: ${itemsCount} items. isKitchen: ${isKitchen}`);
+        if (cart.length === 0) console.warn("🖨️ [ReceiptModal] ¡CUIDADO! El carrito está vacío.");
 
         const html = `
     <div class="ticket">
@@ -179,11 +181,13 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
         // Imprimir desde la ventana principal (Kiosk funciona mucho mejor aquí)
         setTimeout(() => {
             try {
+                console.log("🖨️ [ReceiptModal] Disparando window.print()");
                 window.print();
-            } catch {
+            } catch (err) {
+                console.error("🖨️ [ReceiptModal] Error en window.print():", err);
                 handleAfterPrint();
             }
-        }, 100);
+        }, 300);
 
         return () => {
             window.clearTimeout(timer);
