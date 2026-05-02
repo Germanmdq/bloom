@@ -12,6 +12,7 @@ interface ReceiptModalProps {
     total: number;
     customerName?: string;
     isKitchen?: boolean;
+    isPreview?: boolean;
     // Factura C / ARCA
     cae?: string;
     voucherNumber?: number;
@@ -50,7 +51,7 @@ function buildAfipQrUrl(cae: string, voucherNumber: number, total: number): stri
 }
 
 export function ReceiptModal({
-    tableId, invoiceType, cart, total, customerName, isKitchen = false,
+    tableId, invoiceType, cart, total, customerName, isKitchen = false, isPreview = false,
     cae, voucherNumber, caeExpiration, onClose,
 }: ReceiptModalProps) {
     const printedRef = useRef(false);
@@ -69,7 +70,7 @@ export function ReceiptModal({
         const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         const headerLeft = customerName ? `Alias: ${customerName}` : `Mesa: ${tableId}`;
         const isLegal = !!cae && !!voucherNumber;
-        const isSinValidez = invoiceType === 'Sin Validez';
+        const isSinValidez = invoiceType === 'Sin Validez' || isPreview;
 
         const itemsHtml = cart.map((item) => {
             const qty = Number(item.quantity || 1);
@@ -102,7 +103,7 @@ export function ReceiptModal({
         // ── TICKET SIN VALIDEZ ────────────────────────────────
         if (isSinValidez) {
             const html = `<div class="ticket">
-  <div class="watermark">NO VÁLIDO COMO FACTURA</div>
+  <div class="watermark">${isPreview ? 'PRE-CUENTA' : 'NO VÁLIDO COMO FACTURA'}</div>
   <div class="center head">
     <div class="h1">BLOOM</div>
     <div class="sub">Coffee &amp; More · ${dateStr}</div>

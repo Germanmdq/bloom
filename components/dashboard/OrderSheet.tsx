@@ -72,6 +72,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [isKitchenReceipt, setIsKitchenReceipt] = useState(false);
+    const [isPrecuenta, setIsPrecuenta] = useState(false);
     const [extraTotal] = useState(0);
     const [productSearch, setProductSearch] = useState("");
     const [waiters, setWaiters] = useState<Array<{ id: string; full_name: string }>>([]);
@@ -941,6 +942,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <option value="">Mozo...</option>
                             {waiters.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
                         </select>
+
+                        <button
+                            onClick={() => {
+                                setIsKitchenReceipt(false);
+                                setIsPrecuenta(true);
+                                setShowReceiptModal(true);
+                            }}
+                            className="w-11 h-11 flex items-center justify-center rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-all active:scale-95"
+                            title="Imprimir Pre-cuenta"
+                        >
+                            <IconPrinter size={20} />
+                        </button>
                     </div>
 
                         <div className="h-10 w-[1px] bg-gray-100 mx-2" />
@@ -1557,12 +1570,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     total={completedOrderData ? completedOrderData.total : total}
                     customerName={customerName}
                     isKitchen={isKitchenReceipt}
+                    isPreview={isPrecuenta}
                     cae={caeData?.cae}
                     voucherNumber={caeData?.voucherNumber}
                     caeExpiration={caeData?.expiration}
                     onClose={() => {
                         setShowReceiptModal(false);
                         setCaeData(null);
+                        setIsPrecuenta(false);
                         if (isKitchenReceipt) {
                             setIsKitchenReceipt(false);
                             onClose();
