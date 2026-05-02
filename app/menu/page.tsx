@@ -78,9 +78,14 @@ function PublicMenuPage() {
     const tableId = tableParam ? parseInt(tableParam) : null;
     const zona = searchParams.get("zona"); // "barra" | "mesa" | null
     const num = searchParams.get("num");   // display number
+    const sector = searchParams.get("sector"); // "Abajo" | "Deck" | "Arriba" | null
     const isBarTable = zona === "barra";
     const tableLabel = tableId !== null
-        ? isBarTable ? `Barra ${num ?? tableId}` : `Mesa ${num ?? tableId}`
+        ? isBarTable
+            ? `Barra ${num ?? tableId}`
+            : sector
+                ? `Mesa ${num ?? tableId} · ${sector}`
+                : `Mesa ${num ?? tableId}`
         : null;
     const [products, setProducts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
