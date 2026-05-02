@@ -127,7 +127,7 @@ export function ReceiptModal({ tableId, invoiceType, extraTotal, cart, total, cu
               font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
               color: #000;
             }
-            .ticket { width: 72mm; padding: 6px 6px 15mm 12px; box-sizing: border-box; }
+            .ticket { width: 72mm; padding: 4mm; box-sizing: border-box; }
             .center { text-align: center; }
             .h1 { font-weight: 900; font-size: 22px; letter-spacing: -0.02em; line-height: 1; margin: 0; }
             .sub { font-weight: 800; font-size: 10px; text-transform: uppercase; margin-top: 4px; }

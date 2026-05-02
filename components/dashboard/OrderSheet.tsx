@@ -630,6 +630,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             }
 
             // Guardar datos para impresión post-cobro antes de limpiar el carrito
+            setIsKitchenReceipt(false);
             setCompletedOrderData({ cart: [...cart], total: finalTotal });
             setFeedback({ message: "¡Venta registrada!", type: "success" });
             
