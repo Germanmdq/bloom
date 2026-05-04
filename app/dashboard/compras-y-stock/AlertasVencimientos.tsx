@@ -29,13 +29,17 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
     en7dias.setDate(en7dias.getDate() + 7);
 
     const proximos = gastos.filter(g => {
+        if (g.estado !== 'pendiente') return false;
+        if (!g.fecha_vencimiento) return true; // sin fecha → siempre visible
         const fecha = new Date(g.fecha_vencimiento);
-        return fecha <= en7dias && g.estado === 'pendiente';
+        return isNaN(fecha.getTime()) || fecha <= en7dias;
     });
 
     const otros = gastos.filter(g => {
+        if (g.estado !== 'pendiente') return false;
+        if (!g.fecha_vencimiento) return false;
         const fecha = new Date(g.fecha_vencimiento);
-        return fecha > en7dias && g.estado === 'pendiente';
+        return !isNaN(fecha.getTime()) && fecha > en7dias;
     });
 
     if (proximos.length === 0 && otros.length === 0) {

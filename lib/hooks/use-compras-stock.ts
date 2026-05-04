@@ -280,7 +280,7 @@ export function useCreateGastoFijo() {
         mutationFn: async (gasto: { nombre: string; monto: number; fecha_vencimiento: string; categoria?: string }) => {
             const { data, error } = await supabase
                 .from('gastos_fijos')
-                .insert([gasto])
+                .insert([{ ...gasto, estado: 'pendiente' }])
                 .select();
             if (error) throw error;
             return data;
