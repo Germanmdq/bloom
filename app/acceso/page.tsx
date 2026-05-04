@@ -16,27 +16,31 @@ export default function AccesoPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    const isPhone = !identifier.includes("@");
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
-        if (!identifier.trim() || !password.trim()) {
-            setError("Completá todos los campos.");
-            return;
-        }
-        setLoading(true);
 
         const raw = identifier.trim();
-        const isPhone = !raw.includes("@");
+        if (!raw) { setError("Ingresá tu email o celular."); return; }
+        if (!isPhone && !password.trim()) { setError("Ingresá tu contraseña."); return; }
+
+        setLoading(true);
+
         const email = isPhone
             ? `${raw.replace(/\D/g, "")}@bloom.local`
             : raw.toLowerCase();
-        // Phone passwords are stored as pure digits — strip formatting before comparing
-        const pwd = isPhone ? password.replace(/\D/g, "") : password.trim();
+
+        // Phone login: password = last 4 digits of phone (auto-derived)
+        const pwd = isPhone
+            ? raw.replace(/\D/g, "").slice(-4)
+            : password.trim();
 
         const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: pwd });
 
         if (authError) {
-            setError("Usuario o contraseña incorrectos.");
+            setError("Número no registrado o datos incorrectos.");
             setLoading(false);
             return;
         }
@@ -45,7 +49,6 @@ export default function AccesoPage() {
             .from("profiles").select("role").eq("id", data.user.id).single();
 
         const isStaff = ["ADMIN", "WAITER", "KITCHEN", "MANAGER"].includes(profile?.role);
-        // replace() removes the login page from history so back button doesn't return here
         window.location.replace(isStaff ? "/dashboard" : "/menu");
     };
 
@@ -63,11 +66,13 @@ export default function AccesoPage() {
                 <div className="rounded-3xl border border-black/[0.07] bg-white p-8 shadow-xl">
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-[14px] font-bold text-neutral-700 mb-1.5">Email o celular</label>
+                            <label className="block text-[14px] font-bold text-neutral-700 mb-1.5">
+                                {isPhone ? "Celular" : "Email"}
+                            </label>
                             <input
                                 type="text"
                                 autoComplete="username"
-                                placeholder="email@ejemplo.com o 2235551234"
+                                placeholder="Tu celular o email@ejemplo.com"
                                 value={identifier}
                                 onChange={e => { setIdentifier(e.target.value); setError(""); }}
                                 className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 text-[16px] font-semibold outline-none placeholder:text-neutral-300 placeholder:font-normal focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
@@ -75,22 +80,25 @@ export default function AccesoPage() {
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-[14px] font-bold text-neutral-700 mb-1.5">Contraseña</label>
-                            <div className="relative">
-                                <input
-                                    type={showPwd ? "text" : "password"}
-                                    autoComplete="current-password"
-                                    placeholder="Tu contraseña o número de celular"
-                                    value={password}
-                                    onChange={e => { setPassword(e.target.value); setError(""); }}
-                                    className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 pr-12 text-[16px] font-semibold outline-none placeholder:text-neutral-300 placeholder:font-normal focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
-                                />
-                                <button type="button" onClick={() => setShowPwd(s => !s)} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
-                                    {showPwd ? <IconEyeOff size={18} /> : <IconEye size={18} />}
-                                </button>
+                        {/* Password only needed for email (staff) logins */}
+                        {!isPhone && (
+                            <div>
+                                <label className="block text-[14px] font-bold text-neutral-700 mb-1.5">Contraseña</label>
+                                <div className="relative">
+                                    <input
+                                        type={showPwd ? "text" : "password"}
+                                        autoComplete="current-password"
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={e => { setPassword(e.target.value); setError(""); }}
+                                        className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 pr-12 text-[16px] font-semibold outline-none placeholder:text-neutral-300 focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
+                                    />
+                                    <button type="button" onClick={() => setShowPwd(s => !s)} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
+                                        {showPwd ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {error && (
                             <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-semibold text-red-700">{error}</p>

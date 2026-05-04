@@ -21,9 +21,9 @@ export async function POST(req: Request) {
         const user = users.users.find(u => u.email === fakeEmail);
         if (!user) return NextResponse.json({ error: 'Usuario no encontrado. Verificá el número.' }, { status: 404 });
 
-        // Reset password to phone digits
+        // Reset password to last 4 digits of phone
         const { error: updateError } = await svc.auth.admin.updateUserById(user.id, {
-            password: phoneClean,
+            password: phoneClean.slice(-4),
         });
         if (updateError) throw updateError;
 
