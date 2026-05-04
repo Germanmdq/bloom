@@ -7,87 +7,6 @@ import type { ComparisonType } from "@/components/dashboard/SalesComparisonPanel
 import { createClient } from "@/lib/supabase/client";
 import IconPhoto from "next/image";
 
-const POINT_DEVICE_ID = "NEWLAND_N950__N950NCC503378011";
-
-function PointActivateButton() {
-    const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
-    const [msg, setMsg] = useState("");
-    const [cancelling, setCancelling] = useState(false);
-    const [cancelMsg, setCancelMsg] = useState("");
-
-    const activate = async () => {
-        setStatus("loading");
-        setMsg("");
-        try {
-            const res = await fetch("/api/payments/point-devices", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ device_id: POINT_DEVICE_ID, mode: "PDV" }),
-            });
-            const json = await res.json();
-            if (!res.ok) {
-                setStatus("error");
-                setMsg(json.error || "Error al activar");
-            } else {
-                setStatus("ok");
-                setMsg("¡Modo PDV activado! El Point ya puede recibir cobros.");
-            }
-        } catch {
-            setStatus("error");
-            setMsg("Error de red");
-        }
-    };
-
-    const cancelIntent = async () => {
-        setCancelling(true);
-        setCancelMsg("");
-        try {
-            const res = await fetch("/api/payments/point-cancel", { method: "POST" });
-            const json = await res.json();
-            setCancelMsg(res.ok ? "Intent cancelado. Podés cobrar de nuevo." : (json.error || "Error al cancelar"));
-        } catch {
-            setCancelMsg("Error de red");
-        } finally {
-            setCancelling(false);
-        }
-    };
-
-    return (
-        <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Device ID</span>
-                <span className="text-xs font-bold text-gray-700 font-mono">{POINT_DEVICE_ID}</span>
-            </div>
-            <button
-                onClick={activate}
-                disabled={status === "loading" || status === "ok"}
-                className={`w-full h-12 rounded-xl font-black text-sm uppercase tracking-widest transition-all ${
-                    status === "ok"
-                        ? "bg-emerald-500 text-white cursor-default"
-                        : status === "error"
-                        ? "bg-red-500 text-white hover:bg-red-600"
-                        : "bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50"
-                }`}
-            >
-                {status === "loading" ? "Activando..." : status === "ok" ? "✓ Modo PDV Activo" : status === "error" ? "Reintentar" : "Activar Modo PDV"}
-            </button>
-            {msg && (
-                <p className={`text-xs font-bold ${status === "ok" ? "text-emerald-600" : "text-red-500"}`}>{msg}</p>
-            )}
-            <div className="border-t border-gray-100 pt-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Si el Point quedó bloqueado</p>
-                <button
-                    onClick={cancelIntent}
-                    disabled={cancelling}
-                    className="w-full h-10 rounded-xl font-black text-xs uppercase tracking-widest bg-orange-50 text-orange-600 hover:bg-orange-100 transition-all border border-orange-100 disabled:opacity-50"
-                >
-                    {cancelling ? "Cancelando..." : "Liberar Intent Colgado"}
-                </button>
-                {cancelMsg && <p className="mt-1 text-xs font-bold text-gray-500">{cancelMsg}</p>}
-            </div>
-        </div>
-    );
-}
 
 export default function SettingsPage() {
     const supabase = createClient();
@@ -718,22 +637,6 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
-                {/* MERCADO PAGO POINT */}
-                <section className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center">
-                            <span className="text-lg">💳</span>
-                        </div>
-                        <div>
-                            <h2 className="text-base font-black text-gray-900">Mercado Pago Point</h2>
-                            <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Terminal físico N950</p>
-                        </div>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-4 leading-snug">
-                        Activá el modo PDV (integrado) en tu terminal para poder enviarle cobros directamente desde el POS. Hacelo una sola vez.
-                    </p>
-                    <PointActivateButton />
-                </section>
             </div>
 
             {/* PROMOCION MODAL */}
