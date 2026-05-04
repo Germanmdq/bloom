@@ -41,7 +41,7 @@ export default function AccesoPage() {
                 return;
             }
 
-            router.push("/cuenta");
+            router.push("/menu");
         } catch {
             setError("Error de conexión. Intentá de nuevo.");
         } finally {
