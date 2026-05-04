@@ -213,8 +213,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 setConfigStep('fish-style');
             } else if (isSandwich) {
                 setConfigStep('sandwich-filling');
-            } else if (hasGarnish) {
-                setConfigStep('garnish');
             } else {
                 setConfigStep('drink-detail');
             }
