@@ -299,26 +299,49 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                             <IconPlus size={16} /> Agregar Gasto
                         </button>
                     </div>
-                    <div className="space-y-3">
-                        {gastos.filter(g => g.nombre.toLowerCase().includes(search.toLowerCase())).map(g => (
-                            <div key={g.id} className="p-4 rounded-xl border border-gray-100 bg-white flex justify-between items-center hover:shadow-sm transition-all">
-                                <div>
-                                    <h3 className="font-black text-sm">{g.nombre}</h3>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase">Vence: {g.fecha_vencimiento} · {g.categoria}</p>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <p className="font-black text-lg">${g.monto.toLocaleString('es-AR')}</p>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => setGastoModal(g)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white transition-all">
-                                            <IconEdit size={16} />
-                                        </button>
-                                        <button onClick={() => handleDeleteGasto(g.id)} className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all">
-                                            <IconTrash size={16} />
-                                        </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {gastos.filter(g => g.nombre.toLowerCase().includes(search.toLowerCase())).map(g => {
+                            const hoy = new Date();
+                            const fecha = new Date(g.fecha_vencimiento + 'T12:00:00');
+                            const diff = Math.ceil((fecha.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+                            const vencido = diff < 0;
+                            const proximo = !vencido && diff <= 7;
+                            const pagado = g.estado === 'pagado';
+
+                            const diasLabel = pagado ? 'PAGADO' : vencido ? 'VENCIDO' : diff === 0 ? 'HOY' : diff === 1 ? 'MAÑANA' : `${diff} días`;
+
+                            const colors = pagado
+                                ? 'border-gray-200 bg-gray-50'
+                                : vencido
+                                ? 'border-red-300 bg-red-50'
+                                : proximo
+                                ? 'border-amber-200 bg-amber-50/60'
+                                : 'border-emerald-200 bg-emerald-50/60';
+
+                            const labelColor = pagado ? 'text-gray-400' : vencido ? 'text-red-600' : proximo ? 'text-amber-600' : 'text-emerald-600';
+                            const montoColor = pagado ? 'text-gray-400 line-through' : vencido ? 'text-red-700' : proximo ? 'text-amber-700' : 'text-emerald-700';
+
+                            return (
+                                <div key={g.id} className={`p-5 rounded-[1.5rem] border-2 ${colors} transition-all`}>
+                                    <div className="flex items-start justify-between mb-3">
+                                        <span className={`text-[9px] font-black uppercase tracking-widest ${labelColor}`}>{diasLabel}</span>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => setGastoModal(g)} className="w-7 h-7 rounded-lg bg-white/70 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white transition-all">
+                                                <IconEdit size={13} />
+                                            </button>
+                                            <button onClick={() => handleDeleteGasto(g.id)} className="w-7 h-7 rounded-lg bg-white/70 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                                                <IconTrash size={13} />
+                                            </button>
+                                        </div>
                                     </div>
+                                    <h3 className="font-black text-gray-900 text-sm mb-1">{g.nombre}</h3>
+                                    <p className={`text-2xl font-black ${montoColor}`}>${g.monto.toLocaleString('es-AR')}</p>
+                                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wide">
+                                        Vence {new Date(g.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} · {g.categoria}
+                                    </p>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </>
             )}
