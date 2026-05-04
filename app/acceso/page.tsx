@@ -26,11 +26,14 @@ export default function AccesoPage() {
         setLoading(true);
 
         const raw = identifier.trim();
-        const email = raw.includes("@")
-            ? raw.toLowerCase()
-            : `${raw.replace(/\D/g, "")}@bloom.local`;
+        const isPhone = !raw.includes("@");
+        const email = isPhone
+            ? `${raw.replace(/\D/g, "")}@bloom.local`
+            : raw.toLowerCase();
+        // Phone passwords are stored as pure digits — strip formatting before comparing
+        const pwd = isPhone ? password.replace(/\D/g, "") : password.trim();
 
-        const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: password.trim() });
+        const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: pwd });
 
         if (authError) {
             setError("Usuario o contraseña incorrectos.");
