@@ -24,25 +24,26 @@ export default function AccesoPage() {
             return;
         }
         setLoading(true);
-        try {
-            const raw = identifier.trim();
-            const email = raw.includes("@")
-                ? raw.toLowerCase()
-                : `${raw.replace(/\D/g, "")}@bloom.local`;
 
-            const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: password.trim() });
-            if (authError) { setError("Usuario o contraseña incorrectos."); return; }
+        const raw = identifier.trim();
+        const email = raw.includes("@")
+            ? raw.toLowerCase()
+            : `${raw.replace(/\D/g, "")}@bloom.local`;
 
-            const { data: profile } = await supabase
-                .from("profiles").select("role").eq("id", data.user.id).single();
+        const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: password.trim() });
 
-            const isStaff = ["ADMIN", "WAITER", "KITCHEN", "MANAGER"].includes(profile?.role);
-            window.location.href = isStaff ? "/dashboard" : "/menu";
-        } catch {
-            setError("Error de conexión. Intentá de nuevo.");
-        } finally {
+        if (authError) {
+            setError("Usuario o contraseña incorrectos.");
             setLoading(false);
+            return;
         }
+
+        const { data: profile } = await supabase
+            .from("profiles").select("role").eq("id", data.user.id).single();
+
+        const isStaff = ["ADMIN", "WAITER", "KITCHEN", "MANAGER"].includes(profile?.role);
+        // replace() removes the login page from history so back button doesn't return here
+        window.location.replace(isStaff ? "/dashboard" : "/menu");
     };
 
     return (
