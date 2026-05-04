@@ -33,14 +33,12 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
     en7dias.setDate(en7dias.getDate() + 7);
 
     const proximos = gastos.filter(g => {
-        if (g.estado !== 'pendiente') return false;
-        if (!g.fecha_vencimiento) return true; // sin fecha → siempre visible
+        if (!g.fecha_vencimiento) return true;
         const fecha = new Date(g.fecha_vencimiento);
         return isNaN(fecha.getTime()) || fecha <= en7dias;
     });
 
     const otros = gastos.filter(g => {
-        if (g.estado !== 'pendiente') return false;
         if (!g.fecha_vencimiento) return false;
         const fecha = new Date(g.fecha_vencimiento);
         return !isNaN(fecha.getTime()) && fecha > en7dias;
@@ -48,9 +46,15 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
 
     if (proximos.length === 0 && otros.length === 0) {
         return (
-            <div className="mb-10 p-8 rounded-[2rem] bg-emerald-50 border border-emerald-100 text-center">
-                <IconCheck size={32} className="mx-auto text-emerald-500 mb-2" />
-                <p className="font-black text-emerald-700 text-sm uppercase tracking-widest">Sin vencimientos pendientes</p>
+            <div className="mb-10 p-8 rounded-[2rem] bg-gray-50 border border-gray-100 text-center">
+                <IconPlus size={32} className="mx-auto text-gray-300 mb-2" />
+                <p className="font-black text-gray-400 text-sm uppercase tracking-widest">No hay gastos cargados</p>
+                <button
+                    onClick={() => setGastoModal({ nombre: '', monto: 0, fecha_vencimiento: '', categoria: 'normal' })}
+                    className="mt-4 bg-black text-white px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-800 transition-all"
+                >
+                    Agregar primer gasto
+                </button>
             </div>
         );
     }
