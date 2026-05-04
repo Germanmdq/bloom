@@ -11,14 +11,35 @@ export default function ClientesPage() {
     const [selectedClient, setSelectedClient] = useState<any | null>(null);
     const [isPaying, setIsPaying] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState("");
+    const [resettingPwd, setResettingPwd] = useState(false);
+    const [resetMsg, setResetMsg] = useState<string | null>(null);
 
     useEffect(() => { fetchClients(); }, []);
     
     useEffect(() => {
         if (selectedClient) {
             setPaymentAmount(selectedClient.balance > 0 ? selectedClient.balance.toString() : "");
+            setResetMsg(null);
         }
     }, [selectedClient]);
+
+    async function handleResetPassword(phone: string) {
+        setResettingPwd(true);
+        setResetMsg(null);
+        try {
+            const res = await fetch('/api/admin/reset-customer-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone }),
+            });
+            const data = await res.json();
+            setResetMsg(res.ok ? '✓ Contraseña restablecida al número de celular' : `Error: ${data.error}`);
+        } catch {
+            setResetMsg('Error de conexión');
+        } finally {
+            setResettingPwd(false);
+        }
+    }
 
     async function fetchClients() {
         setLoading(true);
@@ -332,21 +353,39 @@ export default function ClientesPage() {
                                 </div>
 
                                 {/* CONTACT FOOTER */}
-                                <div className="pt-8 border-t border-gray-100 grid grid-cols-2 gap-4">
-                                     <div className="flex items-center gap-3 p-5 bg-gray-50 rounded-[1.5rem] border border-transparent hover:border-gray-200 transition-colors">
-                                         <IconPhone size={18} className="text-gray-300" />
-                                         <div>
-                                             <p className="text-[8px] font-black uppercase opacity-40 text-black mb-0.5">Teléfono</p>
-                                             <p className="text-xs font-bold text-gray-900 truncate">{selectedClient.phone || 'S/N'}</p>
-                                         </div>
-                                     </div>
-                                     <div className="flex items-center gap-3 p-5 bg-gray-50 rounded-[1.5rem] border border-transparent hover:border-gray-200 transition-colors">
-                                         <IconMail size={18} className="text-gray-300" />
-                                         <div>
-                                             <p className="text-[8px] font-black uppercase opacity-40 text-black mb-0.5">Email</p>
-                                             <p className="text-xs font-bold text-gray-900 truncate">{selectedClient.email || 'S/N'}</p>
-                                         </div>
-                                     </div>
+                                <div className="pt-8 border-t border-gray-100 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex items-center gap-3 p-5 bg-gray-50 rounded-[1.5rem] border border-transparent hover:border-gray-200 transition-colors">
+                                            <IconPhone size={18} className="text-gray-300" />
+                                            <div>
+                                                <p className="text-[8px] font-black uppercase opacity-40 text-black mb-0.5">Teléfono</p>
+                                                <p className="text-xs font-bold text-gray-900 truncate">{selectedClient.phone || 'S/N'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 p-5 bg-gray-50 rounded-[1.5rem] border border-transparent hover:border-gray-200 transition-colors">
+                                            <IconMail size={18} className="text-gray-300" />
+                                            <div>
+                                                <p className="text-[8px] font-black uppercase opacity-40 text-black mb-0.5">Email</p>
+                                                <p className="text-xs font-bold text-gray-900 truncate">{selectedClient.email || 'S/N'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {selectedClient.phone && (
+                                        <div className="space-y-2">
+                                            <button
+                                                onClick={() => handleResetPassword(selectedClient.phone)}
+                                                disabled={resettingPwd}
+                                                className="w-full py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                                            >
+                                                {resettingPwd ? 'Restableciendo...' : '🔑 Restablecer contraseña al celular'}
+                                            </button>
+                                            {resetMsg && (
+                                                <p className={`text-xs font-bold text-center ${resetMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>
+                                                    {resetMsg}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </motion.div>
