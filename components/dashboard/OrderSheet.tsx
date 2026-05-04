@@ -786,17 +786,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
             }
 
-            // ── LÓGICA DE INVENTARIO UNIVERSAL ──
+            // ── INVENTARIO: descuenta stock al cobrar (única vez) ──
             try {
+                const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
                 for (const item of cart) {
-                    if ((item as any).stock_processed) continue;
+                    if (!uuidRe.test(String(item.id))) continue;
 
-                    // Si el ID no es un UUID válido (ej: combos, random IDs, QR IDs), omitimos la deducción directa
-                    // para evitar errores 400 en la base de datos.
-                    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(item.id));
-                    if (!isUuid) continue;
-
-                    // 1. Descuento de Producto Terminado (stock y vendidos del menú)
+                    // Productos terminados
                     const { data: prod } = await supabase
                         .from('products')
                         .select('stock, vendidos')
@@ -809,28 +805,24 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         }).eq('id', item.id);
                     }
 
-                    // 2. Descuento de Insumos via recetas_insumos (RPC SECURITY DEFINER, sin SELECT previo)
-                    try {
-                        const { data: recetas } = await supabase
-                            .from('recetas_insumos')
-                            .select('insumo_id, qty')
-                            .eq('menu_product_id', item.id);
-                        if (recetas && recetas.length > 0) {
-                            for (const receta of recetas) {
-                                await supabase.rpc('deduct_insumo_stock', {
-                                    p_insumo_id: receta.insumo_id,
-                                    p_qty: Number(receta.qty) * item.quantity
-                                });
-                            }
+                    // Insumos via recetas
+                    const { data: recetas } = await supabase
+                        .from('recetas_insumos')
+                        .select('insumo_id, qty')
+                        .eq('menu_product_id', item.id);
+                    if (recetas?.length) {
+                        for (const r of recetas) {
+                            await supabase.rpc('deduct_insumo_stock', {
+                                p_insumo_id: r.insumo_id,
+                                p_qty: Number(r.qty) * item.quantity
+                            });
                         }
-                    } catch (e) {
-                        console.error('[Stock] Error descuento insumos:', (e as Error).message);
                     }
                 }
                 queryClient.invalidateQueries({ queryKey: ['insumos'] });
                 queryClient.invalidateQueries({ queryKey: ['stock'] });
             } catch (err) {
-                console.error('[Stock] Error general inventario:', err);
+                console.error('[Stock] Error inventario:', err);
             }
 
             // Guardar datos para impresión post-cobro antes de limpiar el carrito
@@ -932,45 +924,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             // No bloqueamos — la mesa ya está guardada
         }
 
-        // ══════════════════════════════════════════════════════════
-        // PASO 2: INVENTARIO (OPCIONAL)
-        // ══════════════════════════════════════════════════════════
-        try {
-            for (const item of cart) {
-                if ((item as any).stock_processed) continue;
-
-                // Si el ID no es un UUID válido, omitimos
-                const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(item.id));
-                if (!isUuid) continue;
-
-                const nombreLower = item.name.toLowerCase();
-                let unidadesARestar = item.quantity;
-                
-                if (nombreLower.includes("doble") && (nombreLower.includes("café") || nombreLower.includes("cafe") || nombreLower.includes("cortado"))) {
-                    unidadesARestar = item.quantity * 2;
-                }
-
-                const { data: currentProd, error: fetchError } = await supabase
-                    .from('products')
-                    .select('stock, vendidos')
-                    .eq('id', item.id)
-                    .maybeSingle();
-
-                if (fetchError || !currentProd) continue;
-
-                await supabase
-                    .from('products')
-                    .update({ 
-                        stock: (currentProd.stock || 0) - unidadesARestar, 
-                        vendidos: (currentProd.vendidos || 0) + item.quantity 
-                    })
-                    .eq('id', item.id);
-                
-                (item as any).stock_processed = true;
-            }
-        } catch (stockErr) {
-            console.error("⚠️ Error en inventario (no afecta la mesa):", stockErr);
-        }
+        // Stock se descuenta solo al cobrar (finishOrder), no al mandar a cocina
 
         setFeedback({ message: "Enviado a cocina ✅", type: 'success' });
         
