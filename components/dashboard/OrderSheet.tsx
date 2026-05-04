@@ -666,7 +666,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 const { data: latest } = await supabase.from('orders').select('id').eq('table_id', tableId).order('created_at', { ascending: false }).limit(1).single();
                 if (latest?.id) await supabase.from('orders').update({ cae: cae.cae, cae_expiration: cae.expiration, voucher_number: cae.voucherNumber }).eq('id', latest.id);
             } catch {}
-            setShowInvoiceSelector(false);
             setIsKitchenReceipt(false);
             setShowReceiptModal(true);
         } catch (err: any) {
@@ -681,7 +680,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const handleTicketSinValidez = () => {
         setCaeData(null);
         setInvoiceType('Sin Validez');
-        setShowInvoiceSelector(false);
         setIsKitchenReceipt(false);
         setShowReceiptModal(true);
     };
