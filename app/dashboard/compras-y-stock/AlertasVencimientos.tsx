@@ -27,6 +27,7 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
     const [motivoPago, setMotivoPago] = useState("");
     const [metodoPago, setMetodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
     const [gastoModal, setGastoModal] = useState<Partial<GastoFijo> | null>(null);
+    const [editingMonto, setEditingMonto] = useState<{ id: string; value: string } | null>(null);
 
     const hoy = new Date();
     const en7dias = new Date(hoy);
@@ -44,21 +45,6 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
         return !isNaN(fecha.getTime()) && fecha > en7dias;
     });
 
-    if (proximos.length === 0 && otros.length === 0) {
-        return (
-            <div className="mb-10 p-8 rounded-[2rem] bg-gray-50 border border-gray-100 text-center">
-                <IconPlus size={32} className="mx-auto text-gray-300 mb-2" />
-                <p className="font-black text-gray-400 text-sm uppercase tracking-widest">No hay gastos cargados</p>
-                <button
-                    onClick={() => setGastoModal({ nombre: '', monto: 0, fecha_vencimiento: '', categoria: 'normal' })}
-                    className="mt-4 bg-black text-white px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-800 transition-all"
-                >
-                    Agregar primer gasto
-                </button>
-            </div>
-        );
-    }
-
     const formatFecha = (f: string) => {
         const d = new Date(f + 'T12:00:00');
         return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
@@ -70,12 +56,23 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
     };
 
     const diasRestantes = (f: string) => {
+        if (!f) return 'SIN FECHA';
         const fecha = new Date(f + 'T12:00:00');
+        if (isNaN(fecha.getTime())) return 'SIN FECHA';
         const diff = Math.ceil((fecha.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
         if (diff < 0) return 'VENCIDO';
         if (diff === 0) return 'HOY';
         if (diff === 1) return 'MAÑANA';
         return `${diff} días`;
+    };
+
+    const handleSaveMonto = async (id: string) => {
+        if (!editingMonto) return;
+        const monto = parseFloat(editingMonto.value.replace(/\./g, '').replace(',', '.'));
+        if (!isNaN(monto) && monto >= 0) {
+            await updateGasto.mutateAsync({ id, monto } as any);
+        }
+        setEditingMonto(null);
     };
 
     const handleOpenPagoModal = (e: React.MouseEvent, g: GastoFijo) => {
@@ -164,9 +161,39 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                 </div>
             </div>
 
+            {gastos.length > 0 && (
+                <div className="flex flex-wrap gap-4 mb-6">
+                    <div className="flex-1 min-w-[200px] bg-white border border-gray-100 rounded-2xl px-6 py-4 shadow-sm">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total pendiente</p>
+                        <p className="text-2xl font-black text-gray-900">
+                            ${gastos.filter(g => g.estado !== 'pagado').reduce((s, g) => s + (g.monto || 0), 0).toLocaleString('es-AR')}
+                        </p>
+                    </div>
+                    <div className="flex-1 min-w-[200px] bg-amber-50 border border-amber-100 rounded-2xl px-6 py-4 shadow-sm">
+                        <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Vence en 7 días</p>
+                        <p className="text-2xl font-black text-amber-700">
+                            ${proximos.filter(g => g.estado !== 'pagado').reduce((s, g) => s + (g.monto || 0), 0).toLocaleString('es-AR')}
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {proximos.length === 0 && otros.length === 0 ? (
+                <div className="p-8 rounded-[2rem] bg-gray-50 border border-gray-100 text-center">
+                    <IconPlus size={32} className="mx-auto text-gray-300 mb-2" />
+                    <p className="font-black text-gray-400 text-sm uppercase tracking-widest">No hay gastos cargados</p>
+                    <button
+                        onClick={() => setGastoModal({ nombre: '', monto: 0, fecha_vencimiento: '', categoria: 'normal' })}
+                        className="mt-4 bg-black text-white px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-800 transition-all"
+                    >
+                        Agregar primer gasto
+                    </button>
+                </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {proximos.map((g, i) => {
-                    const vencido = diasRestantes(g.fecha_vencimiento) === 'VENCIDO';
+                    const estado = diasRestantes(g.fecha_vencimiento);
+                    const vencido = estado === 'VENCIDO';
                     const hasHistory = Array.isArray(g.historial_pagos) && g.historial_pagos.length > 0;
                     return (
                         <motion.div
@@ -194,7 +221,7 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                                     <span className={`text-[9px] font-black uppercase tracking-widest ${
                                         vencido ? 'text-red-600' : 'text-amber-600'
                                     }`}>
-                                        {diasRestantes(g.fecha_vencimiento)}
+                                        {estado}
                                     </span>
                                     {hasHistory && (
                                         <span className="text-[9px] font-bold text-gray-500 flex items-center gap-1 bg-white/50 px-2 py-0.5 rounded-full">
@@ -204,11 +231,28 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                                 </div>
                             </div>
                             <h3 className="font-black text-gray-900 text-sm mb-1">{g.nombre}</h3>
-                            <p className="text-2xl font-black text-gray-900">
-                                {g.monto > 0 ? `$${g.monto.toLocaleString('es-AR')}` : 'S/monto'}
-                            </p>
+                            {editingMonto?.id === g.id ? (
+                                <input
+                                    autoFocus
+                                    type="number"
+                                    value={editingMonto.value}
+                                    onChange={e => setEditingMonto({ id: g.id, value: e.target.value })}
+                                    onBlur={() => handleSaveMonto(g.id)}
+                                    onKeyDown={e => { if (e.key === 'Enter') handleSaveMonto(g.id); if (e.key === 'Escape') setEditingMonto(null); }}
+                                    onClick={e => e.stopPropagation()}
+                                    className="text-2xl font-black text-gray-900 bg-white/80 border-b-2 border-gray-400 outline-none w-full"
+                                />
+                            ) : (
+                                <p
+                                    className="text-2xl font-black text-gray-900 cursor-text hover:text-gray-600 transition-colors"
+                                    onClick={e => { e.stopPropagation(); setEditingMonto({ id: g.id, value: g.monto.toString() }); }}
+                                    title="Clic para editar"
+                                >
+                                    {g.monto > 0 ? `$${g.monto.toLocaleString('es-AR')}` : 'S/monto'}
+                                </p>
+                            )}
                             <p className="text-[10px] font-bold text-gray-400 mt-1">
-                                Restante | Vence {formatFecha(g.fecha_vencimiento)}
+                                {g.fecha_vencimiento ? `Restante | Vence ${formatFecha(g.fecha_vencimiento)}` : 'Sin fecha de vencimiento'}
                             </p>
                             <div className="mt-4 flex gap-2">
                                 <button
@@ -255,9 +299,26 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                                 </div>
                             </div>
                             <h3 className="font-black text-gray-900 text-sm mb-1">{g.nombre}</h3>
-                            <p className="text-xl font-black text-emerald-700">
-                                {g.monto > 0 ? `$${g.monto.toLocaleString('es-AR')}` : 'S/monto'}
-                            </p>
+                            {editingMonto?.id === g.id ? (
+                                <input
+                                    autoFocus
+                                    type="number"
+                                    value={editingMonto.value}
+                                    onChange={e => setEditingMonto({ id: g.id, value: e.target.value })}
+                                    onBlur={() => handleSaveMonto(g.id)}
+                                    onKeyDown={e => { if (e.key === 'Enter') handleSaveMonto(g.id); if (e.key === 'Escape') setEditingMonto(null); }}
+                                    onClick={e => e.stopPropagation()}
+                                    className="text-xl font-black text-emerald-700 bg-white/80 border-b-2 border-emerald-400 outline-none w-full"
+                                />
+                            ) : (
+                                <p
+                                    className="text-xl font-black text-emerald-700 cursor-text hover:text-emerald-500 transition-colors"
+                                    onClick={e => { e.stopPropagation(); setEditingMonto({ id: g.id, value: g.monto.toString() }); }}
+                                    title="Clic para editar"
+                                >
+                                    {g.monto > 0 ? `$${g.monto.toLocaleString('es-AR')}` : 'S/monto'}
+                                </p>
+                            )}
                             <p className="text-[10px] font-bold text-gray-400 mt-1">
                                 Restante | Vence {formatFecha(g.fecha_vencimiento)}
                             </p>
@@ -279,6 +340,7 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                     );
                 })}
             </div>
+            )}
 
             {/* Modal Historial */}
             <AnimatePresence>
@@ -361,9 +423,9 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                                         if (!gastoModal.nombre || !gastoModal.monto) return;
                                         try {
                                             if (gastoModal.id) {
-                                                await updateGasto.mutateAsync({ id: gastoModal.id, nombre: gastoModal.nombre, monto: gastoModal.monto, fecha_vencimiento: gastoModal.fecha_vencimiento, categoria: gastoModal.categoria } as any);
+                                                await updateGasto.mutateAsync({ id: gastoModal.id, nombre: gastoModal.nombre, monto: gastoModal.monto, fecha_vencimiento: gastoModal.fecha_vencimiento || null, categoria: gastoModal.categoria } as any);
                                             } else {
-                                                await createGasto.mutateAsync({ nombre: gastoModal.nombre!, monto: gastoModal.monto!, fecha_vencimiento: gastoModal.fecha_vencimiento || '', categoria: gastoModal.categoria });
+                                                await createGasto.mutateAsync({ nombre: gastoModal.nombre!, monto: gastoModal.monto!, fecha_vencimiento: gastoModal.fecha_vencimiento || null, categoria: gastoModal.categoria } as any);
                                             }
                                             setGastoModal(null);
                                         } catch (err: any) { alert('Error: ' + err.message); }

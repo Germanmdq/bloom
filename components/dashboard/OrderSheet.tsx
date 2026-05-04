@@ -65,7 +65,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [selectedWaiter, setSelectedWaiter] = useState<string>("");
     const [invoiceType, setInvoiceType] = useState('Factura C');
     const [, setClientName] = useState('Consumidor Final');
-    const [showInvoiceSelector, setShowInvoiceSelector] = useState(false);
+
     const [isFetchingCAE, setIsFetchingCAE] = useState(false);
     const [caeData, setCaeData] = useState<{ cae: string; expiration: string; voucherNumber: number } | null>(null);
     const [isFinishing, setIsFinishing] = useState(false);
@@ -1528,10 +1528,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         
                         <div className="flex flex-col gap-3 w-full max-w-xs">
                             <button
-                                onClick={() => setShowInvoiceSelector(true)}
-                                className="w-full h-14 bg-black text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-neutral-800 transition-all active:scale-95 shadow-xl shadow-black/10"
+                                onClick={handleEmitirFactura}
+                                disabled={isFetchingCAE}
+                                className="w-full h-14 bg-black text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-neutral-800 disabled:opacity-60 transition-all active:scale-95 shadow-xl shadow-black/10"
                             >
-                                <IconPrinter size={20} /> Imprimir Comprobante
+                                {isFetchingCAE ? <><IconLoader2 size={18} className="animate-spin" /> Consultando ARCA…</> : <><span className="text-lg">🏛</span> Factura C</>}
+                            </button>
+                            <button
+                                onClick={handleTicketSinValidez}
+                                disabled={isFetchingCAE}
+                                className="w-full h-12 bg-gray-100 text-gray-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-gray-200 disabled:opacity-60 transition-all active:scale-95"
+                            >
+                                <IconPrinter size={16} /> Ticket sin Validez
                             </button>
                             <button
                                 onClick={() => {
@@ -1546,45 +1554,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             </button>
                         </div>
 
-                        {/* ── Selector de tipo de comprobante ── */}
-                        <AnimatePresence>
-                            {showInvoiceSelector && (
-                                <>
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                        className="absolute inset-0 z-[130] bg-black/40 backdrop-blur-sm"
-                                        onClick={() => !isFetchingCAE && setShowInvoiceSelector(false)}
-                                    />
-                                    <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
-                                        className="absolute bottom-0 left-0 right-0 z-[140] bg-white rounded-t-3xl p-6 space-y-4 shadow-2xl"
-                                    >
-                                        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-2" />
-                                        <div className="text-center mb-4">
-                                            <p className="text-xs font-black uppercase tracking-widest text-gray-400">Comprobante</p>
-                                            <p className="text-xl font-black text-gray-900 mt-0.5">¿Cómo lo emitimos?</p>
-                                            <p className="text-sm text-gray-500 mt-1">Total: <strong>${completedOrderData?.total?.toLocaleString()}</strong></p>
-                                        </div>
-                                        <button
-                                            onClick={handleEmitirFactura}
-                                            disabled={isFetchingCAE}
-                                            className="w-full h-14 bg-black text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-neutral-800 disabled:opacity-60 transition-all active:scale-95"
-                                        >
-                                            {isFetchingCAE ? <><IconLoader2 size={18} className="animate-spin" /> Consultando ARCA…</> : <><span className="text-lg">🏛</span> Factura C (Legal)</>}
-                                        </button>
-                                        <button
-                                            onClick={handleTicketSinValidez}
-                                            disabled={isFetchingCAE}
-                                            className="w-full h-12 bg-gray-100 text-gray-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-gray-200 disabled:opacity-60 transition-all active:scale-95"
-                                        >
-                                            <span>🧾</span> Ticket sin Validez Fiscal
-                                        </button>
-                                        <button onClick={() => setShowInvoiceSelector(false)} disabled={isFetchingCAE}
-                                            className="w-full text-xs font-bold text-gray-400 py-2">
-                                            Cancelar
-                                        </button>
-                                    </motion.div>
-                                </>
-                            )}
-                        </AnimatePresence>
                     </motion.div>
                 )}
             </AnimatePresence>

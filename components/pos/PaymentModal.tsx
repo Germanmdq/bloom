@@ -321,16 +321,16 @@ export function PaymentModal({
                         </button>
                         <button
                             type="button"
-                            onClick={() => setPaymentMethod("BANK_TRANSFER")}
-                            className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "BANK_TRANSFER" ? "border-purple-500 bg-purple-50" : "border-gray-100"}`}
+                            onClick={() => setPaymentMethod("SANTANDER_RIO")}
+                            className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "SANTANDER_RIO" ? "border-red-500 bg-red-50" : "border-gray-100"}`}
                         >
-                            <p className="font-black text-base">Transferencia</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">CBU / Alias</p>
+                            <p className="font-black text-base">Santander Río</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Transferencia bancaria</p>
                         </button>
                         <button
                             type="button"
                             onClick={() => setPaymentMethod("CUENTA_CORRIENTE")}
-                            className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "CUENTA_CORRIENTE" ? "border-orange-500 bg-orange-50" : "border-gray-100"}`}
+                            className={`p-4 rounded-2xl border-2 text-left transition-all col-span-2 ${paymentMethod === "CUENTA_CORRIENTE" ? "border-orange-500 bg-orange-50" : "border-gray-100"}`}
                         >
                             <p className="font-black text-base">Cuenta Corriente</p>
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Clientes Frecuentes</p>
@@ -346,9 +346,9 @@ export function PaymentModal({
                                 autoFocus
                             />
                         )}
-                        {paymentMethod === "BANK_TRANSFER" && (
+                        {paymentMethod === "SANTANDER_RIO" && (
                             <div className="text-center">
-                                <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Transferencia Bancaria</p>
+                                <p className="text-sm font-bold text-red-600 uppercase tracking-widest mb-2">Santander Río</p>
                                 <p className="text-xs font-semibold text-gray-400">Verificá el comprobante o el ingreso en la cuenta antes de confirmar.</p>
                             </div>
                         )}

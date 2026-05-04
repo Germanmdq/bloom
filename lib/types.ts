@@ -59,7 +59,7 @@ export type DashboardProduct = {
     categories?: { name: string };
 };
 
-export type PaymentMethod = 'CASH' | 'CARD' | 'MERCADO_PAGO' | 'BANK_TRANSFER' | 'CUENTA_CORRIENTE';
+export type PaymentMethod = 'CASH' | 'CARD' | 'MERCADO_PAGO' | 'BANK_TRANSFER' | 'SANTANDER_RIO' | 'CUENTA_CORRIENTE';
 
 export type OrderItem = {
     id?: string;
