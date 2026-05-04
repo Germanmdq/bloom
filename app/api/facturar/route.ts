@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-// @ts-expect-error facturajs does not have types
-import { AfipServices } from 'facturajs';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { AfipServices } = require('facturajs');
 import path from 'path';
 import fs from 'fs';
 
