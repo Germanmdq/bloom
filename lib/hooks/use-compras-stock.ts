@@ -254,7 +254,7 @@ export function useGastosFijos() {
             if (error) throw error;
             return data;
         },
-        staleTime: 1000 * 60,
+        staleTime: 0,
     });
 }
 
@@ -265,12 +265,11 @@ export function useGastosFijosPendientes() {
             const { data, error } = await supabase
                 .from('gastos_fijos')
                 .select('*')
-                .eq('estado', 'pendiente')
                 .order('fecha_vencimiento', { ascending: true });
             if (error) throw error;
             return data;
         },
-        staleTime: 1000 * 60,
+        staleTime: 0,
     });
 }
 
