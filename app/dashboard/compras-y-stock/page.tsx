@@ -44,13 +44,13 @@ export default function ComprasYStockPage() {
                 </p>
             </header>
 
-            {/* BLOQUE A: Alertas Vencimientos */}
-            <AlertasVencimientos gastos={gastosPendientes} />
+            {/* BLOQUE A: Gastos Fijos — siempre visibles */}
+            <AlertasVencimientos gastos={gastosFijosTodos} />
 
             {/* BLOQUE B: Formulario de Compra */}
             <FormularioCompra proveedores={proveedores} />
 
-            {/* BLOQUE C: Gestión Insumos, Proveedores & Gastos Fijos */}
+            {/* BLOQUE C: Gestión Insumos, Proveedores & Compras */}
             <GestionPanel proveedores={proveedores} insumos={insumos} gastos={gastosFijosTodos} />
         </div>
     );

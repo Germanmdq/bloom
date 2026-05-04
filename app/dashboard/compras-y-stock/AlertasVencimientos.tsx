@@ -1,7 +1,7 @@
 "use client";
 
-import { useMarcarGastoPagado, useAbonarGastoFijo } from "@/lib/hooks/use-compras-stock";
-import { IconAlertTriangle, IconCalendarDue, IconCheck, IconCoin, IconHistory, IconX } from "@tabler/icons-react";
+import { useMarcarGastoPagado, useAbonarGastoFijo, useCreateGastoFijo, useDeleteGastoFijo, useUpdateGastoFijo } from "@/lib/hooks/use-compras-stock";
+import { IconAlertTriangle, IconCalendarDue, IconCheck, IconCoin, IconHistory, IconX, IconPlus, IconEdit, IconTrash } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
@@ -18,11 +18,15 @@ interface GastoFijo {
 export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
     const marcarPagado = useMarcarGastoPagado();
     const abonarGasto = useAbonarGastoFijo();
+    const createGasto = useCreateGastoFijo();
+    const deleteGasto = useDeleteGastoFijo();
+    const updateGasto = useUpdateGastoFijo();
     const [historyModal, setHistoryModal] = useState<GastoFijo | null>(null);
     const [pagoModal, setPagoModal] = useState<GastoFijo | null>(null);
     const [montoPago, setMontoPago] = useState("");
     const [motivoPago, setMotivoPago] = useState("");
     const [metodoPago, setMetodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
+    const [gastoModal, setGastoModal] = useState<Partial<GastoFijo> | null>(null);
 
     const hoy = new Date();
     const en7dias = new Date(hoy);
@@ -112,10 +116,16 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                         <IconCalendarDue size={20} className="text-gray-600" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Próximos Vencimientos</h2>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gastos fijos del mes</p>
+                        <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">Gastos Fijos</h2>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Vencimientos y estado</p>
                     </div>
                 </div>
+                <button
+                    onClick={() => setGastoModal({ nombre: '', monto: 0, fecha_vencimiento: '', categoria: 'normal' })}
+                    className="bg-black text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-gray-800 transition-all"
+                >
+                    <IconPlus size={14} /> Agregar
+                </button>
 
                 {/* REFERENCIA DE COLORES */}
                 <div className="hidden sm:flex items-center gap-4 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100">
@@ -196,12 +206,20 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                             <p className="text-[10px] font-bold text-gray-400 mt-1">
                                 Restante | Vence {formatFecha(g.fecha_vencimiento)}
                             </p>
-                            <button
-                                onClick={(e) => handleOpenPagoModal(e, g)}
-                                className="mt-4 w-full h-10 rounded-xl bg-white border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all flex items-center justify-center gap-2"
-                            >
-                                <IconCoin size={14} /> Abonar / Pagar
-                            </button>
+                            <div className="mt-4 flex gap-2">
+                                <button
+                                    onClick={(e) => handleOpenPagoModal(e, g)}
+                                    className="flex-1 h-10 rounded-xl bg-white border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-all flex items-center justify-center gap-1"
+                                >
+                                    <IconCoin size={13} /> Pagar
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); setGastoModal(g); }} className="w-9 h-10 rounded-xl bg-white/70 border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all">
+                                    <IconEdit size={13} />
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este gasto?')) deleteGasto.mutateAsync(g.id); }} className="w-9 h-10 rounded-xl bg-white/70 border border-gray-200 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                                    <IconTrash size={13} />
+                                </button>
+                            </div>
                         </motion.div>
                     );
                 })}
@@ -239,12 +257,20 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                             <p className="text-[10px] font-bold text-gray-400 mt-1">
                                 Restante | Vence {formatFecha(g.fecha_vencimiento)}
                             </p>
-                            <button
-                                onClick={(e) => handleOpenPagoModal(e, g)}
-                                className="mt-4 w-full h-10 rounded-xl bg-white border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-100 transition-all flex items-center justify-center gap-2"
-                            >
-                                <IconCoin size={14} /> Abonar / Pagar
-                            </button>
+                            <div className="mt-4 flex gap-2">
+                                <button
+                                    onClick={(e) => handleOpenPagoModal(e, g)}
+                                    className="flex-1 h-10 rounded-xl bg-white border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-100 transition-all flex items-center justify-center gap-1"
+                                >
+                                    <IconCoin size={13} /> Pagar
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); setGastoModal(g); }} className="w-9 h-10 rounded-xl bg-white/70 border border-emerald-200 flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all">
+                                    <IconEdit size={13} />
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este gasto?')) deleteGasto.mutateAsync(g.id); }} className="w-9 h-10 rounded-xl bg-white/70 border border-emerald-200 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                                    <IconTrash size={13} />
+                                </button>
+                            </div>
                         </motion.div>
                     );
                 })}
@@ -290,6 +316,58 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
                             <div className="mt-6 pt-4 border-t border-gray-100">
                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mb-1">Saldo Pendiente Actual</p>
                                 <p className="text-2xl font-black text-center text-gray-900">${historyModal.monto.toLocaleString('es-AR')}</p>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal Crear/Editar Gasto */}
+            <AnimatePresence>
+                {gastoModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setGastoModal(null)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm">
+                            <h3 className="text-xl font-black mb-6">{gastoModal.id ? 'Editar Gasto' : 'Nuevo Gasto'}</h3>
+                            <div className="space-y-4 mb-6">
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nombre</label>
+                                    <input type="text" value={gastoModal.nombre || ''} onChange={e => setGastoModal({...gastoModal, nombre: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Monto ($)</label>
+                                    <input type="number" value={gastoModal.monto || ''} onChange={e => setGastoModal({...gastoModal, monto: parseFloat(e.target.value) || 0})} className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Vencimiento (opcional)</label>
+                                    <input type="date" value={gastoModal.fecha_vencimiento || ''} onChange={e => setGastoModal({...gastoModal, fecha_vencimiento: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Prioridad</label>
+                                    <select value={gastoModal.categoria || 'normal'} onChange={e => setGastoModal({...gastoModal, categoria: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none">
+                                        <option value="normal">Normal</option>
+                                        <option value="urgente">Urgente</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => setGastoModal(null)} className="flex-1 h-12 rounded-xl bg-gray-100 font-black text-gray-400 text-xs uppercase">Cancelar</button>
+                                <button
+                                    onClick={async () => {
+                                        if (!gastoModal.nombre || !gastoModal.monto) return;
+                                        try {
+                                            if (gastoModal.id) {
+                                                await updateGasto.mutateAsync({ id: gastoModal.id, nombre: gastoModal.nombre, monto: gastoModal.monto, fecha_vencimiento: gastoModal.fecha_vencimiento, categoria: gastoModal.categoria } as any);
+                                            } else {
+                                                await createGasto.mutateAsync({ nombre: gastoModal.nombre!, monto: gastoModal.monto!, fecha_vencimiento: gastoModal.fecha_vencimiento || '', categoria: gastoModal.categoria });
+                                            }
+                                            setGastoModal(null);
+                                        } catch (err: any) { alert('Error: ' + err.message); }
+                                    }}
+                                    className="flex-[2] h-12 rounded-xl bg-black text-white font-black text-xs uppercase"
+                                >
+                                    Guardar
+                                </button>
                             </div>
                         </motion.div>
                     </div>
