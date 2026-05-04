@@ -10,54 +10,34 @@ const CREAM = "#F5EDD8";
 export default function AccesoPage() {
     const supabase = createClient();
 
-    const [identifier, setIdentifier] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPwd, setShowPwd] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const isPhone = !identifier.includes("@");
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
-        const raw = identifier.trim();
-        if (!raw) { setError("Ingresá tu email o celular."); return; }
-        if (!isPhone && !password.trim()) { setError("Ingresá tu contraseña."); return; }
+        if (!email.trim()) { setError("Ingresá tu email."); return; }
+        if (!password.trim()) { setError("Ingresá tu contraseña."); return; }
 
         setLoading(true);
 
-        const phoneClean = raw.replace(/\D/g, "");
-        const email = isPhone
-            ? `${phoneClean}@bloom.local`
-            : raw.toLowerCase();
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
+            email: email.trim().toLowerCase(),
+            password: password.trim(),
+        });
 
-        let loginData = null;
-
-        if (isPhone) {
-            // Try every password format that has ever been used, in order
-            const attempts = [
-                phoneClean.slice(-4), // current: last 4 digits
-                phoneClean,           // previous: full phone digits
-            ];
-            for (const pwd of attempts) {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password: pwd });
-                if (!error) { loginData = data; break; }
-            }
-        } else {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password: password.trim() });
-            if (!error) loginData = data;
-        }
-
-        if (!loginData) {
-            setError("Número no registrado o datos incorrectos.");
+        if (authError || !data.user) {
+            setError("Email o contraseña incorrectos.");
             setLoading(false);
             return;
         }
 
         const { data: profile } = await supabase
-            .from("profiles").select("role").eq("id", loginData.user.id).single();
+            .from("profiles").select("role").eq("id", data.user.id).single();
 
         const isStaff = ["ADMIN", "WAITER", "KITCHEN", "MANAGER"].includes(profile?.role);
         window.location.replace(isStaff ? "/dashboard" : "/menu");
@@ -77,39 +57,34 @@ export default function AccesoPage() {
                 <div className="rounded-3xl border border-black/[0.07] bg-white p-8 shadow-xl">
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-[14px] font-bold text-neutral-700 mb-1.5">
-                                {isPhone ? "Celular" : "Email"}
-                            </label>
+                            <label className="block text-[14px] font-bold text-neutral-700 mb-1.5">Email</label>
                             <input
-                                type="text"
+                                type="email"
                                 autoComplete="username"
-                                placeholder="Tu celular o email@ejemplo.com"
-                                value={identifier}
-                                onChange={e => { setIdentifier(e.target.value); setError(""); }}
+                                placeholder="tu@email.com"
+                                value={email}
+                                onChange={e => { setEmail(e.target.value); setError(""); }}
                                 className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 text-[16px] font-semibold outline-none placeholder:text-neutral-300 placeholder:font-normal focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
                                 autoFocus
                             />
                         </div>
 
-                        {/* Password only needed for email (staff) logins */}
-                        {!isPhone && (
-                            <div>
-                                <label className="block text-[14px] font-bold text-neutral-700 mb-1.5">Contraseña</label>
-                                <div className="relative">
-                                    <input
-                                        type={showPwd ? "text" : "password"}
-                                        autoComplete="current-password"
-                                        placeholder="••••••••"
-                                        value={password}
-                                        onChange={e => { setPassword(e.target.value); setError(""); }}
-                                        className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 pr-12 text-[16px] font-semibold outline-none placeholder:text-neutral-300 focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
-                                    />
-                                    <button type="button" onClick={() => setShowPwd(s => !s)} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
-                                        {showPwd ? <IconEyeOff size={18} /> : <IconEye size={18} />}
-                                    </button>
-                                </div>
+                        <div>
+                            <label className="block text-[14px] font-bold text-neutral-700 mb-1.5">Contraseña</label>
+                            <div className="relative">
+                                <input
+                                    type={showPwd ? "text" : "password"}
+                                    autoComplete="current-password"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={e => { setPassword(e.target.value); setError(""); }}
+                                    className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 pr-12 text-[16px] font-semibold outline-none placeholder:text-neutral-300 focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
+                                />
+                                <button type="button" onClick={() => setShowPwd(s => !s)} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
+                                    {showPwd ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                                </button>
                             </div>
-                        )}
+                        </div>
 
                         {error && (
                             <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-semibold text-red-700">{error}</p>
