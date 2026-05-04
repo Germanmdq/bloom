@@ -28,25 +28,36 @@ export default function AccesoPage() {
 
         setLoading(true);
 
+        const phoneClean = raw.replace(/\D/g, "");
         const email = isPhone
-            ? `${raw.replace(/\D/g, "")}@bloom.local`
+            ? `${phoneClean}@bloom.local`
             : raw.toLowerCase();
 
-        // Phone login: password = last 4 digits of phone (auto-derived)
-        const pwd = isPhone
-            ? raw.replace(/\D/g, "").slice(-4)
-            : password.trim();
+        let loginData = null;
 
-        const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: pwd });
+        if (isPhone) {
+            // Try every password format that has ever been used, in order
+            const attempts = [
+                phoneClean.slice(-4), // current: last 4 digits
+                phoneClean,           // previous: full phone digits
+            ];
+            for (const pwd of attempts) {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password: pwd });
+                if (!error) { loginData = data; break; }
+            }
+        } else {
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password: password.trim() });
+            if (!error) loginData = data;
+        }
 
-        if (authError) {
+        if (!loginData) {
             setError("Número no registrado o datos incorrectos.");
             setLoading(false);
             return;
         }
 
         const { data: profile } = await supabase
-            .from("profiles").select("role").eq("id", data.user.id).single();
+            .from("profiles").select("role").eq("id", loginData.user.id).single();
 
         const isStaff = ["ADMIN", "WAITER", "KITCHEN", "MANAGER"].includes(profile?.role);
         window.location.replace(isStaff ? "/dashboard" : "/menu");
