@@ -3,19 +3,22 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
     try {
-        const { email, password, fullName, role } = await req.json();
+        const { email, phone, fullName, role } = await req.json();
 
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // 1. Crear usuario en Auth
+        const phoneClean = (phone ?? "").replace(/\D/g, "");
+        if (!phoneClean) throw new Error("Teléfono requerido.");
+
+        // 1. Crear usuario en Auth — contraseña = número de celular (solo dígitos)
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
             email,
-            password,
+            password: phoneClean,
             email_confirm: true,
-            user_metadata: { full_name: fullName }
+            user_metadata: { full_name: fullName, phone }
         });
 
         if (authError) throw authError;
@@ -26,6 +29,7 @@ export async function POST(req: Request) {
             .update({
                 full_name: fullName,
                 role: role || 'WAITER',
+                phone: phone.trim(),
                 is_customer: false // REGLA DE ORO: Si se crea acá, NO es cliente
             })
             .eq('id', authData.user.id);

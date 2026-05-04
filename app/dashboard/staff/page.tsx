@@ -13,7 +13,7 @@ export default function StaffPage() {
     const [isAddingDelivery, setIsAddingDelivery] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
-    const [newStaff, setNewStaff] = useState({ email: "", password: "", fullName: "", role: "WAITER" });
+    const [newStaff, setNewStaff] = useState({ email: "", phone: "", fullName: "", role: "WAITER" });
     const [newDelivery, setNewDelivery] = useState({ name: "" });
 
     const supabase = createClient();
@@ -59,7 +59,7 @@ export default function StaffPage() {
 
             if (res.ok) {
                 setIsAdding(false);
-                setNewStaff({ email: "", password: "", fullName: "", role: "WAITER" });
+                setNewStaff({ email: "", phone: "", fullName: "", role: "WAITER" });
                 fetchEverything();
             } else {
                 if (result.message?.includes("IconUser already registered")) {
@@ -266,13 +266,13 @@ export default function StaffPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Contraseña</label>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Celular (será su contraseña)</label>
                                     <input
-                                        type="password" required
-                                        value={newStaff.password}
-                                        onChange={e => setNewStaff({ ...newStaff, password: e.target.value })}
+                                        type="tel" required
+                                        value={newStaff.phone}
+                                        onChange={e => setNewStaff({ ...newStaff, phone: e.target.value })}
                                         className="w-full bg-white/60 border border-black/5 rounded-2xl px-6 py-4 focus:ring-4 focus:ring-black/5 outline-none font-bold"
-                                        placeholder="6+ caracteres"
+                                        placeholder="223 000-0000"
                                     />
                                 </div>
                                 <div>

@@ -118,8 +118,8 @@ export default function RegistroPage() {
 
                     <div className="rounded-2xl border border-white/20 bg-white/10 px-5 py-4 text-left mb-8">
                         <p className="text-white font-bold text-sm mb-1">Para ingresar a tu cuenta:</p>
-                        <p className="text-white/80 text-sm">📱 Teléfono: <span className="font-bold text-white">{phone}</span></p>
-                        <p className="text-white/80 text-sm">🔑 Nº socio: <span className="font-bold text-white">{customerNumber}</span></p>
+                        <p className="text-white/80 text-sm">👤 Usuario: <span className="font-bold text-white">{phone}</span></p>
+                        <p className="text-white/80 text-sm">🔑 Contraseña: <span className="font-bold text-white">{phone}</span></p>
                     </div>
 
                     <button

@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
         const { data, error } = await svc.auth.admin.createUser({
             email: fakeEmail,
-            password: customerNumber,
+            password: phoneClean,
             email_confirm: true,
             user_metadata: {
                 full_name: full_name.trim(),
