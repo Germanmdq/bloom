@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { usePagarSaldoProveedor, useUpdateGastoFijo, useCreateGastoFijo, useDeleteGastoFijo } from "@/lib/hooks/use-compras-stock";
-import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconReceipt, IconPlus, IconX, IconEdit, IconTrash, IconDownload } from "@tabler/icons-react";
+import { usePagarSaldoProveedor, useUpdateGastoFijo, useCreateGastoFijo, useDeleteGastoFijo, useCompras } from "@/lib/hooks/use-compras-stock";
+import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconReceipt, IconPlus, IconX, IconEdit, IconTrash, IconDownload, IconShoppingCart } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Proveedor { id: string; nombre: string; cuit: string | null; saldo_cc: number; telefono: string | null; }
@@ -10,7 +10,7 @@ interface Insumo { id: string; nombre: string; unidad: string; stock_actual: num
 interface Gasto { id: string; nombre: string; monto: number; fecha_vencimiento: string; estado: string; categoria: string; }
 
 export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Proveedor[]; insumos: Insumo[]; gastos: Gasto[] }) {
-    const [tab, setTab] = useState<'insumos' | 'proveedores' | 'gastos'>('insumos');
+    const [tab, setTab] = useState<'insumos' | 'proveedores' | 'gastos' | 'compras'>('insumos');
     const [search, setSearch] = useState("");
     const [catFilter, setCatFilter] = useState("Todos");
     const [pagoModal, setPagoModal] = useState<Proveedor | null>(null);
@@ -19,6 +19,7 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
     const [metodoPago, setMetodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
     const [gastoModal, setGastoModal] = useState<Partial<Gasto> | null>(null);
 
+    const { data: compras = [] } = useCompras();
     const pagarSaldo = usePagarSaldoProveedor();
     const updateGasto = useUpdateGastoFijo();
     const createGasto = useCreateGastoFijo();
@@ -142,6 +143,9 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                 <button onClick={() => { setTab('insumos'); setSearch(""); }} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${tab === 'insumos' ? 'bg-white text-black shadow-sm' : 'text-gray-400'}`}>
                     Insumos ({insumos.length})
                 </button>
+                <button onClick={() => { setTab('compras'); setSearch(""); }} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${tab === 'compras' ? 'bg-white text-black shadow-sm' : 'text-gray-400'}`}>
+                    Compras ({compras.length})
+                </button>
                 <button onClick={() => { setTab('proveedores'); setSearch(""); }} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${tab === 'proveedores' ? 'bg-white text-black shadow-sm' : 'text-gray-400'}`}>
                     Proveedores ({proveedores.length})
                 </button>
@@ -207,6 +211,34 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                         })}
                     </div>
                 </>
+            )}
+
+            {tab === 'compras' && (
+                <div className="space-y-3">
+                    {compras.length === 0 ? (
+                        <div className="text-center py-16 text-gray-400 font-bold text-sm">No hay compras registradas.</div>
+                    ) : compras.filter((c: any) =>
+                        (c.proveedores?.nombre || '').toLowerCase().includes(search.toLowerCase()) ||
+                        (c.numero_factura || '').toLowerCase().includes(search.toLowerCase())
+                    ).map((c: any) => (
+                        <div key={c.id} className="p-5 rounded-2xl border border-gray-100 bg-white hover:shadow-sm transition-all flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500">
+                                    <IconShoppingCart size={18} />
+                                </div>
+                                <div>
+                                    <p className="font-black text-sm text-gray-900">{c.proveedores?.nombre || 'Sin proveedor'}</p>
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                        {new Date(c.created_at).toLocaleDateString('es-AR')}
+                                        {c.numero_factura ? ` · Fac: ${c.numero_factura}` : ''}
+                                        {' · '}{c.metodo_pago === 'cuenta_corriente' ? 'Cta. Cte.' : 'Efectivo'}
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="font-black text-lg text-gray-900 shrink-0">${(c.total || 0).toLocaleString('es-AR')}</p>
+                        </div>
+                    ))}
+                </div>
             )}
 
             {tab === 'proveedores' && (

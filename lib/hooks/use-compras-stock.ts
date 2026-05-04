@@ -141,7 +141,7 @@ export function useCompras() {
             const { data, error } = await supabase
                 .from('compras')
                 .select('*, proveedores(id, nombre)')
-                .order('fecha', { ascending: false })
+                .order('created_at', { ascending: false })
                 .limit(50);
             if (error) throw error;
             return data;
