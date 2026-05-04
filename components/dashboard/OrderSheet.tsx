@@ -1195,16 +1195,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         onClick={() => {
                                             if (featuredProduct) {
                                                 setPendingProduct(featuredProduct);
-                                                const isEmpanada = featuredProduct.name.toLowerCase().includes("empa");
                                                 const nameLower = featuredProduct.name.toLowerCase();
                                                 const platoDiaHasGarnish = nameLower.includes("guarnicion") || nameLower.includes("guarnición") ||
                                                                             nameLower.includes("c/guarn") || nameLower.includes("con guarn");
-                                                if (isEmpanada) {
-                                                    setConfigStep('empanada-flavor');
-                                                    setEmpanadaCounts({ 'Carne': 0, 'Pollo': 0, 'Jamón y Queso': 0, 'Choclo': 0 });
-                                                } else {
-                                                    setConfigStep('drink-detail');
-                                                }
+                                                setConfigStep('drink-detail');
                                                 setSelectedDrinkGroup(null);
                                                 setSelectedDrink(null);
                                                 setSelectedGarnish(null);
