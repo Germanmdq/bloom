@@ -18,23 +18,22 @@ export default function AccesoPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    const isEmailMode = identifier.includes("@");
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
         const raw = identifier.trim();
-        if (!raw || !password) {
-            setError("Completá todos los campos.");
-            return;
-        }
+        if (!raw) { setError("Ingresá tu email o celular."); return; }
+        if (raw.includes("@") && !password) { setError("Ingresá tu contraseña."); return; }
 
         setLoading(true);
         try {
-            // If contains "@" → real email (staff). Otherwise → phone login.
             const isEmail = raw.includes("@");
             const email = isEmail ? raw.toLowerCase() : `${raw.replace(/\D/g, "")}@bloom.local`;
-            // For phone accounts the password is stored as pure digits — strip formatting
-            const pwd = isEmail ? password : password.replace(/\D/g, "") || password;
+            // Phone: password = phone digits, no need to type it separately
+            const pwd = isEmail ? password : raw.replace(/\D/g, "");
 
             const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: pwd });
             if (authError) {
@@ -90,28 +89,30 @@ export default function AccesoPage() {
                             />
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="block text-[14px] font-bold text-neutral-700">
-                                Contraseña
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type={showPwd ? "text" : "password"}
-                                    autoComplete="current-password"
-                                    placeholder="Si es tu celular, poné característica sin 15"
-                                    value={password}
-                                    onChange={e => { setPassword(e.target.value); setError(""); }}
-                                    className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 pr-12 text-[16px] font-semibold outline-none placeholder:text-neutral-300 placeholder:font-normal placeholder:text-[13px] focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPwd(s => !s)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400"
-                                >
-                                    {showPwd ? <IconEyeOff size={18} /> : <IconEye size={18} />}
-                                </button>
+                        {isEmailMode && (
+                            <div className="space-y-1.5">
+                                <label className="block text-[14px] font-bold text-neutral-700">
+                                    Contraseña
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPwd ? "text" : "password"}
+                                        autoComplete="current-password"
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={e => { setPassword(e.target.value); setError(""); }}
+                                        className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 pr-12 text-[16px] font-semibold outline-none placeholder:text-neutral-300 focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPwd(s => !s)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400"
+                                    >
+                                        {showPwd ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {error && (
                             <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-semibold text-red-700">
