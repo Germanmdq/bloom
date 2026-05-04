@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconUserPlus, IconTrash, IconMail, IconUser, IconCoffee, IconLoader2 } from "@tabler/icons-react";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 export default function StaffPage() {
     const [profiles, setProfiles] = useState<any[]>([]);
@@ -267,12 +268,9 @@ export default function StaffPage() {
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Celular (será su contraseña)</label>
-                                    <input
-                                        type="tel" required
+                                    <PhoneInput
                                         value={newStaff.phone}
-                                        onChange={e => setNewStaff({ ...newStaff, phone: e.target.value })}
-                                        className="w-full bg-white/60 border border-black/5 rounded-2xl px-6 py-4 focus:ring-4 focus:ring-black/5 outline-none font-bold"
-                                        placeholder="223 000-0000"
+                                        onChange={v => setNewStaff({ ...newStaff, phone: v })}
                                     />
                                 </div>
                                 <div>

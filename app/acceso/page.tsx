@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconLoader2 } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 const GREEN = "#2d4a3e";
 const CREAM = "#F5EDD8";
@@ -66,16 +67,12 @@ export default function AccesoPage() {
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-1.5">
                             <label className="block text-[14px] font-bold text-neutral-700">
-                                Tu WhatsApp
+                                Tu celular
                             </label>
-                            <input
-                                type="tel"
-                                inputMode="tel"
-                                autoComplete="tel"
-                                placeholder="223 000-0000"
+                            <PhoneInput
                                 value={phone}
-                                onChange={(e) => { setPhone(e.target.value); setError(""); }}
-                                className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 text-[16px] font-semibold outline-none placeholder:text-neutral-400 focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
+                                onChange={(v) => { setPhone(v); setError(""); }}
+                                error={!!error}
                             />
                         </div>
 

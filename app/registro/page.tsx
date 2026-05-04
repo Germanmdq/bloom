@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconLoader2 } from "@tabler/icons-react";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 const GREEN = "#2d4a3e";
 const GOLD = "#c9a84c";
@@ -222,15 +223,10 @@ export default function RegistroPage() {
                                 <p className="text-[14px] font-medium text-neutral-500 mt-1">Este va a ser tu usuario para ingresar</p>
                             </div>
 
-                            <input
-                                type="tel"
-                                inputMode="tel"
-                                autoComplete="tel"
-                                placeholder="223 000-0000"
+                            <PhoneInput
                                 value={phone}
-                                onChange={(e) => { setPhone(e.target.value); setError(""); }}
-                                className={inputClass}
-                                autoFocus
+                                onChange={(v) => { setPhone(v); setError(""); }}
+                                error={!!error}
                             />
 
                             {error && (
