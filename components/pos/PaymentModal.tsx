@@ -9,9 +9,6 @@ import { PaymentMethod } from "@/lib/types";
 import { IconSearch, IconX, IconUser } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 
-const POINT_POLL_MS = 1200;
-const POINT_POLL_MAX = 100;
-
 interface PaymentModalProps {
     tableId: number;
     total: number;
@@ -24,7 +21,6 @@ interface PaymentModalProps {
     isFinishing: boolean;
     onClose: () => void;
     onConfirm: (ctx?: { mpOrderId?: string | null; customerId?: string | null }) => void;
-    /** UUID de `orders` al generar preferencia QR (webhook marca paid). */
     onMpOrderReady?: (orderId: string | null) => void;
     waiterId?: string | null;
     selectedCustomerId?: string | null;
@@ -56,13 +52,7 @@ export function PaymentModal({
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
     const [isGeneratingQR, setIsGeneratingQR] = useState(false);
     const [qrError, setQrError] = useState<string | null>(null);
-    const [showQrOption, setShowQrOption] = useState(false);
 
-    const [pointBusy, setPointBusy] = useState(false);
-    const [pointWaiting, setPointWaiting] = useState(false);
-    const [pointError, setPointError] = useState<string | null>(null);
-
-    // Customer search states
     const [q, setQ] = useState("");
     const [results, setResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -70,10 +60,7 @@ export function PaymentModal({
 
     const handleSearch = async (val: string) => {
         setQ(val);
-        if (val.length < 2) {
-            setResults([]);
-            return;
-        }
+        if (val.length < 2) { setResults([]); return; }
         setIsSearching(true);
         const { data } = await supabase
             .from('profiles')
@@ -84,14 +71,12 @@ export function PaymentModal({
         setIsSearching(false);
     };
 
-    // Fetch stamps cuando se vincula un cliente
     useEffect(() => {
         if (!selectedCustomerId) { setClienteStamps(null); return; }
         supabase.from('profiles').select('coffee_stamps').eq('id', selectedCustomerId).maybeSingle()
             .then(({ data }) => setClienteStamps(data?.coffee_stamps ?? null));
     }, [selectedCustomerId]);
 
-    // Cafés en el carrito actual
     const coffeeCountInCart = cart.reduce((acc, item) => {
         const n = item.name.toLowerCase();
         const esCafe = n.includes('café') || n.includes('cafe') ||
@@ -103,8 +88,6 @@ export function PaymentModal({
     const stampsConCarrito = (clienteStamps ?? 0) + coffeeCountInCart;
     const cafeGratisDisponible = clienteStamps !== null && stampsConCarrito >= 10;
 
-    // Precio del jarrito o pocillo en el carrito (café gratis = 1 unidad de estos)
-    // Primero busca jarrito/pocillo; si no hay, el café más barato del carrito
     const freeCoffeePrice = (() => {
         if (!cafeGratisDisponible) return 0;
         const jarroPocillo = cart.find(item => {
@@ -112,7 +95,6 @@ export function PaymentModal({
             return n.includes('jarrito') || n.includes('pocillo');
         });
         if (jarroPocillo) return jarroPocillo.price;
-        // fallback: café más barato
         return cart.reduce((min, item) => {
             const n = item.name.toLowerCase();
             const esCafe = n.includes('café') || n.includes('cafe') || n.includes('capuccino') ||
@@ -122,7 +104,6 @@ export function PaymentModal({
         }, 0);
     })();
 
-    // Para MP: total ya con el café gratis descontado (1 jarrito/pocillo)
     const finalTotalMP = cafeGratisDisponible && freeCoffeePrice > 0
         ? Math.max(0, finalTotal - freeCoffeePrice)
         : finalTotal;
@@ -131,15 +112,12 @@ export function PaymentModal({
     onMpOrderReadyRef.current = onMpOrderReady;
 
     const cartKey = useMemo(
-        () =>
-            JSON.stringify(
-                cart.map((i) => ({ id: i.id, n: i.name, p: i.price, q: i.quantity }))
-            ),
+        () => JSON.stringify(cart.map((i) => ({ id: i.id, n: i.name, p: i.price, q: i.quantity }))),
         [cart]
     );
 
     useEffect(() => {
-        if (paymentMethod !== "MERCADO_PAGO" || !showQrOption) {
+        if (paymentMethod !== "MERCADO_PAGO") {
             setQrCodeUrl(null);
             setQrError(null);
             setIsGeneratingQR(false);
@@ -161,22 +139,13 @@ export function PaymentModal({
                     credentials: "include",
                     body: JSON.stringify({
                         table_id: tableId,
-                        items: cart.map((i) => ({
-                            id: i.id,
-                            name: i.name,
-                            price: i.price,
-                            quantity: i.quantity,
-                        })),
+                        items: cart.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
                         subtotal: total,
                         final_total: finalTotalMP,
                         waiter_id: waiterId || null,
                     }),
                 });
-                const data = (await resp.json()) as {
-                    init_point?: string;
-                    order_id?: string;
-                    error?: string;
-                };
+                const data = (await resp.json()) as { init_point?: string; order_id?: string; error?: string };
                 if (cancelled) return;
                 if (!resp.ok || !data.init_point) {
                     setQrError(data.error || "No se pudo generar el cobro con Mercado Pago");
@@ -185,9 +154,8 @@ export function PaymentModal({
                 }
                 setQrCodeUrl(data.init_point);
                 onMpOrderReadyRef.current?.(data.order_id ?? null);
-            } catch (err) {
+            } catch {
                 if (cancelled) return;
-                console.error("Error generating QR:", err);
                 setQrError("Error de red al crear el cobro");
                 onMpOrderReadyRef.current?.(null);
             } finally {
@@ -195,102 +163,8 @@ export function PaymentModal({
             }
         })();
 
-        return () => {
-            cancelled = true;
-        };
-    }, [paymentMethod, showQrOption, finalTotalMP, total, cartKey, tableId, waiterId]);
-
-    useEffect(() => {
-        if (paymentMethod !== "MERCADO_PAGO") {
-            setShowQrOption(false);
-            setPointWaiting(false);
-            setPointBusy(false);
-            setPointError(null);
-        }
-    }, [paymentMethod]);
-
-    const handleSelectMercadoPago = () => {
-        setPaymentMethod("MERCADO_PAGO");
-        setPointError(null);
-        setShowQrOption(false);
-    };
-
-    const pollPointUntilPaid = async (paymentIntentId: string, orderId: string) => {
-        for (let i = 0; i < POINT_POLL_MAX; i++) {
-            await new Promise((r) => setTimeout(r, POINT_POLL_MS));
-            const res = await fetch(
-                `/api/payments/point-intent?payment_intent_id=${encodeURIComponent(paymentIntentId)}`,
-                { credentials: "include" }
-            );
-            const j = (await res.json()) as {
-                paid?: boolean;
-                pending?: boolean;
-                failed?: boolean;
-                error?: string;
-                payment_status?: string;
-            };
-            if (!res.ok) {
-                throw new Error(j.error || "Error consultando el terminal");
-            }
-            if (j.paid) {
-                onMpOrderReadyRef.current?.(orderId);
-                onConfirm({ mpOrderId: orderId });
-                return;
-            }
-            if (j.failed) {
-                throw new Error(
-                    j.payment_status
-                        ? `Pago no aprobado (${j.payment_status})`
-                        : "Operación cancelada o rechazada en el terminal"
-                );
-            }
-        }
-        throw new Error("Tiempo de espera agotado. Revisá el Point o intentá de nuevo.");
-    };
-
-    const handleCobrarConPoint = async () => {
-        setPointError(null);
-        setPointBusy(true);
-        setPointWaiting(false);
-        onMpOrderReadyRef.current?.(null);
-        try {
-            const resp = await fetch("/api/payments/point-intent", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({
-                    table_id: tableId,
-                    items: cart.map((i) => ({
-                        id: i.id,
-                        name: i.name,
-                        price: i.price,
-                        quantity: i.quantity,
-                    })),
-                    subtotal: total,
-                    final_total: finalTotal,
-                    waiter_id: waiterId || null,
-                }),
-            });
-            const data = (await resp.json()) as {
-                payment_intent_id?: string;
-                order_id?: string;
-                error?: string;
-            };
-            if (!resp.ok || !data.payment_intent_id || !data.order_id) {
-                throw new Error(data.error || "No se pudo enviar el cobro al Point");
-            }
-            onMpOrderReadyRef.current?.(data.order_id);
-            setPointWaiting(true);
-            await pollPointUntilPaid(data.payment_intent_id, data.order_id);
-        } catch (e) {
-            const msg = e instanceof Error ? e.message : "Error en cobro Point";
-            setPointError(msg);
-            onMpOrderReadyRef.current?.(null);
-        } finally {
-            setPointBusy(false);
-            setPointWaiting(false);
-        }
-    };
+        return () => { cancelled = true; };
+    }, [paymentMethod, finalTotalMP, total, cartKey, tableId, waiterId]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-12">
@@ -300,29 +174,26 @@ export function PaymentModal({
                 animate={{ opacity: 1, scale: 1 }}
                 className="relative bg-white w-full max-w-5xl max-h-[96dvh] rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row"
             >
-                <form 
+                <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        if (!isFinishing && !pointWaiting && !pointBusy && !(paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId)) {
+                        if (!isFinishing && !(paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId)) {
                             onConfirm({ customerId: selectedCustomerId });
                         }
                     }}
                     className="flex flex-col md:flex-row w-full h-full"
                 >
-                {/* Left panel: total + discount */}
                 <div className="md:w-1/3 bg-[#FFD60A] p-7 flex flex-col justify-between relative overflow-hidden">
                     <div>
                         <h3 className="text-lg font-black uppercase tracking-widest opacity-40 mb-2">Total a Cobrar</h3>
                         <p className="text-6xl font-black tracking-tighter text-black mb-8">${finalTotal.toLocaleString()}</p>
                     </div>
-
                     {discount > 0 && (
                         <div className="flex flex-col gap-1 bg-black/5 p-4 rounded-xl">
                             <span className="text-[10px] font-black uppercase opacity-40">Descuento aplicado</span>
                             <span className="text-2xl font-black text-black">-${Math.round(total * (discount / 100)).toLocaleString()}</span>
                         </div>
                     )}
-
                     <div className="mt-8">
                         <p className="text-xs font-bold uppercase tracking-widest opacity-40 mb-2">Detalles</p>
                         <div className="text-sm font-bold flex flex-col gap-1">
@@ -331,7 +202,6 @@ export function PaymentModal({
                     </div>
                 </div>
 
-                {/* Right panel: payment method + action */}
                 <div className="flex-1 p-6 md:p-8 bg-white flex flex-col overflow-y-auto">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-2xl font-black uppercase tracking-tighter">Método de Pago</h3>
@@ -343,7 +213,6 @@ export function PaymentModal({
                         )}
                     </div>
 
-                    {/* MINI BUSCADOR DE CLIENTE */}
                     <div className="mb-6">
                         {!selectedCustomerId ? (
                             <div className="relative">
@@ -353,22 +222,19 @@ export function PaymentModal({
                                     value={q}
                                     onChange={(e) => handleSearch(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            if (results.length > 0) {
-                                                const cust = results[0];
-                                                setSelectedCustomerId?.(cust.id);
-                                                setCustomerName?.(cust.full_name);
-                                                setResults([]);
-                                                setQ("");
-                                                e.preventDefault();
-                                            }
+                                        if (e.key === 'Enter' && results.length > 0) {
+                                            const cust = results[0];
+                                            setSelectedCustomerId?.(cust.id);
+                                            setCustomerName?.(cust.full_name);
+                                            setResults([]);
+                                            setQ("");
+                                            e.preventDefault();
                                         }
                                     }}
                                     placeholder="Vincular cliente seleccionado..."
                                     className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-black/5 focus:bg-white transition-all"
                                 />
                                 {isSearching && <IconLoader2 className="absolute right-4 top-1/3 h-4 w-4 animate-spin text-gray-400" />}
-
                                 {results.length > 0 && (
                                     <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-[110] overflow-hidden divide-y divide-gray-50">
                                         {results.map(cust => (
@@ -438,6 +304,7 @@ export function PaymentModal({
 
                     <div className="grid grid-cols-2 gap-3 mb-4">
                         <button
+                            type="button"
                             onClick={() => setPaymentMethod("CASH")}
                             className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "CASH" ? "border-[#FFD60A] bg-[#FFD60A]/5" : "border-gray-100"}`}
                         >
@@ -445,13 +312,15 @@ export function PaymentModal({
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Cash / Delivery</p>
                         </button>
                         <button
-                            onClick={handleSelectMercadoPago}
+                            type="button"
+                            onClick={() => setPaymentMethod("MERCADO_PAGO")}
                             className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "MERCADO_PAGO" ? "border-sky-500 bg-sky-50" : "border-gray-100"}`}
                         >
                             <p className="font-black text-base">Mercado Pago</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Point / QR / Online</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">QR / Online</p>
                         </button>
                         <button
+                            type="button"
                             onClick={() => setPaymentMethod("BANK_TRANSFER")}
                             className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "BANK_TRANSFER" ? "border-purple-500 bg-purple-50" : "border-gray-100"}`}
                         >
@@ -459,6 +328,7 @@ export function PaymentModal({
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">CBU / Alias</p>
                         </button>
                         <button
+                            type="button"
                             onClick={() => setPaymentMethod("CUENTA_CORRIENTE")}
                             className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "CUENTA_CORRIENTE" ? "border-orange-500 bg-orange-50" : "border-gray-100"}`}
                         >
@@ -496,80 +366,33 @@ export function PaymentModal({
                                         <span>Café gratis aplicado automáticamente: <span className="font-black">-${freeCoffeePrice.toLocaleString()}</span></span>
                                     </div>
                                 )}
-                                {pointWaiting ? (
+                                {isGeneratingQR ? (
                                     <div className="flex flex-col items-center gap-3">
-                                        <IconLoader2 className="animate-spin h-10 w-10 text-sky-600" />
-                                        <p className="text-sm font-bold text-gray-800">Procesando en el terminal…</p>
-                                        <p className="text-xs font-medium text-gray-500">
-                                            Pedile al cliente que pague en el Point Smart (N950).
-                                        </p>
+                                        <IconLoader2 className="animate-spin mx-auto h-8 w-8 text-sky-600" />
+                                        <p className="text-sm font-semibold text-gray-600">Generando QR…</p>
                                     </div>
-                                ) : (
-                                    <>
+                                ) : qrError ? (
+                                    <p className="text-sm font-semibold text-red-600 leading-snug">{qrError}</p>
+                                ) : qrCodeUrl ? (
+                                    <div className="flex flex-col items-center gap-3">
+                                        <div className="rounded-2xl bg-white p-3 shadow-xl border border-gray-100">
+                                            <QRCode value={qrCodeUrl} size={160} />
+                                        </div>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                            Escaneá con Mercado Pago
+                                        </p>
                                         <button
                                             type="button"
-                                            disabled={pointBusy || isFinishing || finalTotal <= 0}
-                                            onClick={() => void handleCobrarConPoint()}
-                                            className="w-full rounded-2xl bg-sky-600 py-4 font-black text-white shadow-lg transition hover:bg-sky-700 disabled:opacity-30"
+                                            onClick={() => {
+                                                const url = `/qr-display?url=${encodeURIComponent(qrCodeUrl)}&amount=%24${Math.round(finalTotalMP).toLocaleString()}`;
+                                                window.open(url, "qr-cliente", "width=480,height=760,toolbar=no,menubar=no");
+                                            }}
+                                            className="w-full py-2.5 rounded-xl bg-gray-900 text-white font-black text-xs uppercase tracking-widest hover:bg-black transition-all"
                                         >
-                                            {pointBusy ? "Enviando al Point…" : "Cobrar con Point"}
+                                            📱 Abrir pantalla QR para el cliente
                                         </button>
-                                        {pointError ? (
-                                            <p className="text-sm font-semibold text-red-600 leading-snug">{pointError}</p>
-                                        ) : (
-                                            <p className="text-xs font-medium text-gray-500">
-                                                Envía el monto al terminal para tarjeta (crédito, 1 cuota).
-                                            </p>
-                                        )}
-
-                                        <div className="border-t border-gray-200 pt-4 flex flex-col gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setShowQrOption((v) => !v);
-                                                    setQrError(null);
-                                                }}
-                                                className="text-xs font-bold uppercase tracking-wide text-sky-700 underline-offset-2 hover:underline"
-                                            >
-                                                {showQrOption ? "Ocultar QR" : "Mostrar QR para escanear"}
-                                            </button>
-                                        </div>
-
-                                        {showQrOption && (
-                                            <div className="pt-2 flex flex-col gap-3">
-                                                {isGeneratingQR ? (
-                                                    <div className="flex flex-col items-center gap-3">
-                                                        <IconLoader2 className="animate-spin mx-auto h-8 w-8 text-sky-600" />
-                                                        <p className="text-sm font-semibold text-gray-600">Generando QR…</p>
-                                                    </div>
-                                                ) : qrError ? (
-                                                    <p className="text-sm font-semibold text-red-600 leading-snug">{qrError}</p>
-                                                ) : qrCodeUrl ? (
-                                                    <>
-                                                        <div className="flex flex-col items-center gap-3">
-                                                            <div className="rounded-2xl bg-white p-3 shadow-xl border border-gray-100">
-                                                                <QRCode value={qrCodeUrl} size={160} />
-                                                            </div>
-                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                                                                Escaneá con Mercado Pago
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const url = `/qr-display?url=${encodeURIComponent(qrCodeUrl)}&amount=%24${Math.round(finalTotalMP).toLocaleString()}`;
-                                                                window.open(url, "qr-cliente", "width=480,height=760,toolbar=no,menubar=no");
-                                                            }}
-                                                            className="w-full py-2.5 rounded-xl bg-gray-900 text-white font-black text-xs uppercase tracking-widest hover:bg-black transition-all"
-                                                        >
-                                                            📱 Abrir pantalla QR para el cliente
-                                                        </button>
-                                                    </>
-                                                ) : null}
-                                            </div>
-                                        )}
-                                    </>
-                                )}
+                                    </div>
+                                ) : null}
                             </div>
                         )}
                     </div>
@@ -584,7 +407,7 @@ export function PaymentModal({
                         </button>
                         <button
                             type="submit"
-                            disabled={isFinishing || pointWaiting || pointBusy || (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId)}
+                            disabled={isFinishing || (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId)}
                             className={`flex-[2] py-4 rounded-2xl font-black hover:scale-[1.02] disabled:opacity-20 shadow-xl transition-all ${
                                 paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId
                                 ? "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -595,7 +418,7 @@ export function PaymentModal({
                         </button>
                     </div>
                 </div>
-            </form>
+                </form>
             </motion.div>
         </div>
     );
