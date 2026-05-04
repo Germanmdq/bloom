@@ -1,7 +1,6 @@
 "use client"; 
 
 import { useState, useEffect, Suspense, useCallback, useRef, useMemo } from "react";
-import IconPhoto from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -1125,7 +1124,7 @@ function TableMenuPage({ tableId, tableLabel }: { tableId: number; tableLabel: s
 
     const pushToCart = (items: any[]) => {
         setCart(prev => {
-            let next = [...prev];
+            const next = [...prev];
             for (const item of items) {
                 const idx = next.findIndex(i => i.id === item.id);
                 if (idx >= 0) next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };

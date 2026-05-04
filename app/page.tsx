@@ -15,11 +15,9 @@ import {
   IconLeaf,
   IconStar,
   IconTruck,
-  IconToolsKitchen,
 } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { FoodKingMobileNavPanel } from "@/components/FoodKingMobileNav";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -116,7 +114,7 @@ export default function HomePage() {
   const [platoDelDia, setPlatoDelDia] = useState<any>(null);
 
   /** Por tarjeta: producto y categoría encontrados para abrir el chat con una sola tarjeta desde la home. */
-  const [favoriteCategoryByName, setFavoriteCategoryByName] = useState<
+  const [_favoriteCategoryByName] = useState<
     Record<string, { categoryId: string; displayName: string; productId: string } | null>
   >({});
 

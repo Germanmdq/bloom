@@ -1,8 +1,8 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Table, TableStatus } from "@/lib/types";
+import { Table } from "@/lib/types";
 import { OrderSheet } from "@/components/dashboard/OrderSheet";
 import { createClient } from "@/lib/supabase/client";
 import { IconLoader2, IconX } from "@tabler/icons-react";
@@ -95,7 +95,6 @@ export default function TablesPage() {
             if (!res.ok) {
                 if (json.error === 'already_exists') {
                     // El cliente ya existe — buscarlo y vincularlo
-                    const phoneClean = newCustomerPhone.replace(/\D/g, '');
                     const { data: existing } = await supabase
                         .from('profiles')
                         .select('id, full_name, phone')
@@ -364,18 +363,6 @@ export default function TablesPage() {
         } else {
             alert("No se encontró una mesa ocupada con ese nombre o número.");
         }
-    };
-
-    const handleQuickOpen = (val: string) => {
-        const num = parseInt(val);
-        if (isNaN(num)) return;
-        
-        // Determinar tipo según rango
-        if (num >= 1 && num < 100) setNewTableType('LOCAL');
-        else if (num >= 100 && num < 200) setNewTableType('DELIVERY');
-        else if (num >= 200 && num < 300) setNewTableType('TAKEAWAY');
-
-        handleOpenTable(num);
     };
 
     const sortedTables = [...tables]
@@ -807,7 +794,6 @@ export default function TablesPage() {
                              {/* Individual Web Order Cards */}
                              {webOrders.map(order => {
                                  const isDelivery = order.delivery_type === 'delivery' || (!order.delivery_type && order.order_type === 'web');
-                                 const timeStr = new Date(order.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
                                  const now = Date.now();
                                  const createdAt = new Date(order.created_at).getTime();
                                  let minutesElapsed = Math.floor((now - createdAt) / 60000);

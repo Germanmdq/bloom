@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence } from "framer-motion";
-import { IconSearch, IconPlus, IconTag, IconChevronRight, IconX, IconCurrencyDollar, IconFlame, IconEdit } from "@tabler/icons-react";
+import { IconPlus, IconTag, IconChevronRight, IconX, IconFlame } from "@tabler/icons-react";
 
 function formatName(name: string): string {
     if (!name) return "";
@@ -19,7 +19,7 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
     const [products, setProducts] = useState<any[]>(initialProducts);
     const [categories, setCategories] = useState<any[]>(initialCategories);
     const [loading, setLoading] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
+    const [searchTerm] = useState("");
     const [isEditing, setIsEditing] = useState(false);
     const [isQuickPricing, setIsQuickPricing] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);

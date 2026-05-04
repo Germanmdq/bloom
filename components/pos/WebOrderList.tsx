@@ -1,7 +1,7 @@
 "use client";
 
 import { IconLayoutGrid, IconX } from "@tabler/icons-react";
-import { WEB_ORDER_TABLE_DELIVERY, WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
+import { WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
 
 interface WebOrder {
     id: string;

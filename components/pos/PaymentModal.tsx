@@ -38,7 +38,7 @@ export function PaymentModal({
     total,
     finalTotal,
     discount,
-    setDiscount,
+    setDiscount: _setDiscount,
     paymentMethod,
     setPaymentMethod,
     cart,

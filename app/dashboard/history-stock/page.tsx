@@ -3,20 +3,17 @@
 import { useState, useMemo } from "react";
 import { 
     useInventoryMovements, 
-    useSuppliers,
-    useProducts
+    useSuppliers
 } from "@/lib/hooks/use-pos-data";
 import { 
-    IconLoader2, IconSearch, IconCalendar, IconUsers, IconPackage, IconHistory, IconFilter, IconArrowUpRight, IconArrowDownLeft, IconRefresh
+    IconLoader2, IconSearch, IconUsers, IconPackage, IconHistory, IconArrowUpRight, IconArrowDownLeft, IconRefresh
 } from "@tabler/icons-react";
-import { motion } from "framer-motion";
 
 type Timeframe = 'ALL' | 'TODAY' | 'WEEK' | 'MONTH';
 
 export default function HistoryStockPage() {
     const { data: movements = [], isLoading: movementsLoading, refetch } = useInventoryMovements();
     const { data: suppliers = [] } = useSuppliers();
-    const { data: products = [] } = useProducts();
 
     // Filters
     const [searchTerm, setSearchTerm] = useState("");

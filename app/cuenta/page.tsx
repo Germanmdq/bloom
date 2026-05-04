@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { IconArrowLeft, IconCamera, IconChevronDown, IconChevronUp, IconUserCircle, IconCoffee, IconHome, IconLoader2, IconLock, IconChartPie, IconShoppingBag, IconTag, IconTrendingUp } from "@tabler/icons-react";
+import { IconArrowLeft, IconCamera, IconChevronDown, IconChevronUp, IconUserCircle, IconCoffee, IconHome, IconLoader2, IconChartPie, IconShoppingBag, IconTag, IconTrendingUp } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 const COFFEE_GOAL = 10;
@@ -49,12 +49,6 @@ function dateKeyLocal(iso: string): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
-}
-
-function loyaltyProgress(paidOrders: number) {
-  const pos = paidOrders % COFFEE_GOAL;
-  const filled = pos === 0 && paidOrders > 0 ? COFFEE_GOAL : pos;
-  return { filled, pct: (filled / COFFEE_GOAL) * 100 };
 }
 
 function initialsFromName(name: string): string {
@@ -125,7 +119,7 @@ function orderStreakDays(orders: OrderRow[]): number {
   if (orders.length === 0) return 0;
   const keys = new Set(orders.map((o) => dateKeyLocal(o.created_at)));
   const newest = [...orders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-  let d = new Date(newest.created_at);
+  const d = new Date(newest.created_at);
   let streak = 0;
   for (let i = 0; i < 400; i++) {
     const k = dateKeyLocal(d.toISOString());
@@ -174,7 +168,7 @@ export default function CuentaPage() {
 
   const [editFullName, setEditFullName] = useState("");
   const [editPhone, setEditPhone] = useState("");
-  const [editEmail, setEditEmail] = useState("");
+  const [editEmail] = useState("");
   const [editBirthdate, setEditBirthdate] = useState("");
   const [editAddressLine, setEditAddressLine] = useState("");
   const [editFloor, setEditFloor] = useState("");
@@ -268,7 +262,6 @@ export default function CuentaPage() {
 
   const displayName = editFullName.trim() || profile?.full_name?.trim() || metaStr(user, "full_name") || "Cliente Bloom";
   const customerNumber = profile?.customer_number || metaStr(user, "customer_number");
-  const { filled: loyaltyFilled, pct: loyaltyPct } = loyaltyProgress(profile?.coffee_stamps || 0);
   const birthdayActive = isBirthdayThisMonth(editBirthdate);
 
   const analytics = useMemo(() => {
@@ -295,7 +288,7 @@ export default function CuentaPage() {
     const ordersThisMonth = orders.filter((o) => new Date(o.created_at) >= startOfMonth);
     const ordersThisYear = orders.filter((o) => new Date(o.created_at) >= startOfYear);
 
-    const byWeekday = WEEKDAY_LABELS.map((label, day) => ({ label, count: 0 }));
+    const byWeekday = WEEKDAY_LABELS.map((label) => ({ label, count: 0 }));
     const byHour = Array.from({ length: 24 }, (_, h) => ({ label: `${String(h).padStart(2, "0")}:00`, count: 0 }));
     for (const o of orders) {
       const d = new Date(o.created_at);
@@ -612,8 +605,6 @@ export default function CuentaPage() {
     user.created_at != null
       ? new Date(user.created_at).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })
       : "—";
-
-  const profileTotalSpent = analytics.totalSpent;
 
   const SidebarBody = ({ mobile }: { mobile?: boolean }) => {
     if (mobile) {

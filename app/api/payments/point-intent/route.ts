@@ -78,7 +78,6 @@ export async function POST(req: Request) {
     }
 
     const amountCents = amountToPointApiCents(finalTotal);
-    const description = `Bloom Café - Mesa ${tableId}`;
 
     const itemsJson = lines.map((i) => {
       const base = {

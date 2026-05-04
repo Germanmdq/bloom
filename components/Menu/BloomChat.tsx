@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import IconPhoto from "next/image";
 import { useRouter } from "next/navigation";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { IconMessageCircle, IconX, IconLoader2, IconCheck, IconShoppingBag, IconPlus, IconMinus } from "@tabler/icons-react";

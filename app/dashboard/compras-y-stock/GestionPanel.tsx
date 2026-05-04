@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { usePagarSaldoProveedor, useUpdateGastoFijo, useCreateGastoFijo, useDeleteGastoFijo } from "@/lib/hooks/use-compras-stock";
-import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconReceipt, IconPlus, IconX, IconEdit, IconTrash, IconDownload } from "@tabler/icons-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { IconPackage, IconSearch, IconAlertTriangle, IconCoin, IconPlus, IconEdit, IconTrash, IconDownload } from "@tabler/icons-react";
+import { motion } from "framer-motion";
 
 interface Proveedor { id: string; nombre: string; cuit: string | null; saldo_cc: number; telefono: string | null; }
 interface Insumo { id: string; nombre: string; unidad: string; stock_actual: number; stock_minimo: number; precio_ultima_compra: number; categoria: string; proveedores: { id: string; nombre: string } | null; }
@@ -16,7 +16,7 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
     const [pagoModal, setPagoModal] = useState<Proveedor | null>(null);
     const [montoPago, setMontoPago] = useState("");
     const [motivoPago, setMotivoPago] = useState("");
-    const [metodoPago, setMetodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
+    const [metodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
     const [gastoModal, setGastoModal] = useState<Partial<Gasto> | null>(null);
 
     const pagarSaldo = usePagarSaldoProveedor();

@@ -1,18 +1,15 @@
 "use client";
 import React, {
   useEffect,
-  useRef,
   useState,
   createContext,
-  useContext,
 } from "react";
 import {
   IconChevronLeft,
   IconChevronRight,
-  IconX,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import Image, { ImageProps } from "next/image";
 
 interface CarouselProps {
@@ -168,7 +165,6 @@ export const Carousel = ({
 
 export const Card = ({
   card,
-  index,
   layout = false,
   onClick,
   className,

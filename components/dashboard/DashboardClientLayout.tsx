@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { MobileBottomNav } from "@/components/dashboard/MobileBottomNav";
-import { IconLock, IconBackspace } from "@tabler/icons-react";
 import { SalesComparisonPanel, ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import { OrderNotificationListener } from "./OrderNotificationListener";
 import { GlobalOrderNotification } from "./GlobalOrderNotification";

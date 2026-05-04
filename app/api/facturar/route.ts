@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-const { AfipServices } = require('facturajs');
+// @ts-expect-error facturajs does not have types
+import { AfipServices } from 'facturajs';
 import path from 'path';
 import fs from 'fs';
 
@@ -16,6 +17,9 @@ export async function POST(request: Request) {
     if (!amount || isNaN(amount)) {
       return NextResponse.json({ error: 'Monto inválido' }, { status: 400 });
     }
+
+    const fallbackCuitStr = process.env.AFIP_CUIT || "23354207184";
+    const fallbackCuitNum = parseInt(fallbackCuitStr, 10);
 
     // Resolve cert paths: prefer /tmp (Vercel) written from env vars, fallback to local /certs dir
     const certB64 = process.env.AFIP_CERT_B64;
@@ -36,7 +40,7 @@ export async function POST(request: Request) {
       }
     } else {
       // Local dev: read from /certs directory
-      certPath = path.join(process.cwd(), 'certs', '23354207184.crt');
+      certPath = path.join(process.cwd(), 'certs', `${fallbackCuitStr}.crt`);
       keyPath  = path.join(process.cwd(), 'certs', 'privada.key');
     }
 
@@ -44,13 +48,15 @@ export async function POST(request: Request) {
 
     const afip = new AfipServices({
       homo: false,
-      CUIT: "23354207184",
+      cuit: parseInt(fallbackCuitStr, 10), // Cuit in lower case or as integer based on types
+      CUIT: fallbackCuitStr, // keep old string key in case of strange JS mapping, with ignore
+      // @ts-expect-error fallback support
       certPath: certPath,
       privateKeyPath: keyPath,
       cacheTokensPath: tokensPath,
       tokensExpireInHours: 12,
       useLegacyTls: true
-    });
+    } as any);
 
     const puntoDeVenta = 4;
     const tipoDeComprobante = 11; // Factura C
@@ -59,7 +65,7 @@ export async function POST(request: Request) {
 
     // 1. Obtener el último comprobante
     const resLast = await afip.getLastBillNumber({
-      Auth: { Cuit: "23354207184" },
+      Auth: { Cuit: fallbackCuitNum },
       params: {
         PtoVta: puntoDeVenta,
         CbteTipo: tipoDeComprobante
@@ -72,7 +78,7 @@ export async function POST(request: Request) {
 
     // 2. Crear la factura
     const data = {
-      Auth: { Cuit: 23354207184 },
+      Auth: { Cuit: fallbackCuitNum },
       params: {
         FeCAEReq: {
           FeCabReq: {
@@ -94,7 +100,7 @@ export async function POST(request: Request) {
               ImpOpEx: 0,
               ImpTrib: 0,
               ImpIVA: 0,
-              MonId: 'PES',
+              MonId: 'PES' as const,
               MonCotiz: 1
             }
           }

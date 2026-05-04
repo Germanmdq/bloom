@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconLayoutGrid, IconCoffee, IconListCheck, IconSettings, IconUsers, IconChartPie, IconReceipt, IconToolsKitchen, IconPackage, IconMessageCircle, IconBriefcase, IconX, IconLogout, IconHome, IconHistory, IconQrcode} from "@tabler/icons-react";
+import { IconLayoutGrid, IconCoffee, IconListCheck, IconSettings, IconUsers, IconChartPie, IconToolsKitchen, IconPackage, IconMessageCircle, IconBriefcase, IconX, IconLogout, IconHome, IconQrcode} from "@tabler/icons-react";
 import { useUserRole } from "@/lib/hooks/use-pos-data";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";

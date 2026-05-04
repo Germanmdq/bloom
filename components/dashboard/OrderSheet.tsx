@@ -3,11 +3,11 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { 
-    IconSearch, IconTrash, IconCreditCard, IconCheck, IconLoader2, IconX, 
+    IconSearch, IconTrash, IconCheck, IconLoader2, IconX,
     IconChevronLeft, IconPrinter, IconToolsKitchen2, IconStar,
     IconSoup, IconMeat, IconPizza, IconCup, IconIceCream, IconGlassFull,
-    IconBeer, IconCake, IconBread, IconCookie, IconCheese, IconFish, 
-    IconCarrot, IconBottle, IconCoffee, IconGlass, IconSalad, IconBurger,
+    IconBeer, IconCake, IconBread, IconCookie,
+    IconBottle, IconCoffee, IconGlass, IconSalad, IconBurger,
 } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
@@ -15,7 +15,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useProducts, useCategories, useCreateOrder, useSendKitchenTicket, useAppSettings } from "@/lib/hooks/use-pos-data";
 import { PaymentModal } from "@/components/pos/PaymentModal";
 import { ReceiptModal } from "@/components/pos/ReceiptModal";
-import { orderSheetHeaderBorderClass } from "@/lib/dashboard/table-colors";
 import { orderMatchesWebVirtualTable, WEB_ORDER_TABLE_DELIVERY, WEB_ORDER_TABLE_RETIRO } from "@/lib/orders/web-virtual-tables";
 import type { CartItem } from "@/lib/store/order-store";
 
@@ -64,7 +63,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const finishingRef = useRef(false);
     const [selectedWaiter, setSelectedWaiter] = useState<string>("");
     const [invoiceType, setInvoiceType] = useState('Factura C');
-    const [, setClientName] = useState('Consumidor Final');
     const [showInvoiceSelector, setShowInvoiceSelector] = useState(false);
     const [isFetchingCAE, setIsFetchingCAE] = useState(false);
     const [caeData, setCaeData] = useState<{ cae: string; expiration: string; voucherNumber: number } | null>(null);
@@ -227,7 +225,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [productSearch, setProductSearch] = useState("");
     const [waiters, setWaiters] = useState<Array<{ id: string; full_name: string }>>([]);
     const [orderType, setOrderType] = useState<'LOCAL' | 'DELIVERY' | 'TAKEAWAY'>('LOCAL');
-    const [webOrders, setWebOrders] = useState<any[]>([]);
+    const [_webOrders] = useState<any[]>([]);
     const [currentWebOrderId, setCurrentWebOrderId] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [mpPosOrderId, setMpPosOrderId] = useState<string | null>(null);
@@ -238,17 +236,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [deliveryPersons, setDeliveryPersons] = useState<any[]>([]);
     const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState<string>("");
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-    const [customerSearchQuery, setCustomerSearchQuery] = useState("");
-    const [customerResults, setCustomerResults] = useState<any[]>([]);
-    const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
     const [webOrderIsPaid, setWebOrderIsPaid] = useState(false);
-    const [webOrderPaymentMethod, setWebOrderPaymentMethod] = useState<string | null>(null);
+    const [_webOrderPaymentMethod] = useState<string | null>(null);
     const [completedOrderData, setCompletedOrderData] = useState<{ cart: any[], total: number } | null>(null);
-    const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
+    const [_currentPromoIndex] = useState(0);
     const [showConfigurator, setShowConfigurator] = useState(false);
     const [pendingProduct, setPendingProduct] = useState<any>(null);
     const [configStep, setConfigStep] = useState<'drink-group' | 'drink-detail' | 'garnish' | 'notes' | 'empanada-flavor' | 'fish-style' | 'sandwich-filling'>('drink-group');
-    const [selectedDrinkGroup, setSelectedDrinkGroup] = useState<string | null>(null);
+    const [_selectedDrinkGroup] = useState<string | null>(null);
     const [selectedDrink, setSelectedDrink] = useState<any>(null);
     const [selectedGarnish, setSelectedGarnish] = useState<any>(null);
     const [selectedFlavor, setSelectedFlavor] = useState<string | null>(null);
@@ -265,22 +260,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [variosName, setVariosName] = useState("");
     const [variosPrice, setVariosPrice] = useState("");
     const [variosQuantity, setVariosQuantity] = useState("1");
-
-    const handleCustomerSearch = async (q: string) => {
-        setCustomerSearchQuery(q);
-        if (q.length < 2) {
-            setCustomerResults([]);
-            return;
-        }
-        setIsSearchingCustomer(true);
-        const { data } = await supabase
-            .from('profiles')
-            .select('id, full_name, phone, balance')
-            .ilike('full_name', `%${q}%`)
-            .limit(5);
-        setCustomerResults(data || []);
-        setIsSearchingCustomer(false);
-    };
 
     const isWebTable = tableId === WEB_ORDER_TABLE_RETIRO || tableId === WEB_ORDER_TABLE_DELIVERY;
 
@@ -1007,16 +986,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         }
         return products;
     }, [products, productSearch, activeCategory]);
-
-    const categoryCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
-        products.forEach((p: any) => {
-            if (p.category_id) {
-                counts[p.category_id] = (counts[p.category_id] || 0) + 1;
-            }
-        });
-        return counts;
-    }, [products]);
 
     const featuredProduct = useMemo(() => {
         return appSettings?.plato_del_dia_id 

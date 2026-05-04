@@ -7,14 +7,6 @@ import { getSupabaseUrl } from "@/lib/supabase/env";
 const NOTIFICATION_URL = "https://www.bloommdp.com/api/payments/webhook";
 const PRODUCTION_SITE = "https://www.bloommdp.com";
 
-type CreatePreferenceBody = {
-  items?: Array<{ title: string; quantity: number; unit_price: number }>;
-  customer?: { name?: string; phone?: string };
-  order_id: string;
-  /** Monto de deuda CC incluido en el pago. */
-  debt_payment_amount?: number;
-};
-
 type OrderRow = {
   id: string;
   total: number | string;
@@ -59,7 +51,7 @@ export async function POST(req: Request) {
     let mpItems: any[] = [];
     let payerName = "Cliente";
     let payerPhoneRaw = "";
-    let externalReference = orderId || `DEBT_${body.metadata?.customer_id}_${Date.now()}`;
+    const externalReference = orderId || `DEBT_${body.metadata?.customer_id}_${Date.now()}`;
 
     if (isDebtOnly) {
       // Flujo de pago de deuda solamente

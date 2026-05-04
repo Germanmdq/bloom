@@ -36,6 +36,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "bloom-desktop/main.js",
+    "bloom-desktop/preload.js",
+    "get_products.js",
+    "query.js",
+    "scratch/add_empanadas.js"
   ]),
 ]);
 

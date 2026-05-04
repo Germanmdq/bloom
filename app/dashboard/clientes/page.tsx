@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { IconUsers, IconSearch, IconLoader2, IconStar, IconTrendingUp, IconCalendar, IconArrowsUpDown, IconX, IconPhone, IconMail, IconShoppingBag, IconCircleCheck, IconAlertCircle, IconHistory, IconReceipt } from "@tabler/icons-react";
+import { IconUsers, IconSearch, IconLoader2, IconStar, IconTrendingUp, IconArrowsUpDown, IconX, IconPhone, IconMail, IconShoppingBag, IconCircleCheck, IconHistory, IconReceipt } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function ClientesPage() {

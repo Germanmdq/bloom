@@ -189,13 +189,6 @@ export function AuthPageClient() {
     setShowPassword(false);
   };
 
-  const switchToRegister = () => {
-    setPanel("register");
-    setError("");
-    setInfo("");
-    setShowPassword(false);
-  };
-
   return (
     <div className="min-h-screen bg-[#FAF7F2] font-sans text-neutral-900">
       <FoodKingMobileNavPanel open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />

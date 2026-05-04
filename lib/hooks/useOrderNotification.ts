@@ -2,8 +2,6 @@ import { useEffect } from 'react';
 import { createClient } from '../supabase/client';
 import { toast } from 'sonner';
 
-const NOTIFICATION_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
-
 export function useOrderNotification() {
     const supabase = createClient();
 

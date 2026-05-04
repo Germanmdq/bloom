@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { IconLoader2, IconChevronRight, IconMessageCircle, IconCopy, IconCheck } from "@tabler/icons-react";
+import { IconLoader2, IconChevronRight, IconMessageCircle, IconCheck } from "@tabler/icons-react";
 import type { DashboardCustomerRow } from "@/lib/types/dashboard-customers";
 
 function fmtDate(iso: string | null): string {

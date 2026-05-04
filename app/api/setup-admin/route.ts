@@ -51,7 +51,7 @@ export async function GET() {
         if (profileError) throw profileError;
 
         // 3. Inicializar app_settings si está vacía
-        const { error: settingsError } = await supabase
+        await supabase
             .from('app_settings')
             .upsert({
                 id: 1,

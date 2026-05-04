@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { motion, AnimatePresence } from "framer-motion";
-import { IconChartPie, IconCurrencyDollar, IconCreditCard, IconWallet, IconCalendar, IconLoader2, IconTrendingUp, IconShoppingBag, IconReceipt, IconRefresh, IconPackage, IconArrowUpRight, IconArrowDownRight } from "@tabler/icons-react";
+import { motion } from "framer-motion";
+import { IconChartPie, IconCurrencyDollar, IconCreditCard, IconWallet, IconLoader2, IconTrendingUp, IconShoppingBag, IconReceipt, IconRefresh, IconPackage, IconArrowUpRight, IconArrowDownRight } from "@tabler/icons-react";
 
 type Timeframe = 'TODAY' | 'WEEK' | 'MONTH';
 

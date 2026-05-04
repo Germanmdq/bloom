@@ -122,7 +122,7 @@ async function markOrderPaid(orderId: string) {
   return true;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   return NextResponse.json({ ok: true }, { status: 200 });
 }
 

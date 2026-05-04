@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { 
     useStock, 
-    useInventoryMovements, 
     useCreateMovement, 
     useProducts, 
     useExpenses, 
@@ -17,7 +16,7 @@ import {
     IconLoader2, IconPlus, IconArrowDown, IconAlertTriangle, IconPackage, IconSearch,
     IconReceipt, IconUsers, IconTrendingDown, IconBulb, IconFlame, IconHome,
     IconTool, IconFileText, IconShoppingCart, IconSpeakerphone, IconShieldExclamation,
-    IconDots, IconEdit, IconPhone, IconMail, IconTag, IconCheck, IconX, IconHistory, IconFilter
+    IconDots, IconEdit, IconPhone, IconTag, IconX
 } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -383,7 +382,7 @@ export default function InventoryPage() {
                                                         ))}
                                                         <div onClick={() => handleQuickCreateInsumo(item.search, 'stock', index)} className="p-4 bg-emerald-50 hover:bg-emerald-100 rounded-xl cursor-pointer flex items-center justify-center gap-2 border border-dashed border-emerald-200 transition-all">
                                                             <IconPlus size={14} className="text-emerald-600" />
-                                                            <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Crear "{item.search}" como nuevo</span>
+                                                            <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Crear &quot;{item.search}&quot; como nuevo</span>
                                                         </div>
                                                     </div>
                                                 )}

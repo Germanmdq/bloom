@@ -20,8 +20,8 @@ interface ReceiptModalProps {
     onClose: () => void;
 }
 
-const CUIT  = "23-35420718-4";
-const CUIT_RAW = "23354207184";
+const CUIT  = process.env.NEXT_PUBLIC_CUIT_FORMATTED || "23-35420718-4";
+const CUIT_RAW = process.env.NEXT_PUBLIC_CUIT || "23354207184";
 const PTO_VTA = 4;
 const TIPO_CMP = 11; // Factura C
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IconDeviceFloppy, IconBuildingStore, IconAdjustments, IconDatabase, IconPrinter, IconShield, IconDownload, IconLayoutGrid, IconKeyboard, IconStar, IconCheck, IconSpeakerphone, IconPlus, IconTrash, IconEdit, IconX } from "@tabler/icons-react";
+import { IconDeviceFloppy, IconDatabase, IconPrinter, IconShield, IconDownload, IconLayoutGrid, IconKeyboard, IconStar, IconCheck, IconSpeakerphone, IconPlus, IconTrash, IconEdit, IconX } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ComparisonType } from "@/components/dashboard/SalesComparisonPanel";
 import { createClient } from "@/lib/supabase/client";
@@ -120,7 +120,7 @@ export default function SettingsPage() {
     useEffect(() => {
         const loadSettings = async () => {
             try {
-                const { data, error } = await supabase
+                const { data } = await supabase
                     .from("app_settings")
                     .select("id, mesas, barra, whatsapp, plato_del_dia_id, plato_dia_price")
                     .eq("id", 1)

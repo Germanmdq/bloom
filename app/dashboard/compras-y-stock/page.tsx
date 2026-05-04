@@ -1,19 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import {
-    useProveedores, useInsumos, useInsumosByProveedor,
-    useRegistrarCompra, useGastosFijosPendientes, useGastosFijos,
-    useMarcarGastoPagado, useCreateProveedor, useCreateInsumo,
-    usePagarSaldoProveedor, useUpdateGastoFijo
+    useProveedores, useInsumos, useGastosFijosPendientes, useGastosFijos
 } from "@/lib/hooks/use-compras-stock";
 import {
-    IconLoader2, IconAlertTriangle, IconCalendarDue, IconCash,
-    IconCreditCard, IconPackage, IconShoppingCart, IconUsers,
-    IconPlus, IconCheck, IconX, IconSearch, IconReceipt,
-    IconBuildingStore, IconChevronDown, IconCoin, IconFileInvoice
+    IconLoader2
 } from "@tabler/icons-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { AlertasVencimientos } from "./AlertasVencimientos";
 import { FormularioCompra } from "./FormularioCompra";
 import { GestionPanel } from "./GestionPanel";

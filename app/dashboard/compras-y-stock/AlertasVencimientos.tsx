@@ -1,7 +1,7 @@
 "use client";
 
 import { useMarcarGastoPagado, useAbonarGastoFijo } from "@/lib/hooks/use-compras-stock";
-import { IconAlertTriangle, IconCalendarDue, IconCheck, IconCoin, IconHistory, IconX } from "@tabler/icons-react";
+import { IconCalendarDue, IconCheck, IconCoin, IconHistory, IconX } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 

@@ -7,14 +7,14 @@ import { IconUserPlus, IconTrash, IconMail, IconUser, IconCoffee, IconLoader2 } 
 
 export default function StaffPage() {
     const [profiles, setProfiles] = useState<any[]>([]);
-    const [deliveries, setDeliveries] = useState<any[]>([]);
+    const [_deliveries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
-    const [isAddingDelivery, setIsAddingDelivery] = useState(false);
+    const [_isAddingDelivery] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [newStaff, setNewStaff] = useState({ email: "", password: "", fullName: "", role: "WAITER" });
-    const [newDelivery, setNewDelivery] = useState({ name: "" });
+    const [_newDelivery] = useState({ name: "" });
 
     const supabase = createClient();
 
