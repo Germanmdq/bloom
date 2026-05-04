@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { IconLoader2, IconEye, IconEyeOff } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -9,7 +8,6 @@ const GREEN = "#2d4a3e";
 const CREAM = "#F5EDD8";
 
 export default function AccesoPage() {
-    const router = useRouter();
     const supabase = createClient();
 
     const [identifier, setIdentifier] = useState("");
@@ -18,37 +16,27 @@ export default function AccesoPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const isEmailMode = identifier.includes("@");
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
-
-        const raw = identifier.trim();
-        if (!raw) { setError("Ingresá tu email o celular."); return; }
-        if (raw.includes("@") && !password) { setError("Ingresá tu contraseña."); return; }
-
+        if (!identifier.trim() || !password.trim()) {
+            setError("Completá todos los campos.");
+            return;
+        }
         setLoading(true);
         try {
-            const isEmail = raw.includes("@");
-            const email = isEmail ? raw.toLowerCase() : `${raw.replace(/\D/g, "")}@bloom.local`;
-            // Phone: password = phone digits, no need to type it separately
-            const pwd = isEmail ? password : raw.replace(/\D/g, "");
+            const raw = identifier.trim();
+            const email = raw.includes("@")
+                ? raw.toLowerCase()
+                : `${raw.replace(/\D/g, "")}@bloom.local`;
 
-            const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: pwd });
-            if (authError) {
-                setError("Usuario o contraseña incorrectos.");
-                return;
-            }
+            const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: password.trim() });
+            if (authError) { setError("Usuario o contraseña incorrectos."); return; }
 
             const { data: profile } = await supabase
-                .from("profiles")
-                .select("role")
-                .eq("id", data.user.id)
-                .single();
+                .from("profiles").select("role").eq("id", data.user.id).single();
 
             const isStaff = ["ADMIN", "WAITER", "KITCHEN", "MANAGER"].includes(profile?.role);
-            // Full reload ensures the server session cookie is picked up immediately
             window.location.href = isStaff ? "/dashboard" : "/menu";
         } catch {
             setError("Error de conexión. Intentá de nuevo.");
@@ -61,10 +49,7 @@ export default function AccesoPage() {
         <div className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-12" style={{ backgroundColor: CREAM }}>
             <div className="w-full max-w-[400px]">
                 <div className="mb-8 text-center">
-                    <div
-                        className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-3xl shadow-md"
-                        style={{ backgroundColor: GREEN }}
-                    >
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-3xl shadow-md" style={{ backgroundColor: GREEN }}>
                         ☕
                     </div>
                     <h1 className="text-2xl font-black tracking-tight text-neutral-900">Ingresar</h1>
@@ -72,14 +57,11 @@ export default function AccesoPage() {
                 </div>
 
                 <div className="rounded-3xl border border-black/[0.07] bg-white p-8 shadow-xl">
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="space-y-1.5">
-                            <label className="block text-[14px] font-bold text-neutral-700">
-                                Email o celular
-                            </label>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-[14px] font-bold text-neutral-700 mb-1.5">Email o celular</label>
                             <input
                                 type="text"
-                                inputMode="email"
                                 autoComplete="username"
                                 placeholder="email@ejemplo.com o 2235551234"
                                 value={identifier}
@@ -89,35 +71,25 @@ export default function AccesoPage() {
                             />
                         </div>
 
-                        {isEmailMode && (
-                            <div className="space-y-1.5">
-                                <label className="block text-[14px] font-bold text-neutral-700">
-                                    Contraseña
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type={showPwd ? "text" : "password"}
-                                        autoComplete="current-password"
-                                        placeholder="••••••••"
-                                        value={password}
-                                        onChange={e => { setPassword(e.target.value); setError(""); }}
-                                        className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 pr-12 text-[16px] font-semibold outline-none placeholder:text-neutral-300 focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPwd(s => !s)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400"
-                                    >
-                                        {showPwd ? <IconEyeOff size={18} /> : <IconEye size={18} />}
-                                    </button>
-                                </div>
+                        <div>
+                            <label className="block text-[14px] font-bold text-neutral-700 mb-1.5">Contraseña</label>
+                            <div className="relative">
+                                <input
+                                    type={showPwd ? "text" : "password"}
+                                    autoComplete="current-password"
+                                    placeholder="Tu contraseña o número de celular"
+                                    value={password}
+                                    onChange={e => { setPassword(e.target.value); setError(""); }}
+                                    className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 pr-12 text-[16px] font-semibold outline-none placeholder:text-neutral-300 placeholder:font-normal focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
+                                />
+                                <button type="button" onClick={() => setShowPwd(s => !s)} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
+                                    {showPwd ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                                </button>
                             </div>
-                        )}
+                        </div>
 
                         {error && (
-                            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-semibold text-red-700">
-                                {error}
-                            </p>
+                            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-semibold text-red-700">{error}</p>
                         )}
 
                         <button
