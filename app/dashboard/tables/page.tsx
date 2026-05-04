@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Table, TableStatus } from "@/lib/types";
 import { OrderSheet } from "@/components/dashboard/OrderSheet";
 import { createClient } from "@/lib/supabase/client";
-import { IconLoader2, IconX } from "@tabler/icons-react";
+import { IconLoader2, IconX, IconTruck, IconShoppingBag } from "@tabler/icons-react";
 
 type WebOrder = {
     id: string;
@@ -864,7 +864,13 @@ export default function TablesPage() {
                                 // Determinar nombre o ID para mostrar
                                 const metaCust = table.items?.find((i: any) => i.id === 'meta-customer');
                                 const hasName = metaCust?.name;
-                                const displayName = hasName ? metaCust.name.replace('Cliente: ', '') : String(table.id);
+                                const isVirtual = table.id >= 5000 || table.order_type === 'DELIVERY' || table.order_type === 'TAKEAWAY';
+                                const isDeliveryTable = table.order_type === 'DELIVERY' || table.id === 5001;
+                                const displayName = hasName
+                                    ? metaCust.name.replace('Cliente: ', '')
+                                    : isVirtual
+                                        ? (isDeliveryTable ? 'Delivery' : 'Retiro')
+                                        : String(table.id);
                                 const itemCount = (table.items || []).filter((i: any) => i.id !== 'meta-customer').length;
                                 const orderLabel = table.order_type === 'DELIVERY' ? 'Delivery' : table.order_type === 'TAKEAWAY' ? 'Retiro' : 'Salón';
 
@@ -887,16 +893,29 @@ export default function TablesPage() {
                                             </span>
                                         </div>
 
-                                        {/* Número / Nombre de mesa */}
-                                        <div className="flex-1 flex items-center justify-center z-10">
-                                            <span className={`font-black leading-none tracking-tighter ${styles.textColor} ${
-                                                displayName.length > 10 ? 'text-2xl' :
-                                                displayName.length > 6  ? 'text-4xl' : 
-                                                displayName.length > 3  ? 'text-6xl' : 
-                                                'text-7xl'
-                                            }`}>
-                                                {displayName}
-                                            </span>
+                                        {/* Número / Nombre / Ícono de mesa */}
+                                        <div className="flex-1 flex flex-col items-center justify-center z-10 gap-2">
+                                            {isVirtual && !hasName ? (
+                                                <>
+                                                    <div className={`opacity-90 ${styles.textColor}`}>
+                                                        {isDeliveryTable
+                                                            ? <IconTruck size={64} strokeWidth={1.5} />
+                                                            : <IconShoppingBag size={64} strokeWidth={1.5} />}
+                                                    </div>
+                                                    <span className={`text-2xl font-black tracking-tight ${styles.textColor}`}>
+                                                        {displayName}
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className={`font-black leading-none tracking-tighter ${styles.textColor} ${
+                                                    displayName.length > 10 ? 'text-2xl' :
+                                                    displayName.length > 6  ? 'text-4xl' :
+                                                    displayName.length > 3  ? 'text-6xl' :
+                                                    'text-7xl'
+                                                }`}>
+                                                    {displayName}
+                                                </span>
+                                            )}
                                         </div>
 
                                         {/* Info inferior */}
