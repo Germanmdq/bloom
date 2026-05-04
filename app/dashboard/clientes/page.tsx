@@ -13,6 +13,8 @@ export default function ClientesPage() {
     const [paymentAmount, setPaymentAmount] = useState("");
     const [resettingPwd, setResettingPwd] = useState(false);
     const [resetMsg, setResetMsg] = useState<string | null>(null);
+    const [migratingPwds, setMigratingPwds] = useState(false);
+    const [migrateResult, setMigrateResult] = useState<string | null>(null);
 
     useEffect(() => { fetchClients(); }, []);
     
@@ -38,6 +40,21 @@ export default function ClientesPage() {
             setResetMsg('Error de conexión');
         } finally {
             setResettingPwd(false);
+        }
+    }
+
+    async function handleMigratePasswords() {
+        if (!confirm('¿Migrar contraseñas de todos los clientes a sus últimos 4 dígitos? Esto afecta a todos los usuarios registrados.')) return;
+        setMigratingPwds(true);
+        setMigrateResult(null);
+        try {
+            const res = await fetch('/api/admin/migrate-customer-passwords', { method: 'POST' });
+            const data = await res.json();
+            setMigrateResult(res.ok ? `✓ ${data.updated} actualizados, ${data.skipped} omitidos` : `Error: ${data.error}`);
+        } catch {
+            setMigrateResult('Error de conexión');
+        } finally {
+            setMigratingPwds(false);
         }
     }
 
@@ -141,7 +158,21 @@ export default function ClientesPage() {
                             <option value="name">Nombre</option>
                         </select>
                     </div>
+
+                    <button
+                        onClick={handleMigratePasswords}
+                        disabled={migratingPwds}
+                        className="flex items-center gap-2 bg-black text-white px-5 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest shadow-sm hover:opacity-80 transition-all disabled:opacity-50 whitespace-nowrap"
+                    >
+                        {migratingPwds ? <IconLoader2 size={14} className="animate-spin" /> : null}
+                        Migrar contraseñas
+                    </button>
                 </div>
+                {migrateResult && (
+                    <p className={`text-xs font-bold mt-2 ${migrateResult.startsWith('✓') ? 'text-green-600' : 'text-red-600'}`}>
+                        {migrateResult}
+                    </p>
+                )}
             </div>
 
             {loading ? (
