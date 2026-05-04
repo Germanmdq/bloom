@@ -52,7 +52,7 @@ export default function ReportsPage() {
             const [salesRes, comprasRes, gastosFijosRes, productsRes] = await Promise.all([
                 supabase.from('orders').select('total, payment_method, items').gte('created_at', thresholdDate),
                 supabase.from('compras').select('total, created_at').gte('created_at', thresholdDate),
-                supabase.from('gastos_fijos').select('nombre, historial_pagos, categoria'),
+                supabase.from('gastos_fijos').select('nombre, monto, estado, updated_at, historial_pagos, categoria'),
                 supabase.from('products').select('name, categories(name)')
             ]);
 
@@ -91,8 +91,10 @@ export default function ReportsPage() {
             const expByCat: Record<string, number> = {};
             
             (gastosFijosRes.data || []).forEach(g => {
-                if (Array.isArray(g.historial_pagos)) {
-                    g.historial_pagos.forEach((p: any) => {
+                const historial = Array.isArray(g.historial_pagos) ? g.historial_pagos : [];
+                if (historial.length > 0) {
+                    // Paid via partial payments — count each payment within the period
+                    historial.forEach((p: any) => {
                         if (p.fecha >= thresholdDate) {
                             const monto = Number(p.monto);
                             totalFixedExpenses += monto;
@@ -100,6 +102,12 @@ export default function ReportsPage() {
                             expByCat[cat] = (expByCat[cat] || 0) + monto;
                         }
                     });
+                } else if (g.estado === 'pagado' && g.updated_at >= thresholdDate) {
+                    // Paid via "marcar como pagado" — no historial_pagos entry
+                    const monto = Number(g.monto);
+                    totalFixedExpenses += monto;
+                    const cat = g.categoria || 'General';
+                    expByCat[cat] = (expByCat[cat] || 0) + monto;
                 }
             });
 
