@@ -33,8 +33,10 @@ export default function AccesoPage() {
             // If contains "@" → real email (staff). Otherwise → phone login.
             const isEmail = raw.includes("@");
             const email = isEmail ? raw.toLowerCase() : `${raw.replace(/\D/g, "")}@bloom.local`;
+            // For phone accounts the password is stored as pure digits — strip formatting
+            const pwd = isEmail ? password : password.replace(/\D/g, "") || password;
 
-            const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: pwd });
             if (authError) {
                 setError("Usuario o contraseña incorrectos.");
                 return;
@@ -47,8 +49,8 @@ export default function AccesoPage() {
                 .single();
 
             const isStaff = ["ADMIN", "WAITER", "KITCHEN", "MANAGER"].includes(profile?.role);
-            router.push(isStaff ? "/dashboard" : "/menu");
-            router.refresh();
+            // Full reload ensures the server session cookie is picked up immediately
+            window.location.href = isStaff ? "/dashboard" : "/menu";
         } catch {
             setError("Error de conexión. Intentá de nuevo.");
         } finally {
