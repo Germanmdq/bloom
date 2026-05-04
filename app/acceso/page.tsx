@@ -13,7 +13,6 @@ export default function AccesoPage() {
     const supabase = createClient();
 
     const [phone, setPhone] = useState("");
-    const [socio, setSocio] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -21,8 +20,8 @@ export default function AccesoPage() {
         e.preventDefault();
         setError("");
 
-        if (!phone.trim() || !socio.trim()) {
-            setError("Ingresá tu teléfono y número de socio.");
+        if (!phone.trim()) {
+            setError("Ingresá tu número de celular.");
             return;
         }
 
@@ -33,11 +32,11 @@ export default function AccesoPage() {
 
             const { error: authError } = await supabase.auth.signInWithPassword({
                 email: fakeEmail,
-                password: socio.trim(),
+                password: phoneClean,
             });
 
             if (authError) {
-                setError("Teléfono o número de socio incorrecto.");
+                setError("Número de celular incorrecto o no registrado.");
                 return;
             }
 
@@ -80,24 +79,6 @@ export default function AccesoPage() {
                             />
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="block text-[14px] font-bold text-neutral-700">
-                                Nº de socio
-                            </label>
-                            <input
-                                type="text"
-                                inputMode="numeric"
-                                placeholder="284731"
-                                maxLength={8}
-                                value={socio}
-                                onChange={(e) => { setSocio(e.target.value.replace(/\D/g, "")); setError(""); }}
-                                className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 text-[22px] font-black tracking-[0.25em] outline-none placeholder:text-neutral-300 placeholder:text-[16px] placeholder:tracking-normal placeholder:font-medium focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all text-center"
-                            />
-                            <p className="text-[12px] font-medium text-neutral-400 text-center">
-                                Si no lo recordás, preguntá en el local
-                            </p>
-                        </div>
-
                         {error && (
                             <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] font-semibold text-red-700">
                                 {error}
@@ -125,7 +106,7 @@ export default function AccesoPage() {
                 </div>
 
                 <p className="mt-6 text-center text-[12px] font-medium text-neutral-400">
-                    Tu número de socio te lo damos en el local cuando te registrás.
+                    Ingresá el mismo número de celular con el que te registraste.
                 </p>
             </div>
         </div>

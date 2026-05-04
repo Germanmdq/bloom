@@ -84,9 +84,12 @@ export function AuthPageClient() {
   const login = async () => {
     setError("");
     setInfo("");
-    const email = loginEmail.trim().toLowerCase();
-    if (!emailValid(email)) {
-      setError("Ingresá un email válido.");
+    const raw = loginEmail.trim().toLowerCase();
+    // If it looks like a phone (no @), derive the bloom.local email
+    const isPhone = !raw.includes("@");
+    const email = isPhone ? `${raw.replace(/\D/g, "")}@bloom.local` : raw;
+    if (!email) {
+      setError("Ingresá tu email o celular.");
       return;
     }
     if (!loginPassword) {
@@ -210,7 +213,7 @@ export function AuthPageClient() {
             {panel === "login" ? "Iniciar sesión" : "Crear cuenta"}
           </h1>
           <p className="mt-2 text-sm text-neutral-500">
-            {panel === "login" ? "Ingresá con tu email y contraseña." : "Completá tus datos para registrarte."}
+            {panel === "login" ? "Ingresá con tu email o celular." : "Completá tus datos para registrarte."}
           </p>
         </div>
 
@@ -218,12 +221,12 @@ export function AuthPageClient() {
           {panel === "login" && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-neutral-400 mb-1.5">Email</label>
+                <label className="block text-xs font-black uppercase tracking-wider text-neutral-400 mb-1.5">Email o celular</label>
                 <input
-                    type="email"
+                    type="text"
                     inputMode="email"
                     autoComplete="email"
-                    placeholder="vos@email.com"
+                    placeholder="vos@email.com o 223 000-0000"
                     value={loginEmail}
                     onChange={(e) => {
                     setLoginEmail(e.target.value);
