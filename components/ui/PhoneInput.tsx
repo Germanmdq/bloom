@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IconChevronDown } from "@tabler/icons-react";
 
 const AREA_CODES = [
@@ -21,50 +21,76 @@ const AREA_CODES = [
 ];
 
 interface PhoneInputProps {
-    value: string;
+    value: string;          // full phone digits, e.g. "2235551234"
     onChange: (value: string) => void;
-    inputClass?: string;
     error?: boolean;
 }
 
-export function PhoneInput({ value, onChange, inputClass = "", error = false }: PhoneInputProps) {
+export function PhoneInput({ value, onChange, error = false }: PhoneInputProps) {
+    const [areaCode, setAreaCode] = useState("223");
     const [open, setOpen] = useState(false);
+    const wrapRef = useRef<HTMLDivElement>(null);
 
-    // Split value into area code and local number on mount/change
-    const matchedArea = AREA_CODES
-        .slice()
-        .sort((a, b) => b.code.length - a.code.length)
-        .find(a => value.replace(/\D/g, "").startsWith(a.code));
+    // Derive local number from value minus area code
+    const localPart = value.replace(/\D/g, "").startsWith(areaCode)
+        ? value.replace(/\D/g, "").slice(areaCode.length)
+        : value.replace(/\D/g, "").slice(3); // fallback: strip 3-digit prefix
 
-    const areaCode   = matchedArea?.code ?? "223";
-    const localPart  = value.replace(/\D/g, "").slice(areaCode.length);
+    // Notify parent with combined value whenever area code or local changes
+    const emitChange = (area: string, local: string) => {
+        onChange(area + local.replace(/\D/g, ""));
+    };
 
-    const setArea = (code: string) => {
-        onChange(code + localPart);
+    // Initialize parent with area code so it's never empty
+    useEffect(() => {
+        if (!value) emitChange("223", "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Close picker when tapping outside
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent | TouchEvent) => {
+            if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        document.addEventListener("touchstart", handler);
+        return () => {
+            document.removeEventListener("mousedown", handler);
+            document.removeEventListener("touchstart", handler);
+        };
+    }, [open]);
+
+    const pickArea = (code: string) => {
+        setAreaCode(code);
         setOpen(false);
+        emitChange(code, localPart);
     };
 
-    const setLocal = (raw: string) => {
-        onChange(areaCode + raw.replace(/\D/g, ""));
-    };
-
-    const baseInput = `w-full min-h-[52px] rounded-2xl border-2 bg-white px-4 text-[16px] font-semibold outline-none placeholder:font-medium placeholder:text-neutral-400 transition-all ${
-        error ? "border-red-300 bg-red-50" : "border-neutral-200 focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25"
-    } ${inputClass}`;
+    const borderClass = error
+        ? "border-red-300"
+        : "border-neutral-200 focus-within:border-[#c9a84c]";
 
     return (
-        <div className="space-y-2">
-            <div className="flex gap-2">
+        <div ref={wrapRef} className="space-y-2">
+            {/* Input row */}
+            <div className={`flex rounded-2xl border-2 overflow-visible bg-white transition-all ${borderClass}`}>
                 {/* Area code button */}
                 <button
                     type="button"
-                    onClick={() => setOpen(o => !o)}
-                    className={`flex items-center gap-1 min-h-[52px] px-4 rounded-2xl border-2 font-black text-[16px] whitespace-nowrap transition-all ${
-                        error ? "border-red-300 bg-red-50" : "border-neutral-200 bg-white hover:border-[#c9a84c]"
-                    }`}
+                    onMouseDown={(e) => { e.preventDefault(); setOpen(o => !o); }}
+                    onTouchEnd={(e) => { e.preventDefault(); setOpen(o => !o); }}
+                    className="flex items-center gap-1.5 px-4 py-3.5 font-black text-[16px] whitespace-nowrap border-r border-neutral-100 select-none bg-neutral-50 rounded-l-2xl active:bg-neutral-100 min-w-[80px] justify-center"
+                    aria-label="Cambiar característica"
                 >
                     {areaCode}
-                    <IconChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+                    <IconChevronDown
+                        size={13}
+                        strokeWidth={3}
+                        className={`text-neutral-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+                    />
                 </button>
 
                 {/* Local number */}
@@ -74,8 +100,8 @@ export function PhoneInput({ value, onChange, inputClass = "", error = false }: 
                     autoComplete="tel-local"
                     placeholder="000-0000"
                     value={localPart}
-                    onChange={e => setLocal(e.target.value)}
-                    className={baseInput}
+                    onChange={e => emitChange(areaCode, e.target.value)}
+                    className="flex-1 px-4 py-3.5 text-[16px] font-semibold outline-none bg-transparent placeholder:text-neutral-300 rounded-r-2xl"
                 />
             </div>
 
@@ -85,19 +111,20 @@ export function PhoneInput({ value, onChange, inputClass = "", error = false }: 
 
             {/* Area code picker */}
             {open && (
-                <div className="grid grid-cols-2 gap-1.5 p-3 rounded-2xl border border-neutral-100 bg-white shadow-lg">
+                <div className="grid grid-cols-2 gap-1.5 p-3 rounded-2xl border border-neutral-100 bg-white shadow-xl z-50 relative">
                     {AREA_CODES.map(({ code, city }) => (
                         <button
                             key={code}
                             type="button"
-                            onClick={() => setArea(code)}
-                            className={`flex justify-between items-center px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                            onMouseDown={(e) => { e.preventDefault(); pickArea(code); }}
+                            onTouchEnd={(e) => { e.preventDefault(); pickArea(code); }}
+                            className={`flex justify-between items-center px-3 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 ${
                                 areaCode === code
                                     ? "bg-neutral-900 text-white"
-                                    : "bg-neutral-50 hover:bg-neutral-100 text-neutral-700"
+                                    : "bg-neutral-50 active:bg-neutral-200 text-neutral-700"
                             }`}
                         >
-                            <span className="font-black">{code}</span>
+                            <span className="font-black text-[15px]">{code}</span>
                             <span className="text-[11px] font-medium opacity-70">{city}</span>
                         </button>
                     ))}

@@ -14,7 +14,7 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth");
+    redirect("/acceso");
   }
 
   const { data: profile } = await supabase
@@ -26,7 +26,7 @@ export default async function DashboardLayout({
   const isStaff = profile?.role === "ADMIN" || profile?.role === "WAITER" || profile?.role === "KITCHEN" || isAdminEmail(user.email);
 
   if (!isStaff) {
-    redirect("/auth");
+    redirect("/acceso");
   }
 
   return <DashboardClientLayout>{children}</DashboardClientLayout>;
