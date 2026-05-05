@@ -54,7 +54,7 @@ export async function POST(req: Request) {
             ...(birthdate ? { birthdate } : {}),
         }).eq("id", userId);
 
-        return NextResponse.json({ customer_number: customerNumber, name: full_name.trim() });
+        return NextResponse.json({ id: userId, customer_number: customerNumber, name: full_name.trim() });
     } catch (err: any) {
         return NextResponse.json({ error: err.message ?? "Error interno." }, { status: 500 });
     }

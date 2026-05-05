@@ -63,10 +63,13 @@ export function PaymentModal({
         setQ(val);
         if (val.length < 2) { setResults([]); return; }
         setIsSearching(true);
+        const isPhone = /^\d+$/.test(val.replace(/\s/g, ''));
         const { data } = await supabase
             .from('profiles')
             .select('id, full_name, balance, coffee_stamps, phone')
-            .ilike('full_name', `%${val}%`)
+            .or(isPhone
+                ? `phone.ilike.%${val.replace(/\s/g, '')}%`
+                : `full_name.ilike.%${val}%,phone.ilike.%${val}%`)
             .limit(4);
         setResults(data || []);
         setIsSearching(false);

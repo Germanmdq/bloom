@@ -90,17 +90,20 @@ export default function TablesPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ full_name: customerSearch.trim(), phone: newCustomerPhone.trim(), birthdate: null }),
             });
-            const json = await res.json() as { customer_number?: string; error?: string };
+            const json = await res.json() as { id?: string; customer_number?: string; name?: string; error?: string };
 
             if (!res.ok) {
                 if (json.error === 'already_exists') {
-                    // El cliente ya existe — buscarlo y vincularlo
+                    // Cliente ya existe — buscarlo por teléfono (formato limpio o con formato)
                     const phoneClean = newCustomerPhone.replace(/\D/g, '');
-                    const { data: existing } = await supabase
-                        .from('profiles')
-                        .select('id, full_name, phone')
-                        .eq('phone', newCustomerPhone.trim())
-                        .maybeSingle();
+                    let existing: { id: string; full_name: string } | null = null;
+                    const { data: byRaw } = await supabase.from('profiles').select('id, full_name').eq('phone', newCustomerPhone.trim()).maybeSingle();
+                    if (byRaw) {
+                        existing = byRaw;
+                    } else {
+                        const { data: byClean } = await supabase.from('profiles').select('id, full_name').eq('phone', phoneClean).maybeSingle();
+                        existing = byClean;
+                    }
                     if (existing) {
                         setNewTableCustomerId(existing.id);
                         setNewTableName(existing.full_name);
@@ -112,15 +115,10 @@ export default function TablesPage() {
                     return;
                 }
             } else {
-                // Buscar el perfil recién creado por teléfono
-                const { data: created } = await supabase
-                    .from('profiles')
-                    .select('id, full_name')
-                    .eq('phone', newCustomerPhone.trim())
-                    .maybeSingle();
-                if (created) {
-                    setNewTableCustomerId(created.id);
-                    setNewTableName(created.full_name);
+                // Usar el ID devuelto por la API directamente
+                if (json.id) {
+                    setNewTableCustomerId(json.id);
+                    setNewTableName(json.name ?? customerSearch.trim());
                 } else {
                     setNewTableName(customerSearch.trim());
                 }
