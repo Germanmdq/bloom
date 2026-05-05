@@ -643,14 +643,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleClose, total, isFinishing, showPaymentModal, showReceiptModal]);
 
-    const handleEmitirFactura = async () => {
-        if (!completedOrderData) return;
+    const handleEmitirFactura = async (overrideTotal?: number) => {
+        const amount = overrideTotal ?? completedOrderData?.total;
+        if (!amount) return;
         setIsFetchingCAE(true);
         try {
             const res = await fetch('/api/facturar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: completedOrderData.total }),
+                body: JSON.stringify({ amount }),
             });
             const data = await res.json();
             if (!res.ok) {
@@ -821,17 +822,23 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 console.error('[Stock] Error inventario:', err);
             }
 
-            // Guardar datos para impresión post-cobro antes de limpiar el carrito
             setIsKitchenReceipt(false);
-            setCompletedOrderData({ cart: [...cart], total: finalTotal });
+            const savedCart = [...cart];
+            const savedTotal = finalTotal;
             setFeedback({ message: "¡Venta registrada!", type: "success" });
-            
+
             setTimeout(() => {
                 setFeedback(null);
                 clearCart();
                 finishingRef.current = false;
                 setIsFinishing(false);
-                // No cerramos automáticamente, dejamos que el usuario decida imprimir o salir
+                if (ctx?.printFactura) {
+                    setCompletedOrderData({ cart: savedCart, total: savedTotal });
+                    handleEmitirFactura(savedTotal);
+                } else {
+                    if (onOrderComplete) onOrderComplete();
+                    onClose();
+                }
             }, 800);
         } catch (error: any) {
             finishingRef.current = false;
@@ -1509,52 +1516,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 </div>
             </div>
 
-                {/* ── PANTALLA DE ÉXITO Y TICKET POST-COBRO ── */}
-            <AnimatePresence>
-                {completedOrderData && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-[120] bg-white flex flex-col items-center justify-center p-8 text-center"
-                    >
-                        <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
-                            <IconCheck size={40} className="text-emerald-500" strokeWidth={3} />
-                        </div>
-                        <h3 className="text-2xl font-black text-gray-900 mb-2">¡Venta Finalizada!</h3>
-                        <p className="text-gray-500 mb-8">El pedido de la <strong>Mesa {tableId}</strong> fue registrado con éxito.</p>
-                        
-                        <div className="flex flex-col gap-3 w-full max-w-xs">
-                            <button
-                                onClick={handleEmitirFactura}
-                                disabled={isFetchingCAE}
-                                className="w-full h-14 bg-black text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-neutral-800 disabled:opacity-60 transition-all active:scale-95 shadow-xl shadow-black/10"
-                            >
-                                {isFetchingCAE ? <><IconLoader2 size={18} className="animate-spin" /> Consultando ARCA…</> : <><span className="text-lg">🏛</span> Factura C</>}
-                            </button>
-                            <button
-                                onClick={handleTicketSinValidez}
-                                disabled={isFetchingCAE}
-                                className="w-full h-12 bg-gray-100 text-gray-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-gray-200 disabled:opacity-60 transition-all active:scale-95"
-                            >
-                                <IconPrinter size={16} /> Ticket sin Validez
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setCaeData(null);
-                                    setCompletedOrderData(null);
-                                    if (onOrderComplete) onOrderComplete();
-                                    onClose();
-                                }}
-                                className="w-full h-12 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all active:scale-95"
-                            >
-                                Finalizar y Cerrar
-                            </button>
-                        </div>
-
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             {/* ── MODALES ── */}
             {showReceiptModal && (

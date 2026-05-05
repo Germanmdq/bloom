@@ -20,7 +20,7 @@ interface PaymentModalProps {
     cart: CartItem[];
     isFinishing: boolean;
     onClose: () => void;
-    onConfirm: (ctx?: { mpOrderId?: string | null; customerId?: string | null }) => void;
+    onConfirm: (ctx?: { mpOrderId?: string | null; customerId?: string | null; printFactura?: boolean }) => void;
     onMpOrderReady?: (orderId: string | null) => void;
     waiterId?: string | null;
     selectedCustomerId?: string | null;
@@ -52,6 +52,7 @@ export function PaymentModal({
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
     const [isGeneratingQR, setIsGeneratingQR] = useState(false);
     const [qrError, setQrError] = useState<string | null>(null);
+    const [willPrintFactura, setWillPrintFactura] = useState(false);
 
     const [q, setQ] = useState("");
     const [results, setResults] = useState<any[]>([]);
@@ -178,7 +179,7 @@ export function PaymentModal({
                     onSubmit={(e) => {
                         e.preventDefault();
                         if (!isFinishing && !(paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId)) {
-                            onConfirm({ customerId: selectedCustomerId });
+                            onConfirm({ customerId: selectedCustomerId, printFactura: willPrintFactura });
                         }
                     }}
                     className="flex flex-col md:flex-row w-full h-full"
@@ -302,39 +303,51 @@ export function PaymentModal({
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                        <button
-                            type="button"
-                            onClick={() => setPaymentMethod("CASH")}
-                            className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "CASH" ? "border-[#FFD60A] bg-[#FFD60A]/5" : "border-gray-100"}`}
-                        >
-                            <p className="font-black text-base">Efectivo</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Cash / Delivery</p>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setPaymentMethod("MERCADO_PAGO")}
-                            className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "MERCADO_PAGO" ? "border-sky-500 bg-sky-50" : "border-gray-100"}`}
-                        >
-                            <p className="font-black text-base">Mercado Pago</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">QR / Online</p>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setPaymentMethod("SANTANDER_RIO")}
-                            className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "SANTANDER_RIO" ? "border-red-500 bg-red-50" : "border-gray-100"}`}
-                        >
-                            <p className="font-black text-base">Santander Río</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Transferencia bancaria</p>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setPaymentMethod("CUENTA_CORRIENTE")}
-                            className={`p-4 rounded-2xl border-2 text-left transition-all col-span-2 ${paymentMethod === "CUENTA_CORRIENTE" ? "border-orange-500 bg-orange-50" : "border-gray-100"}`}
-                        >
-                            <p className="font-black text-base">Cuenta Corriente</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Clientes Frecuentes</p>
-                        </button>
+                    <div className="flex flex-col gap-3 mb-4">
+                        <div className="grid grid-cols-3 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setPaymentMethod("CASH")}
+                                className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "CASH" ? "border-[#FFD60A] bg-[#FFD60A]/5" : "border-gray-100"}`}
+                            >
+                                <p className="font-black text-sm">Efectivo</p>
+                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Cash</p>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPaymentMethod("MERCADO_PAGO")}
+                                className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "MERCADO_PAGO" ? "border-sky-500 bg-sky-50" : "border-gray-100"}`}
+                            >
+                                <p className="font-black text-sm">Mercado Pago</p>
+                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">QR</p>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPaymentMethod("SANTANDER_RIO")}
+                                className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "SANTANDER_RIO" ? "border-red-500 bg-red-50" : "border-gray-100"}`}
+                            >
+                                <p className="font-black text-sm">Santander</p>
+                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Río</p>
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setPaymentMethod("CUENTA_CORRIENTE")}
+                                className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "CUENTA_CORRIENTE" ? "border-orange-500 bg-orange-50" : "border-gray-100"}`}
+                            >
+                                <p className="font-black text-sm">Cta. Corriente</p>
+                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Clientes</p>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setWillPrintFactura(v => !v)}
+                                className={`p-4 rounded-2xl border-2 text-left transition-all ${willPrintFactura ? "border-purple-500 bg-purple-50" : "border-gray-100"}`}
+                            >
+                                <p className="font-black text-sm">Factura C</p>
+                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{willPrintFactura ? "✓ Activo" : "Imprimir"}</p>
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex-1 bg-gray-50 rounded-3xl p-8 flex items-center justify-center border border-gray-100 mb-4 overflow-y-auto">
