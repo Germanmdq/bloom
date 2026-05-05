@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { IconLoader2 } from "@tabler/icons-react";
-import QRCode from "react-qr-code";
 import { CartItem } from "@/lib/store/order-store";
 import { PaymentMethod } from "@/lib/types";
 import { IconSearch, IconX, IconUser } from "@tabler/icons-react";
@@ -41,7 +40,6 @@ export function PaymentModal({
     isFinishing,
     onClose,
     onConfirm,
-    onMpOrderReady,
     waiterId = null,
     selectedCustomerId,
     setSelectedCustomerId,
@@ -49,9 +47,6 @@ export function PaymentModal({
     setCustomerName
 }: PaymentModalProps) {
     const supabase = createClient();
-    const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-    const [isGeneratingQR, setIsGeneratingQR] = useState(false);
-    const [qrError, setQrError] = useState<string | null>(null);
     const [willPrintFactura, setWillPrintFactura] = useState(false);
 
     const [q, setQ] = useState("");
@@ -91,84 +86,6 @@ export function PaymentModal({
 
     const stampsConCarrito = (clienteStamps ?? 0) + coffeeCountInCart;
     const cafeGratisDisponible = clienteStamps !== null && stampsConCarrito >= 10;
-
-    const freeCoffeePrice = (() => {
-        if (!cafeGratisDisponible) return 0;
-        const jarroPocillo = cart.find(item => {
-            const n = item.name.toLowerCase();
-            return n.includes('jarrito') || n.includes('pocillo');
-        });
-        if (jarroPocillo) return jarroPocillo.price;
-        return cart.reduce((min, item) => {
-            const n = item.name.toLowerCase();
-            const esCafe = n.includes('café') || n.includes('cafe') || n.includes('capuccino') ||
-                n.includes('submarino') || n.includes('chocolatada') || n.includes('lágrima') || n.includes('lagrima');
-            if (!esCafe) return min;
-            return min === 0 ? item.price : Math.min(min, item.price);
-        }, 0);
-    })();
-
-    const finalTotalMP = cafeGratisDisponible && freeCoffeePrice > 0
-        ? Math.max(0, finalTotal - freeCoffeePrice)
-        : finalTotal;
-
-    const onMpOrderReadyRef = useRef(onMpOrderReady);
-    onMpOrderReadyRef.current = onMpOrderReady;
-
-    const cartKey = useMemo(
-        () => JSON.stringify(cart.map((i) => ({ id: i.id, n: i.name, p: i.price, q: i.quantity }))),
-        [cart]
-    );
-
-    useEffect(() => {
-        if (paymentMethod !== "MERCADO_PAGO") {
-            setQrCodeUrl(null);
-            setQrError(null);
-            setIsGeneratingQR(false);
-            onMpOrderReadyRef.current?.(null);
-            return;
-        }
-
-        let cancelled = false;
-        setIsGeneratingQR(true);
-        setQrError(null);
-        setQrCodeUrl(null);
-        onMpOrderReadyRef.current?.(null);
-
-        void (async () => {
-            try {
-                const resp = await fetch("/api/payments/pos-preference", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        table_id: tableId,
-                        items: cart.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
-                        subtotal: total,
-                        final_total: finalTotalMP,
-                        waiter_id: waiterId || null,
-                    }),
-                });
-                const data = (await resp.json()) as { init_point?: string; order_id?: string; error?: string };
-                if (cancelled) return;
-                if (!resp.ok || !data.init_point) {
-                    setQrError(data.error || "No se pudo generar el cobro con Mercado Pago");
-                    onMpOrderReadyRef.current?.(null);
-                    return;
-                }
-                setQrCodeUrl(data.init_point);
-                onMpOrderReadyRef.current?.(data.order_id ?? null);
-            } catch {
-                if (cancelled) return;
-                setQrError("Error de red al crear el cobro");
-                onMpOrderReadyRef.current?.(null);
-            } finally {
-                if (!cancelled) setIsGeneratingQR(false);
-            }
-        })();
-
-        return () => { cancelled = true; };
-    }, [paymentMethod, finalTotalMP, total, cartKey, tableId, waiterId]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-12">
@@ -322,7 +239,7 @@ export function PaymentModal({
                                 className={`p-4 rounded-2xl border-2 text-left transition-all ${paymentMethod === "MERCADO_PAGO" ? "border-sky-500 bg-sky-50" : "border-gray-100"}`}
                             >
                                 <p className="font-black text-sm">Mercado Pago</p>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">QR</p>
+                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">QR manual</p>
                             </button>
                             <button
                                 type="button"
@@ -362,6 +279,16 @@ export function PaymentModal({
                                 autoFocus
                             />
                         )}
+                        {paymentMethod === "MERCADO_PAGO" && (
+                            <div className="text-center space-y-2">
+                                <p className="text-4xl">📱</p>
+                                <p className="text-sm font-black text-sky-600 uppercase tracking-widest">Mercado Pago</p>
+                                <p className="text-xs font-semibold text-gray-400">Cobrá con tu QR y confirmá cuando el cliente pague.</p>
+                                {cafeGratisDisponible && (
+                                    <p className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl mt-2">☕ Café gratis — aplicá el descuento en MP antes de cobrar</p>
+                                )}
+                            </div>
+                        )}
                         {paymentMethod === "SANTANDER_RIO" && (
                             <div className="text-center">
                                 <p className="text-sm font-bold text-red-600 uppercase tracking-widest mb-2">Santander Río</p>
@@ -380,43 +307,6 @@ export function PaymentModal({
                                 ) : (
                                     <p className="text-xs font-semibold text-red-400">Buscá y vinculá un cliente arriba para continuar.</p>
                                 )}
-                            </div>
-                        )}
-                        {paymentMethod === "MERCADO_PAGO" && (
-                            <div className="text-center w-full max-w-sm space-y-4">
-                                {cafeGratisDisponible && freeCoffeePrice > 0 && (
-                                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
-                                        <span>☕</span>
-                                        <span>Café gratis aplicado automáticamente: <span className="font-black">-${freeCoffeePrice.toLocaleString()}</span></span>
-                                    </div>
-                                )}
-                                {isGeneratingQR ? (
-                                    <div className="flex flex-col items-center gap-3">
-                                        <IconLoader2 className="animate-spin mx-auto h-8 w-8 text-sky-600" />
-                                        <p className="text-sm font-semibold text-gray-600">Generando QR…</p>
-                                    </div>
-                                ) : qrError ? (
-                                    <p className="text-sm font-semibold text-red-600 leading-snug">{qrError}</p>
-                                ) : qrCodeUrl ? (
-                                    <div className="flex flex-col items-center gap-3">
-                                        <div className="rounded-2xl bg-white p-3 shadow-xl border border-gray-100">
-                                            <QRCode value={qrCodeUrl} size={160} />
-                                        </div>
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                                            Escaneá con Mercado Pago
-                                        </p>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const url = `/qr-display?url=${encodeURIComponent(qrCodeUrl)}&amount=%24${Math.round(finalTotalMP).toLocaleString()}`;
-                                                window.open(url, "qr-cliente", "width=480,height=760,toolbar=no,menubar=no");
-                                            }}
-                                            className="w-full py-2.5 rounded-xl bg-gray-900 text-white font-black text-xs uppercase tracking-widest hover:bg-black transition-all"
-                                        >
-                                            📱 Abrir pantalla QR para el cliente
-                                        </button>
-                                    </div>
-                                ) : null}
                             </div>
                         )}
                     </div>
