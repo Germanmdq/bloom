@@ -289,16 +289,11 @@ export default function ClientesPage() {
                             initial={{ opacity: 0, scale: 0.9, y: 100 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 100 }}
                             className="relative bg-white w-full max-w-2xl h-[90vh] sm:h-auto sm:max-h-[90vh] rounded-t-[3rem] sm:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col"
                         >
-                            {/* Close Button UI */}
-                            <button onClick={() => setSelectedClient(null)} className="absolute top-6 right-6 w-11 h-11 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center text-white transition-all z-[60] active:scale-95 shadow-xl">
-                                <IconX size={20} />
-                            </button>
-
                             {/* Header Gradient */}
                             <div className="bg-gray-950 p-10 relative shrink-0 overflow-hidden">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-accent/20 blur-[100px] rounded-full -mr-32 -mt-32" />
-                                <div className="relative flex items-center gap-8">
-                                    <div className="w-24 h-24 bg-white/5 border border-white/10 rounded-[2.5rem] flex items-center justify-center text-5xl font-black text-[#FFD60A] shadow-2xl">
+                                <div className="relative flex items-start gap-8">
+                                    <div className="w-24 h-24 bg-white/5 border border-white/10 rounded-[2.5rem] flex items-center justify-center text-5xl font-black text-[#FFD60A] shadow-2xl shrink-0">
                                         {selectedClient.full_name?.[0]?.toUpperCase()}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -307,13 +302,18 @@ export default function ClientesPage() {
                                         <p className="text-white/40 text-sm font-bold flex items-center gap-2 mt-2 truncate">
                                             <IconPhone size={14} /> {selectedClient.phone || 'Sin teléfono'}
                                         </p>
+                                        <div className="flex gap-2 mt-4">
+                                            <button
+                                                onClick={() => { setIsEditing(v => !v); setSaveMsg(null); }}
+                                                className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white text-xs font-black uppercase tracking-widest transition-all"
+                                            >
+                                                <IconEdit size={14} /> Editar datos
+                                            </button>
+                                            <button onClick={() => setSelectedClient(null)} className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white text-xs font-black uppercase tracking-widest transition-all">
+                                                <IconX size={14} /> Cerrar
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => { setIsEditing(e => !e); setSaveMsg(null); }}
-                                        className="w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all shrink-0"
-                                    >
-                                        <IconEdit size={18} />
-                                    </button>
                                 </div>
 
                                 {/* Formulario de edición */}
