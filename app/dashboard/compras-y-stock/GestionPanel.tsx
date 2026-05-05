@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { usePagarSaldoProveedor, useUpdateGastoFijo, useCreateGastoFijo, useDeleteGastoFijo, useCompras } from "@/lib/hooks/use-compras-stock";
+import { useState, useMemo, useEffect } from "react";
+import { usePagarSaldoProveedor, useUpdateGastoFijo, useCreateGastoFijo, useDeleteGastoFijo, useCompras, useCreateProveedor, useUpdateProveedor } from "@/lib/hooks/use-compras-stock";
 import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconReceipt, IconPlus, IconX, IconEdit, IconTrash, IconDownload, IconShoppingCart } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -18,17 +18,38 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
     const [motivoPago, setMotivoPago] = useState("");
     const [metodoPago, setMetodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
     const [gastoModal, setGastoModal] = useState<Partial<Gasto> | null>(null);
+    const [proveedorModal, setProveedorModal] = useState<Partial<Proveedor> | null>(null);
 
     const { data: compras = [] } = useCompras();
     const pagarSaldo = usePagarSaldoProveedor();
     const updateGasto = useUpdateGastoFijo();
     const createGasto = useCreateGastoFijo();
     const deleteGasto = useDeleteGastoFijo();
+    const createProveedor = useCreateProveedor();
+    const updateProveedor = useUpdateProveedor();
 
     const categorias = useMemo(() => {
         const cats = new Set(insumos.map((i: any) => i.categoria || 'General'));
         return ['Todos', ...Array.from(cats).sort()];
     }, [insumos]);
+
+    useEffect(() => {
+        const handleOpenProvider = () => {
+            setTab('proveedores');
+            setProveedorModal({ nombre: '', cuit: '', telefono: '' });
+        };
+        const handleOpenGasto = () => {
+            setTab('gastos');
+            setGastoModal({ nombre: '', monto: 0, fecha_vencimiento: new Date().toISOString().split('T')[0], categoria: 'normal' });
+        };
+
+        window.addEventListener('open-provider-modal', handleOpenProvider);
+        window.addEventListener('open-gasto-modal', handleOpenGasto);
+        return () => {
+            window.removeEventListener('open-provider-modal', handleOpenProvider);
+            window.removeEventListener('open-gasto-modal', handleOpenGasto);
+        };
+    }, []);
 
     const filtered = useMemo(() => {
         return insumos.filter((i: any) => {
@@ -76,6 +97,29 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                 });
             }
             setGastoModal(null);
+        } catch (err: any) {
+            alert('Error: ' + err.message);
+        }
+    };
+
+    const handleSaveProveedor = async () => {
+        if (!proveedorModal?.nombre) return;
+        try {
+            if (proveedorModal.id) {
+                await updateProveedor.mutateAsync({
+                    id: proveedorModal.id,
+                    nombre: proveedorModal.nombre,
+                    cuit: proveedorModal.cuit || undefined,
+                    telefono: proveedorModal.telefono || undefined,
+                });
+            } else {
+                await createProveedor.mutateAsync({
+                    nombre: proveedorModal.nombre,
+                    cuit: proveedorModal.cuit || undefined,
+                    telefono: proveedorModal.telefono || undefined,
+                });
+            }
+            setProveedorModal(null);
         } catch (err: any) {
             alert('Error: ' + err.message);
         }
@@ -240,16 +284,27 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
 
             {tab === 'proveedores' && (
                 <>
-                    {/* Deuda Total */}
-                    {totalDeuda > 0 && (
-                        <div className="mb-6 p-6 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-between">
-                            <div>
-                                <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">Deuda Total CC</p>
-                                <p className="text-3xl font-black text-red-600">${totalDeuda.toLocaleString('es-AR')}</p>
+                    {/* Deuda Total & Add Button */}
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                        {totalDeuda > 0 && (
+                            <div className="flex-1 p-6 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">Deuda Total CC</p>
+                                    <p className="text-3xl font-black text-red-600">${totalDeuda.toLocaleString('es-AR')}</p>
+                                </div>
+                                <IconCoin size={32} className="text-red-300" />
                             </div>
-                            <IconCoin size={32} className="text-red-300" />
-                        </div>
-                    )}
+                        )}
+                        <button
+                            onClick={() => setProveedorModal({ nombre: '', cuit: '', telefono: '' })}
+                            className="p-6 rounded-2xl bg-black text-white flex flex-col items-center justify-center gap-2 hover:bg-gray-800 transition-all border border-black shadow-xl shadow-black/10 group"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <IconPlus size={24} />
+                            </div>
+                            <span className="font-black text-[10px] uppercase tracking-[0.2em]">Nuevo Proveedor</span>
+                        </button>
+                    </div>
 
                     {/* Proveedores List */}
                     <div className="space-y-4">
@@ -268,14 +323,19 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    {(prov.saldo_cc || 0) > 0 ? (
-                                        <>
-                                            <p className="text-xl font-black text-red-600">-${(prov.saldo_cc || 0).toLocaleString('es-AR')}</p>
-                                            <button onClick={() => setPagoModal(prov)} className="mt-1 text-[9px] font-black text-emerald-600 uppercase tracking-widest hover:underline">
-                                                Abonar / Pagar
+                                <div className="text-right flex flex-col items-end gap-2">
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setProveedorModal(prov)} className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all">
+                                            <IconEdit size={16} />
+                                        </button>
+                                        {(prov.saldo_cc || 0) > 0 && (
+                                            <button onClick={() => setPagoModal(prov)} className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all" title="Pagar saldo">
+                                                <IconCoin size={16} />
                                             </button>
-                                        </>
+                                        )}
+                                    </div>
+                                    {(prov.saldo_cc || 0) > 0 ? (
+                                        <p className="text-xl font-black text-red-600">-${(prov.saldo_cc || 0).toLocaleString('es-AR')}</p>
                                     ) : (
                                         <p className="text-sm font-black text-emerald-500 uppercase tracking-widest">Al día</p>
                                     )}
@@ -338,6 +398,36 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                         <div className="flex gap-3">
                             <button onClick={() => setGastoModal(null)} className="flex-1 h-12 rounded-xl bg-gray-100 font-black text-gray-400 text-xs uppercase">Cancelar</button>
                             <button onClick={handleSaveGasto} disabled={updateGasto.isPending || createGasto.isPending} className="flex-[2] h-12 rounded-xl bg-black text-white font-black text-xs uppercase hover:scale-105 active:scale-95 transition-all">Guardar</button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
+            {/* Modal Proveedor */}
+            {proveedorModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setProveedorModal(null)} />
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm">
+                        <h3 className="text-xl font-black mb-6">{proveedorModal.id ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h3>
+                        
+                        <div className="space-y-4 mb-6">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nombre / Razón Social</label>
+                                <input type="text" value={proveedorModal.nombre} onChange={e => setProveedorModal({...proveedorModal, nombre: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">CUIT (Opcional)</label>
+                                <input type="text" value={proveedorModal.cuit || ''} onChange={e => setProveedorModal({...proveedorModal, cuit: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Teléfono (Opcional)</label>
+                                <input type="text" value={proveedorModal.telefono || ''} onChange={e => setProveedorModal({...proveedorModal, telefono: e.target.value})} className="w-full h-12 px-4 rounded-xl bg-gray-50 font-bold outline-none" />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={() => setProveedorModal(null)} className="flex-1 h-12 rounded-xl bg-gray-100 font-black text-gray-400 text-xs uppercase">Cancelar</button>
+                            <button onClick={handleSaveProveedor} disabled={createProveedor.isPending || updateProveedor.isPending} className="flex-[2] h-12 rounded-xl bg-black text-white font-black text-xs uppercase hover:scale-105 active:scale-95 transition-all">Guardar</button>
                         </div>
                     </motion.div>
                 </div>

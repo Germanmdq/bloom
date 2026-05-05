@@ -153,10 +153,20 @@ export function FormularioCompra({ proveedores }: { proveedores: Proveedor[] }) 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 p-6 rounded-2xl bg-gray-50/80 border border-gray-100">
                         <div>
                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Proveedor *</label>
-                            <select value={proveedorId} onChange={e => handleSelectProveedor(e.target.value)} className="w-full h-12 px-4 rounded-xl bg-white border-transparent font-bold outline-none appearance-none cursor-pointer">
-                                <option value="">Seleccionar...</option>
-                                {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                            </select>
+                            <div className="flex gap-2">
+                                <select value={proveedorId} onChange={e => handleSelectProveedor(e.target.value)} className="flex-1 h-12 px-4 rounded-xl bg-white border-transparent font-bold outline-none appearance-none cursor-pointer">
+                                    <option value="">Seleccionar...</option>
+                                    {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                                </select>
+                                <button 
+                                    type="button"
+                                    onClick={() => window.dispatchEvent(new CustomEvent('open-provider-modal'))}
+                                    className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all shadow-sm"
+                                    title="Nuevo Proveedor"
+                                >
+                                    <IconPlus size={18} />
+                                </button>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nro Factura</label>
