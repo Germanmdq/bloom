@@ -10,7 +10,7 @@ const CREAM = "#F5EDD8";
 export default function AccesoPage() {
     const supabase = createClient();
 
-    const [email, setEmail] = useState("");
+    const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
     const [showPwd, setShowPwd] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -20,18 +20,21 @@ export default function AccesoPage() {
         e.preventDefault();
         setError("");
 
-        if (!email.trim()) { setError("Ingresá tu email."); return; }
+        if (!identifier.trim()) { setError("Ingresá tu teléfono o email."); return; }
         if (!password.trim()) { setError("Ingresá tu contraseña."); return; }
 
         setLoading(true);
 
-        const { data, error: authError } = await supabase.auth.signInWithPassword({
-            email: email.trim().toLowerCase(),
-            password: password.trim(),
-        });
+        const raw = identifier.trim();
+        const isPhone = /^[\d\s\-\+\(\)]+$/.test(raw) && raw.replace(/\D/g, "").length >= 6;
+        const phoneClean = raw.replace(/\D/g, "");
+
+        const { data, error: authError } = isPhone
+            ? await supabase.auth.signInWithPassword({ phone: phoneClean, password: password.trim() })
+            : await supabase.auth.signInWithPassword({ email: raw.toLowerCase(), password: password.trim() });
 
         if (authError || !data.user) {
-            setError("Email o contraseña incorrectos.");
+            setError("Datos incorrectos. Verificá teléfono/email y contraseña.");
             setLoading(false);
             return;
         }

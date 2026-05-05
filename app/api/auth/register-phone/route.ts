@@ -15,13 +15,13 @@ export async function POST(req: Request) {
 
         const svc = createServiceRoleClient();
         const phoneClean = phone.replace(/\D/g, "");
-        const fakeEmail = `${phoneClean}@bloom.local`;
+        const password = phoneClean.slice(-4);
         const customerNumber = String(Math.floor(Math.random() * 900000) + 100000);
 
         const { data, error } = await svc.auth.admin.createUser({
-            email: fakeEmail,
-            password: phoneClean.slice(-4),
-            email_confirm: true,
+            phone: phoneClean,
+            password,
+            phone_confirm: true,
             user_metadata: {
                 full_name: full_name.trim(),
                 phone: phone.trim(),
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         if (error) {
             const isDuplicate = error.message.toLowerCase().includes("already") ||
                 error.message.toLowerCase().includes("duplicate") ||
-                (error as any).code === "email_exists";
+                (error as any).code === "phone_exists";
             if (isDuplicate) {
                 return NextResponse.json({ error: "already_exists" }, { status: 409 });
             }
@@ -46,10 +46,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Error al crear usuario." }, { status: 500 });
         }
 
-        // El trigger ya creó el perfil — solo actualizamos los campos extra
         await svc.from("profiles").update({
             phone: phone.trim(),
-            email: fakeEmail,
             customer_number: customerNumber,
             is_customer: true,
             ...(birthdate ? { birthdate } : {}),
