@@ -5,7 +5,7 @@ import {
     useProveedores, useInsumos, useInsumosByProveedor,
     useRegistrarCompra, useGastosFijosPendientes, useGastosFijos,
     useMarcarGastoPagado, useCreateProveedor, useCreateInsumo,
-    usePagarSaldoProveedor, useUpdateGastoFijo
+    usePagarSaldoProveedor, useUpdateGastoFijo, useCreateGastoFijo
 } from "@/lib/hooks/use-compras-stock";
 import {
     IconLoader2, IconAlertTriangle, IconCalendarDue, IconCash,
@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertasVencimientos } from "./AlertasVencimientos";
 import { FormularioCompra } from "./FormularioCompra";
 import { GestionPanel } from "./GestionPanel";
-import { useCreateProveedor, useCreateGastoFijo } from "@/lib/hooks/use-compras-stock";
+
 
 interface Proveedor { id: string; nombre: string; cuit: string | null; saldo_cc: number; telefono: string | null; }
 interface Gasto { id: string; nombre: string; monto: number; fecha_vencimiento: string; estado: string; categoria: string; }
