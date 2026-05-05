@@ -155,7 +155,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             }
             if (selectedDrink && selectedDrink.name !== "Sin bebida") {
                 let finalDrinkPrice = 0;
-                if (!isEspecialContext) {
+                if (!isPlatoDiaContext) {
                     const matchingProduct = products.find((p: any) => p.name.toLowerCase() === selectedDrink.name.toLowerCase());
                     finalDrinkPrice = matchingProduct ? Number(matchingProduct.price) : 2500;
                 }
@@ -1799,7 +1799,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             🥤 Selección de Bebida
                                         </h3>
                                         <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2 pb-4">
-                                            {(isEspecialContext 
+                                            {(isPlatoDiaContext
                                                 ? ["Coca-Cola", "Coca Zero", "Sprite", "Sprite Zero", "Schweppes Pomelo", "Aquarius Pera", "Aquarius Manzana", "Aquarius Pomelo", "Aquarius Uva", "Agua sin Gas", "Agua con Gas"]
                                                 : ["Coca-Cola", "Coca Zero", "Sprite", "Sprite Zero", "Schweppes Pomelo", "Aquarius Pera", "Aquarius Manzana", "Aquarius Pomelo", "Aquarius Uva", "Agua sin Gas", "Agua con Gas", "Quilmes", "Stella Artois", "Patagonia", "Corona", "Vino Tinto", "Vino Blanco", "Copa de Vino", "Jugo de Naranja", "Limonada", "Exprimido"]
                                             ).map(drink => (
