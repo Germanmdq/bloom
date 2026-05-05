@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useInsumosByProveedor, useRegistrarCompra, useCreateInsumo } from "@/lib/hooks/use-compras-stock";
-import { IconShoppingCart, IconFileInvoice, IconCash, IconCreditCard, IconPlus, IconX, IconCheck, IconSearch } from "@tabler/icons-react";
+import { IconShoppingCart, IconFileInvoice, IconCash, IconCreditCard, IconPlus, IconX, IconCheck, IconSearch, IconBuildingStore } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Proveedor {
