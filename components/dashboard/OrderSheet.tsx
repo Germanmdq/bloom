@@ -336,11 +336,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     const isWebTable = tableId === WEB_ORDER_TABLE_RETIRO || tableId === WEB_ORDER_TABLE_DELIVERY;
 
-    useEffect(() => {
-        if (initialShowPayment && cart.length > 0) {
-            setShowPaymentModal(true);
-        }
-    }, [initialShowPayment, cart.length]);
+    // Nota: apertura automática del PaymentModal via F5 se maneja en el useLayoutEffect de carga del cart.
 
     useEffect(() => {
         fetch("/api/delivery-persons").then(r => r.json()).then(data => {
@@ -395,7 +391,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             useOrderStore.getState().clearCart();
             lastTableIdRef.current = tableId;
         }
-        
+
         // INSTANT LOAD: If we have data from parent, use it NOW (esto SIEMPRE debe correr para sincronizar)
         if (initialTableData && initialTableData.status === 'OCCUPIED') {
             const items = Array.isArray(initialTableData.items) ? initialTableData.items : [];
@@ -413,8 +409,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 }
             });
             useOrderStore.getState().setCart(newCartItems);
+            // F5 cobro rápido: si hay items, abre el PaymentModal directo (mismo effect para evitar race condition)
+            if (initialShowPayment && newCartItems.length > 0) {
+                setShowPaymentModal(true);
+            }
         }
-    }, [tableId, initialTableData]);
+    }, [tableId, initialTableData, initialShowPayment]);
 
     const refreshData = async () => {
         if (isWebTable) {
