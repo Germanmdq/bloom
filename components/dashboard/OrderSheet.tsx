@@ -1034,7 +1034,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 />
                             </div>
                             <div className="flex items-center gap-2 mt-1">
-                                <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[10px] font-black uppercase tracking-wider">{orderType}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const cycle: Array<'LOCAL' | 'DELIVERY' | 'TAKEAWAY'> = ['LOCAL', 'DELIVERY', 'TAKEAWAY'];
+                                        const next = cycle[(cycle.indexOf(orderType) + 1) % cycle.length];
+                                        setOrderType(next);
+                                        supabase.from('salon_tables').update({ order_type: next }).eq('id', tableId).then(() => {});
+                                    }}
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 cursor-pointer ${orderType === 'LOCAL' ? 'bg-slate-100 text-slate-500 hover:bg-slate-200' : orderType === 'DELIVERY' ? 'bg-sky-100 text-sky-600 hover:bg-sky-200' : 'bg-amber-100 text-amber-600 hover:bg-amber-200'}`}
+                                    title="Clic para cambiar"
+                                >
+                                    {orderType === 'LOCAL' ? 'Salón' : orderType === 'DELIVERY' ? 'Delivery' : 'Retiro'}
+                                </button>
                                 <span className="text-[10px] text-slate-400 font-bold">• {cart.reduce((s, i) => s + i.quantity, 0)} ÍTEMS</span>
                             </div>
                         </div>

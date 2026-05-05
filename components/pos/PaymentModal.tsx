@@ -367,8 +367,16 @@ export function PaymentModal({
                         )}
                         {paymentMethod === "CUENTA_CORRIENTE" && (
                             <div className="text-center">
-                                <p className="text-sm font-bold text-orange-600 uppercase tracking-widest mb-2">Anotar en Cuenta Corriente</p>
-                                <p className="text-xs font-semibold text-gray-400">El total se sumará al saldo pendiente del cliente.</p>
+                                <p className="text-sm font-bold text-orange-600 uppercase tracking-widest mb-2">Cuenta Corriente</p>
+                                {selectedCustomerId && customerName ? (
+                                    <div className="bg-orange-50 border border-orange-200 rounded-2xl px-5 py-3 mt-2">
+                                        <p className="text-xs font-black text-orange-400 uppercase tracking-widest mb-0.5">Se carga a</p>
+                                        <p className="text-lg font-black text-orange-700">{customerName}</p>
+                                        <p className="text-xs font-bold text-orange-400 mt-1">El total se suma al saldo pendiente</p>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs font-semibold text-red-400">Buscá y vinculá un cliente arriba para continuar.</p>
+                                )}
                             </div>
                         )}
                         {paymentMethod === "MERCADO_PAGO" && (
