@@ -173,6 +173,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     };
 
     const handleSelectProduct = (item: any) => {
+        // Variante expandida de bebida → directo al carrito con precio del grupo
+        if (item._parentId) {
+            addToCart({ id: item._parentId + '-' + item.name, name: item.name, price: item._parentPrice, quantity: 1 });
+            setFeedback({ message: `Agregado: ${item.name}`, type: 'success' });
+            return;
+        }
+
         const catName = categoryMap[item.category_id] || "";
         const catNameLower = catName.toLowerCase();
         const itemNameLower = item.name.toLowerCase();
@@ -986,7 +993,36 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const normalize = (s: string) =>
         (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+    const categoryMap = useMemo(() => {
+        const map: Record<string, string> = {};
+        categories.forEach((c: any) => { map[c.id] = c.name; });
+        return map;
+    }, [categories]);
+
     const searchTerm = normalize(productSearch.trim());
+
+    const DRINK_VARIANTS: Record<string, string[]> = {
+        'coca':    ['Coca-Cola', 'Coca Zero', 'Sprite', 'Sprite Zero', 'Schweppes Pomelo', 'Aquarius Pera', 'Aquarius Manzana', 'Aquarius Pomelo', 'Aquarius Uva', 'Agua sin Gas', 'Agua con Gas'],
+        'cerveza': ['Quilmes', 'Stella Artois', 'Patagonia', 'Corona'],
+        'jugo':    ['Jugo de Naranja', 'Limonada', 'Exprimido'],
+        'vino':    ['Vino Tinto', 'Vino Blanco', 'Copa de Vino'],
+    };
+
+    const expandDrinkGroups = (list: any[]): any[] => {
+        const result: any[] = [];
+        for (const p of list) {
+            const n = normalize(p.name);
+            const matchKey = Object.keys(DRINK_VARIANTS).find(k => n.includes(k));
+            if (matchKey) {
+                DRINK_VARIANTS[matchKey].forEach(variant => {
+                    result.push({ ...p, id: `${p.id}-${variant}`, name: variant, _parentId: p.id, _parentPrice: p.price });
+                });
+            } else {
+                result.push(p);
+            }
+        }
+        return result;
+    };
 
     const displayProducts = useMemo(() => {
         if (searchTerm) {
@@ -996,10 +1032,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             );
         }
         if (activeCategory) {
-            return products.filter((p: any) => p.category_id === activeCategory);
+            const catName = normalize(categoryMap[activeCategory] || '');
+            const filtered = products.filter((p: any) => p.category_id === activeCategory);
+            if (catName.includes('bebida')) return expandDrinkGroups(filtered);
+            return filtered;
         }
         return products;
-    }, [products, productSearch, activeCategory]);
+    }, [products, productSearch, activeCategory, categoryMap]);
 
     const categoryCounts = useMemo(() => {
         const counts: Record<string, number> = {};
@@ -1016,12 +1055,6 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             ? products.find((p: any) => p.id === appSettings.plato_del_dia_id)
             : products.find((p: any) => p.kind === 'plato_del_dia');
     }, [appSettings, products]);
-
-    const categoryMap = useMemo(() => {
-        const map: Record<string, string> = {};
-        categories.forEach((c: any) => { map[c.id] = c.name; });
-        return map;
-    }, [categories]);
 
     if (isLoading) {
         return (
