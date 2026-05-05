@@ -62,11 +62,11 @@ export default function AccesoPage() {
                         <div>
                             <label className="block text-[14px] font-bold text-neutral-700 mb-1.5">Email</label>
                             <input
-                                type="email"
+                                type="text"
                                 autoComplete="username"
-                                placeholder="tu@email.com"
-                                value={email}
-                                onChange={e => { setEmail(e.target.value); setError(""); }}
+                                placeholder="tu@email.com o teléfono"
+                                value={identifier}
+                                onChange={e => { setIdentifier(e.target.value); setError(""); }}
                                 className="w-full min-h-[52px] rounded-2xl border-2 border-neutral-200 bg-white px-4 text-[16px] font-semibold outline-none placeholder:text-neutral-300 placeholder:font-normal focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/25 transition-all"
                                 autoFocus
                             />
