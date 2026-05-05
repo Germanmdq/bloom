@@ -47,6 +47,7 @@ export async function POST(req: Request) {
         }
 
         await svc.from("profiles").update({
+            full_name: full_name.trim(),
             phone: phone.trim(),
             customer_number: customerNumber,
             is_customer: true,
