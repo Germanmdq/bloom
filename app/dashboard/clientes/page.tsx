@@ -13,6 +13,7 @@ export default function ClientesPage() {
     const [selectedClient, setSelectedClient] = useState<any | null>(null);
     const [isPaying, setIsPaying] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState<"CASH" | "MERCADO_PAGO" | "SANTANDER_RIO">("CASH");
     const [resettingPwd, setResettingPwd] = useState(false);
     const [resetMsg, setResetMsg] = useState<string | null>(null);
     const [migratingPwds, setMigratingPwds] = useState(false);
@@ -151,7 +152,7 @@ export default function ClientesPage() {
             const res = await fetch("/api/clientes/pay", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ clientId, amount: amountToPay })
+                body: JSON.stringify({ clientId, amount: amountToPay, method: paymentMethod })
             });
             if (res.ok) {
                 alert("Pago registrado correctamente ✅");
@@ -429,16 +430,38 @@ export default function ClientesPage() {
                                         </div>
                                     </div>
                                     
+                                    {/* Método de pago */}
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {([
+                                            { key: "CASH", label: "Efectivo" },
+                                            { key: "MERCADO_PAGO", label: "Mercado Pago" },
+                                            { key: "SANTANDER_RIO", label: "Santander" },
+                                        ] as const).map(({ key, label }) => (
+                                            <button
+                                                key={key}
+                                                type="button"
+                                                onClick={() => setPaymentMethod(key)}
+                                                className={`py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border-2 ${
+                                                    paymentMethod === key
+                                                        ? "bg-gray-900 text-white border-gray-900"
+                                                        : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                                                }`}
+                                            >
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+
                                     <div className="flex flex-col sm:flex-row gap-3">
                                         <div className="relative flex-1">
                                             <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-gray-400">$</span>
-                                            <input 
+                                            <input
                                                 type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)}
                                                 className="w-full h-16 pl-10 pr-6 rounded-2xl bg-white border-transparent focus:ring-4 ring-black/5 outline-none font-black text-xl text-gray-900 shadow-inner"
                                                 placeholder="0.00"
                                             />
                                         </div>
-                                        <button 
+                                        <button
                                             disabled={isPaying} onClick={() => handleSettleDebt(selectedClient.id)}
                                             className={`h-16 px-10 ${selectedClient.balance > 0 ? 'bg-red-600 shadow-red-600/20' : 'bg-emerald-600 shadow-emerald-600/20'} text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-xl`}
                                         >

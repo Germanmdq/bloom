@@ -3,38 +3,35 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export async function POST(req: Request) {
     try {
-        const { clientId, amount } = await req.json();
+        const { clientId, amount, method } = await req.json();
         if (!clientId) return NextResponse.json({ error: "Client ID required" }, { status: 400 });
 
         const svc = createServiceRoleClient();
 
-        // Si amount es undefined, ponemos el balance en 0 (Saldar toda la deuda)
-        // Si no, restamos el monto del balance actual
-        if (amount === undefined) {
-            const { error } = await svc
-                .from("profiles")
-                .update({ balance: 0 })
-                .eq("id", clientId);
-            
-            if (error) throw error;
-        } else {
-            // Obtener balance actual
-            const { data: profile } = await svc
-                .from("profiles")
-                .select("balance")
-                .eq("id", clientId)
-                .single();
-            
-            const currentBalance = Number(profile?.balance || 0);
-            const newBalance = currentBalance - Number(amount);
+        const { data: profile } = await svc
+            .from("profiles")
+            .select("balance")
+            .eq("id", clientId)
+            .single();
 
-            const { error } = await svc
-                .from("profiles")
-                .update({ balance: newBalance })
-                .eq("id", clientId);
-            
-            if (error) throw error;
-        }
+        const currentBalance = Number(profile?.balance || 0);
+        const paidAmount = amount !== undefined ? Number(amount) : currentBalance;
+        const newBalance = currentBalance - paidAmount;
+
+        const { error } = await svc
+            .from("profiles")
+            .update({ balance: newBalance })
+            .eq("id", clientId);
+
+        if (error) throw error;
+
+        // Registrar en historial de pagos
+        await svc.from("payments_history").insert({
+            profile_id: clientId,
+            amount: paidAmount,
+            method: method || "CASH",
+            remaining_balance: newBalance,
+        });
 
         return NextResponse.json({ success: true });
     } catch (err: any) {
