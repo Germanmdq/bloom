@@ -156,7 +156,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             if (selectedDrink && selectedDrink.name !== "Sin bebida") {
                 let finalDrinkPrice = 0;
                 if (!isPlatoDiaContext) {
-                    const matchingProduct = products.find((p: any) => p.name.toLowerCase() === selectedDrink.name.toLowerCase());
+                    // Primero busca por nombre exacto
+                    let matchingProduct = products.find((p: any) => p.name.toLowerCase() === selectedDrink.name.toLowerCase());
+                    if (!matchingProduct) {
+                        // Si no encuentra, busca el producto grupo padre por DRINK_VARIANTS
+                        const drinkNorm = normalize(selectedDrink.name);
+                        const groupKey = Object.keys(DRINK_VARIANTS).find(k =>
+                            DRINK_VARIANTS[k].some(v => normalize(v) === drinkNorm)
+                        );
+                        if (groupKey) {
+                            matchingProduct = products.find((p: any) => normalize(p.name).includes(groupKey));
+                        }
+                    }
                     finalDrinkPrice = matchingProduct ? Number(matchingProduct.price) : 2500;
                 }
                 addToCart({ 
