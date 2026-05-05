@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence } from "framer-motion";
-import { IconSearch, IconPlus, IconTag, IconChevronRight, IconX, IconCurrencyDollar, IconFlame, IconEdit } from "@tabler/icons-react";
+import { IconSearch, IconPlus, IconTag, IconChevronRight, IconX, IconCurrencyDollar, IconFlame, IconEdit, IconTrash } from "@tabler/icons-react";
 
 function formatName(name: string): string {
     if (!name) return "";
@@ -28,6 +28,7 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
     });
     const [isAddingCategory, setIsAddingCategory] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState("");
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     const supabase = createClient();
 
@@ -41,6 +42,7 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
     async function handleSave(e: React.FormEvent) {
         e.preventDefault();
         setLoading(true);
+        setSaveError(null);
         const productData = {
             name: currentProduct.name,
             description: currentProduct.description,
@@ -48,14 +50,24 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
             category_id: currentProduct.category_id,
             raw_product_id: currentProduct.raw_product_id || null,
         };
-        if (currentProduct.id) {
-            await supabase.from('products').update(productData).eq('id', currentProduct.id);
-        } else {
-            await supabase.from('products').insert([productData]);
+        const { error } = currentProduct.id
+            ? await supabase.from('products').update(productData).eq('id', currentProduct.id)
+            : await supabase.from('products').insert([productData]);
+        if (error) {
+            setSaveError(error.message);
+            setLoading(false);
+            return;
         }
         setIsEditing(false);
         await fetchData();
         setLoading(false);
+    }
+
+    async function handleDelete(id: string) {
+        if (!confirm('¿Eliminar este producto?')) return;
+        const { error } = await supabase.from('products').delete().eq('id', id);
+        if (error) { alert('Error al eliminar: ' + error.message); return; }
+        await fetchData();
     }
 
     async function handleUpdatePrice(id: string, newPrice: string) {
@@ -160,15 +172,15 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
                                 {productsByCategory[selectedCategory]?.map((product: any) => (
                                     <div key={product.id} className="bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100">
                                         <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-bold">{formatName(product.name)}</h4>
+                                            <h4 className="font-bold flex-1 pr-2">{formatName(product.name)}</h4>
                                             {!isQuickPricing ? (
-                                                <span className="font-black text-sm">${product.price}</span>
+                                                <span className="font-black text-sm shrink-0">${product.price?.toLocaleString()}</span>
                                             ) : (
                                                 <input
                                                     type="number"
                                                     defaultValue={product.price}
                                                     onBlur={(e) => handleUpdatePrice(product.id, e.target.value)}
-                                                    className="w-20 bg-white border rounded-lg px-2 py-1 text-sm font-bold outline-none focus:border-black"
+                                                    className="w-24 bg-white border rounded-lg px-2 py-1 text-sm font-bold outline-none focus:border-black"
                                                 />
                                             )}
                                         </div>
@@ -179,6 +191,23 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
                                                 <span className="text-[10px] font-black uppercase tracking-tight">
                                                     {product.total_vendidos || 0} vendidos
                                                 </span>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <button
+                                                    onClick={() => {
+                                                        setCurrentProduct({ ...product, price: String(product.price), raw_product_id: product.raw_product_id || "" });
+                                                        setIsEditing(true);
+                                                    }}
+                                                    className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-black hover:text-white transition-all"
+                                                >
+                                                    <IconEdit size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(product.id)}
+                                                    className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
+                                                >
+                                                    <IconTrash size={14} />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -193,7 +222,7 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
             {isEditing && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-md">
                     <div className="bg-white p-10 rounded-[3rem] w-full max-w-md shadow-2xl">
-                        <h3 className="text-2xl font-black mb-6">Nuevo Producto</h3>
+                        <h3 className="text-2xl font-black mb-6">{currentProduct.id ? "Editar Producto" : "Nuevo Producto"}</h3>
                         <form onSubmit={handleSave} className="space-y-4">
                             <input
                                 type="text" required placeholder="Nombre"
@@ -236,8 +265,11 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
                                     ))}
                                 </select>
                             </div>
+                            {saveError && (
+                                <p className="text-sm font-bold text-red-600 bg-red-50 rounded-2xl px-4 py-3">{saveError}</p>
+                            )}
                             <div className="flex gap-3">
-                                <button type="button" onClick={() => setIsEditing(false)} className="flex-1 py-4 bg-gray-100 rounded-2xl font-bold">Cancelar</button>
+                                <button type="button" onClick={() => { setIsEditing(false); setSaveError(null); }} className="flex-1 py-4 bg-gray-100 rounded-2xl font-bold">Cancelar</button>
                                 <button type="submit" disabled={loading} className="flex-1 py-4 bg-black text-white rounded-2xl font-black">
                                     {loading ? "Guardando..." : "Guardar"}
                                 </button>
