@@ -685,7 +685,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         setShowReceiptModal(true);
     };
 
-    const finishOrder = async (ctx?: { mpOrderId?: string | null; customerId?: string | null }) => {
+    const finishOrder = async (ctx?: { mpOrderId?: string | null; customerId?: string | null; printFactura?: boolean }) => {
         if (finalTotal === 0 && discount === 0) return;
         const mpId = ctx?.mpOrderId ?? mpPosOrderId;
         const effectiveCustomerId = ctx?.customerId ?? selectedCustomerId;
