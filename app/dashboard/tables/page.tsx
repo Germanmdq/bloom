@@ -799,7 +799,7 @@ export default function TablesPage() {
                         totalItems <= 6 ? 3 :
                         totalItems <= 8 ? 4 :
                         totalItems <= 12 ? 5 : 6;
-                    const gridCols = `grid-cols-${cols}`;
+                    const gridCols = cols === 3 ? 'grid-cols-3' : cols === 4 ? 'grid-cols-4' : cols === 5 ? 'grid-cols-5' : 'grid-cols-6';
 
                     const s = cols === 3 ? {
                         minH: 'min-h-[220px]', pad: 'p-6', gap: 'gap-6',
