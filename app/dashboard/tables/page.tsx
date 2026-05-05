@@ -795,15 +795,32 @@ export default function TablesPage() {
                 <>
                 {(() => {
                     const totalItems = webOrders.length + sortedTables.length;
-                    // Adapt columns starting from a minimum of 4
-                    const gridCols =
-                        totalItems <= 6 ? 'grid-cols-3' :
-                totalItems <= 8 ? 'grid-cols-4' :
-                        totalItems <= 12 ? 'grid-cols-5' :
-                        'grid-cols-6';
+                    const cols =
+                        totalItems <= 6 ? 3 :
+                        totalItems <= 8 ? 4 :
+                        totalItems <= 12 ? 5 : 6;
+                    const gridCols = `grid-cols-${cols}`;
+
+                    const s = cols === 3 ? {
+                        minH: 'min-h-[220px]', pad: 'p-6', gap: 'gap-6',
+                        mainXl: 'text-7xl', mainLg: 'text-6xl', mainMd: 'text-4xl', mainSm: 'text-2xl',
+                        total: 'text-2xl', badge: 'text-[9px]', meta: 'text-[9px]', iconSize: 64, time: 'text-xs'
+                    } : cols === 4 ? {
+                        minH: 'min-h-[190px]', pad: 'p-5', gap: 'gap-4',
+                        mainXl: 'text-6xl', mainLg: 'text-5xl', mainMd: 'text-3xl', mainSm: 'text-xl',
+                        total: 'text-xl', badge: 'text-[8px]', meta: 'text-[8px]', iconSize: 52, time: 'text-[10px]'
+                    } : cols === 5 ? {
+                        minH: 'min-h-[170px]', pad: 'p-4', gap: 'gap-3',
+                        mainXl: 'text-5xl', mainLg: 'text-4xl', mainMd: 'text-2xl', mainSm: 'text-lg',
+                        total: 'text-lg', badge: 'text-[7px]', meta: 'text-[7px]', iconSize: 44, time: 'text-[9px]'
+                    } : {
+                        minH: 'min-h-[150px]', pad: 'p-3', gap: 'gap-2',
+                        mainXl: 'text-4xl', mainLg: 'text-3xl', mainMd: 'text-xl', mainSm: 'text-base',
+                        total: 'text-base', badge: 'text-[6px]', meta: 'text-[6px]', iconSize: 36, time: 'text-[8px]'
+                    };
 
                     return (
-                        <div className={`grid ${gridCols} gap-6`}>
+                        <div className={`grid ${gridCols} ${s.gap}`}>
                              {/* Individual Web Order Cards */}
                              {webOrders.map(order => {
                                  const isDelivery = order.delivery_type === 'delivery' || (!order.delivery_type && order.order_type === 'web');
@@ -821,29 +838,29 @@ export default function TablesPage() {
                                          whileHover={{ scale: 1.02 }}
                                          whileTap={{ scale: 0.98 }}
                                          onClick={() => setSelectedWebOrder(order)}
-                                         className={`rounded-[2.5rem] p-8 flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[400px] shadow-[0_22px_70px_rgba(0,0,0,0.18)] ${
+                                         className={`rounded-[2.5rem] ${s.pad} flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden ${s.minH} shadow-[0_22px_70px_rgba(0,0,0,0.18)] ${
                                              isDelivery ? 'bg-red-500' : 'bg-emerald-500'
                                          }`}
                                      >
                                         {/* IconClock Centered Top */}
                                         <div className="flex flex-col items-center gap-1 z-10">
-                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 text-white">Minutos</span>
-                                            <span className="text-xl font-medium text-white">{displayTime}</span>
+                                            <span className={`${s.badge} font-bold uppercase tracking-[0.2em] opacity-60 text-white`}>Minutos</span>
+                                            <span className={`${s.time} font-medium text-white`}>{displayTime}</span>
                                         </div>
 
                                          <div className="flex-1 flex flex-col items-center justify-center z-10 w-full">
-                                             <span className="font-semibold text-[8rem] leading-none tracking-tight text-white mb-2">
+                                             <span className={`font-semibold ${s.mainXl} leading-none tracking-tight text-white mb-1`}>
                                                  {order.customer_name ? order.customer_name.charAt(0).toUpperCase() : 'W'}
                                              </span>
-                                             <p className="text-sm font-black text-white/90 uppercase tracking-widest truncate max-w-full px-2">
+                                             <p className={`${s.badge} font-black text-white/90 uppercase tracking-widest truncate max-w-full px-2`}>
                                                  {order.customer_name || 'PEDIDO WEB'}
                                              </p>
                                          </div>
 
                                         {/* Total Centered Bottom */}
                                         <div className="flex flex-col items-center z-10 w-full">
-                                            <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Total</span>
-                                            <div className="text-4xl font-black text-white tracking-tighter">
+                                            <span className={`${s.meta} font-bold text-white/60 uppercase tracking-widest mb-0.5`}>Total</span>
+                                            <div className={`${s.total} font-black text-white tracking-tighter`}>
                                                 ${Number(order.total || 0).toLocaleString('es-AR')}
                                             </div>
                                         </div>
@@ -881,37 +898,37 @@ export default function TablesPage() {
                                         whileHover={{ scale: 1.03 }}
                                         whileTap={{ scale: 0.97 }}
                                         onClick={() => setSelectedTable(table)}
-                                        className={`rounded-3xl p-6 flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[220px] ${styles.bg}`}
+                                        className={`rounded-3xl ${s.pad} flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden ${s.minH} ${styles.bg}`}
                                     >
                                         {/* Badge tipo + tiempo */}
                                         <div className="flex items-center justify-between w-full z-10">
-                                            <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1 rounded-full ${styles.badgeBg}`}>
+                                            <span className={`${s.badge} font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full ${styles.badgeBg}`}>
                                                 {orderLabel}
                                             </span>
-                                            <span className={`text-xs font-bold opacity-70 ${styles.textColor}`}>
+                                            <span className={`${s.time} font-bold opacity-70 ${styles.textColor}`}>
                                                 {displayTime}
                                             </span>
                                         </div>
 
                                         {/* Número / Nombre / Ícono de mesa */}
-                                        <div className="flex-1 flex flex-col items-center justify-center z-10 gap-2">
+                                        <div className="flex-1 flex flex-col items-center justify-center z-10 gap-1">
                                             {isVirtual && !hasName ? (
                                                 <>
                                                     <div className={`opacity-90 ${styles.textColor}`}>
                                                         {isDeliveryTable
-                                                            ? <IconTruck size={64} strokeWidth={1.5} />
-                                                            : <IconShoppingBag size={64} strokeWidth={1.5} />}
+                                                            ? <IconTruck size={s.iconSize} strokeWidth={1.5} />
+                                                            : <IconShoppingBag size={s.iconSize} strokeWidth={1.5} />}
                                                     </div>
-                                                    <span className={`text-2xl font-black tracking-tight ${styles.textColor}`}>
+                                                    <span className={`${s.mainSm} font-black tracking-tight ${styles.textColor}`}>
                                                         {displayName}
                                                     </span>
                                                 </>
                                             ) : (
                                                 <span className={`font-black leading-none tracking-tighter ${styles.textColor} ${
-                                                    displayName.length > 10 ? 'text-2xl' :
-                                                    displayName.length > 6  ? 'text-4xl' :
-                                                    displayName.length > 3  ? 'text-6xl' :
-                                                    'text-7xl'
+                                                    displayName.length > 10 ? s.mainSm :
+                                                    displayName.length > 6  ? s.mainMd :
+                                                    displayName.length > 3  ? s.mainLg :
+                                                    s.mainXl
                                                 }`}>
                                                     {displayName}
                                                 </span>
@@ -919,11 +936,11 @@ export default function TablesPage() {
                                         </div>
 
                                         {/* Info inferior */}
-                                        <div className="flex flex-col items-center z-10 w-full gap-1">
-                                            <p className={`text-[9px] font-bold uppercase tracking-[0.15em] opacity-50 ${styles.textColor}`}>
+                                        <div className="flex flex-col items-center z-10 w-full gap-0.5">
+                                            <p className={`${s.meta} font-bold uppercase tracking-[0.15em] opacity-50 ${styles.textColor}`}>
                                                 {itemCount > 0 ? `${itemCount} items` : 'Sin items'}
                                             </p>
-                                            <div className={`text-2xl font-black tracking-tight ${styles.textColor}`}>
+                                            <div className={`${s.total} font-black tracking-tight ${styles.textColor}`}>
                                                 ${Number(table.total || 0).toLocaleString("es-AR")}
                                             </div>
                                         </div>
