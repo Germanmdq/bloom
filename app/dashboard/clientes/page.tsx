@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { IconUsers, IconSearch, IconLoader2, IconStar, IconTrendingUp, IconCalendar, IconArrowsUpDown, IconX, IconPhone, IconMail, IconShoppingBag, IconCircleCheck, IconAlertCircle, IconHistory, IconReceipt } from "@tabler/icons-react";
+import { IconUsers, IconSearch, IconLoader2, IconStar, IconTrendingUp, IconCalendar, IconArrowsUpDown, IconX, IconPhone, IconMail, IconShoppingBag, IconCircleCheck, IconAlertCircle, IconHistory, IconReceipt, IconEdit, IconDeviceFloppy } from "@tabler/icons-react";
+import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function ClientesPage() {
+    const supabase = createClient();
     const [clients, setClients] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -16,14 +18,46 @@ export default function ClientesPage() {
     const [migratingPwds, setMigratingPwds] = useState(false);
     const [migrateResult, setMigrateResult] = useState<string | null>(null);
 
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState("");
+    const [editPhone, setEditPhone] = useState("");
+    const [editBirthdate, setEditBirthdate] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMsg, setSaveMsg] = useState<string | null>(null);
+
     useEffect(() => { fetchClients(); }, []);
     
     useEffect(() => {
         if (selectedClient) {
             setPaymentAmount(selectedClient.balance > 0 ? selectedClient.balance.toString() : "");
             setResetMsg(null);
+            setIsEditing(false);
+            setSaveMsg(null);
+            setEditName(selectedClient.full_name || "");
+            setEditPhone(selectedClient.phone || "");
+            setEditBirthdate(selectedClient.birthdate || "");
         }
     }, [selectedClient]);
+
+    async function handleSaveEdit() {
+        if (!selectedClient) return;
+        setIsSaving(true);
+        setSaveMsg(null);
+        const { error } = await supabase.from('profiles').update({
+            full_name: editName.trim() || null,
+            phone: editPhone.trim() || null,
+            birthdate: editBirthdate || null,
+        }).eq('id', selectedClient.id);
+        setIsSaving(false);
+        if (error) {
+            setSaveMsg('Error al guardar: ' + error.message);
+        } else {
+            setSaveMsg('✓ Guardado');
+            setIsEditing(false);
+            setSelectedClient({ ...selectedClient, full_name: editName.trim(), phone: editPhone.trim(), birthdate: editBirthdate });
+            setClients(prev => prev.map(c => c.id === selectedClient.id ? { ...c, full_name: editName.trim(), phone: editPhone.trim(), birthdate: editBirthdate } : c));
+        }
+    }
 
     async function handleResetPassword(phone: string) {
         setResettingPwd(true);
@@ -267,14 +301,53 @@ export default function ClientesPage() {
                                     <div className="w-24 h-24 bg-white/5 border border-white/10 rounded-[2.5rem] flex items-center justify-center text-5xl font-black text-[#FFD60A] shadow-2xl">
                                         {selectedClient.full_name?.[0]?.toUpperCase()}
                                     </div>
-                                    <div>
+                                    <div className="flex-1 min-w-0">
                                         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FFD60A] mb-1">Perfil de Cliente</p>
                                         <h2 className="text-3xl font-black text-white leading-tight">{selectedClient.full_name}</h2>
                                         <p className="text-white/40 text-sm font-bold flex items-center gap-2 mt-2 truncate">
-                                            <IconMail size={14} /> {selectedClient.email || 'Sin correo asociado'}
+                                            <IconPhone size={14} /> {selectedClient.phone || 'Sin teléfono'}
                                         </p>
                                     </div>
+                                    <button
+                                        onClick={() => { setIsEditing(e => !e); setSaveMsg(null); }}
+                                        className="w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-all shrink-0"
+                                    >
+                                        <IconEdit size={18} />
+                                    </button>
                                 </div>
+
+                                {/* Formulario de edición */}
+                                {isEditing && (
+                                    <div className="relative mt-8 space-y-3">
+                                        <input
+                                            value={editName}
+                                            onChange={e => setEditName(e.target.value)}
+                                            placeholder="Nombre completo"
+                                            className="w-full bg-white/10 text-white placeholder:text-white/30 font-bold rounded-2xl px-5 py-3 outline-none focus:ring-2 focus:ring-[#FFD60A]/40 text-sm"
+                                        />
+                                        <input
+                                            value={editPhone}
+                                            onChange={e => setEditPhone(e.target.value)}
+                                            placeholder="Teléfono"
+                                            className="w-full bg-white/10 text-white placeholder:text-white/30 font-bold rounded-2xl px-5 py-3 outline-none focus:ring-2 focus:ring-[#FFD60A]/40 text-sm"
+                                        />
+                                        <input
+                                            type="date"
+                                            value={editBirthdate}
+                                            onChange={e => setEditBirthdate(e.target.value)}
+                                            className="w-full bg-white/10 text-white placeholder:text-white/30 font-bold rounded-2xl px-5 py-3 outline-none focus:ring-2 focus:ring-[#FFD60A]/40 text-sm"
+                                        />
+                                        <button
+                                            onClick={handleSaveEdit}
+                                            disabled={isSaving}
+                                            className="w-full flex items-center justify-center gap-2 bg-[#FFD60A] text-black font-black text-xs uppercase tracking-widest rounded-2xl py-3 hover:opacity-90 transition-all disabled:opacity-50"
+                                        >
+                                            {isSaving ? <IconLoader2 size={16} className="animate-spin" /> : <IconDeviceFloppy size={16} />}
+                                            Guardar cambios
+                                        </button>
+                                        {saveMsg && <p className={`text-xs font-bold text-center ${saveMsg.startsWith('✓') ? 'text-[#FFD60A]' : 'text-red-400'}`}>{saveMsg}</p>}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Main Scrollable Content */}
