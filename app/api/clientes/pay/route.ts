@@ -33,6 +33,18 @@ export async function POST(req: Request) {
             remaining_balance: newBalance,
         });
 
+        // Insertar en orders para que aparezca en la caja diaria
+        const { data: prof } = await svc.from("profiles").select("full_name").eq("id", clientId).single();
+        await svc.from("orders").insert({
+            total: paidAmount,
+            payment_method: method || "CASH",
+            status: "completed",
+            paid: true,
+            customer_id: clientId,
+            customer_name: prof?.full_name ?? null,
+            items: [{ id: "cc-payment", name: "Pago Cuenta Corriente", price: paidAmount, quantity: 1 }],
+        });
+
         return NextResponse.json({ success: true });
     } catch (err: any) {
         console.error("Error paying balance:", err);
