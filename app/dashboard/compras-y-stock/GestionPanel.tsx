@@ -154,7 +154,10 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
             filename = "compras.csv";
             csv = "Fecha;Proveedor;Factura;Metodo;Total\n";
             compras.forEach((c: any) => {
-                csv += `"${new Date(c.created_at).toLocaleDateString()}";"${c.proveedores?.nombre || ''}";"${c.numero_factura || ''}";"${c.metodo_pago}";${c.total}\n`;
+                const metodo = c.metodo_pago === 'cuenta_corriente' ? 'Cta. Cte.' : 
+                               c.metodo_pago === 'mercado_pago' ? 'Mercado Pago' :
+                               c.metodo_pago === 'transferencia' ? 'Santander' : 'Efectivo';
+                csv += `"${new Date(c.created_at).toLocaleDateString()}";"${c.proveedores?.nombre || ''}";"${c.numero_factura || ''}";"${metodo}";${c.total}\n`;
             });
         } else {
             filename = "gastos.csv";
@@ -281,7 +284,10 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                                         {new Date(c.created_at).toLocaleDateString('es-AR')}
                                         {c.numero_factura ? ` · Fac: ${c.numero_factura}` : ''}
-                                        {' · '}{c.metodo_pago === 'cuenta_corriente' ? 'Cta. Cte.' : 'Efectivo'}
+                                        {' · '}
+                                        {c.metodo_pago === 'cuenta_corriente' ? 'Cta. Cte.' : 
+                                         c.metodo_pago === 'mercado_pago' ? 'M. Pago' :
+                                         c.metodo_pago === 'transferencia' ? 'Santander' : 'Efectivo'}
                                     </p>
                                 </div>
                             </div>

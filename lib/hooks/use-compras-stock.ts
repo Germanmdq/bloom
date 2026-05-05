@@ -156,7 +156,7 @@ export function useRegistrarCompra() {
         mutationFn: async (params: {
             proveedor_id: string;
             numero_factura?: string;
-            metodo_pago: 'efectivo' | 'cuenta_corriente';
+            metodo_pago: 'efectivo' | 'cuenta_corriente' | 'mercado_pago' | 'transferencia';
             observaciones?: string;
             items: Array<{ insumo_id: string; cantidad: number; precio_unitario: number }>;
         }) => {

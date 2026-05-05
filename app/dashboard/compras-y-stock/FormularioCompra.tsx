@@ -25,7 +25,7 @@ export function FormularioCompra({ proveedores }: { proveedores: Proveedor[] }) 
     const [proveedorId, setProveedorId] = useState("");
     const [cuit, setCuit] = useState("");
     const [numFactura, setNumFactura] = useState("");
-    const [metodoPago, setMetodoPago] = useState<'efectivo' | 'cuenta_corriente'>('efectivo');
+    const [metodoPago, setMetodoPago] = useState<'efectivo' | 'cuenta_corriente' | 'mercado_pago' | 'transferencia'>('efectivo');
     const [items, setItems] = useState<CompraItem[]>([]);
     const [searchInsumo, setSearchInsumo] = useState("");
 
@@ -179,12 +179,18 @@ export function FormularioCompra({ proveedores }: { proveedores: Proveedor[] }) 
                     </div>
 
                     {/* Método de Pago */}
-                    <div className="flex gap-3 mb-8">
-                        <button onClick={() => setMetodoPago('efectivo')} className={`flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2 ${metodoPago === 'efectivo' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 bg-white text-gray-400'}`}>
-                            <IconCash size={18} /> Efectivo
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                        <button onClick={() => setMetodoPago('efectivo')} className={`h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2 ${metodoPago === 'efectivo' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 bg-white text-gray-400'}`}>
+                            <IconCash size={16} /> Efectivo
                         </button>
-                        <button onClick={() => setMetodoPago('cuenta_corriente')} className={`flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2 ${metodoPago === 'cuenta_corriente' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-100 bg-white text-gray-400'}`}>
-                            <IconCreditCard size={18} /> Cuenta Corriente
+                        <button onClick={() => setMetodoPago('mercado_pago')} className={`h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2 ${metodoPago === 'mercado_pago' ? 'border-sky-500 bg-sky-50 text-sky-700' : 'border-gray-100 bg-white text-gray-400'}`}>
+                            <IconCreditCard size={16} /> Mercado Pago
+                        </button>
+                        <button onClick={() => setMetodoPago('transferencia')} className={`h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2 ${metodoPago === 'transferencia' ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-100 bg-white text-gray-400'}`}>
+                            <IconBuildingStore size={16} /> Santander
+                        </button>
+                        <button onClick={() => setMetodoPago('cuenta_corriente')} className={`h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2 ${metodoPago === 'cuenta_corriente' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-100 bg-white text-gray-400'}`}>
+                            <IconFileInvoice size={16} /> Cta. Cte.
                         </button>
                     </div>
 
