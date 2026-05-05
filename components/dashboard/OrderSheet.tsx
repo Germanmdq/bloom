@@ -99,6 +99,27 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     const handleConfirmConfig = () => {
         if (pendingProduct) {
+            // Grupo de bebida standalone (ej: "Línea Coca") → agrega solo la bebida elegida
+            if (isDrinkGroupContext) {
+                if (!selectedDrink || selectedDrink.name === "Sin bebida") {
+                    setFeedback({ message: 'Seleccioná una bebida', type: 'error' });
+                    setTimeout(() => setFeedback(null), 2000);
+                    return;
+                }
+                addToCart({
+                    id: `drink-${Math.random().toString(36).substr(2, 5)}`,
+                    name: selectedDrink.name,
+                    price: Number(pendingProduct.price || 0),
+                    quantity: 1,
+                    notes: configNotes,
+                });
+                setFeedback({ message: `Agregado: ${selectedDrink.name}`, type: 'success' });
+                setShowConfigurator(false);
+                setIsDrinkGroupContext(false);
+                setIsPlatoDiaContext(false);
+                return;
+            }
+
             const pNameLower = pendingProduct.name.toLowerCase();
             const isEmpanada = pNameLower.includes("empanada");
             const isFiletProduct = pNameLower.includes("filet") || pNameLower.includes("merluza");
@@ -180,6 +201,20 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             return;
         }
 
+        // Grupos de bebida (ej: "Línea Coca", "Línea Aquarius") → abre selector de bebida
+        const isDrinkGroup = itemNameLower.includes("línea") || itemNameLower.includes("linea");
+        if (isDrinkGroup) {
+            setPendingProduct(item);
+            setIsDrinkGroupContext(true);
+            setIsPlatoDiaContext(false);
+            setConfigStep('drink-detail');
+            setSelectedDrink(null);
+            setConfigNotes("");
+            setShouldSkipGarnish(true);
+            setShowConfigurator(true);
+            return;
+        }
+
         const isFood = !isCoffee && !isTarta && !isSandwich && (
             catNameLower.includes("plato") || catNameLower.includes("menú") ||
             catNameLower.includes("especial") || catNameLower.includes("oferta") ||
@@ -256,6 +291,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [sandwichFilling, setSandwichFilling] = useState<string | null>(null);
     const [isEspecialContext, setIsEspecialContext] = useState(false); // drink is free
     const [isPlatoDiaContext, setIsPlatoDiaContext] = useState(false);  // price overridden by plato_dia_price
+    const [isDrinkGroupContext, setIsDrinkGroupContext] = useState(false); // standalone drink group (línea X)
     const [shouldSkipGarnish, setShouldSkipGarnish] = useState(false);
 
     // Varios Modal State
@@ -1613,7 +1649,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             animate={{ opacity: 1 }} 
                             exit={{ opacity: 0 }} 
                             className="absolute inset-0 bg-black/70 backdrop-blur-xl"
-                            onClick={() => { setShowConfigurator(false); setIsPlatoDiaContext(false); }}
+                            onClick={() => { setShowConfigurator(false); setIsPlatoDiaContext(false); setIsDrinkGroupContext(false); }}
                         />
                         <motion.div 
                             initial={{ opacity: 0, scale: 0.9, y: 30 }} 
@@ -1629,7 +1665,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     </p>
                                 </div>
                                 <button
-                                    onClick={() => { setShowConfigurator(false); setIsPlatoDiaContext(false); }}
+                                    onClick={() => { setShowConfigurator(false); setIsPlatoDiaContext(false); setIsDrinkGroupContext(false); }}
                                     className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-black transition-colors"
                                 >
                                     <IconX size={28} />
