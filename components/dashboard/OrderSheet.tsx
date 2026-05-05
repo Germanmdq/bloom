@@ -736,37 +736,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         finishingRef.current = true;
         setIsFinishing(true);
         try {
-            if (paymentMethod === "MERCADO_PAGO") {
-                if (!mpId) {
-                    throw new Error(
-                        "Generá el cobro con Point o abrí el QR, o revisá el mensaje de error arriba."
-                    );
-                }
-                const statusRes = await fetch(
-                    `/api/payments/pos-order-status?order_id=${encodeURIComponent(mpId)}`,
-                    { credentials: "include" }
-                );
-                const statusJson = (await statusRes.json()) as { paid?: boolean; error?: string };
-                if (!statusRes.ok || !statusJson.paid) {
-                    throw new Error(
-                        statusJson.error ||
-                            "El pago aún no figura acreditado. Si el cliente ya pagó, esperá unos segundos y volvé a confirmar."
-                    );
-                }
-                
-                // Clear everything for this table
-                await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
-                await supabase.from("kitchen_tickets").delete().eq("table_id", tableId);
-                
-                if (webOrderId || currentWebOrderId) {
-                    const idToComplete = webOrderId || currentWebOrderId;
-                    const { error: updErr } = await supabase.from('orders').update({ status: 'completed' }).eq('id', idToComplete);
-                    if (updErr) console.error("❌ [FinishOrder] Error actualizando pedido web:", updErr.message);
-                }
-                setMpPosOrderId(null);
-                queryClient.invalidateQueries({ queryKey: ["orders"] });
-                queryClient.invalidateQueries({ queryKey: ["customers"] });
-            } else {
+            {
                 // ── NUEVA LÓGICA DE FIDELIZACIÓN Y SALDO ──
                 const customerIdForDb = isWebTable ? (webOrderData?.customer_id || null) : effectiveCustomerId;
                 
