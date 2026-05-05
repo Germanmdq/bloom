@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { IconUsers, IconSearch, IconLoader2, IconStar, IconTrendingUp, IconCalendar, IconArrowsUpDown, IconX, IconPhone, IconMail, IconShoppingBag, IconCircleCheck, IconAlertCircle, IconHistory, IconReceipt, IconEdit, IconDeviceFloppy } from "@tabler/icons-react";
+import { IconUsers, IconSearch, IconLoader2, IconStar, IconTrendingUp, IconCalendar, IconArrowsUpDown, IconX, IconPhone, IconMail, IconShoppingBag, IconCircleCheck, IconAlertCircle, IconHistory, IconReceipt, IconEdit, IconDeviceFloppy, IconUserPlus } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,6 +17,38 @@ export default function ClientesPage() {
     const [resetMsg, setResetMsg] = useState<string | null>(null);
     const [migratingPwds, setMigratingPwds] = useState(false);
     const [migrateResult, setMigrateResult] = useState<string | null>(null);
+
+    const [showNewModal, setShowNewModal] = useState(false);
+    const [newName, setNewName] = useState("");
+    const [newPhone, setNewPhone] = useState("");
+    const [newAddress, setNewAddress] = useState("");
+    const [isCreating, setIsCreating] = useState(false);
+    const [createMsg, setCreateMsg] = useState<string | null>(null);
+
+    async function handleCreateClient() {
+        if (!newName.trim() || !newPhone.trim()) { setCreateMsg("Nombre y teléfono son obligatorios."); return; }
+        setIsCreating(true);
+        setCreateMsg(null);
+        const res = await fetch('/api/auth/register-phone', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ full_name: newName.trim(), phone: newPhone.trim(), birthdate: null }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+            setCreateMsg(json.error === 'already_exists' ? 'Ya existe un cliente con ese teléfono.' : (json.error ?? 'Error al crear cliente.'));
+            setIsCreating(false);
+            return;
+        }
+        if (newAddress.trim()) {
+            await supabase.from('profiles').update({ default_address: newAddress.trim() }).eq('id', json.id);
+        }
+        const pwd = newPhone.replace(/\D/g, '').slice(-4);
+        setCreateMsg(`✓ Cliente creado. Contraseña: ${pwd}`);
+        setIsCreating(false);
+        setNewName(""); setNewPhone(""); setNewAddress("");
+        fetchClients();
+    }
 
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState("");
@@ -194,9 +226,15 @@ export default function ClientesPage() {
                     </div>
 
                     <button
+                        onClick={() => { setShowNewModal(true); setCreateMsg(null); }}
+                        className="flex items-center gap-2 bg-black text-white px-5 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest shadow-sm hover:opacity-80 transition-all whitespace-nowrap"
+                    >
+                        <IconUserPlus size={14} /> Nuevo Cliente
+                    </button>
+                    <button
                         onClick={handleMigratePasswords}
                         disabled={migratingPwds}
-                        className="flex items-center gap-2 bg-black text-white px-5 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest shadow-sm hover:opacity-80 transition-all disabled:opacity-50 whitespace-nowrap"
+                        className="flex items-center gap-2 bg-gray-100 text-gray-600 px-5 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest shadow-sm hover:opacity-80 transition-all disabled:opacity-50 whitespace-nowrap"
                     >
                         {migratingPwds ? <IconLoader2 size={14} className="animate-spin" /> : null}
                         Migrar contraseñas
@@ -491,6 +529,62 @@ export default function ClientesPage() {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal Nuevo Cliente */}
+            <AnimatePresence>
+                {showNewModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowNewModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }}
+                            className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 flex flex-col gap-5"
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-2xl font-black">Nuevo Cliente</h3>
+                                <button onClick={() => setShowNewModal(false)} className="p-2 rounded-full hover:bg-gray-100 transition-all"><IconX size={20} /></button>
+                            </div>
+
+                            <input
+                                value={newName} onChange={e => setNewName(e.target.value)}
+                                placeholder="Nombre completo *"
+                                className="w-full bg-gray-50 rounded-2xl px-5 py-4 font-bold outline-none focus:ring-2 focus:ring-black/10 text-sm"
+                            />
+                            <input
+                                value={newPhone} onChange={e => setNewPhone(e.target.value)}
+                                placeholder="Teléfono * (últimos 4 = contraseña)"
+                                className="w-full bg-gray-50 rounded-2xl px-5 py-4 font-bold outline-none focus:ring-2 focus:ring-black/10 text-sm"
+                            />
+                            <input
+                                value={newAddress} onChange={e => setNewAddress(e.target.value)}
+                                placeholder="Dirección (opcional)"
+                                className="w-full bg-gray-50 rounded-2xl px-5 py-4 font-bold outline-none focus:ring-2 focus:ring-black/10 text-sm"
+                            />
+
+                            {newPhone.replace(/\D/g, '').length >= 4 && (
+                                <p className="text-xs font-bold text-gray-400 -mt-2 px-1">
+                                    Contraseña: <span className="text-black font-black">{newPhone.replace(/\D/g, '').slice(-4)}</span>
+                                </p>
+                            )}
+
+                            {createMsg && (
+                                <p className={`text-sm font-bold rounded-2xl px-4 py-3 ${createMsg.startsWith('✓') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>{createMsg}</p>
+                            )}
+
+                            <div className="flex gap-3 mt-2">
+                                <button onClick={() => setShowNewModal(false)} className="flex-1 py-4 rounded-2xl bg-gray-100 font-bold text-sm">Cancelar</button>
+                                <button
+                                    onClick={handleCreateClient}
+                                    disabled={isCreating}
+                                    className="flex-[2] py-4 rounded-2xl bg-black text-white font-black text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {isCreating ? <IconLoader2 size={18} className="animate-spin" /> : <IconUserPlus size={18} />}
+                                    {isCreating ? 'Creando...' : 'Crear Cliente'}
+                                </button>
                             </div>
                         </motion.div>
                     </div>
