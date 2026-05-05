@@ -10,7 +10,7 @@ interface Insumo { id: string; nombre: string; unidad: string; stock_actual: num
 interface Gasto { id: string; nombre: string; monto: number; fecha_vencimiento: string; estado: string; categoria: string; }
 
 export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Proveedor[]; insumos: Insumo[]; gastos: Gasto[] }) {
-    const [tab, setTab] = useState<'insumos' | 'proveedores' | 'compras'>('insumos');
+    const [tab, setTab] = useState<'insumos' | 'proveedores' | 'compras' | 'gastos'>('insumos');
     const [search, setSearch] = useState("");
     const [catFilter, setCatFilter] = useState("Todos");
     const [pagoModal, setPagoModal] = useState<Proveedor | null>(null);
@@ -150,6 +150,12 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
             filteredProveedores.forEach((p: any) => {
                 csv += `"${p.nombre}";"${p.cuit || ''}";"${p.telefono || ''}";${p.saldo_cc || 0}\n`;
             });
+        } else if (tab === 'compras') {
+            filename = "compras.csv";
+            csv = "Fecha;Proveedor;Factura;Metodo;Total\n";
+            compras.forEach((c: any) => {
+                csv += `"${new Date(c.created_at).toLocaleDateString()}";"${c.proveedores?.nombre || ''}";"${c.numero_factura || ''}";"${c.metodo_pago}";${c.total}\n`;
+            });
         } else {
             filename = "gastos.csv";
             csv = "Nombre;Monto;Vencimiento;Estado;Prioridad\n";
@@ -192,6 +198,9 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                 </button>
                 <button onClick={() => { setTab('proveedores'); setSearch(""); }} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${tab === 'proveedores' ? 'bg-white text-black shadow-sm' : 'text-gray-400'}`}>
                     Proveedores ({proveedores.length})
+                </button>
+                <button onClick={() => { setTab('gastos'); setSearch(""); }} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${tab === 'gastos' ? 'bg-white text-black shadow-sm' : 'text-gray-400'}`}>
+                    Gastos ({gastos.length})
                 </button>
             </div>
 
@@ -339,6 +348,40 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                                     ) : (
                                         <p className="text-sm font-black text-emerald-500 uppercase tracking-widest">Al día</p>
                                     )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {tab === 'gastos' && (
+                <>
+                    <div className="flex justify-end mb-4">
+                        <button
+                            onClick={() => setGastoModal({ nombre: '', monto: 0, fecha_vencimiento: new Date().toISOString().split('T')[0], categoria: 'normal' })}
+                            className="bg-black text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-gray-800 transition-all"
+                        >
+                            <IconPlus size={16} /> Agregar Gasto
+                        </button>
+                    </div>
+                    <div className="space-y-3">
+                        {gastos.filter(g => g.nombre.toLowerCase().includes(search.toLowerCase())).map(g => (
+                            <div key={g.id} className="p-4 rounded-xl border border-gray-100 bg-white flex justify-between items-center hover:shadow-sm transition-all">
+                                <div>
+                                    <h3 className="font-black text-sm">{g.nombre}</h3>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase">Vence: {g.fecha_vencimiento} · {g.categoria}</p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <p className="font-black text-lg">${g.monto.toLocaleString('es-AR')}</p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setGastoModal(g)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white transition-all">
+                                            <IconEdit size={16} />
+                                        </button>
+                                        <button onClick={() => handleDeleteGasto(g.id)} className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all">
+                                            <IconTrash size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
