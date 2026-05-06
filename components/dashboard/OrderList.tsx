@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { Order } from "@/lib/types";
 import * as XLSX from "xlsx";
-import { IconLoader2, IconX, IconFilter, IconDownload, IconBike, IconBuildingStore, IconBuilding, IconToolsKitchen, IconAlertCircle, IconCircleCheck, IconRefresh } from "@tabler/icons-react";
+import { IconLoader2, IconX, IconFilter, IconDownload, IconBike, IconBuildingStore, IconBuilding, IconToolsKitchen, IconAlertCircle, IconCircleCheck, IconRefresh, IconPrinter, IconFileInvoice } from "@tabler/icons-react";
 import { getPaymentIcon, getPaymentLabel } from "@/lib/utils/payment";
 import { motion, AnimatePresence } from "framer-motion";
 import { CHANNEL_BADGE, CHANNEL_LABEL, CHANNEL_LEFT, getOrderChannel } from "@/lib/dashboard/order-channel";
+import { ReceiptModal } from "@/components/pos/ReceiptModal";
+import { createClient } from "@/lib/supabase/client";
 
 type ViewMode = 'day' | 'week' | 'fortnight' | 'month';
 
@@ -47,6 +49,14 @@ export function OrderList() {
     const [unpaidOnly, setUnpaidOnly] = useState(false);
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const [assigningDeliveryId, setAssigningDeliveryId] = useState<string | null>(null);
+
+    // Reprint state
+    const [reprintOrder, setReprintOrder] = useState<any | null>(null);
+    const [reprintMode, setReprintMode] = useState<'ticket' | 'factura' | null>(null);
+    const [isEmittingFactura, setIsEmittingFactura] = useState(false);
+    const [reprintCaeData, setReprintCaeData] = useState<{ cae: string; expiration: string; voucherNumber: number } | null>(null);
+    const [reprintFeedback, setReprintFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const supabase = createClient();
 
     // Advanced Filters
     const [searchTerm, setSearchTerm] = useState("");
@@ -735,8 +745,126 @@ export function OrderList() {
                                         {togglingId === selectedOrder.id ? "…" : isOrderPaid(selectedOrder) ? "Marcar impago" : "Marcar pagado"}
                                     </button>
                                     </div>
+
+                                    {/* ── REIMPRIMIR TICKET / FACTURA ── */}
+                                    <div className="flex items-center gap-2 pt-1 border-t border-gray-200">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setReprintOrder(selectedOrder);
+                                                setReprintCaeData(null);
+                                                setReprintMode('ticket');
+                                            }}
+                                            className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-900 hover:text-white font-black text-[10px] uppercase tracking-widest transition-all active:scale-95"
+                                        >
+                                            <IconPrinter size={16} /> Ticket
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={isEmittingFactura}
+                                            onClick={async () => {
+                                                const order = selectedOrder as any;
+                                                // If already has CAE, just reprint
+                                                if (order.cae && order.voucher_number) {
+                                                    setReprintOrder(order);
+                                                    setReprintCaeData({
+                                                        cae: String(order.cae),
+                                                        expiration: String(order.cae_expiration ?? ''),
+                                                        voucherNumber: Number(order.voucher_number),
+                                                    });
+                                                    setReprintMode('factura');
+                                                    return;
+                                                }
+                                                // Emit new factura
+                                                setIsEmittingFactura(true);
+                                                try {
+                                                    const res = await fetch('/api/facturar', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ amount: Number(order.total) }),
+                                                    });
+                                                    const data = await res.json();
+                                                    if (!res.ok) throw new Error(data.details || data.error || 'Error al facturar');
+                                                    const caeInfo = {
+                                                        cae: String(data.cae),
+                                                        expiration: String(data.expiration),
+                                                        voucherNumber: Number(data.voucher_number),
+                                                    };
+                                                    await supabase.from('orders').update({
+                                                        cae: caeInfo.cae,
+                                                        cae_expiration: caeInfo.expiration,
+                                                        voucher_number: caeInfo.voucherNumber,
+                                                    }).eq('id', order.id);
+                                                    setReprintOrder(order);
+                                                    setReprintCaeData(caeInfo);
+                                                    setReprintMode('factura');
+                                                    setReprintFeedback({ message: 'Factura emitida ✅', type: 'success' });
+                                                } catch (err: any) {
+                                                    setReprintFeedback({ message: `ARCA: ${err.message}`, type: 'error' });
+                                                } finally {
+                                                    setIsEmittingFactura(false);
+                                                }
+                                            }}
+                                            className={`flex-1 flex items-center justify-center gap-2 h-11 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 disabled:opacity-40 ${
+                                                (selectedOrder as any).cae
+                                                    ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                                                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                            }`}
+                                        >
+                                            {isEmittingFactura
+                                                ? <><IconLoader2 size={16} className="animate-spin" /> Emitiendo...</>
+                                                : <><IconFileInvoice size={16} /> {(selectedOrder as any).cae ? 'Reimprimir Factura' : 'Emitir Factura C'}</>
+                                            }
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* ── REPRINT RECEIPT MODAL ── */}
+            {reprintMode && reprintOrder && (
+                <ReceiptModal
+                    tableId={reprintOrder.table_id || 0}
+                    invoiceType={reprintMode === 'factura' ? 'Factura C' : 'Sin Validez'}
+                    extraTotal={0}
+                    cart={(Array.isArray(reprintOrder.items) ? reprintOrder.items : []).filter((i: any) => i.id !== 'meta-customer').map((i: any) => ({
+                        id: i.id || i.product_id || 'r-' + Math.random(),
+                        name: i.name || 'Ítem',
+                        price: Number(i.price || 0),
+                        quantity: Number(i.quantity || 1),
+                    }))}
+                    total={Number(reprintOrder.total)}
+                    customerName={reprintOrder.customer_name || ''}
+                    isKitchen={false}
+                    isPreview={false}
+                    cae={reprintCaeData?.cae}
+                    voucherNumber={reprintCaeData?.voucherNumber}
+                    caeExpiration={reprintCaeData?.expiration}
+                    onClose={() => {
+                        setReprintMode(null);
+                        setReprintOrder(null);
+                        setReprintCaeData(null);
+                        void fetchOrders({ silent: true });
+                    }}
+                />
+            )}
+
+            {/* ── REPRINT FEEDBACK ── */}
+            <AnimatePresence>
+                {reprintFeedback && (
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className={`pointer-events-auto px-8 py-5 rounded-2xl shadow-2xl font-black text-sm ${
+                                reprintFeedback.type === 'success' ? 'bg-gray-900 text-white' : 'bg-white text-red-500 border border-red-100'
+                            }`}
+                        >
+                            {reprintFeedback.message}
                         </motion.div>
                     </div>
                 )}

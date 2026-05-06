@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { IconChartPie, IconCurrencyDollar, IconCreditCard, IconWallet, IconCalendar, IconLoader2, IconTrendingUp, IconShoppingBag, IconReceipt, IconRefresh, IconPackage, IconArrowUpRight, IconArrowDownRight } from "@tabler/icons-react";
+import { IconChartPie, IconCurrencyDollar, IconCreditCard, IconWallet, IconCalendar, IconLoader2, IconTrendingUp, IconShoppingBag, IconReceipt, IconRefresh, IconPackage, IconArrowUpRight, IconArrowDownRight, IconPrinter, IconFileInvoice } from "@tabler/icons-react";
+import { ReceiptModal } from "@/components/pos/ReceiptModal";
 
 type Timeframe = 'TODAY' | 'WEEK' | 'MONTH';
 
@@ -42,6 +43,13 @@ export default function ReportsPage() {
     const [editingApertura, setEditingApertura] = useState(false);
     const [aperturaForm, setAperturaForm] = useState({ efectivo: '', mercadoPago: '', santander: '' });
 
+    // ── Reprint state ──
+    const [reprintOrder, setReprintOrder] = useState<any | null>(null);
+    const [reprintMode, setReprintMode] = useState<'ticket' | 'factura' | null>(null);
+    const [isEmittingFactura, setIsEmittingFactura] = useState(false);
+    const [reprintCaeData, setReprintCaeData] = useState<{ cae: string; expiration: string; voucherNumber: number } | null>(null);
+    const [reprintFeedback, setReprintFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
     const supabase = createClient();
 
     useEffect(() => {
@@ -74,7 +82,7 @@ export default function ReportsPage() {
 
         try {
             const [salesRes, comprasRes, gastosFijosRes, productsRes] = await Promise.all([
-                supabase.from('orders').select('id, total, payment_method, items, table_id, customer_name').gte('created_at', thresholdDate).order('created_at', { ascending: false }),
+                supabase.from('orders').select('id, total, payment_method, items, table_id, customer_name, created_at, cae, voucher_number, cae_expiration').gte('created_at', thresholdDate).order('created_at', { ascending: false }),
                 supabase.from('compras').select('total, created_at').gte('created_at', thresholdDate),
                 supabase.from('gastos_fijos').select('nombre, monto, estado, updated_at, historial_pagos, categoria'),
                 supabase.from('products').select('name, categories(name)')
@@ -176,6 +184,79 @@ export default function ReportsPage() {
         setApertura({ efectivo: data.efectivo, mercadoPago: data.mercadoPago, santander: data.santander });
         setEditingApertura(false);
     };
+
+    // ── Reprint helpers ──
+    const PAYMENT_LABELS: Record<string, string> = {
+        CASH: 'Efectivo',
+        CARD: 'Tarjeta',
+        MERCADO_PAGO: 'Mercado Pago',
+        SANTANDER_RIO: 'Santander',
+        BANK_TRANSFER: 'Transferencia',
+        CUENTA_CORRIENTE: 'Cuenta Corriente',
+    };
+
+    const handleReprintTicket = (order: any) => {
+        setReprintOrder(order);
+        setReprintCaeData(null);
+        setReprintMode('ticket');
+    };
+
+    const handleReprintFactura = async (order: any) => {
+        // If the order already has a CAE, just reprint it
+        if (order.cae && order.voucher_number) {
+            setReprintOrder(order);
+            setReprintCaeData({
+                cae: String(order.cae),
+                expiration: String(order.cae_expiration ?? ''),
+                voucherNumber: Number(order.voucher_number),
+            });
+            setReprintMode('factura');
+            return;
+        }
+
+        // Otherwise, emit a new factura via ARCA
+        setIsEmittingFactura(true);
+        setReprintFeedback(null);
+        try {
+            const res = await fetch('/api/facturar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: Number(order.total) }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.details || data.error || 'Error al facturar');
+
+            const caeInfo = {
+                cae: String(data.cae),
+                expiration: String(data.expiration),
+                voucherNumber: Number(data.voucher_number),
+            };
+
+            // Save CAE to the order in DB
+            await supabase.from('orders').update({
+                cae: caeInfo.cae,
+                cae_expiration: caeInfo.expiration,
+                voucher_number: caeInfo.voucherNumber,
+            }).eq('id', order.id);
+
+            setReprintOrder(order);
+            setReprintCaeData(caeInfo);
+            setReprintMode('factura');
+            setReprintFeedback({ message: 'Factura emitida ✅', type: 'success' });
+        } catch (err: any) {
+            setReprintFeedback({ message: `ARCA: ${err.message}`, type: 'error' });
+        } finally {
+            setIsEmittingFactura(false);
+        }
+    };
+
+    // Auto-clear reprint feedback
+    useEffect(() => {
+        if (reprintFeedback) {
+            const t = setTimeout(() => setReprintFeedback(null), 5000);
+            return () => clearTimeout(t);
+        }
+    }, [reprintFeedback]);
 
     return (
         <div className="p-6 md:p-10 max-w-[1600px] mx-auto pb-40">
@@ -366,6 +447,110 @@ export default function ReportsPage() {
                             </div>
                         )}
                     </div>
+
+                    {/* ── HISTORIAL DE ÓRDENES ── */}
+                    <div className="w-full">
+                        <div className="flex items-center gap-3 mb-8 ml-2">
+                            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-[#FFD60A]">
+                                <IconReceipt size={20} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Historial de Órdenes</h3>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Reimprimir ticket o emitir factura</p>
+                            </div>
+                        </div>
+
+                        {stats.orders.length === 0 ? (
+                            <div className="bg-white p-20 rounded-[3rem] border border-gray-100 text-center">
+                                <IconReceipt size={40} className="mx-auto text-gray-100 mb-4" />
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay órdenes registradas</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3 pb-20">
+                                {stats.orders.map((order: any) => {
+                                    const createdAt = order.created_at ? new Date(order.created_at) : null;
+                                    const timeLabel = createdAt
+                                        ? createdAt.toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })
+                                        : '—';
+                                    const dateLabel = createdAt
+                                        ? createdAt.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+                                        : '';
+                                    const items = Array.isArray(order.items) ? order.items : [];
+                                    const hasFactura = !!order.cae && !!order.voucher_number;
+
+                                    return (
+                                        <motion.div
+                                            key={order.id}
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:border-gray-200 transition-all"
+                                        >
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="text-xs font-black text-gray-900 uppercase tracking-tight">
+                                                            {order.customer_name ? `👤 ${order.customer_name}` : `Mesa ${order.table_id ?? '—'}`}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-gray-400">
+                                                            {dateLabel} {timeLabel}
+                                                        </span>
+                                                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                                                            order.payment_method === 'CASH' ? 'bg-emerald-50 text-emerald-600' :
+                                                            order.payment_method === 'MERCADO_PAGO' ? 'bg-sky-50 text-sky-600' :
+                                                            order.payment_method === 'SANTANDER_RIO' || order.payment_method === 'BANK_TRANSFER' ? 'bg-red-50 text-red-600' :
+                                                            'bg-gray-100 text-gray-500'
+                                                        }`}>
+                                                            {PAYMENT_LABELS[order.payment_method] || order.payment_method}
+                                                        </span>
+                                                        {hasFactura && (
+                                                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-100">
+                                                                Facturada
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-1 mb-1">
+                                                        {items.filter((i: any) => i.id !== 'meta-customer').slice(0, 6).map((item: any, idx: number) => (
+                                                            <span key={idx} className="text-[10px] font-bold bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">
+                                                                {item.quantity > 1 ? `x${item.quantity} ` : ''}{item.name}
+                                                            </span>
+                                                        ))}
+                                                        {items.length > 6 && (
+                                                            <span className="text-[10px] font-bold text-gray-400">+{items.length - 6} más</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-3 shrink-0">
+                                                    <p className="text-xl font-black text-gray-900 tracking-tighter">${Number(order.total).toLocaleString('es-AR')}</p>
+                                                    <div className="flex gap-1.5">
+                                                        <button
+                                                            onClick={() => handleReprintTicket(order)}
+                                                            className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-900 hover:text-white transition-all active:scale-90"
+                                                            title="Reimprimir Ticket"
+                                                        >
+                                                            <IconPrinter size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleReprintFactura(order)}
+                                                            disabled={isEmittingFactura}
+                                                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 ${
+                                                                hasFactura
+                                                                    ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                                                                    : 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                                                            } disabled:opacity-30`}
+                                                            title={hasFactura ? 'Reimprimir Factura C' : 'Emitir Factura C'}
+                                                        >
+                                                            {isEmittingFactura ? <IconLoader2 size={18} className="animate-spin" /> : <IconFileInvoice size={18} />}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -424,6 +609,53 @@ export default function ReportsPage() {
                                 <button onClick={() => setEditingApertura(false)} className="flex-1 h-12 rounded-xl bg-gray-100 font-black text-gray-400 text-xs uppercase">Cancelar</button>
                                 <button onClick={saveApertura} className="flex-[2] h-12 rounded-xl bg-black text-white font-black text-xs uppercase">Guardar</button>
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* ── REPRINT RECEIPT MODAL ── */}
+            {reprintMode && reprintOrder && (
+                <ReceiptModal
+                    tableId={reprintOrder.table_id || 0}
+                    invoiceType={reprintMode === 'factura' ? 'Factura C' : 'Sin Validez'}
+                    extraTotal={0}
+                    cart={(Array.isArray(reprintOrder.items) ? reprintOrder.items : []).filter((i: any) => i.id !== 'meta-customer').map((i: any) => ({
+                        id: i.id || i.product_id || 'r-' + Math.random(),
+                        name: i.name || 'Ítem',
+                        price: Number(i.price || 0),
+                        quantity: Number(i.quantity || 1),
+                    }))}
+                    total={Number(reprintOrder.total)}
+                    customerName={reprintOrder.customer_name || ''}
+                    isKitchen={false}
+                    isPreview={false}
+                    cae={reprintCaeData?.cae}
+                    voucherNumber={reprintCaeData?.voucherNumber}
+                    caeExpiration={reprintCaeData?.expiration}
+                    onClose={() => {
+                        setReprintMode(null);
+                        setReprintOrder(null);
+                        setReprintCaeData(null);
+                        // Refresh to show updated factura badge
+                        fetchReports();
+                    }}
+                />
+            )}
+
+            {/* ── REPRINT FEEDBACK ── */}
+            <AnimatePresence>
+                {reprintFeedback && (
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className={`pointer-events-auto px-8 py-5 rounded-2xl shadow-2xl font-black text-sm ${
+                                reprintFeedback.type === 'success' ? 'bg-gray-900 text-white' : 'bg-white text-red-500 border border-red-100'
+                            }`}
+                        >
+                            {reprintFeedback.message}
                         </motion.div>
                     </div>
                 )}
