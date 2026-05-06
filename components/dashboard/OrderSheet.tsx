@@ -670,6 +670,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 case 'F1': sendToKitchen(); break;
                 case 'F2': setShowReceiptModal(true); break;
                 case 'F3': document.getElementById('product-search')?.focus(); break;
+                case 'F8': document.getElementById('customer-name-input')?.focus(); break;
                 case 'F12':
                     if (total > 0 && !isFinishing) {
                         showPaymentModal ? finishOrder() : setShowPaymentModal(true);
@@ -1065,6 +1066,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-3">
                                 <input
+                                    id="customer-name-input"
                                     type="text"
                                     value={customerName.replace('Cliente: ', '')}
                                     onChange={(e) => setCustomerName(e.target.value)}
