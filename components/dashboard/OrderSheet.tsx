@@ -44,7 +44,7 @@ type OrderSheetProps = {
 
 export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webOrderData, initialTableData, initialShowPayment }: OrderSheetProps) {
     const {
-        cart, addToCart, setCart, removeFromCart, clearCart,
+        cart, addToCart, setCart, removeFromCart, clearCart, updateQuantity,
         paymentMethod, setPaymentMethod, notes, setNotes,
         discount, setDiscount
     } = useOrderStore();
@@ -1452,10 +1452,22 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                             {item.notes && <p className="text-[9px] text-slate-900 font-bold mt-1 leading-tight">{item.notes}</p>}
                                         </div>
                                         <div className="shrink-0 flex items-center gap-1.5">
-                                            <div className="flex items-center gap-1 px-3 py-2 bg-slate-50 rounded-xl">
-                                                <span className="text-xs font-black text-slate-700">x{item.quantity}</span>
+                                            <div className="flex items-center bg-slate-50 rounded-xl p-1 px-1.5 gap-2">
+                                                <button
+                                                    onClick={() => updateQuantity(index, -1)}
+                                                    className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-slate-600 hover:text-red-500 active:scale-95 disabled:opacity-50"
+                                                >
+                                                    <span className="font-bold text-sm leading-none">-</span>
+                                                </button>
+                                                <span className="text-xs font-black text-slate-700 w-4 text-center">{item.quantity}</span>
+                                                <button
+                                                    onClick={() => updateQuantity(index, 1)}
+                                                    className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm text-slate-600 hover:text-emerald-500 active:scale-95"
+                                                >
+                                                    <span className="font-bold text-sm leading-none">+</span>
+                                                </button>
                                             </div>
-                                            <span className="text-xs font-black text-slate-900 tracking-tight w-20 text-right">
+                                            <span className="text-xs font-black text-slate-900 tracking-tight w-16 text-right">
                                                 ${(Number(item.price || 0) * Number(item.quantity || 1)).toLocaleString()}
                                             </span>
                                             <button
