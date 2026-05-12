@@ -278,6 +278,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [deliveryPersons, setDeliveryPersons] = useState<any[]>([]);
     const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState<string>("");
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+    const [selectedCustomerBalance, setSelectedCustomerBalance] = useState<number | null>(null);
     const [customerSearchQuery, setCustomerSearchQuery] = useState("");
     const [customerResults, setCustomerResults] = useState<any[]>([]);
     const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
@@ -322,6 +323,17 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         setCustomerResults(data || []);
         setIsSearchingCustomer(false);
     };
+
+    useEffect(() => {
+        if (!selectedCustomerId) {
+            setSelectedCustomerBalance(null);
+            return;
+        }
+        supabase.from('profiles').select('balance').eq('id', selectedCustomerId).maybeSingle()
+            .then(({ data }) => {
+                if (data && data.balance > 0) setSelectedCustomerBalance(data.balance);
+            });
+    }, [selectedCustomerId]);
 
     const isWebTable = tableId === WEB_ORDER_TABLE_RETIRO || tableId === WEB_ORDER_TABLE_DELIVERY;
 
@@ -1064,15 +1076,49 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         </div>
 
                         <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-col relative">
                                 <input
                                     id="customer-name-input"
                                     type="text"
-                                    value={customerName.replace('Cliente: ', '')}
-                                    onChange={(e) => setCustomerName(e.target.value)}
+                                    value={customerSearchQuery !== "" ? customerSearchQuery : customerName.replace('Cliente: ', '')}
+                                    onChange={(e) => {
+                                        setCustomerSearchQuery(e.target.value);
+                                        setCustomerName(e.target.value);
+                                        if (!e.target.value) {
+                                            setSelectedCustomerId(null);
+                                            setCustomerResults([]);
+                                        } else {
+                                            handleCustomerSearch(e.target.value);
+                                        }
+                                    }}
                                     placeholder={tableId < 100 ? `Mesa ${tableId}` : "Nombre del pedido..."}
                                     className="text-4xl font-black text-slate-900 tracking-tighter leading-none bg-transparent border-none outline-none p-0 w-full placeholder:text-slate-200"
                                 />
+                                {customerResults.length > 0 && customerSearchQuery && (
+                                    <div className="absolute top-full left-0 w-80 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden divide-y divide-gray-50">
+                                        {customerResults.map(c => (
+                                            <button
+                                                key={c.id}
+                                                onClick={() => {
+                                                    setSelectedCustomerId(c.id);
+                                                    setCustomerName(c.full_name);
+                                                    setSelectedCustomerBalance(c.balance);
+                                                    setCustomerSearchQuery("");
+                                                    setCustomerResults([]);
+                                                }}
+                                                className="w-full px-4 py-3 text-left hover:bg-gray-50 flex flex-col items-start transition-colors"
+                                            >
+                                                <div className="font-bold text-gray-900 leading-tight">{c.full_name}</div>
+                                                <div className="flex justify-between w-full items-center mt-1">
+                                                    <span className="text-[10px] text-gray-400 font-bold tracking-widest">{c.phone || "Sin tel"}</span>
+                                                    {Number(c.balance || 0) > 0 && (
+                                                        <span className="text-[10px] font-black text-red-500">Deuda: ${Number(c.balance).toLocaleString()}</span>
+                                                    )}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                                 <button
@@ -1089,6 +1135,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     {orderType === 'LOCAL' ? 'Salón' : orderType === 'DELIVERY' ? 'Delivery' : 'Retiro'}
                                 </button>
                                 <span className="text-[10px] text-slate-400 font-bold">• {cart.reduce((s, i) => s + i.quantity, 0)} ÍTEMS</span>
+                                {Number(selectedCustomerBalance) > 0 && !customerSearchQuery && (
+                                    <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded border border-red-100 ml-1">
+                                        DEUDA: ${Number(selectedCustomerBalance).toLocaleString()}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>

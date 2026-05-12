@@ -41,6 +41,7 @@ export default function TablesPage() {
     const [newTableIdInput, setNewTableIdInput] = useState("");
     const [newTableName, setNewTableName] = useState("");
     const [newTableCustomerId, setNewTableCustomerId] = useState<string | null>(null);
+    const [newTableCustomerBalance, setNewTableCustomerBalance] = useState<number | null>(null);
     const [customerSearch, setCustomerSearch] = useState("");
     const [customerResults, setCustomerResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -60,7 +61,7 @@ export default function TablesPage() {
         setIsSearching(true);
         const { data } = await supabase
             .from('profiles')
-            .select('id, full_name, phone')
+            .select('id, full_name, phone, balance')
             .ilike('full_name', `%${q}%`)
             .limit(5);
         setCustomerResults(data || []);
@@ -334,6 +335,7 @@ export default function TablesPage() {
             setNewTableIdInput("");
             setNewTableName("");
             setNewTableCustomerId(null);
+            setNewTableCustomerBalance(null);
             setCustomerSearch("");
             fetchTables();
             if (data) {
@@ -534,6 +536,7 @@ export default function TablesPage() {
                             setNewTableIdInput("");
                             setNewTableName("");
                             setNewTableCustomerId(null);
+                            setNewTableCustomerBalance(null);
                         }}
                     />
                     <motion.div
@@ -588,10 +591,17 @@ export default function TablesPage() {
                             {newTableCustomerId ? (
                                 /* Cliente ya vinculado */
                                 <div className="flex items-center justify-between p-3 bg-gray-900 rounded-xl">
-                                    <span className="text-sm font-black text-white truncate">✓ {newTableName}</span>
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        <span className="text-sm font-black text-white truncate">✓ {newTableName}</span>
+                                        {Number(newTableCustomerBalance) > 0 && (
+                                            <span className="shrink-0 text-[10px] font-black text-red-400 bg-red-400/10 px-2 py-0.5 rounded border border-red-400/20">
+                                                DEUDA: ${Number(newTableCustomerBalance).toLocaleString()}
+                                            </span>
+                                        )}
+                                    </div>
                                     <button
-                                        onClick={() => { setNewTableCustomerId(null); setNewTableName(""); setNewTableIdInput(""); setCustomerSearch(""); setShowRegisterNew(false); }}
-                                        className="text-white/40 hover:text-white ml-2"
+                                        onClick={() => { setNewTableCustomerId(null); setNewTableCustomerBalance(null); setNewTableName(""); setNewTableIdInput(""); setCustomerSearch(""); setShowRegisterNew(false); }}
+                                        className="text-white/40 hover:text-white ml-2 shrink-0"
                                     >
                                         <IconX size={14}/>
                                     </button>
@@ -639,19 +649,29 @@ export default function TablesPage() {
                                                         setNewTableCustomerId(c.id);
                                                         setNewTableName(c.full_name);
                                                         setNewTableIdInput(c.full_name);
+                                                        setNewTableCustomerBalance(c.balance);
                                                         setCustomerResults([]);
                                                         setCustomerSearch("");
                                                         setShowRegisterNew(false);
                                                     }}
-                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 border-b border-gray-50 last:border-0"
+                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center justify-between border-b border-gray-50 last:border-0"
                                                 >
-                                                    <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-black text-gray-500">
-                                                        {c.full_name.charAt(0).toUpperCase()}
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-black text-gray-500">
+                                                            {c.full_name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-bold text-gray-800">{c.full_name}</p>
+                                                            {c.phone && <p className="text-xs text-gray-400">{c.phone}</p>}
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-gray-800">{c.full_name}</p>
-                                                        {c.phone && <p className="text-xs text-gray-400">{c.phone}</p>}
-                                                    </div>
+                                                    {Number(c.balance || 0) > 0 && (
+                                                        <div className="shrink-0 ml-2">
+                                                            <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-lg border border-red-100">
+                                                                DEUDA: ${Number(c.balance).toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </button>
                                             ))}
                                         </div>
@@ -708,6 +728,7 @@ export default function TablesPage() {
                                     setNewTableIdInput("");
                                     setNewTableName("");
                                     setNewTableCustomerId(null);
+                                    setNewTableCustomerBalance(null);
                                 }}
                                 className="flex-1 py-4 font-bold text-gray-500 hover:bg-gray-100 rounded-2xl transition-all"
                             >
