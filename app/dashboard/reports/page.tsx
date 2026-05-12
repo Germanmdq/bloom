@@ -8,6 +8,7 @@ import { ReceiptModal } from "@/components/pos/ReceiptModal";
 
 type Timeframe = 'TODAY' | 'WEEK' | 'MONTH';
 
+const APERTURA_KEY = 'bloom_apertura_caja';
 const RENDICION_KEY = 'bloom_rendicion_caja';
 
 function getAperturaStored() {
