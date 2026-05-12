@@ -9,6 +9,7 @@ import {
     IconBeer, IconCake, IconBread, IconCookie, IconCheese, IconFish, 
     IconCarrot, IconBottle, IconCoffee, IconGlass, IconSalad, IconBurger,
 } from "@tabler/icons-react";
+import { useEscape } from "@/lib/hooks/useEscape";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOrderStore } from "@/lib/store/order-store";
 import { useQueryClient } from "@tanstack/react-query";
@@ -630,23 +631,32 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         return () => clearTimeout(timer);
     }, [cart, tableId, customerName, customerPhone, customerAddress, notes]);
 
-    const handleClose = async () => {
-        if (cart.length === 0) {
-            // Only reset to FREE if there are no pending kitchen tickets from QR orders
-            const { data: pendingTickets } = await supabase
-                .from('kitchen_tickets')
-                .select('id')
-                .eq('table_id', tableId)
-                .eq('status', 'PENDING')
-                .limit(1);
-            if (!pendingTickets || pendingTickets.length === 0) {
-                await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
-            }
-        } else {
-            await persistTableState();
-        }
+    const handleClose = useCallback(async () => {
+        // Close UI immediately
         onClose();
-    };
+
+        if (cart.length === 0) {
+            // Background cleanup
+            void (async () => {
+                try {
+                    const { data: pendingTickets } = await supabase
+                        .from('kitchen_tickets')
+                        .select('id')
+                        .eq('table_id', tableId)
+                        .eq('status', 'PENDING')
+                        .limit(1);
+                    if (!pendingTickets || pendingTickets.length === 0) {
+                        await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
+                    }
+                } catch (e) {
+                    console.error("Error cleaning up table on close:", e);
+                }
+            })();
+        } else {
+            // Background persist
+            void persistTableState();
+        }
+    }, [onClose, cart.length, tableId, persistTableState, supabase]);
 
     const handleFreeTable = async () => {
         if (!confirm('¿Liberar esta mesa? Se perderán los items sin cobrar.')) return;
@@ -675,6 +685,18 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const finalTotal = total - discountAmount;
     const isLoading = catLoading || prodLoading;
 
+    useEscape(() => {
+        if (showPaymentModal) setShowPaymentModal(false);
+        else if (showReceiptModal) setShowReceiptModal(false);
+        else if (showConfigurator) { 
+            setShowConfigurator(false); 
+            setIsPlatoDiaContext(false); 
+            setIsDrinkGroupContext(false); 
+        }
+        else if (showVariosModal) setShowVariosModal(false);
+        else handleClose();
+    });
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key.startsWith('F')) e.preventDefault();
@@ -688,27 +710,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         showPaymentModal ? finishOrder() : setShowPaymentModal(true);
                     }
                     break;
-                case 'Escape':
-                    if (showPaymentModal) setShowPaymentModal(false);
-                    else if (showReceiptModal) setShowReceiptModal(false);
-                    else if (showConfigurator) { setShowConfigurator(false); setIsPlatoDiaContext(false); setIsDrinkGroupContext(false); }
-                    else if (showVariosModal) setShowVariosModal(false);
-                    else handleClose();
-                    break;
             }
         };
-
-        const handleGlobalClose = () => {
-            handleClose();
-        };
-
         window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('bloom-close-all', handleGlobalClose);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('bloom-close-all', handleGlobalClose);
-        };
-    }, [handleClose, total, isFinishing, showPaymentModal, showReceiptModal, showConfigurator, showVariosModal]);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [total, isFinishing, showPaymentModal, showReceiptModal, showConfigurator, showVariosModal]);
 
     const handleEmitirFactura = async (overrideTotal?: number) => {
         const amount = overrideTotal ?? completedOrderData?.total;

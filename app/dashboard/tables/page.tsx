@@ -6,6 +6,7 @@ import { Table, TableStatus } from "@/lib/types";
 import { OrderSheet } from "@/components/dashboard/OrderSheet";
 import { createClient } from "@/lib/supabase/client";
 import { IconLoader2, IconX, IconTruck, IconShoppingBag } from "@tabler/icons-react";
+import { useEscape } from "@/lib/hooks/useEscape";
 
 type WebOrder = {
     id: string;
@@ -211,29 +212,21 @@ export default function TablesPage() {
     }, []);
     
     // Listener para el evento global de Escape
-    useEffect(() => {
-        const handleGlobalClose = () => {
-            if (isNewTableModalOpen) setIsNewTableModalOpen(false);
-            if (selectedWebOrder) setSelectedWebOrder(null);
-            if (isQuickPayOpen) setIsQuickPayOpen(false);
-            if (selectedTable) setSelectedTable(null);
-            setTableSearch("");
-        };
-        window.addEventListener('bloom-close-all', handleGlobalClose);
-        return () => window.removeEventListener('bloom-close-all', handleGlobalClose);
-    }, [isNewTableModalOpen, selectedWebOrder, isQuickPayOpen, selectedTable]);
+    useEscape(() => {
+        if (isNewTableModalOpen) setIsNewTableModalOpen(false);
+        if (selectedWebOrder) {
+            setSelectedWebOrder(null);
+            fetchWebOrders();
+        }
+        if (isQuickPayOpen) setIsQuickPayOpen(false);
+        if (selectedTable) setSelectedTable(null);
+        setTableSearch("");
+    });
 
     // IconKeyboard Shortcuts (F1, F5, +, Esc)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Esc cierra todo (propagación manual)
-            if (e.key === 'Escape') {
-                if (isNewTableModalOpen) setIsNewTableModalOpen(false);
-                if (selectedWebOrder) setSelectedWebOrder(null);
-                if (isQuickPayOpen) setIsQuickPayOpen(false);
-                if (selectedTable) setSelectedTable(null);
-                setTableSearch("");
-            }
+
             // F1 enfoca el buscador
             if (e.key === 'F1') {
                 e.preventDefault();
@@ -252,6 +245,17 @@ export default function TablesPage() {
                 e.preventDefault();
                 setIsNewTableModalOpen(true);
             }
+
+            // Shortcuts dentro de "Nueva Mesa" (1: Local, 2: Delivery, 3: Retiro)
+            if (isNewTableModalOpen) {
+                const target = e.target as HTMLElement;
+                if (target.tagName !== 'INPUT' || (target as HTMLInputElement).value === "") {
+                    if (e.key === '1') { e.preventDefault(); setNewTableType('LOCAL'); }
+                    if (e.key === '2') { e.preventDefault(); setNewTableType('DELIVERY'); }
+                    if (e.key === '3') { e.preventDefault(); setNewTableType('TAKEAWAY'); }
+                }
+            }
+
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
@@ -260,6 +264,7 @@ export default function TablesPage() {
     async function fetchWebOrders() {
         try {
             // Usamos una selección más segura para evitar el error 400
+
             const { data, error } = await supabase
                 .from('orders')
                 .select('id, status, total, items, created_at, customer_name, customer_phone, customer_id, order_type, delivery_type, delivery_info, paid, payment_method')
@@ -622,7 +627,7 @@ export default function TablesPage() {
                                     onChange={() => setNewTableType('LOCAL')}
                                     className="w-5 h-5 accent-black"
                                 />
-                                <span className="font-bold text-gray-800">🍽️ Mesa en Local</span>
+                                <span className="font-bold text-gray-800">🍽️ Mesa en Local <span className="text-[10px] text-gray-400 ml-1">(1)</span></span>
                             </label>
 
                             <label className="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all hover:border-black/20 has-[:checked]:border-red-500 has-[:checked]:bg-red-50">
@@ -632,7 +637,7 @@ export default function TablesPage() {
                                     onChange={() => setNewTableType('DELIVERY')}
                                     className="w-5 h-5 accent-red-500"
                                 />
-                                <span className="font-bold text-gray-800">🛵 Delivery</span>
+                                <span className="font-bold text-gray-800">🛵 Delivery <span className="text-[10px] text-gray-400 ml-1">(2)</span></span>
                             </label>
 
                             <label className="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all hover:border-black/20 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
@@ -642,7 +647,7 @@ export default function TablesPage() {
                                     onChange={() => setNewTableType('TAKEAWAY')}
                                     className="w-5 h-5 accent-emerald-600"
                                 />
-                                <span className="font-bold text-gray-800">🏃 Retiro en Local</span>
+                                <span className="font-bold text-gray-800">🏃 Retiro en Local <span className="text-[10px] text-gray-400 ml-1">(3)</span></span>
                             </label>
                         </div>
 

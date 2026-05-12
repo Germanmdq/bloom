@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { IconPrinter, IconQrcode, IconPencil, IconCheck, IconX, IconAlertTriangle } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
+import { useEscape } from "@/lib/hooks/useEscape";
 
 type TableEntry = { id: number; label: string; zone: string };
 
@@ -113,6 +114,8 @@ export default function QRCodesPage() {
   const [editingUrl, setEditingUrl] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [selected, setSelected] = useState<TableEntry | null>(null);
+  
+  useEscape(() => setSelected(null));
 
   const isLocalhost = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1");
 

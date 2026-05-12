@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { IconUsers, IconSearch, IconLoader2, IconStar, IconTrendingUp, IconCalendar, IconArrowsUpDown, IconX, IconPhone, IconMail, IconShoppingBag, IconCircleCheck, IconAlertCircle, IconHistory, IconReceipt, IconEdit, IconDeviceFloppy, IconUserPlus } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEscape } from "@/lib/hooks/useEscape";
 
 export default function ClientesPage() {
     const supabase = createClient();
@@ -60,26 +61,13 @@ export default function ClientesPage() {
 
     useEffect(() => { fetchClients(); }, []);
 
-    // Handle Escape key to close modals
-    useEffect(() => {
-        const handleCloseAll = () => {
-            setSelectedClient(null);
-            setShowNewModal(false);
-            setIsPaying(false);
-            setIsEditing(false);
-        };
+    useEscape(() => {
+        setSelectedClient(null);
+        setShowNewModal(false);
+        setIsPaying(false);
+        setIsEditing(false);
+    });
 
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') handleCloseAll();
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('bloom-close-all', handleCloseAll);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('bloom-close-all', handleCloseAll);
-        };
-    }, []);
     
     useEffect(() => {
         if (selectedClient) {
