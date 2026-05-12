@@ -45,11 +45,22 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
 
         window.addEventListener('open-provider-modal', handleOpenProvider);
         window.addEventListener('open-gasto-modal', handleOpenGasto);
+
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (pagoModal) setPagoModal(null);
+                else if (gastoModal) setGastoModal(null);
+                else if (proveedorModal) setProveedorModal(null);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+
         return () => {
             window.removeEventListener('open-provider-modal', handleOpenProvider);
             window.removeEventListener('open-gasto-modal', handleOpenGasto);
+            window.removeEventListener('keydown', handleEscape);
         };
-    }, []);
+    }, [pagoModal, gastoModal, proveedorModal]);
 
     const filtered = useMemo(() => {
         return insumos.filter((i: any) => {

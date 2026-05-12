@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconUserPlus, IconTrash, IconMail, IconUser, IconCoffee, IconLoader2 } from "@tabler/icons-react";
 import { PhoneInput } from "@/components/ui/PhoneInput";
+import { useEscape } from "@/lib/hooks/useEscape";
 
 export default function StaffPage() {
     const [profiles, setProfiles] = useState<any[]>([]);
@@ -18,6 +19,12 @@ export default function StaffPage() {
     const [newDelivery, setNewDelivery] = useState({ name: "" });
 
     const supabase = createClient();
+
+    useEscape(() => {
+        setIsAdding(false);
+        setIsAddingDelivery(false);
+        setDeleteId(null);
+    });
 
     useEffect(() => {
         fetchEverything();

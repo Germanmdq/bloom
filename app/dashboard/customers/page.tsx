@@ -113,6 +113,24 @@ export default function DashboardCustomersPage() {
     void fetchRows();
   }, []);
 
+  // Handle Escape key to close modals
+  useEffect(() => {
+    const handleCloseAll = () => {
+      setPayModal({ open: false, customer: null });
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleCloseAll();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('bloom-close-all', handleCloseAll);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('bloom-close-all', handleCloseAll);
+    };
+  }, []);
+
   const handlePayPartial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!payModal.customer || !payAmount) return;

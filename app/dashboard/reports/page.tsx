@@ -293,6 +293,27 @@ export default function ReportsPage() {
         }
     }, [reprintFeedback]);
 
+    // Handle Escape key to close modals
+    useEffect(() => {
+        const handleCloseAll = () => {
+            setEditingApertura(false);
+            setEditingRendicion(false);
+            setReprintOrder(null);
+            setDrillMethod(null);
+        };
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') handleCloseAll();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('bloom-close-all', handleCloseAll);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('bloom-close-all', handleCloseAll);
+        };
+    }, []);
+
     return (
         <div className="p-6 md:p-10 max-w-[1600px] mx-auto pb-40">
             {/* Header Section */}

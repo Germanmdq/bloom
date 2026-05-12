@@ -107,6 +107,24 @@ export default function SettingsPage() {
         loadSettings();
     }, []);
 
+    // Handle Escape key to close modals
+    useEffect(() => {
+        const handleCloseAll = () => {
+            setShowPromoModal(false);
+        };
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') handleCloseAll();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('bloom-close-all', handleCloseAll);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('bloom-close-all', handleCloseAll);
+        };
+    }, []);
+
     const handleSaveOffers = async () => {
         setIsSavingOffers(true);
         try {

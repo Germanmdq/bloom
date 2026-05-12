@@ -18,8 +18,11 @@ export function DashboardClientLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        window.dispatchEvent(new CustomEvent('bloom-close-all'));
+        setComparisonPanel(null);
+      }
       if (e.key !== "F1" && e.key !== "F2") return;
       if (document.querySelector('[data-ordersheet="active"]')) return;
       const tag = (e.target as HTMLElement).tagName;

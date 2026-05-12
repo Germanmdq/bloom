@@ -24,6 +24,10 @@ type WebOrder = {
 export default function TablesPage() {
     const [tables, setTables] = useState<Table[]>([]);
     const [tableSearch, setTableSearch] = useState("");
+    const [globalSearchClients, setGlobalSearchClients] = useState<any[]>([]);
+    const [globalSearchProveedores, setGlobalSearchProveedores] = useState<any[]>([]);
+    const [globalSearchProducts, setGlobalSearchProducts] = useState<any[]>([]);
+    const [isGlobalSearching, setIsGlobalSearching] = useState(false);
     const [selectedTable, setSelectedTable] = useState<Table | null>(null);
     const [isQuickPayOpen, setIsQuickPayOpen] = useState(false);
     const [quickPayInput, setQuickPayInput] = useState("");
@@ -137,6 +141,35 @@ export default function TablesPage() {
     };
 
     useEffect(() => {
+        const q = tableSearch.trim();
+        if (q.length < 2) {
+            setGlobalSearchClients([]);
+            setGlobalSearchProveedores([]);
+            setGlobalSearchProducts([]);
+            setIsGlobalSearching(false);
+            return;
+        }
+        const timer = setTimeout(async () => {
+            setIsGlobalSearching(true);
+            try {
+                const [{ data: clients }, { data: proveedores }, { data: products }] = await Promise.all([
+                    supabase.from('profiles').select('id, full_name, phone, balance').ilike('full_name', `%${q}%`).limit(5),
+                    supabase.from('proveedores').select('id, nombre, telefono, saldo_cc').ilike('nombre', `%${q}%`).limit(5),
+                    supabase.from('products').select('id, name, price, image_url').ilike('name', `%${q}%`).limit(5)
+                ]);
+                setGlobalSearchClients(clients || []);
+                setGlobalSearchProveedores(proveedores || []);
+                setGlobalSearchProducts(products || []);
+            } catch (err) {
+                console.error("Error searching global:", err);
+            } finally {
+                setIsGlobalSearching(false);
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [tableSearch]);
+
+    useEffect(() => {
         fetchTables();
         fetchWebOrders();
         
@@ -177,15 +210,29 @@ export default function TablesPage() {
         };
     }, []);
     
+    // Listener para el evento global de Escape
+    useEffect(() => {
+        const handleGlobalClose = () => {
+            if (isNewTableModalOpen) setIsNewTableModalOpen(false);
+            if (selectedWebOrder) setSelectedWebOrder(null);
+            if (isQuickPayOpen) setIsQuickPayOpen(false);
+            if (selectedTable) setSelectedTable(null);
+            setTableSearch("");
+        };
+        window.addEventListener('bloom-close-all', handleGlobalClose);
+        return () => window.removeEventListener('bloom-close-all', handleGlobalClose);
+    }, [isNewTableModalOpen, selectedWebOrder, isQuickPayOpen, selectedTable]);
+
     // IconKeyboard Shortcuts (F1, F5, +, Esc)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Esc cierra todo
+            // Esc cierra todo (propagación manual)
             if (e.key === 'Escape') {
-                if (selectedTable) setSelectedTable(null);
                 if (isNewTableModalOpen) setIsNewTableModalOpen(false);
                 if (selectedWebOrder) setSelectedWebOrder(null);
                 if (isQuickPayOpen) setIsQuickPayOpen(false);
+                if (selectedTable) setSelectedTable(null);
+                setTableSearch("");
             }
             // F1 enfoca el buscador
             if (e.key === 'F1') {
@@ -381,6 +428,25 @@ export default function TablesPage() {
     const sortedTables = [...tables]
         .filter(t => t.status === 'OCCUPIED')
         .sort((a, b) => a.id - b.id);
+        
+    const filteredSortedTables = sortedTables.filter(t => {
+        if (!tableSearch.trim()) return true;
+        const q = tableSearch.toLowerCase();
+        const idStr = String(t.id);
+        const metaCust = t.items?.find((i: any) => i.id === 'meta-customer');
+        const name = metaCust?.name?.toLowerCase() || "";
+        const orderLabel = t.order_type === 'DELIVERY' ? 'delivery' : t.order_type === 'TAKEAWAY' ? 'retiro' : 'salón';
+        return idStr.includes(q) || name.includes(q) || orderLabel.includes(q);
+    });
+
+    const filteredWebOrders = webOrders.filter(o => {
+        if (!tableSearch.trim()) return true;
+        const q = tableSearch.toLowerCase();
+        const idStr = String(o.id);
+        const name = o.customer_name?.toLowerCase() || "";
+        const orderLabel = 'web';
+        return idStr.includes(q) || name.includes(q) || orderLabel.includes(q);
+    });
     
 
     const getCardStyles = (table: Table) => {
@@ -754,14 +820,101 @@ export default function TablesPage() {
                         <p className="text-[10px] font-bold text-green-500 uppercase tracking-widest mt-1">Dashboard Actualizado ✓</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <input
-                            id="table-search"
-                            type="text"
-                            placeholder="Buscar mesa o nombre (F1)..."
-                            value={tableSearch}
-                            onChange={(e) => setTableSearch(e.target.value)}
-                            className="w-64 bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold outline-none focus:border-black focus:ring-2 focus:ring-black/5 transition-all shadow-sm"
-                        />
+                        <div className="relative">
+                            <input
+                                id="table-search"
+                                type="text"
+                                placeholder="Buscar mesa, cliente o proveedor (F1)..."
+                                value={tableSearch}
+                                onChange={(e) => setTableSearch(e.target.value)}
+                                className="w-64 bg-white border border-gray-200 rounded-xl px-4 py-2 font-bold outline-none focus:border-black focus:ring-2 focus:ring-black/5 transition-all shadow-sm"
+                            />
+                            {isGlobalSearching && (
+                                <IconLoader2 className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-300" size={16} />
+                            )}
+                            {(globalSearchClients.length > 0 || globalSearchProveedores.length > 0) && (
+                                <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-100 rounded-xl shadow-2xl z-[70] overflow-hidden">
+                                    {globalSearchClients.length > 0 && (
+                                        <div className="p-2 border-b border-gray-100">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-2">Clientes</p>
+                                            {globalSearchClients.map(c => (
+                                                <button
+                                                    key={`client-${c.id}`}
+                                                    onClick={() => {
+                                                        setTableSearch("");
+                                                        setIsNewTableModalOpen(true);
+                                                        setNewTableCustomerId(c.id);
+                                                        setNewTableName(c.full_name);
+                                                        setNewTableCustomerBalance(c.balance);
+                                                    }}
+                                                    className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center justify-between rounded-lg transition-colors"
+                                                >
+                                                    <div className="flex-1 min-w-0 pr-2">
+                                                        <p className="text-sm font-bold text-gray-800 truncate">{c.full_name}</p>
+                                                        {c.phone && <p className="text-xs text-gray-400 truncate">{c.phone}</p>}
+                                                    </div>
+                                                    {Number(c.balance || 0) > 0 && (
+                                                        <span className="shrink-0 text-[10px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-lg border border-red-100">
+                                                            DEUDA: ${Number(c.balance).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {globalSearchProveedores.length > 0 && (
+                                        <div className="p-2 border-t border-gray-100">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-2">Proveedores</p>
+                                            {globalSearchProveedores.map(p => (
+                                                <button
+                                                    key={`prov-${p.id}`}
+                                                    onClick={() => {
+                                                        window.location.href = `/dashboard/compras-y-stock?proveedor=${p.id}`;
+                                                    }}
+                                                    className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center justify-between rounded-lg transition-colors"
+                                                >
+                                                    <div className="flex-1 min-w-0 pr-2">
+                                                        <p className="text-sm font-bold text-gray-800 truncate">{p.nombre}</p>
+                                                        {p.telefono && <p className="text-xs text-gray-400 truncate">{p.telefono}</p>}
+                                                    </div>
+                                                    {Number(p.saldo_cc || 0) > 0 && (
+                                                        <span className="shrink-0 text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
+                                                            SALDO: ${Number(p.saldo_cc).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {globalSearchProducts.length > 0 && (
+                                        <div className="p-2 border-t border-gray-100">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-2">Productos</p>
+                                            {globalSearchProducts.map(p => (
+                                                <button
+                                                    key={`prod-${p.id}`}
+                                                    onClick={() => {
+                                                        window.location.href = `/dashboard/products?search=${p.name}`;
+                                                    }}
+                                                    className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center justify-between rounded-lg transition-colors"
+                                                >
+                                                    <div className="flex-1 min-w-0 pr-2">
+                                                        <p className="text-sm font-bold text-gray-800 truncate">{p.name}</p>
+                                                        <p className="text-xs text-indigo-600 font-black">${p.price?.toLocaleString()}</p>
+                                                    </div>
+                                                    <div className="w-8 h-8 rounded-lg bg-gray-50 overflow-hidden shrink-0">
+                                                        {p.image_url ? (
+                                                            <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-xs">🍔</div>
+                                                        )}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                         <button
                             onClick={() => setIsNewTableModalOpen(true)}
                             className="bg-black text-white px-6 py-2 rounded-xl font-bold uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-xl"
@@ -802,18 +955,18 @@ export default function TablesPage() {
                         Reintentar
                     </button>
                 </div>
-            ) : sortedTables.length === 0 && webOrders.length === 0 ? (
+            ) : filteredSortedTables.length === 0 && filteredWebOrders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-40 gap-4 text-center">
                     <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-2">
                         <span className="text-2xl opacity-50">🍽️</span>
                     </div>
                     <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-xs">Salón Vacío</p>
-                    <p className="text-gray-400 text-sm max-w-md">No hay mesas abiertas en este momento.</p>
+                    <p className="text-gray-400 text-sm max-w-md">{tableSearch ? 'No se encontraron resultados para la búsqueda.' : 'No hay mesas abiertas en este momento.'}</p>
                 </div>
             ) : (
                 <>
                 {(() => {
-                    const totalItems = webOrders.length + sortedTables.length;
+                    const totalItems = filteredWebOrders.length + filteredSortedTables.length;
                     const cols =
                         totalItems <= 6 ? 3 :
                         totalItems <= 8 ? 4 :
@@ -841,7 +994,7 @@ export default function TablesPage() {
                     return (
                         <div className={`grid ${gridCols} ${s.gap}`}>
                              {/* Individual Web Order Cards */}
-                             {webOrders.map(order => {
+                             {filteredWebOrders.map(order => {
                                  const isDelivery = order.delivery_type === 'delivery' || (!order.delivery_type && order.order_type === 'web');
                                  const timeStr = new Date(order.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
                                  const now = Date.now();
@@ -888,7 +1041,7 @@ export default function TablesPage() {
                              })}
 
                             {/* POS Tables */}
-                            {sortedTables.map(table => {
+                            {filteredSortedTables.map(table => {
                                 const styles = getCardStyles(table);
                                 const now = Date.now();
                                 const startTime = table.created_at || table.updated_at;

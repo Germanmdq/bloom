@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence } from "framer-motion";
 import { IconSearch, IconPlus, IconTag, IconChevronRight, IconX, IconCurrencyDollar, IconFlame, IconEdit, IconTrash } from "@tabler/icons-react";
@@ -31,6 +31,18 @@ export default function ProductsClient({ initialProducts, initialCategories, raw
     const [saveError, setSaveError] = useState<string | null>(null);
 
     const supabase = createClient();
+
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (isAddingCategory) setIsAddingCategory(false);
+                else if (isEditing) setIsEditing(false);
+                else if (selectedCategory) setSelectedCategory(null);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [isAddingCategory, isEditing, selectedCategory]);
 
     async function fetchData() {
         const { data: catData } = await supabase.from('categories').select('*');

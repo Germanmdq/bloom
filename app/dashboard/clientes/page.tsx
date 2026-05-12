@@ -59,6 +59,27 @@ export default function ClientesPage() {
     const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
     useEffect(() => { fetchClients(); }, []);
+
+    // Handle Escape key to close modals
+    useEffect(() => {
+        const handleCloseAll = () => {
+            setSelectedClient(null);
+            setShowNewModal(false);
+            setIsPaying(false);
+            setIsEditing(false);
+        };
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') handleCloseAll();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('bloom-close-all', handleCloseAll);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('bloom-close-all', handleCloseAll);
+        };
+    }, []);
     
     useEffect(() => {
         if (selectedClient) {
@@ -269,7 +290,7 @@ export default function ClientesPage() {
                         return (
                             <motion.div 
                                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
-                                key={client.id} 
+                                key={client.id || `client-${idx}`} 
                                 onClick={() => setSelectedClient(client)}
                                 className="group bg-white p-7 rounded-[2.5rem] border border-transparent hover:border-gray-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer relative overflow-hidden"
                             >
@@ -489,8 +510,8 @@ export default function ClientesPage() {
                                     </div>
                                     <div className="space-y-3">
                                         {selectedClient.last_orders && selectedClient.last_orders.length > 0 ? (
-                                            selectedClient.last_orders.map((order: any) => (
-                                                <div key={order.id} className="bg-white p-5 rounded-[2rem] border border-gray-100 flex items-center justify-between hover:shadow-lg transition-all group">
+                                            selectedClient.last_orders.map((order: any, oIdx: number) => (
+                                                <div key={order.id || `order-${oIdx}`} className="bg-white p-5 rounded-[2rem] border border-gray-100 flex items-center justify-between hover:shadow-lg transition-all group">
                                                     <div className="flex items-center gap-5">
                                                         <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-black group-hover:text-white transition-all">
                                                             <IconReceipt size={20} />

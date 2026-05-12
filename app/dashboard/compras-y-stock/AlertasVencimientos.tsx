@@ -3,7 +3,7 @@
 import { useMarcarGastoPagado, useAbonarGastoFijo, useCreateGastoFijo, useDeleteGastoFijo, useUpdateGastoFijo } from "@/lib/hooks/use-compras-stock";
 import { IconAlertTriangle, IconCalendarDue, IconCheck, IconCoin, IconHistory, IconX, IconPlus, IconEdit, IconTrash } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface GastoFijo {
     id: string;
@@ -28,6 +28,19 @@ export function AlertasVencimientos({ gastos }: { gastos: GastoFijo[] }) {
     const [metodoPago, setMetodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
     const [gastoModal, setGastoModal] = useState<Partial<GastoFijo> | null>(null);
     const [editingMonto, setEditingMonto] = useState<{ id: string; value: string } | null>(null);
+
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (historyModal) setHistoryModal(null);
+                else if (pagoModal) setPagoModal(null);
+                else if (gastoModal) setGastoModal(null);
+                else if (editingMonto) setEditingMonto(null);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [historyModal, pagoModal, gastoModal, editingMonto]);
 
     const hoy = new Date();
     const en7dias = new Date(hoy);

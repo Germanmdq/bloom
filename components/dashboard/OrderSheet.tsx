@@ -157,7 +157,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 let finalDrinkPrice = 0;
                 if (!isEspecialContext) {
                     const matchingProduct = products.find((p: any) => p.name.toLowerCase() === selectedDrink.name.toLowerCase());
-                    finalDrinkPrice = matchingProduct ? Number(matchingProduct.price) : 2500;
+                    finalDrinkPrice = matchingProduct ? Number(matchingProduct.price) : 3900;
                 }
                 addToCart({ 
                     id: `combo-drink-${Math.random().toString(36).substr(2, 5)}`, 
@@ -691,13 +691,24 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 case 'Escape':
                     if (showPaymentModal) setShowPaymentModal(false);
                     else if (showReceiptModal) setShowReceiptModal(false);
+                    else if (showConfigurator) { setShowConfigurator(false); setIsPlatoDiaContext(false); setIsDrinkGroupContext(false); }
+                    else if (showVariosModal) setShowVariosModal(false);
                     else handleClose();
                     break;
             }
         };
+
+        const handleGlobalClose = () => {
+            handleClose();
+        };
+
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleClose, total, isFinishing, showPaymentModal, showReceiptModal]);
+        window.addEventListener('bloom-close-all', handleGlobalClose);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('bloom-close-all', handleGlobalClose);
+        };
+    }, [handleClose, total, isFinishing, showPaymentModal, showReceiptModal, showConfigurator, showVariosModal]);
 
     const handleEmitirFactura = async (overrideTotal?: number) => {
         const amount = overrideTotal ?? completedOrderData?.total;
