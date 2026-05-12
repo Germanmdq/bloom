@@ -8,7 +8,7 @@ import { ReceiptModal } from "@/components/pos/ReceiptModal";
 
 type Timeframe = 'TODAY' | 'WEEK' | 'MONTH';
 
-const APERTURA_KEY = 'bloom_apertura_caja';
+const RENDICION_KEY = 'bloom_rendicion_caja';
 
 function getAperturaStored() {
     try {
@@ -18,6 +18,17 @@ function getAperturaStored() {
         const today = new Date().toDateString();
         if (parsed.date !== today) return null;
         return parsed as { date: string; efectivo: number; mercadoPago: number; santander: number };
+    } catch { return null; }
+}
+
+function getRendicionStored() {
+    try {
+        const raw = localStorage.getItem(RENDICION_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        const today = new Date().toDateString();
+        if (parsed.date !== today) return null;
+        return parsed as { date: string; efectivoReal: number };
     } catch { return null; }
 }
 
@@ -43,6 +54,10 @@ export default function ReportsPage() {
     const [editingApertura, setEditingApertura] = useState(false);
     const [aperturaForm, setAperturaForm] = useState({ efectivo: '', mercadoPago: '', santander: '' });
 
+    const [rendicion, setRendicion] = useState<{ efectivoReal: number } | null>(null);
+    const [editingRendicion, setEditingRendicion] = useState(false);
+    const [rendicionForm, setRendicionForm] = useState({ efectivoReal: '' });
+
     // ── Reprint state ──
     const [reprintOrder, setReprintOrder] = useState<any | null>(null);
     const [reprintMode, setReprintMode] = useState<'ticket' | 'factura' | null>(null);
@@ -53,8 +68,11 @@ export default function ReportsPage() {
     const supabase = createClient();
 
     useEffect(() => {
-        const stored = getAperturaStored();
-        if (stored) setApertura({ efectivo: stored.efectivo, mercadoPago: stored.mercadoPago, santander: stored.santander });
+        const storedA = getAperturaStored();
+        if (storedA) setApertura({ efectivo: storedA.efectivo, mercadoPago: storedA.mercadoPago, santander: storedA.santander });
+        
+        const storedR = getRendicionStored();
+        if (storedR) setRendicion({ efectivoReal: storedR.efectivoReal });
     }, []);
 
     useEffect(() => {
@@ -183,6 +201,16 @@ export default function ReportsPage() {
         localStorage.setItem(APERTURA_KEY, JSON.stringify(data));
         setApertura({ efectivo: data.efectivo, mercadoPago: data.mercadoPago, santander: data.santander });
         setEditingApertura(false);
+    };
+
+    const saveRendicion = () => {
+        const data = {
+            date: new Date().toDateString(),
+            efectivoReal: parseFloat(rendicionForm.efectivoReal) || 0,
+        };
+        localStorage.setItem(RENDICION_KEY, JSON.stringify(data));
+        setRendicion({ efectivoReal: data.efectivoReal });
+        setEditingRendicion(false);
     };
 
     // ── Reprint helpers ──
@@ -315,6 +343,45 @@ export default function ReportsPage() {
                             </div>
                         ) : (
                             <p className="text-gray-400 font-bold text-sm">No registrada para hoy. Hacé clic en Registrar para ingresar el dinero en caja.</p>
+                        )}
+                    </div>
+
+                    {/* RENDICION DE CAJA (ARQUEO) */}
+                    <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Rendición de Caja</h3>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Control de cierre y arqueo de efectivo</p>
+                            </div>
+                            <button 
+                                onClick={() => { 
+                                    setRendicionForm({ efectivoReal: rendicion?.efectivoReal?.toString() || '' }); 
+                                    setEditingRendicion(true); 
+                                }} 
+                                className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/10"
+                            >
+                                {rendicion ? 'Ver Rendición' : 'Rendir Caja'}
+                            </button>
+                        </div>
+                        {rendicion ? (
+                            <div className="flex items-center gap-6">
+                                <div className="flex-1 bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Efectivo Físico</p>
+                                    <p className="text-2xl font-black text-gray-900">${rendicion.efectivoReal.toLocaleString('es-AR')}</p>
+                                </div>
+                                <div className={`flex-1 rounded-2xl p-5 border ${
+                                    (rendicion.efectivoReal - ((apertura?.efectivo || 0) + stats.cash - (stats.totalExpenses + stats.totalPurchases))) >= 0 
+                                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
+                                    : 'bg-red-50 border-red-100 text-red-700'
+                                }`}>
+                                    <p className="text-[10px] font-black uppercase tracking-widest mb-1 opacity-70">Diferencia</p>
+                                    <p className="text-2xl font-black">
+                                        ${(rendicion.efectivoReal - ((apertura?.efectivo || 0) + stats.cash - (stats.totalExpenses + stats.totalPurchases))).toLocaleString('es-AR')}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-gray-400 font-bold text-sm">Cierre de caja no realizado. Hacé clic en Rendir Caja al finalizar la jornada.</p>
                         )}
                     </div>
 
@@ -608,6 +675,80 @@ export default function ReportsPage() {
                             <div className="flex gap-3">
                                 <button onClick={() => setEditingApertura(false)} className="flex-1 h-12 rounded-xl bg-gray-100 font-black text-gray-400 text-xs uppercase">Cancelar</button>
                                 <button onClick={saveApertura} className="flex-[2] h-12 rounded-xl bg-black text-white font-black text-xs uppercase">Guardar</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* RENDICION EDIT MODAL */}
+            <AnimatePresence>
+                {editingRendicion && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setEditingRendicion(false)} />
+                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="relative bg-white rounded-[3rem] p-10 w-full max-w-md shadow-2xl border border-white/20">
+                            <h3 className="text-2xl font-black mb-2 uppercase tracking-tight text-gray-900">Rendición de Caja</h3>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-8">Arqueo de efectivo al cierre</p>
+                            
+                            <div className="space-y-6 mb-10">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-gray-50 p-4 rounded-2xl">
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Apertura</p>
+                                        <p className="text-lg font-black text-gray-700">${(apertura?.efectivo || 0).toLocaleString()}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-2xl">
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Ventas Hoy</p>
+                                        <p className="text-lg font-black text-emerald-600">${stats.cash.toLocaleString()}</p>
+                                    </div>
+                                    <div className="bg-red-50 p-4 rounded-2xl col-span-2">
+                                        <p className="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Gastos y Compras</p>
+                                        <p className="text-lg font-black text-red-600">-${(stats.totalExpenses + stats.totalPurchases).toLocaleString()}</p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-black/5 p-6 rounded-3xl border border-black/5">
+                                    <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-2 text-center">Total que debería haber</p>
+                                    <p className="text-4xl font-black text-black text-center tracking-tighter">
+                                        ${((apertura?.efectivo || 0) + stats.cash - (stats.totalExpenses + stats.totalPurchases)).toLocaleString()}
+                                    </p>
+                                </div>
+
+                                <div className="pt-4">
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Efectivo Físico en Caja ($)</label>
+                                    <input 
+                                        type="number" 
+                                        autoFocus
+                                        value={rendicionForm.efectivoReal} 
+                                        onChange={e => setRendicionForm({ efectivoReal: e.target.value })} 
+                                        className="w-full h-16 px-6 rounded-2xl bg-emerald-50 border-emerald-100 border focus:ring-4 ring-emerald-500/10 font-black text-2xl text-emerald-700 outline-none transition-all" 
+                                        placeholder="0" 
+                                    />
+                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-2 ml-1 text-center">
+                                        Contá el dinero físico y cargá el total aquí
+                                    </p>
+                                </div>
+
+                                {rendicionForm.efectivoReal && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 10 }} 
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className={`p-4 rounded-2xl text-center border ${
+                                            (parseFloat(rendicionForm.efectivoReal) - ((apertura?.efectivo || 0) + stats.cash - (stats.totalExpenses + stats.totalPurchases))) >= 0
+                                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                            : 'bg-red-100 text-red-800 border-red-200'
+                                        }`}
+                                    >
+                                        <p className="text-[10px] font-black uppercase tracking-widest mb-1">Diferencia</p>
+                                        <p className="text-xl font-black">
+                                            ${(parseFloat(rendicionForm.efectivoReal) - ((apertura?.efectivo || 0) + stats.cash - (stats.totalExpenses + stats.totalPurchases))).toLocaleString()}
+                                        </p>
+                                    </motion.div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button onClick={() => setEditingRendicion(false)} className="flex-1 h-14 rounded-2xl bg-gray-100 font-black text-gray-400 text-xs uppercase tracking-widest">Cerrar</button>
+                                <button onClick={saveRendicion} className="flex-[2] h-14 rounded-2xl bg-black text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-black/10">Guardar Cierre</button>
                             </div>
                         </motion.div>
                     </div>
