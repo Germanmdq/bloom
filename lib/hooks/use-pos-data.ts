@@ -107,6 +107,7 @@ export function useCreateOrder() {
                     customer_id: orderData.customer_id || null,
                     customer_name: orderData.customer_name || null,
                     status: orderData.status || 'paid',
+                    paid: typeof orderData.paid === 'boolean' ? orderData.paid : orderData.status === 'paid' || orderData.status === 'completed',
                     items: orderData.items || [],
                     discount: orderData.discount || 0,
                     delivery_person_id: orderData.delivery_person_id || null,

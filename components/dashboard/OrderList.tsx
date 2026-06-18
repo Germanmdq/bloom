@@ -11,6 +11,7 @@ import { ReceiptModal } from "@/components/pos/ReceiptModal";
 import { createClient } from "@/lib/supabase/client";
 
 type ViewMode = 'day' | 'week' | 'fortnight' | 'month';
+const ORDER_HISTORY_DAYS = 90;
 
 interface GroupedData {
     id: string;
@@ -31,7 +32,8 @@ function orderTypeLabel(order: any) {
     return { label: "Web", icon: <IconBuildingStore size={13} /> };
 }
 
-function isOrderPaid(o: Order & { paid?: boolean | null; status?: string | null }) {
+function isOrderPaid(o: Order & { paid?: boolean | null; status?: string | null; payment_method?: string | null }) {
+    if (o.payment_method === "CUENTA_CORRIENTE") return o.paid === true;
     return Boolean(o.paid) || o.status === 'completed' || o.status === 'paid';
 }
 
@@ -72,7 +74,7 @@ export function OrderList() {
             setFetchError(null);
         }
         try {
-            const res = await fetch("/api/orders/list", { credentials: "include" });
+            const res = await fetch(`/api/orders/list?days=${ORDER_HISTORY_DAYS}`, { credentials: "include" });
             const result = await res.json();
             console.log(
                 "[OrderList] status:",
@@ -170,12 +172,12 @@ export function OrderList() {
     }
 
     const unpaidSummary = useMemo(() => {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const historyStart = new Date();
+        historyStart.setDate(historyStart.getDate() - ORDER_HISTORY_DAYS);
         
         const unpaid = orders.filter((o) => {
             const isUnpaid = !isOrderPaid(o as Order & { paid?: boolean });
-            const isRecent = new Date(o.created_at) >= thirtyDaysAgo;
+            const isRecent = new Date(o.created_at) >= historyStart;
             return isUnpaid && isRecent;
         });
         
@@ -330,7 +332,7 @@ export function OrderList() {
                              {unpaidSummary.count} pedido{unpaidSummary.count === 1 ? "" : "s"} sugerido{unpaidSummary.count === 1 ? "" : "s"}
                         </p>
                         <p className="text-sm font-bold text-amber-800">
-                            Pendientes (últimos 30 días): <span className="text-lg">${Number(unpaidSummary.total || 0).toLocaleString("es-AR", { maximumFractionDigits: 0 })}</span>
+                            Pendientes (últimos {ORDER_HISTORY_DAYS} días): <span className="text-lg">${Number(unpaidSummary.total || 0).toLocaleString("es-AR", { maximumFractionDigits: 0 })}</span>
                         </p>
                     </div>
                 </div>
@@ -538,28 +540,28 @@ export function OrderList() {
                                     const { label: typeLabel, icon: typeIcon } = orderTypeLabel(o);
                                     const time = new Date(o.created_at).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' });
                                     const frame = paid
-                                        ? "border-2 border-gray-200 bg-gray-50"
-                                        : "border-2 border-amber-400 bg-amber-50/50";
+                                        ? "border border-gray-200 bg-white shadow-sm"
+                                        : "border-2 border-red-500 bg-red-50 shadow-lg shadow-red-900/10";
                                     return (
                                         <div
                                             key={o.id}
-                                            className={`rounded-2xl transition-all flex flex-col gap-2 p-1 shadow-sm ${frame} ${chLeft}`}
+                                            className={`rounded-3xl transition-all flex flex-col gap-2 p-2 ${frame} ${chLeft}`}
                                         >
                                             <button type="button" onClick={() => setSelectedOrder(o)}
-                                                className="w-full hover:bg-white/80 rounded-xl px-3 py-2 text-left flex items-center gap-3"
+                                                className="w-full hover:bg-white rounded-2xl px-3 py-3 text-left flex items-center gap-3 transition-colors"
                                             >
                                                 <span
-                                                    className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-wide shadow-sm ${chBadge}`}
+                                                    className={`shrink-0 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-wide shadow-sm ${chBadge}`}
                                                     title={chShort}
                                                 >
                                                     {chShort}
                                                 </span>
-                                                <div className="text-gray-400 shrink-0">{typeIcon}</div>
+                                                <div className={`shrink-0 ${paid ? "text-gray-400" : "text-red-500"}`}>{typeIcon}</div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-black text-gray-900 text-sm truncate">
+                                                    <p className="font-black text-gray-950 text-base truncate">
                                                         {o.customer_name || `Mesa ${o.table_id}`}
                                                     </p>
-                                                    <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                    <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1 flex-wrap">
                                                         <span>{time}</span>
                                                         <span className="w-1 h-1 bg-gray-300 rounded-full" />
                                                         <span>{typeLabel}</span>
@@ -569,12 +571,15 @@ export function OrderList() {
                                                                 <span>{o.customer_phone}</span>
                                                             </>
                                                         )}
-                                                        <span className={`ml-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${paid ? "bg-emerald-100 text-emerald-800" : "bg-amber-200 text-amber-900"}`}>
+                                                        <span className={`ml-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide ${paid ? "bg-emerald-100 text-emerald-800" : "bg-red-600 text-white shadow-sm shadow-red-600/20"}`}>
                                                             {paid ? "Pagado" : "Impago"}
                                                         </span>
                                                     </p>
                                                 </div>
-                                                <p className="font-black text-gray-900 text-base shrink-0">${Number(o.total).toLocaleString()}</p>
+                                                <div className="text-right shrink-0">
+                                                    <p className={`font-black text-lg ${paid ? "text-gray-950" : "text-red-700"}`}>${Number(o.total).toLocaleString()}</p>
+                                                    {!paid && <p className="text-[9px] font-black uppercase tracking-widest text-red-500">Sin cobrar</p>}
+                                                </div>
                                             </button>
                                             <div className="flex flex-col items-stretch gap-2 px-2 pb-2 sm:flex-row sm:items-center sm:justify-end">
                                                 {isDeliveryOrder(o) && (
@@ -613,7 +618,7 @@ export function OrderList() {
                                                     type="button"
                                                     disabled={togglingId === o.id}
                                                     onClick={(e) => { e.stopPropagation(); void setOrderPaid(o.id, !paid); }}
-                                                    className={`inline-flex items-center justify-center gap-1.5 text-xs font-black uppercase px-3 py-1.5 rounded-xl transition-all ${paid ? "bg-amber-100 text-amber-900 hover:bg-amber-200" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
+                                                    className={`inline-flex items-center justify-center gap-1.5 text-xs font-black uppercase px-4 py-2 rounded-2xl transition-all ${paid ? "bg-white border border-red-200 text-red-600 hover:bg-red-50" : "bg-emerald-600 text-white shadow-lg shadow-emerald-700/20 hover:bg-emerald-700"}`}
                                                 >
                                                     {togglingId === o.id ? <IconLoader2 className="animate-spin" size={14} /> : paid ? <><IconAlertCircle size={14} /> Marcar impago</> : <><IconCircleCheck size={14} /> Marcar pagado</>}
                                                 </button>
@@ -733,14 +738,14 @@ export function OrderList() {
                                         </div>
                                     )}
                                     <div className="flex items-center justify-between gap-2">
-                                    <span className={`text-xs font-black uppercase px-2 py-1 rounded-lg ${isOrderPaid(selectedOrder) ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}`}>
-                                        {isOrderPaid(selectedOrder) ? "Pagado" : "Pendiente de cobro"}
+                                    <span className={`text-xs font-black uppercase px-3 py-2 rounded-xl ${isOrderPaid(selectedOrder) ? "bg-emerald-100 text-emerald-800" : "bg-red-600 text-white shadow-sm shadow-red-600/20"}`}>
+                                        {isOrderPaid(selectedOrder) ? "Pagado" : "Impago"}
                                     </span>
                                     <button
                                         type="button"
                                         disabled={togglingId === selectedOrder.id}
                                         onClick={() => void setOrderPaid(selectedOrder.id, !isOrderPaid(selectedOrder))}
-                                        className={`text-xs font-black uppercase px-3 py-2 rounded-xl ${isOrderPaid(selectedOrder) ? "bg-amber-200 text-amber-950" : "bg-emerald-600 text-white"}`}
+                                        className={`text-xs font-black uppercase px-4 py-2 rounded-xl ${isOrderPaid(selectedOrder) ? "bg-white border border-red-200 text-red-600 hover:bg-red-50" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
                                     >
                                         {togglingId === selectedOrder.id ? "…" : isOrderPaid(selectedOrder) ? "Marcar impago" : "Marcar pagado"}
                                     </button>

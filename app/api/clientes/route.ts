@@ -16,7 +16,9 @@ export async function GET() {
         // 2. Fetch ALL orders for aggregation
         const { data: allOrders, error: oError } = await svc
             .from("orders")
-            .select("customer_id, total, created_at");
+            .select("id, customer_id, total, created_at, items, payment_method, table_id");
+
+        if (oError) throw oError;
 
         const STAFF_ROLES = ["ADMIN", "WAITER", "KITCHEN", "MANAGER"];
         const orders = allOrders || [];

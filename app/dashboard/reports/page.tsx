@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { IconChartPie, IconCurrencyDollar, IconCreditCard, IconWallet, IconCalendar, IconLoader2, IconTrendingUp, IconShoppingBag, IconReceipt, IconRefresh, IconPackage, IconArrowUpRight, IconArrowDownRight, IconPrinter, IconFileInvoice } from "@tabler/icons-react";
+import { IconChartPie, IconCurrencyDollar, IconCreditCard, IconWallet, IconCalendar, IconLoader2, IconTrendingUp, IconShoppingBag, IconReceipt, IconRefresh, IconPackage, IconArrowUpRight, IconArrowDownRight, IconPrinter, IconFileInvoice, IconChevronDown } from "@tabler/icons-react";
 import { ReceiptModal } from "@/components/pos/ReceiptModal";
 
 type Timeframe = 'TODAY' | 'WEEK' | 'MONTH';
@@ -58,6 +58,10 @@ export default function ReportsPage() {
     const [rendicion, setRendicion] = useState<{ efectivoReal: number; mercadoPagoReal: number; santanderReal: number } | null>(null);
     const [editingRendicion, setEditingRendicion] = useState(false);
     const [rendicionForm, setRendicionForm] = useState({ efectivoReal: '', mercadoPagoReal: '', santanderReal: '' });
+    const [openProductCategories, setOpenProductCategories] = useState<Record<string, boolean>>({});
+    const [showOrdersHistory, setShowOrdersHistory] = useState(false);
+    const [ordersSearch, setOrdersSearch] = useState("");
+    const [ordersMethodFilter, setOrdersMethodFilter] = useState("ALL");
 
     // ── Reprint state ──
     const [reprintOrder, setReprintOrder] = useState<any | null>(null);
@@ -191,6 +195,20 @@ export default function ReportsPage() {
         if (drillMethod === 'CARD') return o.payment_method === 'CARD';
         return false;
     }) : [];
+
+    const visibleReportOrders = stats.orders.filter((order: any) => {
+        const matchesMethod = ordersMethodFilter === "ALL" || order.payment_method === ordersMethodFilter;
+        const items = Array.isArray(order.items) ? order.items : [];
+        const haystack = [
+            order.customer_name,
+            order.table_id != null ? `mesa ${order.table_id}` : "",
+            order.total,
+            order.payment_method,
+            ...items.map((item: any) => item.name),
+        ].join(" ").toLowerCase();
+        const matchesSearch = ordersSearch.trim() === "" || haystack.includes(ordersSearch.trim().toLowerCase());
+        return matchesMethod && matchesSearch;
+    });
 
     const saveApertura = () => {
         const data = {
@@ -545,56 +563,136 @@ export default function ReportsPage() {
                                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay ventas registradas</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
-                                {Object.entries(stats.productsByCategory).map(([category, items]) => (
-                                    <motion.div 
-                                        key={category} 
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col hover:border-gray-200 transition-all"
-                                    >
-                                        <div className="flex items-center justify-between mb-6">
-                                            <h4 className="text-lg font-black text-gray-900 uppercase tracking-tighter truncate pr-4">{category}</h4>
-                                            <span className="bg-gray-100 text-gray-900 px-3 py-1 rounded-full text-[10px] font-black shrink-0">
-                                                {Object.values(items).reduce((a, b) => a + b, 0)} U.
-                                            </span>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {Object.entries(items)
-                                                .sort((a, b) => b[1] - a[1])
-                                                .map(([name, qty]) => (
-                                                    <div key={name} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0 border-dashed">
-                                                        <span className="text-xs font-bold text-gray-500 truncate pr-4">{name}</span>
-                                                        <span className="font-black text-gray-900 text-xs shrink-0">x{qty}</span>
+                            <div className="space-y-4 pb-20">
+                                {Object.entries(stats.productsByCategory)
+                                    .map(([category, items]) => ({
+                                        category,
+                                        items,
+                                        total: Object.values(items).reduce((a, b) => a + b, 0),
+                                    }))
+                                    .sort((a, b) => b.total - a.total)
+                                    .map(({ category, items, total }, idx) => {
+                                        const isOpen = openProductCategories[category] ?? idx === 0;
+                                        const sortedItems = Object.entries(items).sort((a, b) => b[1] - a[1]);
+
+                                        return (
+                                            <motion.div
+                                                key={category}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setOpenProductCategories(prev => ({ ...prev, [category]: !isOpen }))}
+                                                    className="w-full px-6 py-5 flex items-center justify-between gap-4 text-left hover:bg-gray-50 transition-colors"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <h4 className="text-base font-black text-gray-900 uppercase tracking-tight truncate">{category}</h4>
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                            {sortedItems.length} producto{sortedItems.length === 1 ? "" : "s"}
+                                                        </p>
                                                     </div>
-                                                ))}
-                                        </div>
-                                    </motion.div>
-                                ))}
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        <span className="bg-gray-100 text-gray-900 px-3 py-1.5 rounded-full text-[10px] font-black">
+                                                            {total} U.
+                                                        </span>
+                                                        <IconChevronDown className={`text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} size={20} />
+                                                    </div>
+                                                </button>
+
+                                                <AnimatePresence initial={false}>
+                                                    {isOpen && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: "auto", opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            className="overflow-hidden"
+                                                        >
+                                                            <div className="px-6 pb-5">
+                                                                <div className="rounded-2xl bg-gray-50/70 border border-gray-100 divide-y divide-gray-100">
+                                                                    {sortedItems.map(([name, qty]) => (
+                                                                        <div key={name} className="flex justify-between items-center gap-4 px-4 py-3">
+                                                                            <span className="text-sm font-bold text-gray-600 truncate">{name}</span>
+                                                                            <span className="font-black text-gray-950 text-sm shrink-0">x{qty}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </motion.div>
+                                        );
+                                    })}
                             </div>
                         )}
                     </div>
 
                     {/* ── HISTORIAL DE ÓRDENES ── */}
                     <div className="w-full">
-                        <div className="flex items-center gap-3 mb-8 ml-2">
-                            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-[#FFD60A]">
-                                <IconReceipt size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Historial de Órdenes</h3>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Reimprimir ticket o emitir factura</p>
-                            </div>
-                        </div>
+                        <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+                            <div className="p-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowOrdersHistory(v => !v)}
+                                    className="flex items-center gap-3 text-left"
+                                >
+                                    <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-[#FFD60A]">
+                                        <IconReceipt size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Historial de Órdenes</h3>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                            {visibleReportOrders.length} de {stats.orders.length} órdenes · Reimprimir ticket o emitir factura
+                                        </p>
+                                    </div>
+                                    <IconChevronDown className={`text-gray-400 transition-transform ${showOrdersHistory ? "rotate-180" : ""}`} size={22} />
+                                </button>
 
-                        {stats.orders.length === 0 ? (
-                            <div className="bg-white p-20 rounded-[3rem] border border-gray-100 text-center">
-                                <IconReceipt size={40} className="mx-auto text-gray-100 mb-4" />
-                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay órdenes registradas</p>
+                                <div className="flex flex-col gap-3 sm:flex-row xl:w-[34rem]">
+                                    <select
+                                        value={ordersMethodFilter}
+                                        onChange={e => {
+                                            setOrdersMethodFilter(e.target.value);
+                                            setShowOrdersHistory(true);
+                                        }}
+                                        className="h-12 rounded-2xl border border-gray-100 bg-gray-50 px-4 text-xs font-black uppercase tracking-widest text-gray-700 outline-none focus:border-gray-300"
+                                    >
+                                        <option value="ALL">Todos</option>
+                                        <option value="CASH">Efectivo</option>
+                                        <option value="MERCADO_PAGO">Mercado Pago</option>
+                                        <option value="SANTANDER_RIO">Santander</option>
+                                        <option value="CUENTA_CORRIENTE">Cuenta corriente</option>
+                                    </select>
+                                    <input
+                                        value={ordersSearch}
+                                        onChange={e => {
+                                            setOrdersSearch(e.target.value);
+                                            setShowOrdersHistory(true);
+                                        }}
+                                        placeholder="Buscar cliente, mesa o producto..."
+                                        className="h-12 flex-1 rounded-2xl border border-gray-100 bg-gray-50 px-4 text-sm font-bold outline-none focus:border-gray-300"
+                                    />
+                                </div>
                             </div>
-                        ) : (
-                            <div className="space-y-3 pb-20">
-                                {stats.orders.map((order: any) => {
+
+                            <AnimatePresence initial={false}>
+                                {showOrdersHistory && (
+                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                        {stats.orders.length === 0 ? (
+                                            <div className="p-20 border-t border-gray-100 text-center">
+                                                <IconReceipt size={40} className="mx-auto text-gray-100 mb-4" />
+                                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay órdenes registradas</p>
+                                            </div>
+                                        ) : visibleReportOrders.length === 0 ? (
+                                            <div className="p-16 border-t border-gray-100 text-center">
+                                                <IconReceipt size={36} className="mx-auto text-gray-100 mb-4" />
+                                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No hay coincidencias</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3 p-5 pt-0 max-h-[42rem] overflow-y-auto">
+                                                {visibleReportOrders.map((order: any) => {
                                     const createdAt = order.created_at ? new Date(order.created_at) : null;
                                     const timeLabel = createdAt
                                         ? createdAt.toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })
@@ -610,7 +708,7 @@ export default function ReportsPage() {
                                             key={order.id}
                                             initial={{ opacity: 0, y: 5 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:border-gray-200 transition-all"
+                                            className="bg-gray-50/70 rounded-[2rem] p-6 border border-gray-100 hover:border-gray-200 transition-all"
                                         >
                                             <div className="flex items-start justify-between gap-4">
                                                 <div className="flex-1 min-w-0">
@@ -675,8 +773,12 @@ export default function ReportsPage() {
                                         </motion.div>
                                     );
                                 })}
-                            </div>
-                        )}
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
                 </div>
             )}

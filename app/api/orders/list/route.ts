@@ -7,7 +7,7 @@ import { isAdminEmail } from "@/lib/auth/admin";
  * Lista pedidos para el dashboard.
  * Identidad: sesión admin (mismo criterio que /dashboard). Datos: obligatorio service role (RLS no aplica a anon aquí).
  */
-export async function GET() {
+export async function GET(req: Request) {
   console.log(
     "[orders/list] SERVICE_ROLE_KEY present:",
     !!process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -25,24 +25,35 @@ export async function GET() {
     }
 
     const supabase = createServiceRoleClient();
+    const requestedDays = Number(new URL(req.url).searchParams.get("days") ?? 90);
+    const historyDays = Number.isFinite(requestedDays)
+      ? Math.min(365, Math.max(1, Math.round(requestedDays)))
+      : 90;
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - historyDays);
 
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(3000);
+    const pageSize = 1000;
+    const maxRows = 20000;
+    const data: any[] = [];
 
-    if (error) {
-      console.error("Supabase API Error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    for (let offset = 0; offset < maxRows; offset += pageSize) {
+      const { data: page, error } = await supabase
+        .from("orders")
+        .select("*")
+        .gte("created_at", fromDate.toISOString())
+        .order("created_at", { ascending: false })
+        .range(offset, offset + pageSize - 1);
+
+      if (error) {
+        console.error("Supabase API Error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      data.push(...(page ?? []));
+      if (!page || page.length < pageSize) break;
     }
 
     console.log("[orders/list] total rows fetched:", data?.length);
-    console.log(
-      "[orders/list] order_types:",
-      data?.map((o) => o.order_type)
-    );
-    console.log("[orders/list] statuses:", data?.map((o) => o.status));
 
     return NextResponse.json({ data }, { status: 200 });
   } catch (error) {

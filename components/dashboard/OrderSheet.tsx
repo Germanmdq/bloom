@@ -75,6 +75,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const [isKitchenReceipt, setIsKitchenReceipt] = useState(false);
     const [isPrecuenta, setIsPrecuenta] = useState(false);
     const [extraTotal] = useState(0);
+    const [discountAmountInput, setDiscountAmountInput] = useState("");
 
     const handleAddVarios = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
@@ -685,6 +686,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
     const finalTotal = total - discountAmount;
     const isLoading = catLoading || prodLoading;
 
+    useEffect(() => {
+        setDiscountAmountInput(discountAmount > 0 ? String(discountAmount) : "");
+    }, [discountAmount]);
+
     useEscape(() => {
         if (showPaymentModal) setShowPaymentModal(false);
         else if (showReceiptModal) setShowReceiptModal(false);
@@ -810,7 +815,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     payment_method: paymentMethod,
                     waiter_id: selectedWaiter || null,
                     discount: discount,
-                    status: (isWebTable || tableId >= 100) ? 'completed' : 'paid',
+                    status: paymentMethod === "CUENTA_CORRIENTE" ? "pending" : (isWebTable || tableId >= 100) ? 'completed' : 'paid',
+                    paid: paymentMethod !== "CUENTA_CORRIENTE",
                     customer_id: customerIdForDb,
                     customer_name: customerName || null,
                     delivery_person_id: selectedDeliveryPerson ? parseInt(selectedDeliveryPerson) : null,
@@ -1573,12 +1579,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         <div className="flex items-center gap-4 px-2">
                             <span className="text-sm font-bold text-slate-400 uppercase tracking-widest shrink-0">Descuento $</span>
                             <input
-                                type="number"
-                                min="0"
-                                max={total}
-                                value={discountAmount === 0 ? "" : discountAmount}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={discountAmountInput}
                                 onChange={(e) => {
-                                    const pesos = Math.min(total, Math.max(0, Number(e.target.value)));
+                                    const rawValue = e.target.value.replace(/\D/g, "");
+                                    if (rawValue === "") {
+                                        setDiscountAmountInput("");
+                                        setDiscount(0);
+                                        return;
+                                    }
+                                    const pesos = Math.min(total, Math.max(0, Number(rawValue)));
+                                    setDiscountAmountInput(String(pesos));
                                     const pct = total > 0 ? (pesos / total) * 100 : 0;
                                     setDiscount(Math.round(pct * 100) / 100);
                                 }}

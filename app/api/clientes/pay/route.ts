@@ -33,6 +33,34 @@ export async function POST(req: Request) {
             remaining_balance: newBalance,
         });
 
+        const { data: ccOrders, error: ccOrdersError } = await svc
+            .from("orders")
+            .select("id, total, paid, status")
+            .eq("customer_id", clientId)
+            .eq("payment_method", "CUENTA_CORRIENTE")
+            .order("created_at", { ascending: true });
+
+        if (ccOrdersError) throw ccOrdersError;
+
+        let remainingToApply = paidAmount;
+        const paidOrderIds: string[] = [];
+        for (const order of ccOrders ?? []) {
+            const alreadyPaid = order.paid === true;
+            if (alreadyPaid) continue;
+            const orderTotal = Number(order.total || 0);
+            if (remainingToApply + 0.001 < orderTotal) break;
+            paidOrderIds.push(order.id);
+            remainingToApply -= orderTotal;
+        }
+
+        if (paidOrderIds.length > 0) {
+            const { error: paidOrdersError } = await svc
+                .from("orders")
+                .update({ paid: true, status: "paid" })
+                .in("id", paidOrderIds);
+            if (paidOrdersError) throw paidOrdersError;
+        }
+
         // Insertar en orders para que aparezca en la caja diaria
         const { data: prof } = await svc.from("profiles").select("full_name").eq("id", clientId).single();
         await svc.from("orders").insert({

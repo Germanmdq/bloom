@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { usePagarSaldoProveedor, useUpdateGastoFijo, useCreateGastoFijo, useDeleteGastoFijo, useCompras, useCreateProveedor, useUpdateProveedor } from "@/lib/hooks/use-compras-stock";
-import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconReceipt, IconPlus, IconX, IconEdit, IconTrash, IconDownload, IconShoppingCart } from "@tabler/icons-react";
+import { IconPackage, IconUsers, IconSearch, IconAlertTriangle, IconCoin, IconReceipt, IconPlus, IconX, IconEdit, IconTrash, IconDownload, IconShoppingCart, IconChevronDown } from "@tabler/icons-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Proveedor { id: string; nombre: string; cuit: string | null; saldo_cc: number; telefono: string | null; }
@@ -19,6 +19,8 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
     const [metodoPago, setMetodoPago] = useState<'Efectivo' | 'Transferencia'>('Efectivo');
     const [gastoModal, setGastoModal] = useState<Partial<Gasto> | null>(null);
     const [proveedorModal, setProveedorModal] = useState<Partial<Proveedor> | null>(null);
+    const [openInsumoGroups, setOpenInsumoGroups] = useState<Record<string, boolean>>({ "Bajo stock": true });
+    const [openProveedorGroups, setOpenProveedorGroups] = useState<Record<string, boolean>>({ deuda: true, alDia: false });
 
     const { data: compras = [] } = useCompras();
     const pagarSaldo = usePagarSaldoProveedor();
@@ -73,6 +75,45 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
     const filteredProveedores = useMemo(() => {
         return proveedores.filter(p => p.nombre.toLowerCase().includes(search.toLowerCase()));
     }, [proveedores, search]);
+
+    const groupedInsumos = useMemo(() => {
+        const groups: Record<string, Insumo[]> = {};
+        filtered.forEach((insumo: any) => {
+            const isLow = Number(insumo.stock_actual || 0) <= Number(insumo.stock_minimo || 0);
+            const groupName = isLow ? "Bajo stock" : (insumo.categoria || "General");
+            if (!groups[groupName]) groups[groupName] = [];
+            groups[groupName].push(insumo);
+        });
+        return Object.entries(groups)
+            .map(([name, items]) => ({
+                name,
+                items: [...items].sort((a: any, b: any) => String(a.nombre).localeCompare(String(b.nombre))),
+                low: name === "Bajo stock",
+            }))
+            .sort((a, b) => Number(b.low) - Number(a.low) || a.name.localeCompare(b.name));
+    }, [filtered]);
+
+    const proveedoresConDeuda = useMemo(
+        () => [...filteredProveedores]
+            .filter(p => Number(p.saldo_cc || 0) > 0)
+            .sort((a, b) => Number(b.saldo_cc || 0) - Number(a.saldo_cc || 0)),
+        [filteredProveedores]
+    );
+
+    const proveedoresAlDia = useMemo(
+        () => [...filteredProveedores]
+            .filter(p => Number(p.saldo_cc || 0) <= 0)
+            .sort((a, b) => a.nombre.localeCompare(b.nombre)),
+        [filteredProveedores]
+    );
+
+    const toggleInsumoGroup = (name: string) => {
+        setOpenInsumoGroups(prev => ({ ...prev, [name]: !(prev[name] ?? name === "Bajo stock") }));
+    };
+
+    const toggleProveedorGroup = (name: "deuda" | "alDia") => {
+        setOpenProveedorGroups(prev => ({ ...prev, [name]: !prev[name] }));
+    };
 
     const handlePago = async () => {
         if (!pagoModal || !montoPago) return;
@@ -243,33 +284,72 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                         ))}
                     </div>
 
-                    {/* Insumos Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filtered.map((insumo: any) => {
-                            const isLow = insumo.stock_actual <= insumo.stock_minimo;
+                    {/* Insumos por grupo */}
+                    <div className="space-y-4">
+                        {groupedInsumos.map(group => {
+                            const isOpen = openInsumoGroups[group.name] ?? group.low;
+                            const lowCount = group.items.filter((i: any) => Number(i.stock_actual || 0) <= Number(i.stock_minimo || 0)).length;
                             return (
-                                <div key={insumo.id} className={`p-6 rounded-2xl border ${isLow ? 'border-red-200 bg-red-50/30' : 'border-gray-100 bg-white'} hover:shadow-lg transition-all`}>
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div>
-                                            <h3 className="font-black text-gray-900 text-sm">{insumo.nombre}</h3>
-                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                                                {insumo.proveedores?.nombre || 'Sin proveedor'} · {insumo.categoria}
-                                            </p>
+                                <div key={group.name} className={`rounded-3xl border overflow-hidden ${group.low ? 'border-red-200 bg-red-50/40' : 'border-gray-100 bg-white'}`}>
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleInsumoGroup(group.name)}
+                                        className="w-full px-5 py-4 flex items-center justify-between gap-4 text-left hover:bg-black/[0.02] transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${group.low ? 'bg-red-100 text-red-600' : 'bg-gray-50 text-gray-400'}`}>
+                                                {group.low ? <IconAlertTriangle size={20} /> : <IconPackage size={20} />}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className="font-black text-gray-950 uppercase tracking-tight truncate">{group.name}</h3>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                    {group.items.length} insumo{group.items.length === 1 ? '' : 's'}
+                                                    {lowCount > 0 ? ` · ${lowCount} bajo mínimo` : ''}
+                                                </p>
+                                            </div>
                                         </div>
-                                        {isLow && <IconAlertTriangle size={16} className="text-red-500 animate-pulse" />}
-                                    </div>
-                                    <div className="flex items-baseline gap-1">
-                                        <span className={`text-3xl font-black ${isLow ? 'text-red-500' : 'text-gray-900'}`}>
-                                            {insumo.stock_actual}
-                                        </span>
-                                        <span className="text-xs font-bold text-gray-400 uppercase">{insumo.unidad}</span>
-                                    </div>
-                                    <div className="mt-3 flex justify-between text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                                        <span>Min: {insumo.stock_minimo}</span>
-                                        {insumo.precio_ultima_compra > 0 && (
-                                            <span>${insumo.precio_ultima_compra.toLocaleString('es-AR')}/{insumo.unidad}</span>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            {group.low && <span className="rounded-full bg-red-600 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white">Revisar</span>}
+                                            <IconChevronDown className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} size={20} />
+                                        </div>
+                                    </button>
+
+                                    <AnimatePresence initial={false}>
+                                        {isOpen && (
+                                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-4 pt-0">
+                                                    {group.items.map((insumo: any) => {
+                                                        const isLow = Number(insumo.stock_actual || 0) <= Number(insumo.stock_minimo || 0);
+                                                        return (
+                                                            <div key={insumo.id} className={`p-5 rounded-2xl border ${isLow ? 'border-red-200 bg-white' : 'border-gray-100 bg-gray-50/60'} hover:shadow-md transition-all`}>
+                                                                <div className="flex items-start justify-between mb-3">
+                                                                    <div className="min-w-0">
+                                                                        <h3 className="font-black text-gray-900 text-sm truncate">{insumo.nombre}</h3>
+                                                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">
+                                                                            {insumo.proveedores?.nombre || 'Sin proveedor'} · {insumo.categoria}
+                                                                        </p>
+                                                                    </div>
+                                                                    {isLow && <IconAlertTriangle size={16} className="text-red-500 animate-pulse shrink-0" />}
+                                                                </div>
+                                                                <div className="flex items-baseline gap-1">
+                                                                    <span className={`text-3xl font-black ${isLow ? 'text-red-500' : 'text-gray-900'}`}>
+                                                                        {insumo.stock_actual}
+                                                                    </span>
+                                                                    <span className="text-xs font-bold text-gray-400 uppercase">{insumo.unidad}</span>
+                                                                </div>
+                                                                <div className="mt-3 flex justify-between gap-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                                                                    <span>Min: {insumo.stock_minimo}</span>
+                                                                    {insumo.precio_ultima_compra > 0 && (
+                                                                        <span className="truncate">${insumo.precio_ultima_compra.toLocaleString('es-AR')}/{insumo.unidad}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </motion.div>
                                         )}
-                                    </div>
+                                    </AnimatePresence>
                                 </div>
                             );
                         })}
@@ -332,42 +412,85 @@ export function GestionPanel({ proveedores, insumos, gastos }: { proveedores: Pr
                         </button>
                     </div>
 
-                    {/* Proveedores List */}
+                    {/* Proveedores agrupados */}
                     <div className="space-y-4">
-                        {filteredProveedores.map(prov => (
-                            <div key={prov.id} className="p-6 rounded-2xl border border-gray-100 bg-white hover:shadow-lg transition-all flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-lg">
-                                        {prov.nombre.charAt(0)}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-black text-gray-900">{prov.nombre}</h3>
-                                        <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                            {prov.cuit && <span>CUIT: {prov.cuit}</span>}
-                                            {prov.telefono && <span>Tel: {prov.telefono}</span>}
-                                            <span>{insumos.filter((i: any) => i.proveedores?.id === prov.id).length} insumos</span>
+                        {([
+                            { key: 'deuda' as const, title: 'Con deuda', items: proveedoresConDeuda, tone: 'debt' },
+                            { key: 'alDia' as const, title: 'Al día', items: proveedoresAlDia, tone: 'ok' },
+                        ]).map(section => {
+                            const isOpen = openProveedorGroups[section.key];
+                            const sectionDebt = section.items.reduce((sum, prov) => sum + Number(prov.saldo_cc || 0), 0);
+                            return (
+                                <div key={section.key} className={`rounded-3xl border overflow-hidden ${section.tone === 'debt' ? 'border-red-200 bg-red-50/40' : 'border-gray-100 bg-white'}`}>
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleProveedorGroup(section.key)}
+                                        className="w-full px-5 py-4 flex items-center justify-between gap-4 text-left hover:bg-black/[0.02] transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${section.tone === 'debt' ? 'bg-red-100 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                                <IconUsers size={20} />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-black text-gray-950 uppercase tracking-tight">{section.title}</h3>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                    {section.items.length} proveedor{section.items.length === 1 ? '' : 'es'}
+                                                    {sectionDebt > 0 ? ` · $${sectionDebt.toLocaleString('es-AR')}` : ''}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div className="text-right flex flex-col items-end gap-2">
-                                    <div className="flex gap-2">
-                                        <button onClick={() => setProveedorModal(prov)} className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all">
-                                            <IconEdit size={16} />
-                                        </button>
-                                        {(prov.saldo_cc || 0) > 0 && (
-                                            <button onClick={() => setPagoModal(prov)} className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all" title="Pagar saldo">
-                                                <IconCoin size={16} />
-                                            </button>
+                                        <IconChevronDown className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} size={20} />
+                                    </button>
+
+                                    <AnimatePresence initial={false}>
+                                        {isOpen && (
+                                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                                <div className="space-y-3 p-4 pt-0">
+                                                    {section.items.length === 0 ? (
+                                                        <div className="rounded-2xl border border-dashed border-gray-200 bg-white/70 py-10 text-center text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                                            No hay proveedores en esta sección
+                                                        </div>
+                                                    ) : section.items.map(prov => (
+                                                        <div key={prov.id} className="p-5 rounded-2xl border border-gray-100 bg-white hover:shadow-md transition-all flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                                            <div className="flex items-center gap-4 min-w-0">
+                                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg shrink-0 ${(prov.saldo_cc || 0) > 0 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                                                    {prov.nombre.charAt(0)}
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <h3 className="font-black text-gray-900 truncate">{prov.nombre}</h3>
+                                                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                                        {prov.cuit && <span>CUIT: {prov.cuit}</span>}
+                                                                        {prov.telefono && <span>Tel: {prov.telefono}</span>}
+                                                                        <span>{insumos.filter((i: any) => i.proveedores?.id === prov.id).length} insumos</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center justify-between gap-3 md:flex-col md:items-end">
+                                                                <div className="flex gap-2">
+                                                                    <button onClick={() => setProveedorModal(prov)} className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all">
+                                                                        <IconEdit size={16} />
+                                                                    </button>
+                                                                    {(prov.saldo_cc || 0) > 0 && (
+                                                                        <button onClick={() => setPagoModal(prov)} className="h-9 px-3 rounded-xl bg-emerald-50 flex items-center gap-1.5 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest" title="Pagar saldo">
+                                                                            <IconCoin size={16} /> Pagar
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                {(prov.saldo_cc || 0) > 0 ? (
+                                                                    <p className="text-xl font-black text-red-600">-${(prov.saldo_cc || 0).toLocaleString('es-AR')}</p>
+                                                                ) : (
+                                                                    <p className="text-sm font-black text-emerald-500 uppercase tracking-widest">Al día</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
                                         )}
-                                    </div>
-                                    {(prov.saldo_cc || 0) > 0 ? (
-                                        <p className="text-xl font-black text-red-600">-${(prov.saldo_cc || 0).toLocaleString('es-AR')}</p>
-                                    ) : (
-                                        <p className="text-sm font-black text-emerald-500 uppercase tracking-widest">Al día</p>
-                                    )}
+                                    </AnimatePresence>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </>
             )}

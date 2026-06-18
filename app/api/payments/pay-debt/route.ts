@@ -62,6 +62,33 @@ export async function POST(req: Request) {
 
         if (historyError) throw historyError;
 
+        const { data: ccOrders, error: ccOrdersError } = await svc
+            .from("orders")
+            .select("id, total, paid")
+            .eq("customer_id", user.id)
+            .eq("payment_method", "CUENTA_CORRIENTE")
+            .order("created_at", { ascending: true });
+
+        if (ccOrdersError) throw ccOrdersError;
+
+        let remainingToApply = payAmount;
+        const paidOrderIds: string[] = [];
+        for (const order of ccOrders ?? []) {
+            if (order.paid === true) continue;
+            const orderTotal = Number(order.total || 0);
+            if (remainingToApply + 0.001 < orderTotal) break;
+            paidOrderIds.push(order.id);
+            remainingToApply -= orderTotal;
+        }
+
+        if (paidOrderIds.length > 0) {
+            const { error: paidOrdersError } = await svc
+                .from("orders")
+                .update({ paid: true, status: "paid" })
+                .in("id", paidOrderIds);
+            if (paidOrdersError) throw paidOrdersError;
+        }
+
         // 3. Return success and data for the ticket
         return NextResponse.json({
             success: true,

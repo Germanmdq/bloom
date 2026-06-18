@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { IconUsers, IconSearch, IconLoader2, IconStar, IconTrendingUp, IconCalendar, IconArrowsUpDown, IconX, IconPhone, IconMail, IconShoppingBag, IconCircleCheck, IconAlertCircle, IconHistory, IconReceipt, IconEdit, IconDeviceFloppy, IconUserPlus } from "@tabler/icons-react";
+import { IconUsers, IconSearch, IconLoader2, IconStar, IconTrendingUp, IconCalendar, IconArrowsUpDown, IconX, IconPhone, IconMail, IconShoppingBag, IconCircleCheck, IconAlertCircle, IconHistory, IconReceipt, IconEdit, IconDeviceFloppy, IconUserPlus, IconChevronDown } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEscape } from "@/lib/hooks/useEscape";
@@ -9,6 +9,8 @@ export default function ClientesPage() {
     const supabase = createClient();
     const [clients, setClients] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [clientsError, setClientsError] = useState<string | null>(null);
+    const [openClientGroups, setOpenClientGroups] = useState({ deuda: true, sinDeuda: false });
     const [search, setSearch] = useState("");
     const [sortBy, setSortBy] = useState<"spent" | "points" | "orders" | "name">("spent");
     const [selectedClient, setSelectedClient] = useState<any | null>(null);
@@ -19,6 +21,7 @@ export default function ClientesPage() {
     const [resetMsg, setResetMsg] = useState<string | null>(null);
     const [migratingPwds, setMigratingPwds] = useState(false);
     const [migrateResult, setMigrateResult] = useState<string | null>(null);
+    const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
     const [showNewModal, setShowNewModal] = useState(false);
     const [newName, setNewName] = useState("");
@@ -78,6 +81,7 @@ export default function ClientesPage() {
             setEditName(selectedClient.full_name || "");
             setEditPhone(selectedClient.phone || "");
             setEditBirthdate(selectedClient.birthdate || "");
+            setExpandedOrderId(null);
         }
     }, [selectedClient]);
 
@@ -136,12 +140,20 @@ export default function ClientesPage() {
 
     async function fetchClients() {
         setLoading(true);
+        setClientsError(null);
         try {
-            const res = await fetch("/api/clientes");
+            const res = await fetch("/api/clientes", { cache: "no-store" });
             const data = await res.json();
-            setClients(Array.isArray(data) ? data : []);
+            if (!res.ok) {
+                throw new Error(data?.message || data?.error || "No se pudieron cargar los clientes.");
+            }
+            if (!Array.isArray(data)) {
+                throw new Error("La respuesta de clientes no tiene el formato esperado.");
+            }
+            setClients(data);
         } catch (e) {
             console.error(e);
+            setClientsError(e instanceof Error ? e.message : "Error de conexión al cargar clientes.");
         } finally {
             setLoading(false);
         }
@@ -180,6 +192,9 @@ export default function ClientesPage() {
 
     const sortClients = (list: any[]) => {
         return [...list].sort((a, b) => {
+            const debtA = Number(a.balance || 0) > 0;
+            const debtB = Number(b.balance || 0) > 0;
+            if (debtA !== debtB) return debtA ? -1 : 1;
             if (sortBy === "spent") return b.total_spent - a.total_spent;
             if (sortBy === "points") return b.points - a.points;
             if (sortBy === "orders") return b.order_count - a.order_count;
@@ -191,12 +206,52 @@ export default function ClientesPage() {
         (c.full_name + (c.email || "") + (c.phone || "")).toLowerCase().includes(search.toLowerCase())
     ));
 
+    const clientGroups = [
+        {
+            key: "deuda" as const,
+            title: "Con deuda",
+            clients: filtered.filter(c => Number(c.balance || 0) > 0),
+            total: filtered.filter(c => Number(c.balance || 0) > 0).reduce((sum, c) => sum + Number(c.balance || 0), 0),
+        },
+        {
+            key: "sinDeuda" as const,
+            title: "Sin deuda",
+            clients: filtered.filter(c => Number(c.balance || 0) <= 0),
+            total: 0,
+        },
+    ];
+
     const getInactivityInfo = (lastOrder: string | null) => {
         if (!lastOrder) return { label: "Sin pedidos", color: "text-gray-400 bg-gray-100" };
         const days = Math.floor((Date.now() - new Date(lastOrder).getTime()) / (1000 * 60 * 60 * 24));
         if (days > 30) return { label: `Inactivo (${days}d)`, color: "text-red-600 bg-red-50" };
         if (days > 7) return { label: `Regular (${days}d)`, color: "text-amber-600 bg-amber-50" };
         return { label: "Activo", color: "text-green-600 bg-green-50" };
+    };
+
+    const normalizeOrderItems = (items: any) => {
+        if (Array.isArray(items)) return items;
+        if (typeof items === "string") {
+            try {
+                const parsed = JSON.parse(items);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+        return [];
+    };
+
+    const getOrderPreview = (order: any) => {
+        const items = normalizeOrderItems(order.items);
+        if (items.length === 0) return "Sin detalle cargado";
+        return items
+            .slice(0, 2)
+            .map((item: any) => {
+                const qty = Number(item.quantity || 1);
+                return `${qty}x ${item.name || "Producto"}`;
+            })
+            .join(" · ") + (items.length > 2 ? ` +${items.length - 2}` : "");
     };
 
     return (
@@ -262,6 +317,20 @@ export default function ClientesPage() {
                     <IconLoader2 className="animate-spin text-gray-200" size={64} />
                     <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Accediendo a la base de datos...</p>
                 </div>
+            ) : clientsError ? (
+                <div className="flex flex-col items-center justify-center py-40 text-center gap-4">
+                    <div className="w-20 h-20 bg-red-50 rounded-[2rem] flex items-center justify-center text-red-300 mb-2">
+                        <IconAlertCircle size={40} />
+                    </div>
+                    <p className="text-red-500 font-black uppercase tracking-[0.2em] text-[10px]">No se pudieron cargar los clientes</p>
+                    <p className="text-gray-400 font-bold text-sm max-w-md">{clientsError}</p>
+                    <button
+                        onClick={fetchClients}
+                        className="bg-black text-white px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm hover:opacity-80 transition-all"
+                    >
+                        Reintentar
+                    </button>
+                </div>
             ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-40 text-center gap-3">
                     <div className="w-20 h-20 bg-gray-50 rounded-[2rem] flex items-center justify-center text-gray-200 mb-2">
@@ -270,59 +339,94 @@ export default function ClientesPage() {
                     <p className="text-gray-400 font-bold uppercase tracking-[0.2em] text-[10px]">No se encontraron coincidencias</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filtered.map((client, idx) => {
-                        const inactivity = getInactivityInfo(client.last_order_at);
-                        const isDebt = client.balance > 0;
-                        
+                <div className="space-y-5">
+                    {clientGroups.map(group => {
+                        const isOpen = openClientGroups[group.key];
                         return (
-                            <motion.div 
-                                initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
-                                key={client.id || `client-${idx}`} 
-                                onClick={() => setSelectedClient(client)}
-                                className="group bg-white p-7 rounded-[2.5rem] border border-transparent hover:border-gray-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer relative overflow-hidden"
-                            >
-                                <div className="flex items-start justify-between mb-8">
-                                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center font-black text-gray-300 text-3xl group-hover:bg-black group-hover:text-[#FFD60A] transition-all">
-                                        {client.full_name?.[0]?.toUpperCase() || "?"}
+                            <div key={group.key} className={`rounded-[2rem] border overflow-hidden ${group.key === "deuda" ? "border-red-100 bg-red-50/30" : "border-gray-100 bg-white/60"}`}>
+                                <button
+                                    type="button"
+                                    onClick={() => setOpenClientGroups(prev => ({ ...prev, [group.key]: !prev[group.key] }))}
+                                    className="w-full px-6 py-5 flex items-center justify-between gap-4 text-left hover:bg-white/70 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${group.key === "deuda" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-400"}`}>
+                                            {group.key === "deuda" ? <IconAlertCircle size={21} /> : <IconUsers size={21} />}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black text-gray-950 uppercase tracking-tight">{group.title}</h3>
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                {group.clients.length} cliente{group.clients.length === 1 ? "" : "s"}
+                                                {group.total > 0 ? ` · $${group.total.toLocaleString()}` : ""}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-1.5">
-                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${inactivity.color}`}>
-                                            {inactivity.label}
-                                        </span>
-                                        {isDebt && (
-                                            <span className="bg-red-600 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">
-                                                Deuda
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
+                                    <IconChevronDown className={`text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} size={22} />
+                                </button>
 
-                                <h3 className="font-black text-xl text-gray-900 truncate mb-1">{client.full_name || "S/N"}</h3>
-                                <div className="flex flex-col gap-1.5 mb-8">
-                                    <p className="text-[11px] font-bold text-gray-400 flex items-center gap-2 tracking-tight truncate">
-                                        <IconMail size={12} className="opacity-40" /> {client.email || 'Email no cargado'}
-                                    </p>
-                                    {client.phone && (
-                                        <p className="text-[11px] font-bold text-gray-400 flex items-center gap-2 tracking-tight">
-                                            <IconPhone size={12} className="opacity-40" /> {client.phone}
-                                        </p>
+                                <AnimatePresence initial={false}>
+                                    {isOpen && (
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 p-5 pt-0">
+                                                {group.clients.map((client, idx) => {
+                                                    const inactivity = getInactivityInfo(client.last_order_at);
+                                                    const isDebt = client.balance > 0;
+
+                                                    return (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.02 }}
+                                                            key={client.id || `client-${idx}`}
+                                                            onClick={() => setSelectedClient(client)}
+                                                            className={`group bg-white p-7 rounded-[2.5rem] border ${isDebt ? "border-red-100 shadow-red-900/5" : "border-transparent"} hover:border-gray-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer relative overflow-hidden`}
+                                                        >
+                                                            <div className="flex items-start justify-between mb-8">
+                                                                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center font-black text-gray-300 text-3xl group-hover:bg-black group-hover:text-[#FFD60A] transition-all">
+                                                                    {client.full_name?.[0]?.toUpperCase() || "?"}
+                                                                </div>
+                                                                <div className="flex flex-col items-end gap-1.5">
+                                                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${inactivity.color}`}>
+                                                                        {inactivity.label}
+                                                                    </span>
+                                                                    {isDebt && (
+                                                                        <span className="bg-red-600 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">
+                                                                            Deuda
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            <h3 className="font-black text-xl text-gray-900 truncate mb-1">{client.full_name || "S/N"}</h3>
+                                                            <div className="flex flex-col gap-1.5 mb-8">
+                                                                <p className="text-[11px] font-bold text-gray-400 flex items-center gap-2 tracking-tight truncate">
+                                                                    <IconMail size={12} className="opacity-40" /> {client.email || 'Email no cargado'}
+                                                                </p>
+                                                                {client.phone && (
+                                                                    <p className="text-[11px] font-bold text-gray-400 flex items-center gap-2 tracking-tight">
+                                                                        <IconPhone size={12} className="opacity-40" /> {client.phone}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-100">
+                                                                <div>
+                                                                    <p className="text-[8px] font-black uppercase tracking-widest text-gray-400 mb-1">Gasto Total</p>
+                                                                    <p className="text-sm font-black text-gray-900 leading-none">${client.total_spent.toLocaleString()}</p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className={`text-[8px] font-black uppercase tracking-widest ${isDebt ? 'text-red-400' : 'text-gray-400'} mb-1`}>Saldo Cuenta</p>
+                                                                    <p className={`text-sm font-black ${isDebt ? 'text-red-600' : 'text-gray-900'} leading-none`}>
+                                                                        {isDebt ? `-$${client.balance.toLocaleString()}` : `$${client.balance.toLocaleString()}`}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </motion.div>
                                     )}
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-100">
-                                    <div>
-                                        <p className="text-[8px] font-black uppercase tracking-widest text-gray-400 mb-1">Gasto Total</p>
-                                        <p className="text-sm font-black text-gray-900 leading-none">${client.total_spent.toLocaleString()}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className={`text-[8px] font-black uppercase tracking-widest ${isDebt ? 'text-red-400' : 'text-gray-400'} mb-1`}>Saldo Cuenta</p>
-                                        <p className={`text-sm font-black ${isDebt ? 'text-red-600' : 'text-gray-900'} leading-none`}>
-                                            {isDebt ? `-$${client.balance.toLocaleString()}` : `$${client.balance.toLocaleString()}`}
-                                        </p>
-                                    </div>
-                                </div>
-                            </motion.div>
+                                </AnimatePresence>
+                            </div>
                         );
                     })}
                 </div>
@@ -498,25 +602,92 @@ export default function ClientesPage() {
                                     </div>
                                     <div className="space-y-3">
                                         {selectedClient.last_orders && selectedClient.last_orders.length > 0 ? (
-                                            selectedClient.last_orders.map((order: any, oIdx: number) => (
-                                                <div key={order.id || `order-${oIdx}`} className="bg-white p-5 rounded-[2rem] border border-gray-100 flex items-center justify-between hover:shadow-lg transition-all group">
-                                                    <div className="flex items-center gap-5">
-                                                        <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-black group-hover:text-white transition-all">
-                                                            <IconReceipt size={20} />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-black text-gray-900 text-sm">Pedido #{order.id?.slice(0, 8) || 'N/A'}</p>
-                                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                                                {new Date(order.created_at).toLocaleDateString()} • {new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                                            </p>
-                                                        </div>
+                                            selectedClient.last_orders.map((order: any, oIdx: number) => {
+                                                const orderItems = normalizeOrderItems(order.items);
+                                                const orderKey = order.id || `order-${oIdx}`;
+                                                const isExpanded = expandedOrderId === orderKey;
+
+                                                return (
+                                                    <div key={orderKey} className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden hover:shadow-lg transition-all group">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setExpandedOrderId(isExpanded ? null : orderKey)}
+                                                            className="w-full p-5 flex items-center justify-between gap-4 text-left"
+                                                        >
+                                                            <div className="flex items-center gap-5 min-w-0">
+                                                                <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-black group-hover:text-white transition-all shrink-0">
+                                                                    <IconReceipt size={20} />
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="font-black text-gray-900 text-sm">Pedido #{order.id?.slice(0, 8) || 'N/A'}</p>
+                                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                                        {new Date(order.created_at).toLocaleDateString()} • {new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                                    </p>
+                                                                    <p className="mt-1 text-[10px] font-black text-gray-500 uppercase tracking-tight truncate">
+                                                                        {getOrderPreview(order)}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right shrink-0">
+                                                                <p className="font-black text-gray-900 text-base">${Number(order.total).toLocaleString()}</p>
+                                                                <p className="text-[9px] font-black text-accent uppercase tracking-tighter">
+                                                                    {isExpanded ? "Ocultar detalle" : "Ver comanda"}
+                                                                </p>
+                                                            </div>
+                                                        </button>
+
+                                                        <AnimatePresence initial={false}>
+                                                            {isExpanded && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    className="overflow-hidden"
+                                                                >
+                                                                    <div className="mx-5 mb-5 rounded-3xl bg-gray-50 border border-gray-100 p-4 space-y-3">
+                                                                        {orderItems.length > 0 ? (
+                                                                            orderItems.map((item: any, itemIdx: number) => {
+                                                                                const qty = Number(item.quantity || 1);
+                                                                                const price = Number(item.price || 0);
+                                                                                const subtotal = price * qty;
+                                                                                return (
+                                                                                    <div key={`${orderKey}-item-${itemIdx}`} className="flex items-start justify-between gap-3 border-b border-gray-200/70 last:border-0 pb-3 last:pb-0">
+                                                                                        <div className="min-w-0">
+                                                                                            <p className="text-sm font-black text-gray-900">
+                                                                                                {qty}x {item.name || "Producto"}
+                                                                                            </p>
+                                                                                            {item.notes && (
+                                                                                                <p className="mt-1 text-[10px] font-bold text-gray-500 leading-snug">
+                                                                                                    Nota: {item.notes}
+                                                                                                </p>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        <div className="text-right shrink-0">
+                                                                                            <p className="text-xs font-black text-gray-900">${subtotal.toLocaleString()}</p>
+                                                                                            <p className="text-[9px] font-bold text-gray-400">${price.toLocaleString()} c/u</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            })
+                                                                        ) : (
+                                                                            <p className="text-center text-[10px] font-black uppercase tracking-widest text-gray-400 py-3">
+                                                                                Esta orden no tiene comanda guardada
+                                                                            </p>
+                                                                        )}
+
+                                                                        {order.notes && (
+                                                                            <div className="pt-3 border-t border-gray-200/70">
+                                                                                <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Nota del pedido</p>
+                                                                                <p className="text-xs font-bold text-gray-700">{order.notes}</p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="font-black text-gray-900 text-base">${Number(order.total).toLocaleString()}</p>
-                                                        <p className="text-[9px] font-black text-accent uppercase tracking-tighter">Consumo General</p>
-                                                    </div>
-                                                </div>
-                                            ))
+                                                );
+                                            })
                                         ) : (
                                             <div className="py-12 border-2 border-dashed border-gray-100 rounded-[3rem] flex flex-col items-center justify-center text-center opacity-30">
                                                 <IconShoppingBag size={32} className="mb-2" />
