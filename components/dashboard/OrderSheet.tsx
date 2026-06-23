@@ -339,6 +339,58 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     const isWebTable = tableId === WEB_ORDER_TABLE_RETIRO || tableId === WEB_ORDER_TABLE_DELIVERY;
 
+    const releaseCurrentTable = useCallback(async (customerIdForLookup?: string | null) => {
+        const nowIso = new Date().toISOString();
+        const idsToRelease = new Set<number>([Number(tableId)]);
+
+        if (tableId === WEB_ORDER_TABLE_DELIVERY || orderType === "DELIVERY") idsToRelease.add(WEB_ORDER_TABLE_DELIVERY);
+        if (tableId === WEB_ORDER_TABLE_RETIRO || orderType === "TAKEAWAY") idsToRelease.add(WEB_ORDER_TABLE_RETIRO);
+
+        const cleanCurrentName = customerName.trim().replace(/^Cliente:\s*/i, "").toLowerCase();
+
+        const { data: occupiedRows, error: occupiedErr } = await supabase
+            .from("salon_tables")
+            .select("id, items")
+            .eq("status", "OCCUPIED");
+
+        if (occupiedErr) {
+            console.warn("⚠️ [releaseCurrentTable] No se pudieron revisar mesas ocupadas:", occupiedErr.message);
+        } else {
+            (occupiedRows || []).forEach((row: any) => {
+                const items = Array.isArray(row.items) ? row.items : [];
+                const meta = items.find((item: any) => item?.id === "meta-customer");
+                const metaCustomerId = meta?.customer_id ? String(meta.customer_id) : null;
+                const metaName = String(meta?.name || "").replace(/^Cliente:\s*/i, "").trim().toLowerCase();
+                const sameCustomer = customerIdForLookup && metaCustomerId === customerIdForLookup;
+                const sameNamedOpenTicket = !customerIdForLookup && cleanCurrentName && metaName === cleanCurrentName;
+                if (sameCustomer || sameNamedOpenTicket) idsToRelease.add(Number(row.id));
+            });
+        }
+
+        const targetIds = [...idsToRelease].filter(Number.isFinite);
+        if (targetIds.length === 0) return [];
+
+        const { data: releasedTables, error: releaseErr } = await supabase
+            .from("salon_tables")
+            .update({
+                status: "FREE",
+                total: 0,
+                items: [],
+                updated_at: nowIso
+            })
+            .in("id", targetIds)
+            .select("id");
+
+        if (releaseErr) throw releaseErr;
+
+        await supabase
+            .from("kitchen_tickets")
+            .delete()
+            .in("table_id", targetIds);
+
+        return releasedTables || [];
+    }, [customerName, orderType, supabase, tableId]);
+
     useEffect(() => {
         if (initialShowPayment && cart.length > 0) {
             setShowPaymentModal(true);
@@ -669,12 +721,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             await supabase.from('orders').update({ status: 'cancelled' }).eq('id', idToCancel);
         }
 
+        await releaseCurrentTable(selectedCustomerId);
         clearCart();
-        // Also clear salon_tables entry if it exists for this virtual table
-        await supabase.from('salon_tables').update({ status: 'FREE', total: 0, items: [] }).eq('id', tableId);
-        
-        // IMPORTANT: Clear kitchen tickets so the next time the table opens it is empty
-        await supabase.from('kitchen_tickets').delete().eq('table_id', tableId);
         
         if (onOrderComplete) onOrderComplete();
         onClose();
@@ -829,7 +877,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     if (updErr) console.error("❌ [FinishOrder] Error actualizando pedido web:", updErr.message);
                 }
 
-                await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
+                const releasedTables = await releaseCurrentTable(customerIdForDb);
+                if (releasedTables.length === 0) {
+                    console.warn(`⚠️ [FinishOrder] No se encontró salon_tables id=${tableId} ni espejos de cliente para liberar.`);
+                }
             }
 
             // ── INVENTARIO: descuenta stock al cobrar (única vez) ──
@@ -875,10 +926,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             const savedCart = [...cart];
             const savedTotal = finalTotal;
             setFeedback({ message: "¡Venta registrada!", type: "success" });
+            clearCart();
 
             setTimeout(() => {
                 setFeedback(null);
-                clearCart();
                 finishingRef.current = false;
                 setIsFinishing(false);
                 if (ctx?.printFactura) {
