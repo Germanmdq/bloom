@@ -22,6 +22,7 @@ export default function ClientesPage() {
     const [migratingPwds, setMigratingPwds] = useState(false);
     const [migrateResult, setMigrateResult] = useState<string | null>(null);
     const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+    const [isOrdersHistoryOpen, setIsOrdersHistoryOpen] = useState(false);
 
     const [showNewModal, setShowNewModal] = useState(false);
     const [newName, setNewName] = useState("");
@@ -82,8 +83,32 @@ export default function ClientesPage() {
             setEditPhone(selectedClient.phone || "");
             setEditBirthdate(selectedClient.birthdate || "");
             setExpandedOrderId(null);
+            setIsOrdersHistoryOpen(false);
         }
     }, [selectedClient]);
+
+    useEffect(() => {
+        if (!selectedClient?.id) return;
+        let cancelled = false;
+
+        async function fetchSelectedClientDetail() {
+            try {
+                const res = await fetch(`/api/clientes?clientId=${encodeURIComponent(selectedClient.id)}&t=${Date.now()}`, {
+                    cache: "no-store",
+                });
+                const data = await res.json();
+                if (!cancelled && res.ok && data?.id === selectedClient.id) {
+                    setSelectedClient(data);
+                    setClients(prev => prev.map(c => c.id === data.id ? data : c));
+                }
+            } catch (err) {
+                console.error("Error cargando historial completo del cliente:", err);
+            }
+        }
+
+        fetchSelectedClientDetail();
+        return () => { cancelled = true; };
+    }, [selectedClient?.id]);
 
     async function handleSaveEdit() {
         if (!selectedClient) return;
@@ -151,9 +176,11 @@ export default function ClientesPage() {
                 throw new Error("La respuesta de clientes no tiene el formato esperado.");
             }
             setClients(data);
+            return data;
         } catch (e) {
             console.error(e);
             setClientsError(e instanceof Error ? e.message : "Error de conexión al cargar clientes.");
+            return [];
         } finally {
             setLoading(false);
         }
@@ -184,6 +211,41 @@ export default function ClientesPage() {
                 alert("Error: " + errData.error);
             }
         } catch (err) {
+            alert("Error al procesar el pago");
+        } finally {
+            setIsPaying(false);
+        }
+    }
+
+    async function handlePayOrder(order: any) {
+        if (!selectedClient) return;
+        const amount = Number(order.total || 0);
+        if (!amount || amount <= 0) return;
+        if (!confirm(`¿Confirmas el pago de esta comanda por $${amount.toLocaleString()}?`)) return;
+
+        setIsPaying(true);
+        try {
+            const res = await fetch("/api/clientes/pay", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    clientId: selectedClient.id,
+                    orderId: order.id,
+                    amount,
+                    method: paymentMethod,
+                })
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                alert("Error: " + (errData.error || "No se pudo registrar el pago"));
+                return;
+            }
+
+            const updatedClients = await fetchClients();
+            const updatedSelected = updatedClients.find((c: any) => c.id === selectedClient.id);
+            if (updatedSelected) setSelectedClient(updatedSelected);
+        } catch {
             alert("Error al procesar el pago");
         } finally {
             setIsPaying(false);
@@ -594,32 +656,72 @@ export default function ClientesPage() {
 
                                 {/* CONSUMPTION HISTORY - NEW SECTION */}
                                 <div className="space-y-6">
-                                    <div className="flex items-center justify-between">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsOrdersHistoryOpen(prev => !prev)}
+                                        className="w-full flex items-center justify-between rounded-3xl border border-gray-100 bg-white px-5 py-4 text-left shadow-sm hover:border-gray-200 transition-all"
+                                    >
                                         <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-gray-400 flex items-center gap-2">
                                             <IconHistory size={16} /> ÚLTIMOS CONSUMOS
                                         </h4>
-                                        <span className="text-[10px] font-bold text-gray-400 italic">Últimas 5 órdenes</span>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {selectedClient.last_orders && selectedClient.last_orders.length > 0 ? (
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[10px] font-bold text-gray-400 italic">
+                                                {selectedClient.last_orders?.length || 0} órdenes
+                                            </span>
+                                            <IconChevronDown
+                                                size={16}
+                                                className={`text-gray-400 transition-transform ${isOrdersHistoryOpen ? "rotate-180" : ""}`}
+                                            />
+                                        </div>
+                                    </button>
+                                    <AnimatePresence initial={false}>
+                                        {isOrdersHistoryOpen && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="space-y-3">
+                                                    {selectedClient.last_orders && selectedClient.last_orders.length > 0 ? (
                                             selectedClient.last_orders.map((order: any, oIdx: number) => {
                                                 const orderItems = normalizeOrderItems(order.items);
                                                 const orderKey = order.id || `order-${oIdx}`;
                                                 const isExpanded = expandedOrderId === orderKey;
+                                                const isDebtOrder = order.payment_method === "CUENTA_CORRIENTE" && order.paid !== true;
+                                                const statusLabel = isDebtOrder ? "Adeudada" : "Pagada";
+                                                const statusClasses = isDebtOrder
+                                                    ? "border-red-200 bg-red-50/80 hover:shadow-red-100"
+                                                    : "border-emerald-100 bg-emerald-50/70 hover:shadow-emerald-100";
+                                                const iconClasses = isDebtOrder
+                                                    ? "bg-red-100 text-red-500 group-hover:bg-red-600 group-hover:text-white"
+                                                    : "bg-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white";
 
                                                 return (
-                                                    <div key={orderKey} className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden hover:shadow-lg transition-all group">
-                                                        <button
-                                                            type="button"
+                                                    <div key={orderKey} className={`rounded-[2rem] border overflow-hidden hover:shadow-lg transition-all group ${statusClasses}`}>
+                                                        <div
+                                                            role="button"
+                                                            tabIndex={0}
                                                             onClick={() => setExpandedOrderId(isExpanded ? null : orderKey)}
-                                                            className="w-full p-5 flex items-center justify-between gap-4 text-left"
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === "Enter" || e.key === " ") {
+                                                                    e.preventDefault();
+                                                                    setExpandedOrderId(isExpanded ? null : orderKey);
+                                                                }
+                                                            }}
+                                                            className="w-full p-5 flex items-center justify-between gap-4 text-left cursor-pointer"
                                                         >
                                                             <div className="flex items-center gap-5 min-w-0">
-                                                                <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-black group-hover:text-white transition-all shrink-0">
+                                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all shrink-0 ${iconClasses}`}>
                                                                     <IconReceipt size={20} />
                                                                 </div>
                                                                 <div className="min-w-0">
-                                                                    <p className="font-black text-gray-900 text-sm">Pedido #{order.id?.slice(0, 8) || 'N/A'}</p>
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        <p className="font-black text-gray-900 text-sm">Pedido #{order.id?.slice(0, 8) || 'N/A'}</p>
+                                                                        <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${isDebtOrder ? "bg-red-600 text-white" : "bg-emerald-600 text-white"}`}>
+                                                                            {statusLabel}
+                                                                        </span>
+                                                                    </div>
                                                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                                                                         {new Date(order.created_at).toLocaleDateString()} • {new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                                                     </p>
@@ -629,12 +731,25 @@ export default function ClientesPage() {
                                                                 </div>
                                                             </div>
                                                             <div className="text-right shrink-0">
-                                                                <p className="font-black text-gray-900 text-base">${Number(order.total).toLocaleString()}</p>
+                                                                <p className={`font-black text-base ${isDebtOrder ? "text-red-700" : "text-emerald-700"}`}>${Number(order.total).toLocaleString()}</p>
                                                                 <p className="text-[9px] font-black text-accent uppercase tracking-tighter">
                                                                     {isExpanded ? "Ocultar detalle" : "Ver comanda"}
                                                                 </p>
+                                                                {isDebtOrder && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handlePayOrder(order);
+                                                                        }}
+                                                                        disabled={isPaying}
+                                                                        className="mt-2 px-4 py-2 rounded-xl bg-red-600 text-white text-[9px] font-black uppercase tracking-widest hover:bg-black disabled:opacity-50 transition-all"
+                                                                    >
+                                                                        Pagar
+                                                                    </button>
+                                                                )}
                                                             </div>
-                                                        </button>
+                                                        </div>
 
                                                         <AnimatePresence initial={false}>
                                                             {isExpanded && (
@@ -688,13 +803,16 @@ export default function ClientesPage() {
                                                     </div>
                                                 );
                                             })
-                                        ) : (
-                                            <div className="py-12 border-2 border-dashed border-gray-100 rounded-[3rem] flex flex-col items-center justify-center text-center opacity-30">
-                                                <IconShoppingBag size={32} className="mb-2" />
-                                                <p className="text-[10px] font-black uppercase tracking-widest">No hay historial de compras</p>
-                                            </div>
+                                                    ) : (
+                                                        <div className="py-12 border-2 border-dashed border-gray-100 rounded-[3rem] flex flex-col items-center justify-center text-center opacity-30">
+                                                            <IconShoppingBag size={32} className="mb-2" />
+                                                            <p className="text-[10px] font-black uppercase tracking-widest">No hay historial de compras</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </motion.div>
                                         )}
-                                    </div>
+                                    </AnimatePresence>
                                 </div>
 
                                 {/* CONTACT FOOTER */}
