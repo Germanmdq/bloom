@@ -22,6 +22,37 @@ type WebOrder = {
     table_id?: number;
 };
 
+const normalizeSearchText = (value: unknown) =>
+    String(value || "")
+        .replace(/^Cliente:\s*/i, "")
+        .trim()
+        .toLowerCase();
+
+const getTableMetaCustomer = (table: Table) => {
+    const items = Array.isArray((table as any).items) ? (table as any).items : [];
+    return items.find((item: any) => item?.id === "meta-customer") || null;
+};
+
+const tableLooksAlreadyClosed = (table: Table, orders: any[]) => {
+    const tableUpdatedAt = new Date((table as any).updated_at || (table as any).created_at || 0).getTime();
+    const meta = getTableMetaCustomer(table);
+    const tableCustomerId = meta?.customer_id ? String(meta.customer_id) : null;
+    const tableCustomerName = normalizeSearchText(meta?.name);
+    const tableTotal = Number((table as any).total || 0);
+
+    return orders.some((order: any) => {
+        const orderCreatedAt = new Date(order.created_at || 0).getTime();
+        if (!orderCreatedAt || orderCreatedAt + 120000 < tableUpdatedAt) return false;
+
+        const sameTable = Number(order.table_id) === Number((table as any).id);
+        const sameCustomer = tableCustomerId && String(order.customer_id || "") === tableCustomerId;
+        const sameName = tableCustomerName && normalizeSearchText(order.customer_name) === tableCustomerName;
+        const sameAmount = Math.abs(Number(order.total || 0) - tableTotal) < 1;
+
+        return sameTable || ((sameCustomer || sameName) && sameAmount);
+    });
+};
+
 export default function TablesPage() {
     const [tables, setTables] = useState<Table[]>([]);
     const [tableSearch, setTableSearch] = useState("");
@@ -294,16 +325,29 @@ export default function TablesPage() {
         setLoading(true);
         setError(null);
         try {
-            const { data, error } = await supabase
-                .from('salon_tables')
-                .select('*')
-                .eq('status', 'OCCUPIED')
-                .order('id', { ascending: true });
+            const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            const [{ data, error }, { data: recentOrders, error: ordersError }] = await Promise.all([
+                supabase
+                    .from('salon_tables')
+                    .select('*')
+                    .eq('status', 'OCCUPIED')
+                    .order('id', { ascending: true }),
+                supabase
+                    .from('orders')
+                    .select('id, table_id, customer_id, customer_name, total, created_at, payment_method, paid, status')
+                    .gte('created_at', since)
+                    .order('created_at', { ascending: false })
+                    .limit(300)
+            ]);
 
             if (error) {
                 setError(error.message);
             } else if (data) {
-                setTables(data as Table[]);
+                if (ordersError) {
+                    console.warn('[TablesPage] No se pudieron cruzar órdenes recientes:', ordersError.message);
+                }
+                const visibleTables = (data as Table[]).filter(table => !tableLooksAlreadyClosed(table, recentOrders || []));
+                setTables(visibleTables);
             }
         } catch (err: any) {
             setError(err.message || 'Error inesperado');
