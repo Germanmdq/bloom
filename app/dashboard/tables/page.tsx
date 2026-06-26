@@ -44,7 +44,7 @@ const tableLooksAlreadyClosed = (table: Table, orders: any[]) => {
         const orderCreatedAt = new Date(order.created_at || 0).getTime();
         if (!orderCreatedAt || orderCreatedAt + 120000 < tableUpdatedAt) return false;
 
-        const sameTable = Number(order.table_id) === Number((table as any).id);
+        const sameTable = Number(order.table_id) === Number((table as any).id) && Number(order.total || 0) > 0;
         const sameCustomer = tableCustomerId && String(order.customer_id || "") === tableCustomerId;
         const sameName = tableCustomerName && normalizeSearchText(order.customer_name) === tableCustomerName;
         const sameAmount = Math.abs(Number(order.total || 0) - tableTotal) < 1;
@@ -298,7 +298,7 @@ export default function TablesPage() {
 
             const { data, error } = await supabase
                 .from('orders')
-                .select('id, status, total, items, created_at, customer_name, customer_phone, customer_id, order_type, delivery_type, delivery_info, paid, payment_method')
+                .select('id, table_id, status, total, items, created_at, customer_name, customer_phone, customer_id, order_type, delivery_type, delivery_info, paid, payment_method')
                 .eq('status', 'pending')
                 .order('created_at', { ascending: true })
                 .limit(50);

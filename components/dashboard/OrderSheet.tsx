@@ -645,9 +645,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
 
     const persistTableState = async () => {
         if (finishingRef.current) return;
-        if (cart.length === 0) return;
+        const liveCart = useOrderStore.getState().cart; // store fresco, no closure viejo
+        if (liveCart.length === 0) return;
         const currentTotal = useOrderStore.getState().getTotal();
-        const currentCart = [...useOrderStore.getState().cart];
+        const currentCart = [...liveCart];
         
         // Agregar metadata del cliente como un item virtual para persistencia
         if (customerName || customerAddress || customerPhone) {
@@ -849,10 +850,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             setIsFinishing(true);
 
             // 2. Liberar la mesa en DB de forma explícita y sincrónica
-            await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
+            const { error: ccFreeErr } = await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
+            if (ccFreeErr) console.error("❌ [CC] salon_tables FREE failed:", ccFreeErr.message);
 
-            // 3. Cerrar el panel inmediatamente
-            finishingRef.current = false;
+            // 3. Cerrar el panel — finishingRef.current queda true hasta que React desmonte el componente
             setIsFinishing(false);
             if (onOrderComplete) onOrderComplete();
             onClose();
@@ -860,13 +861,21 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             // 4. Registrar orden y balance en background (no bloquea el cierre)
             void (async () => {
                 try {
-                    // Resolver customer_id por nombre si no vino del estado (lo hacemos acá, fuera del camino crítico)
                     let customerIdForDb = capturedCustId;
+                    let ccResolveIssue: 'not_found' | 'multiple' | null = null;
+
+                    // Capa 1: resolver customer_id por nombre si no vino del estado
                     if (!customerIdForDb && capturedCustName) {
                         const { data: found } = await supabase
                             .from('profiles').select('id')
-                            .ilike('full_name', capturedCustName.trim()).limit(2);
-                        if (found?.length === 1) customerIdForDb = found[0].id;
+                            .ilike('full_name', capturedCustName.trim()).limit(5);
+                        if (found?.length === 1) {
+                            customerIdForDb = found[0].id;
+                        } else if (!found || found.length === 0) {
+                            ccResolveIssue = 'not_found';
+                        } else {
+                            ccResolveIssue = 'multiple'; // 2+ → ambigüedad, no adivinar
+                        }
                     }
 
                     if (customerIdForDb) {
@@ -891,7 +900,8 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         payment_method: "CASH",
                         waiter_id: capturedWaiter || null,
                         discount: capturedDiscount,
-                        status: 'paid',
+                        status: 'pending',
+                        paid: false,
                         customer_id: customerIdForDb,
                         customer_name: capturedCustName || null,
                         delivery_person_id: capturedDelivery ? parseInt(capturedDelivery) : null,
@@ -902,7 +912,24 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ orderId: newOrder.id, cuenta_corriente: true }),
-                        }).catch(e => console.error('[CC] Error marcando cuenta_corriente:', e));
+                        }).then(res => {
+                            if (!res.ok) console.error('[CC] /api/orders/paid respondió', res.status, '— cuenta_corriente NO seteado, orderId:', newOrder.id);
+                        }).catch(e => console.error('[CC] Error de red marcando cuenta_corriente:', e));
+                    }
+
+                    // Capa 2: alert disruptivo si no se pudo imputar el saldo al cliente
+                    if (ccResolveIssue) {
+                        console.error('[CC] Balance no imputado para:', capturedCustName, '—', ccResolveIssue);
+                        const msg = ccResolveIssue === 'multiple'
+                            ? `Hay varios clientes con el nombre "${capturedCustName}".\nNo se puede determinar a cuál cargar el saldo — imputar al equivocado sería peor que no imputar.`
+                            : `No se encontró ningún cliente con el nombre "${capturedCustName}".`;
+                        setTimeout(() => {
+                            window.alert(
+                                `⚠️ CUENTA CORRIENTE — SALDO NO IMPUTADO\n\n${msg}\n\n` +
+                                `La venta ($${capturedTotal.toLocaleString()}) quedó registrada, pero el saldo NO fue cargado a ninguna cuenta.\n\n` +
+                                `Ajustá el balance manualmente en el panel de Clientes.`
+                            );
+                        }, 500);
                     }
                 } catch (e) {
                     console.error('[CC] Error registrando orden en background:', e);

@@ -135,7 +135,7 @@ export function PaymentModal({
                     </div>
 
                     <div className="mb-6">
-                        {!selectedCustomerId ? (
+                        {!selectedCustomerId && !customerName ? (
                             <div className="relative">
                                 <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input

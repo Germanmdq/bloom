@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
     if (typeof body.cuenta_corriente === "boolean") {
       patch.cuenta_corriente = body.cuenta_corriente;
-      if (body.cuenta_corriente) patch.payment_method = "CUENTA_CORRIENTE";
+      // NO tocar payment_method — "CUENTA_CORRIENTE" no está en el ENUM de Postgres
     }
     if (Object.keys(patch).length === 0) {
       return NextResponse.json({ error: "paid o cuenta_corriente requerido" }, { status: 400 });
