@@ -98,7 +98,7 @@ export function PaymentModal({
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        if (!isFinishing && !(paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId)) {
+                        if (!isFinishing && !(paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId && !customerName)) {
                             onConfirm({ customerId: selectedCustomerId, printFactura: willPrintFactura });
                         }
                     }}
@@ -298,7 +298,7 @@ export function PaymentModal({
                         {paymentMethod === "CUENTA_CORRIENTE" && (
                             <div className="text-center">
                                 <p className="text-sm font-bold text-orange-600 uppercase tracking-widest mb-2">Cuenta Corriente</p>
-                                {selectedCustomerId && customerName ? (
+                                {customerName ? (
                                     <div className="bg-orange-50 border border-orange-200 rounded-2xl px-5 py-3 mt-2">
                                         <p className="text-xs font-black text-orange-400 uppercase tracking-widest mb-0.5">Se carga a</p>
                                         <p className="text-lg font-black text-orange-700">{customerName}</p>
@@ -321,14 +321,14 @@ export function PaymentModal({
                         </button>
                         <button
                             type="submit"
-                            disabled={isFinishing || (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId)}
+                            disabled={isFinishing || (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId && !customerName)}
                             className={`flex-[2] py-4 rounded-2xl font-black hover:scale-[1.02] disabled:opacity-20 shadow-xl transition-all ${
-                                paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId
+                                paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId && !customerName
                                 ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                                 : "bg-black text-[#FFD60A]"
                             }`}
                         >
-                            {isFinishing ? "..." : (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId ? "Seleccionar Cliente" : "Confirmar Venta")}
+                            {isFinishing ? "..." : (paymentMethod === "CUENTA_CORRIENTE" && !selectedCustomerId && !customerName ? "Seleccionar Cliente" : "Confirmar Venta")}
                         </button>
                     </div>
                 </div>

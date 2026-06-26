@@ -462,7 +462,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     setCustomerName(cleanName);
                     setCustomerAddress(item.address || "");
                     setCustomerPhone(item.phone || "");
-                    if (item.customer_id) setSelectedCustomerId(item.customer_id);
+                    if (item.customer_id) {
+                        setSelectedCustomerId(item.customer_id);
+                    } else if (cleanName) {
+                        void supabase.from('profiles').select('id').ilike('full_name', cleanName.trim()).limit(2).then(({ data: found }) => {
+                            if (found?.length === 1) setSelectedCustomerId(found[0].id);
+                        });
+                    }
                 } else {
                     newCartItems.push(normalizeTableItem(item));
                 }
@@ -534,7 +540,13 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         setCustomerName(cleanName);
                         setCustomerAddress(item.address || "");
                         setCustomerPhone(item.phone || "");
-                        if (item.customer_id) setSelectedCustomerId(item.customer_id);
+                        if (item.customer_id) {
+                            setSelectedCustomerId(item.customer_id);
+                        } else if (cleanName) {
+                            void supabase.from('profiles').select('id').ilike('full_name', cleanName.trim()).limit(2).then(({ data: found }) => {
+                                if (found?.length === 1) setSelectedCustomerId(found[0].id);
+                            });
+                        }
                     } else {
                         newCartItems.push(normalizeTableItem(item));
                     }
@@ -650,16 +662,20 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             } as any);
         }
 
-        // Primero intentamos UPDATE (siempre tiene permiso)
+        // Primero intentamos UPDATE (siempre tiene permiso).
+        // Condición extra: solo actualizar si la mesa SIGUE como OCCUPIED.
+        // Esto evita la race condition donde finishOrder ya puso FREE y esta
+        // request en vuelo (anterior a finishingRef=true) sobreescribiría esa liberación.
         const { error: updateErr } = await supabase
             .from('salon_tables')
-            .update({ 
-                status: 'OCCUPIED', 
-                total: currentTotal, 
+            .update({
+                status: 'OCCUPIED',
+                total: currentTotal,
                 items: currentCart,
                 updated_at: new Date().toISOString()
             })
-            .eq('id', Number(tableId));
+            .eq('id', Number(tableId))
+            .eq('status', 'OCCUPIED');
         
         if (updateErr) {
             console.error("❌ persistTableState UPDATE failed:", updateErr.message);
@@ -815,7 +831,86 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
         if (finalTotal === 0 && discount === 0) return;
         const mpId = ctx?.mpOrderId ?? mpPosOrderId;
         const effectiveCustomerId = ctx?.customerId ?? selectedCustomerId;
-        
+
+        // ── CUENTA CORRIENTE: cierre directo, sin timers ni persistTableState ──
+        if (paymentMethod === "CUENTA_CORRIENTE") {
+            // Capturar todo antes de limpiar estado
+            const capturedCart      = [...cart];
+            const capturedTotal     = finalTotal;
+            const capturedDiscount  = discount;
+            const capturedWaiter    = selectedWaiter;
+            const capturedCustName  = customerName;
+            const capturedDelivery  = selectedDeliveryPerson;
+            const capturedCustId    = isWebTable ? (webOrderData?.customer_id || null) : effectiveCustomerId;
+
+            // 1. Vaciar carrito YA — sin ningún await antes para no darle tiempo a persistTableState
+            clearCart();
+            finishingRef.current = true;
+            setIsFinishing(true);
+
+            // 2. Liberar la mesa en DB de forma explícita y sincrónica
+            await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
+
+            // 3. Cerrar el panel inmediatamente
+            finishingRef.current = false;
+            setIsFinishing(false);
+            if (onOrderComplete) onOrderComplete();
+            onClose();
+
+            // 4. Registrar orden y balance en background (no bloquea el cierre)
+            void (async () => {
+                try {
+                    // Resolver customer_id por nombre si no vino del estado (lo hacemos acá, fuera del camino crítico)
+                    let customerIdForDb = capturedCustId;
+                    if (!customerIdForDb && capturedCustName) {
+                        const { data: found } = await supabase
+                            .from('profiles').select('id')
+                            .ilike('full_name', capturedCustName.trim()).limit(2);
+                        if (found?.length === 1) customerIdForDb = found[0].id;
+                    }
+
+                    if (customerIdForDb) {
+                        const coffeeCount = capturedCart.reduce((acc, item) => {
+                            const n = item.name.toLowerCase();
+                            return (n.includes('café') || n.includes('cafe') || n.includes('capuccino') ||
+                                    n.includes('submarino') || n.includes('chocolatada') ||
+                                    n.includes('lágrima') || n.includes('lagrima'))
+                                ? acc + item.quantity : acc;
+                        }, 0);
+                        const { data: prof } = await supabase.from('profiles')
+                            .select('coffee_stamps, balance').eq('id', customerIdForDb).single();
+                        const stamps = Number(prof?.coffee_stamps || 0) + coffeeCount;
+                        await supabase.from('profiles').update({
+                            coffee_stamps: stamps >= 10 ? stamps - 10 : stamps,
+                            balance: Number(prof?.balance || 0) + capturedTotal,
+                        }).eq('id', customerIdForDb);
+                    }
+                    const newOrder = await createOrder.mutateAsync({
+                        table_id: tableId,
+                        total: capturedTotal,
+                        payment_method: "CASH",
+                        waiter_id: capturedWaiter || null,
+                        discount: capturedDiscount,
+                        status: 'paid',
+                        customer_id: customerIdForDb,
+                        customer_name: capturedCustName || null,
+                        delivery_person_id: capturedDelivery ? parseInt(capturedDelivery) : null,
+                        items: capturedCart,
+                    });
+                    if (newOrder?.id) {
+                        fetch('/api/orders/paid', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ orderId: newOrder.id, cuenta_corriente: true }),
+                        }).catch(e => console.error('[CC] Error marcando cuenta_corriente:', e));
+                    }
+                } catch (e) {
+                    console.error('[CC] Error registrando orden en background:', e);
+                }
+            })();
+            return;
+        }
+
         finishingRef.current = true;
         setIsFinishing(true);
         try {
@@ -857,10 +952,16 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     console.warn('⚠️ [FinishOrder] No hay customerId vinculado, se omite balance/puntos.');
                 }
 
-                await createOrder.mutateAsync({
+                // Liberar la mesa antes del insert de la orden para que no quede
+                // bloqueada si el insert falla (ej: validación en DB).
+                const { error: freeErr } = await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
+                if (freeErr) console.error("❌ [finishOrder] salon_tables FREE failed:", freeErr.message);
+
+                const isCuentaCorriente = paymentMethod === "CUENTA_CORRIENTE";
+                const newOrder = await createOrder.mutateAsync({
                     table_id: tableId,
                     total: finalTotal,
-                    payment_method: paymentMethod,
+                    payment_method: isCuentaCorriente ? "CASH" : paymentMethod,
                     waiter_id: selectedWaiter || null,
                     discount: discount,
                     status: paymentMethod === "CUENTA_CORRIENTE" ? "pending" : (isWebTable || tableId >= 100) ? 'completed' : 'paid',
@@ -870,6 +971,14 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     delivery_person_id: selectedDeliveryPerson ? parseInt(selectedDeliveryPerson) : null,
                     items: cart,
                 });
+
+                if (isCuentaCorriente && newOrder?.id) {
+                    fetch('/api/orders/paid', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: newOrder.id, cuenta_corriente: true }),
+                    }).catch((e) => console.error('[CC] Error marcando cuenta_corriente:', e));
+                }
 
                 if (webOrderId || currentWebOrderId) {
                     const idToComplete = webOrderId || currentWebOrderId;
@@ -941,10 +1050,17 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 }
             }, 800);
         } catch (error: any) {
+            // La mesa ya fue liberada (salon_tables → FREE corre antes del insert).
+            // Limpiar carrito de inmediato para que persistTableState no la re-ocupe.
+            clearCart();
             finishingRef.current = false;
             setIsFinishing(false);
-            setFeedback({ message: `Error: ${error.message}`, type: "error" });
-            setTimeout(() => setFeedback(null), 3000);
+            setFeedback({ message: `Error al registrar la orden: ${error.message}`, type: "error" });
+            setTimeout(() => {
+                setFeedback(null);
+                if (onOrderComplete) onOrderComplete();
+                onClose();
+            }, 3000);
         }
     };
 

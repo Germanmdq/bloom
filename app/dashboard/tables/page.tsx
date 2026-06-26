@@ -404,16 +404,27 @@ export default function TablesPage() {
             return;
         }
 
+        // Si hay nombre pero no ID, intentar resolverlo por nombre exacto en profiles
+        let resolvedCustomerId = newTableCustomerId;
+        if (!resolvedCustomerId && newTableName.trim()) {
+            const { data: found } = await supabase
+                .from('profiles')
+                .select('id')
+                .ilike('full_name', newTableName.trim())
+                .limit(2);
+            if (found?.length === 1) resolvedCustomerId = found[0].id;
+        }
+
         const { data, error } = await supabase
             .from('salon_tables')
-            .upsert({ 
+            .upsert({
                 id: targetId,
-                status: 'OCCUPIED', 
+                status: 'OCCUPIED',
                 order_type: finalOrderType,
-                items: (newTableName || newTableCustomerId) ? [{
+                items: (newTableName || resolvedCustomerId) ? [{
                     id: 'meta-customer',
                     name: `Cliente: ${newTableName || 'Alias'}`,
-                    customer_id: newTableCustomerId,
+                    customer_id: resolvedCustomerId,
                     price: 0,
                     quantity: 1,
                     category: 'METADATA'

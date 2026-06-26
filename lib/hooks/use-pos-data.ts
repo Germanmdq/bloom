@@ -115,7 +115,8 @@ export function useCreateOrder() {
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) { console.error("❌ [createOrder] insert failed:", error.message, "| code:", error.code); throw error; }
+            console.log("✅ [createOrder] success, id:", data?.id, "payment_method:", orderData.payment_method);
             return data;
         },
         onSuccess: () => {
