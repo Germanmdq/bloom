@@ -1503,8 +1503,10 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             </div>
                         ) : !searchTerm && !activeCategory ? (
                             <div className="flex flex-col gap-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                                    {/* Botón Plato del Día - Negro */}
+                                {/* ── Accesos rápidos — barra Bloom ── */}
+                                <div className="flex gap-2.5 mb-4">
+
+                                    {/* Plato del Día — pill verde inglés destacado */}
                                     <button
                                         onClick={() => {
                                             if (featuredProduct) {
@@ -1527,68 +1529,57 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                                 if (cat) setActiveCategory(cat.id);
                                             }
                                         }}
-                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-black text-white text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-xl group flex flex-col justify-end min-h-[160px]"
+                                        className="flex-[1.3] flex items-center px-4 py-3 rounded-xl bg-english-700 text-bloom-cream text-left hover:bg-english-600 active:scale-[0.98] transition-all min-h-[60px]"
                                     >
-                                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                                            <IconStar size={60} />
-                                        </div>
-                                        <div className="relative z-10">
-                                            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[9px] font-bold uppercase tracking-widest mb-2">
-                                                Plato del Día
+                                        <div className="flex flex-col min-w-0 flex-1">
+                                            <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-bloom-gold/70 mb-0.5">Plato del Día</span>
+                                            <span className="text-[13px] font-bold leading-tight text-bloom-cream truncate">
+                                                {featuredProduct ? featuredProduct.name : "Sin configurar →"}
                                             </span>
-                                            <h3 className="text-2xl font-black tracking-tight leading-none mb-1">
-                                                {featuredProduct ? featuredProduct.name : "Configurar"}
-                                            </h3>
-                                            <p className="text-slate-400 font-bold text-sm">
-                                                {featuredProduct
-                                                    ? appSettings?.plato_dia_price && Number(appSettings.plato_dia_price) > 0
-                                                        ? `$${Number(appSettings.plato_dia_price).toLocaleString()} · con bebida`
-                                                        : `$${Number(featuredProduct.price).toLocaleString()}`
-                                                    : "Ver opciones →"}
-                                            </p>
+                                            {featuredProduct && (
+                                                <span className="text-[10px] text-bloom-gold font-bold mt-0.5">
+                                                    {appSettings?.plato_dia_price && Number(appSettings.plato_dia_price) > 0
+                                                        ? `$${Number(appSettings.plato_dia_price).toLocaleString()} · c/bebida`
+                                                        : `$${Number(featuredProduct.price).toLocaleString()}`}
+                                                </span>
+                                            )}
                                         </div>
                                     </button>
 
-                                    {/* Botón Ofertas del Día - Gris/Premium */}
+                                    {/* Ofertas del Día — pill crema con borde dorado */}
                                     <button
                                         onClick={() => {
                                             setIsShowingDailyOffers(true);
                                             setActiveCategory(null);
                                             setProductSearch("");
                                         }}
-                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-slate-100 text-slate-900 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[160px]"
+                                        className="flex-1 flex items-center px-4 py-3 rounded-xl bg-bloom-cream border border-bloom-gold/30 text-left hover:bg-bloom-100 hover:border-bloom-gold/60 active:scale-[0.98] transition-all min-h-[60px]"
                                     >
-                                        <div className="absolute top-0 right-0 p-4 opacity-10 text-slate-400">
-                                            <IconStar size={60} />
-                                        </div>
-                                        <div className="relative z-10">
-                                            <h3 className="text-2xl font-black leading-none mb-1">Ofertas del Día</h3>
-                                            <p className="text-slate-500 font-bold text-sm">Ver promociones →</p>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-bloom-gold-dark mb-0.5">Acceso rápido</span>
+                                            <span className="text-[13px] font-bold text-english-700 leading-tight">Ofertas del Día</span>
                                         </div>
                                     </button>
 
-                                    {/* Botón Platos Diarios - Blanco */}
+                                    {/* Platos Diarios — pill crema con borde dorado */}
                                     <button
                                         onClick={() => {
                                             const cat = categories.find(c => c.name.toLowerCase().includes('plato') && !c.name.toLowerCase().includes('día'));
                                             if (cat) setActiveCategory(cat.id);
                                         }}
-                                        className="relative overflow-hidden p-6 rounded-[2rem] bg-white border border-gray-100 text-left transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm group flex flex-col justify-end min-h-[160px]"
+                                        className="flex-1 flex items-center px-4 py-3 rounded-xl bg-bloom-cream border border-bloom-gold/30 text-left hover:bg-bloom-100 hover:border-bloom-gold/60 active:scale-[0.98] transition-all min-h-[60px]"
                                     >
-                                        <div className="absolute top-0 right-0 p-4 opacity-10 text-gray-400">
-                                            <IconToolsKitchen2 size={60} />
-                                        </div>
-                                        <div className="relative z-10">
-                                            <h3 className="text-2xl font-black text-slate-900 leading-none mb-1">Platos Diarios</h3>
-                                            <p className="text-slate-400 font-bold text-sm">Opciones de hoy →</p>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-bloom-gold-dark mb-0.5">Menú</span>
+                                            <span className="text-[13px] font-bold text-english-700 leading-tight">Platos Diarios</span>
                                         </div>
                                     </button>
+
                                 </div>
 
-                                {/* Grilla de Categorías */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {/* Grilla de Categorías — paleta Bloom */}
+                                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5">
                                 {(() => {
-                                    // Ordenar categorías: prioridad fija para Plato del Día, Promociones, Desayunos y Meriendas
                                     const priorityOrder = (name: string): number => {
                                         const n = name.toLowerCase().trim();
                                         if (n.includes('plato')) return 0;
@@ -1596,8 +1587,31 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         if (n.includes('desayuno') || n.includes('merienda')) return 2;
                                         return 99;
                                     };
-                                    return categories.filter(c => 
-                                        !c.name.toLowerCase().includes('plato') && 
+                                    const getCategoryIcon = (name: string) => {
+                                        const n = name.toLowerCase();
+                                        const props = { size: 20, stroke: 1.5 };
+                                        if (n.includes('ensala') || n.includes('vegeta'))                                                                              return <IconSalad {...props} />;
+                                        if (n.includes('carne') || n.includes('mila') || n.includes('bife') || n.includes('lomo') || n.includes('parri') || n.includes('poll')) return <IconMeat {...props} />;
+                                        if (n.includes('pizza') || n.includes('muzza') || n.includes('fuga'))                                                          return <IconPizza {...props} />;
+                                        if (n.includes('hamb') || n.includes('burg'))                                                                                  return <IconBurger {...props} />;
+                                        if (n.includes('desayuno') || n.includes('merienda') || n.includes('caf') || n.includes('latte') || n.includes('capu'))        return <IconCoffee {...props} />;
+                                        if (n.includes('infus') || n.includes('te '))                                                                                  return <IconCup {...props} />;
+                                        if (n.includes('helad') || n.includes('postr'))                                                                                return <IconIceCream {...props} />;
+                                        if (n.includes('torta') || n.includes('dulc') || n.includes('cake'))                                                           return <IconCake {...props} />;
+                                        if (n.includes('soda') || n.includes('agua') || n.includes('gaseosa') || n.includes('bebida'))                                 return <IconBottle {...props} />;
+                                        if (n.includes('cerve') || n.includes('pinta') || n.includes('alco'))                                                          return <IconBeer {...props} />;
+                                        if (n.includes('vino') || n.includes('copa'))                                                                                  return <IconGlass {...props} />;
+                                        if (n.includes('pan') || n.includes('factu') || n.includes('medialun') || n.includes('sandwich'))                              return <IconBread {...props} />;
+                                        if (n.includes('pasta') || n.includes('fideo') || n.includes('sopa'))                                                          return <IconSoup {...props} />;
+                                        if (n.includes('empa'))                                                                                                        return <IconCookie {...props} />;
+                                        if (n.includes('queso') || n.includes('tabla'))                                                                                return <IconCheese {...props} />;
+                                        if (n.includes('pescado') || n.includes('maris'))                                                                              return <IconFish {...props} />;
+                                        if (n.includes('verdura') || n.includes('vegano'))                                                                             return <IconCarrot {...props} />;
+                                        if (n.includes('promo') || n.includes('oferta'))                                                                               return <IconStar {...props} />;
+                                        return <IconToolsKitchen2 {...props} />;
+                                    };
+                                    return categories.filter(c =>
+                                        !c.name.toLowerCase().includes('plato') &&
                                         !c.name.toLowerCase().includes('menú')
                                     ).sort((a: any, b: any) => {
                                         const prioA = priorityOrder(a.name);
@@ -1608,12 +1622,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         <button
                                             key={cat.id}
                                             onClick={() => setActiveCategory(cat.id)}
-                                            className="group relative h-32 bg-white border border-gray-100 rounded-[2rem] p-5 flex flex-col items-center justify-center gap-3 transition-all hover:shadow-xl hover:-translate-y-1 hover:border-black active:scale-95"
+                                            className="group relative h-20 bg-bloom-cream border border-bloom-gold/20 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 hover:bg-english-600 hover:border-english-600 active:scale-95 transition-all"
                                         >
-                                            <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-black group-hover:text-white transition-all">
-                                                <IconToolsKitchen2 size={24} />
+                                            <div className="text-english-600 group-hover:text-bloom-cream transition-colors">
+                                                {getCategoryIcon(cat.name)}
                                             </div>
-                                            <span className="text-[12px] font-black uppercase tracking-tight text-slate-900 group-hover:text-black transition-colors">
+                                            <span className="text-[9px] font-bold uppercase tracking-tight text-english-700 group-hover:text-bloom-cream text-center leading-tight line-clamp-2 transition-colors">
                                                 {cat.name}
                                             </span>
                                         </button>
@@ -1622,14 +1636,12 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                 </div>
                             </div>
                         ) : (
-                            /* Productos: grilla responsiva (evita deformaciones en modales chicos) */
-                            <div className="grid gap-4 w-full pb-20 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+                            /* Productos: grilla Bloom */
+                            <div className="grid gap-3 w-full pb-20 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]">
                                 {displayProducts.map((item: any) => {
-                                    // Mapeador de Iconos Ultra-Específico
                                     const getSmartIcon = (name: string, cat: string) => {
                                         const n = (name + " " + cat).toLowerCase();
-                                        const props = { size: 32, stroke: 1.5, className: "text-slate-400 group-hover:text-white transition-colors" };
-
+                                        const props = { size: 22, stroke: 1.5 };
                                         if (n.includes('rucula') || n.includes('ensala') || n.includes('vegeta')) return <IconSalad {...props} />;
                                         if (n.includes('mila') || n.includes('carne') || n.includes('bife') || n.includes('lomo') || n.includes('parri') || n.includes('beef')) return <IconMeat {...props} />;
                                         if (n.includes('poll') || n.includes('supre') || n.includes('alitas')) return <IconMeat {...props} />;
@@ -1657,25 +1669,20 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                         <button
                                             key={item.id}
                                             onClick={() => handleSelectProduct(item)}
-                                            className="group relative bg-white rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all border border-slate-100 flex flex-col items-center justify-center gap-6 overflow-hidden min-h-[170px]"
+                                            className="group relative bg-bloom-cream border border-bloom-gold/20 rounded-2xl p-4 hover:shadow-md hover:border-english-600 hover:-translate-y-0.5 transition-all flex flex-col items-center justify-center gap-3 overflow-hidden min-h-[130px]"
                                         >
-                                            <motion.div 
-                                                whileHover={{ scale: 1.1, y: -5 }}
-                                                className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center group-hover:bg-slate-900 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-slate-200"
-                                            >
+                                            <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-english-600 group-hover:bg-english-700 group-hover:text-bloom-cream transition-all shadow-sm">
                                                 {IconComponent}
-                                            </motion.div>
-                                            
+                                            </div>
+
                                             <div className="text-center">
-                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] mb-1.5">{catName}</p>
-                                                <p className="text-base font-bold text-slate-900 leading-tight tracking-tight mb-4 group-hover:text-black">
+                                                <p className="text-[9px] font-bold text-bloom-gold-dark uppercase tracking-[0.12em] mb-1">{catName}</p>
+                                                <p className="text-[12px] font-bold text-english-900 leading-tight tracking-tight mb-2 line-clamp-2 group-hover:text-english-700">
                                                     {item.name}
                                                 </p>
-                                                <div className="flex justify-center">
-                                                    <span className="px-5 py-2 bg-slate-100 text-slate-900 group-hover:bg-slate-900 group-hover:text-white rounded-2xl text-[13px] font-bold tracking-tighter transition-all">
-                                                        ${Number(item.price || 0).toLocaleString()}
-                                                    </span>
-                                                </div>
+                                                <span className="inline-block px-3 py-1 bg-white border border-bloom-gold/30 text-english-700 group-hover:bg-english-700 group-hover:text-bloom-cream group-hover:border-english-700 rounded-lg text-[11px] font-bold tracking-tight transition-all">
+                                                    ${Number(item.price || 0).toLocaleString()}
+                                                </span>
                                             </div>
                                         </button>
                                     );
@@ -1686,7 +1693,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 </div>
 
                 {/* ── DERECHA: Datos Cliente + Carrito ── */}
-                <div className="w-72 xl:w-96 flex flex-col bg-white border-l border-gray-200 shrink-0">
+                <div className="w-72 xl:w-96 flex flex-col bg-white border-l border-bloom-gold/20 shrink-0">
 
                     {/* Lista de Productos en el Carrito */}
                     <div className="flex-1 overflow-y-auto px-4 py-2 no-scrollbar scroll-smooth">
@@ -1742,26 +1749,26 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         )}
                     </div>
 
-                    {/* Footer del carrito */}
-                    <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex flex-col gap-4 shrink-0">
+                    {/* Footer del carrito — paleta Bloom */}
+                    <div className="p-8 bg-bloom-cream border-t border-bloom-gold/30 flex flex-col gap-4 shrink-0">
                         <div className="relative">
                             <input
                                 type="text"
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 placeholder="Notas de cocina..."
-                                className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all placeholder:text-slate-300 shadow-sm"
+                                className="w-full px-5 py-3.5 bg-white border border-bloom-gold/30 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-english-600/10 focus:border-english-600 transition-all placeholder:text-bloom-300 shadow-sm"
                             />
                         </div>
 
                         <div className="flex items-center justify-between px-2">
-                            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Subtotal</span>
-                            <span className="text-2xl font-bold text-slate-900 tracking-tighter">${total.toLocaleString()}</span>
+                            <span className="text-[10px] font-bold text-bloom-600 uppercase tracking-widest">Subtotal</span>
+                            <span className="text-2xl font-bold text-english-900 tracking-tighter">${total.toLocaleString()}</span>
                         </div>
 
                         {/* Descuento en pesos */}
                         <div className="flex items-center gap-4 px-2">
-                            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest shrink-0">Descuento $</span>
+                            <span className="text-[10px] font-bold text-bloom-600 uppercase tracking-widest shrink-0">Descuento $</span>
                             <input
                                 type="text"
                                 inputMode="numeric"
@@ -1780,15 +1787,15 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     setDiscount(Math.round(pct * 100) / 100);
                                 }}
                                 placeholder="0"
-                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-black text-right outline-none focus:border-slate-900 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="w-full bg-white border border-bloom-gold/30 rounded-xl px-4 py-2 text-sm font-black text-right outline-none focus:border-english-600 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                         </div>
 
-                        <div className="flex items-center justify-between px-2">
-                            <span className={`text-sm font-bold uppercase tracking-widest ${discount > 0 ? 'text-emerald-500' : 'text-slate-400'}`}>
+                        <div className="flex items-center justify-between px-2 pt-1 border-t border-bloom-gold/20">
+                            <span className={`text-[10px] font-bold uppercase tracking-widest ${discount > 0 ? 'text-emerald-500' : 'text-bloom-600'}`}>
                                 {discount > 0 ? 'Total con descuento' : 'Total Final'}
                             </span>
-                            <span className={`text-4xl font-bold tracking-tighter ${discount > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+                            <span className={`text-4xl font-bold tracking-tighter ${discount > 0 ? 'text-emerald-600' : 'text-english-900'}`}>
                                 ${finalTotal.toLocaleString()}
                             </span>
                         </div>
@@ -1796,11 +1803,11 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         {/* Delivery Person Selector */}
                         {(orderType === 'DELIVERY' || orderType === 'TAKEAWAY') && (
                             <div className="mt-2">
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Repartidor (opcional)</label>
-                                <select 
+                                <label className="block text-[10px] font-black text-bloom-600 uppercase tracking-widest mb-1.5 ml-1">Repartidor (opcional)</label>
+                                <select
                                     value={selectedDeliveryPerson}
                                     onChange={(e) => setSelectedDeliveryPerson(e.target.value)}
-                                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all"
+                                    className="w-full bg-white border border-bloom-gold/30 rounded-xl px-4 py-2.5 text-xs font-bold text-english-700 outline-none focus:ring-4 focus:ring-english-600/10 focus:border-english-600 transition-all"
                                 >
                                     <option value="">-- Sin asignar --</option>
                                     {deliveryPersons.map((p: any) => (
@@ -1813,12 +1820,16 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                         <button
                             onClick={() => webOrderIsPaid ? finishOrder() : setShowPaymentModal(true)}
                             disabled={finalTotal === 0 || isFinishing}
-                            className={`w-full h-16 rounded-[1.5rem] font-bold text-lg active:scale-95 transition-all shadow-xl disabled:opacity-30 disabled:cursor-not-allowed ${
-                                webOrderIsPaid ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-200'
+                            className={`w-full h-16 rounded-[1.5rem] font-bold text-lg transition-all disabled:cursor-not-allowed ${
+                                finalTotal === 0 || isFinishing
+                                    ? 'bg-bloom-cream border border-bloom-gold/20 text-gris shadow-none'
+                                    : webOrderIsPaid
+                                        ? 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 shadow-xl shadow-emerald-200'
+                                        : 'bg-english-700 text-bloom-cream hover:bg-english-600 active:scale-95 shadow-xl shadow-english-900/20'
                             }`}
                         >
-                            {webOrderIsPaid 
-                                ? `Finalizar Pago` 
+                            {webOrderIsPaid
+                                ? `Finalizar Pago`
                                 : `Ir a Cobrar`
                             }
                         </button>
@@ -1827,7 +1838,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                             <button
                                 onClick={() => sendToKitchen()}
                                 disabled={cart.length === 0 || isFinishing}
-                                className="h-14 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+                                className="h-14 bg-bloom-cream border border-bloom-gold/30 text-english-700 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-bloom-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
                             >
                                 Enviar pedido
                             </button>
@@ -1838,7 +1849,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                                     setShowReceiptModal(true); // Abrimos el ticket para imprimir
                                 }}
                                 disabled={cart.length === 0 || isFinishing}
-                                className="h-14 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200 flex items-center justify-center gap-2"
+                                className="h-14 bg-bloom-cream border border-bloom-gold/30 text-english-700 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-bloom-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
                                 <IconPrinter size={16} /> Comanda Mozo
                             </button>

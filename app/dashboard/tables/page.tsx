@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Table, TableStatus } from "@/lib/types";
 import { OrderSheet } from "@/components/dashboard/OrderSheet";
 import { createClient } from "@/lib/supabase/client";
-import { IconLoader2, IconX, IconTruck, IconShoppingBag } from "@tabler/icons-react";
+import { IconLoader2, IconX, IconTruck, IconShoppingBag, IconClock } from "@tabler/icons-react";
 import { useEscape } from "@/lib/hooks/useEscape";
 
 type WebOrder = {
@@ -444,10 +444,14 @@ export default function TablesPage() {
             setNewTableCustomerId(null);
             setNewTableCustomerBalance(null);
             setCustomerSearch("");
-            fetchTables();
             if (data) {
+                setTables(prev => {
+                    const filtered = prev.filter(t => t.id !== (data as Table).id);
+                    return [...filtered, data as Table].sort((a, b) => a.id - b.id);
+                });
                 setSelectedTable(data as Table);
             }
+            fetchTables();
         }
     };
 
@@ -1034,21 +1038,21 @@ export default function TablesPage() {
                     const gridCols = cols === 3 ? 'grid-cols-3' : cols === 4 ? 'grid-cols-4' : cols === 5 ? 'grid-cols-5' : 'grid-cols-6';
 
                     const s = cols === 3 ? {
-                        minH: 'min-h-[220px]', pad: 'p-6', gap: 'gap-6',
-                        mainXl: 'text-7xl', mainLg: 'text-6xl', mainMd: 'text-4xl', mainSm: 'text-2xl',
-                        total: 'text-2xl', badge: 'text-[9px]', meta: 'text-[9px]', iconSize: 64, time: 'text-xs'
+                        minH: 'min-h-[170px]', pad: 'p-5', gap: 'gap-5',
+                        name: 'text-2xl', badge: 'text-[9px]', meta: 'text-[10px]',
+                        total: 'text-xl', time: 'text-sm', iconSize: 14,
                     } : cols === 4 ? {
-                        minH: 'min-h-[190px]', pad: 'p-5', gap: 'gap-4',
-                        mainXl: 'text-6xl', mainLg: 'text-5xl', mainMd: 'text-3xl', mainSm: 'text-xl',
-                        total: 'text-xl', badge: 'text-[8px]', meta: 'text-[8px]', iconSize: 52, time: 'text-[10px]'
+                        minH: 'min-h-[155px]', pad: 'p-4', gap: 'gap-4',
+                        name: 'text-xl', badge: 'text-[8px]', meta: 'text-[9px]',
+                        total: 'text-lg', time: 'text-xs', iconSize: 12,
                     } : cols === 5 ? {
-                        minH: 'min-h-[170px]', pad: 'p-4', gap: 'gap-3',
-                        mainXl: 'text-5xl', mainLg: 'text-4xl', mainMd: 'text-2xl', mainSm: 'text-lg',
-                        total: 'text-lg', badge: 'text-[7px]', meta: 'text-[7px]', iconSize: 44, time: 'text-[9px]'
+                        minH: 'min-h-[140px]', pad: 'p-4', gap: 'gap-3',
+                        name: 'text-lg', badge: 'text-[7px]', meta: 'text-[8px]',
+                        total: 'text-base', time: 'text-[10px]', iconSize: 11,
                     } : {
-                        minH: 'min-h-[150px]', pad: 'p-3', gap: 'gap-2',
-                        mainXl: 'text-4xl', mainLg: 'text-3xl', mainMd: 'text-xl', mainSm: 'text-base',
-                        total: 'text-base', badge: 'text-[6px]', meta: 'text-[6px]', iconSize: 36, time: 'text-[8px]'
+                        minH: 'min-h-[125px]', pad: 'p-3', gap: 'gap-2',
+                        name: 'text-base', badge: 'text-[6px]', meta: 'text-[7px]',
+                        total: 'text-sm', time: 'text-[9px]', iconSize: 10,
                     };
 
                     return (
@@ -1056,46 +1060,62 @@ export default function TablesPage() {
                              {/* Individual Web Order Cards */}
                              {filteredWebOrders.map(order => {
                                  const isDelivery = order.delivery_type === 'delivery' || (!order.delivery_type && order.order_type === 'web');
-                                 const timeStr = new Date(order.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
                                  const now = Date.now();
                                  const createdAt = new Date(order.created_at).getTime();
                                  let minutesElapsed = Math.floor((now - createdAt) / 60000);
                                  if (minutesElapsed < 0) minutesElapsed = 0;
                                  const displayTime = minutesElapsed > 1440 ? '--' : `${minutesElapsed} min`;
+                                 const orderLabel = isDelivery ? 'Delivery' : 'Retiro';
+                                 const displayName = order.customer_name || 'Pedido Web';
+                                 const itemCount = order.items?.length || 0;
 
                                  return (
                                      <motion.div
                                          key={order.id}
                                          layoutId={`weborder-${order.id}`}
-                                         whileHover={{ scale: 1.02 }}
-                                         whileTap={{ scale: 0.98 }}
+                                         whileHover={{ scale: 1.03 }}
+                                         whileTap={{ scale: 0.97 }}
                                          onClick={() => setSelectedWebOrder(order)}
-                                         className={`rounded-[2.5rem] ${s.pad} flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden ${s.minH} shadow-[0_22px_70px_rgba(0,0,0,0.18)] ${
-                                             isDelivery ? 'bg-red-500' : 'bg-emerald-500'
+                                         className={`rounded-3xl ${s.pad} flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden ${s.minH} ${
+                                             isDelivery ? 'bg-red-500 shadow-[0_22px_70px_rgba(0,0,0,0.18)]' : 'bg-emerald-500 shadow-[0_22px_70px_rgba(0,0,0,0.18)]'
                                          }`}
                                      >
-                                        {/* IconClock Centered Top */}
-                                        <div className="flex flex-col items-center gap-1 z-10">
-                                            <span className={`${s.badge} font-bold uppercase tracking-[0.2em] opacity-60 text-white`}>Minutos</span>
-                                            <span className={`${s.time} font-medium text-white`}>{displayTime}</span>
-                                        </div>
-
-                                         <div className="flex-1 flex flex-col items-center justify-center z-10 w-full">
-                                             <span className={`font-semibold ${s.mainXl} leading-none tracking-tight text-white mb-1`}>
-                                                 {order.customer_name ? order.customer_name.charAt(0).toUpperCase() : 'W'}
+                                         {/* Fila superior: chip tipo + tiempo con reloj */}
+                                         <div className="flex items-center justify-between w-full">
+                                             <span
+                                                 title={orderLabel}
+                                                 className={`${s.badge} font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full bg-white/20 text-white`}
+                                             >
+                                                 {orderLabel}
                                              </span>
-                                             <p className={`${s.badge} font-black text-white/90 uppercase tracking-widest truncate max-w-full px-2`}>
-                                                 {order.customer_name || 'PEDIDO WEB'}
-                                             </p>
+                                             <span
+                                                 title={`${minutesElapsed} minutos activa`}
+                                                 className={`flex items-center gap-0.5 ${s.time} ${minutesElapsed >= 60 ? 'font-black' : 'font-semibold'} opacity-80 text-white`}
+                                             >
+                                                 <IconClock size={s.iconSize} strokeWidth={minutesElapsed >= 60 ? 2.5 : 1.8} />
+                                                 {displayTime}
+                                             </span>
                                          </div>
 
-                                        {/* Total Centered Bottom */}
-                                        <div className="flex flex-col items-center z-10 w-full">
-                                            <span className={`${s.meta} font-bold text-white/60 uppercase tracking-widest mb-0.5`}>Total</span>
-                                            <div className={`${s.total} font-black text-white tracking-tighter`}>
-                                                ${Number(order.total || 0).toLocaleString('es-AR')}
-                                            </div>
-                                        </div>
+                                         {/* Nombre del cliente — izquierda, truncado */}
+                                         <div className="flex-1 flex items-center">
+                                             <span className={`${s.name} font-black leading-tight tracking-tight truncate w-full text-white`}>
+                                                 {displayName}
+                                             </span>
+                                         </div>
+
+                                         {/* Divider sutil */}
+                                         <div className="w-full h-px mb-1 bg-white/20" />
+
+                                         {/* Fila inferior: items izquierda + total derecha */}
+                                         <div className="flex items-center justify-between w-full">
+                                             <span className={`${s.meta} font-bold uppercase tracking-widest opacity-60 text-white`}>
+                                                 {itemCount > 0 ? `${itemCount} items` : '—'}
+                                             </span>
+                                             <span className={`${s.total} font-black tracking-tight text-white`}>
+                                                 ${Number(order.total || 0).toLocaleString('es-AR')}
+                                             </span>
+                                         </div>
                                      </motion.div>
                                  );
                              })}
@@ -1130,51 +1150,51 @@ export default function TablesPage() {
                                         whileHover={{ scale: 1.03 }}
                                         whileTap={{ scale: 0.97 }}
                                         onClick={() => setSelectedTable(table)}
-                                        className={`rounded-3xl ${s.pad} flex flex-col items-center justify-between cursor-pointer transition-all duration-300 relative overflow-hidden ${s.minH} ${styles.bg}`}
+                                        className={`rounded-3xl ${s.pad} flex flex-col justify-between cursor-pointer transition-all duration-300 relative overflow-hidden ${s.minH} ${styles.bg}`}
                                     >
-                                        {/* Badge tipo + tiempo */}
-                                        <div className="flex items-center justify-between w-full z-10">
-                                            <span className={`${s.badge} font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full ${styles.badgeBg}`}>
+                                        {/* Fila superior: chip tipo + tiempo con reloj */}
+                                        <div className="flex items-center justify-between w-full">
+                                            <span
+                                                title={orderLabel}
+                                                className={`${s.badge} font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-full ${styles.badgeBg}`}
+                                            >
                                                 {orderLabel}
                                             </span>
-                                            <span className={`${s.time} font-bold opacity-70 ${styles.textColor}`}>
+                                            <span
+                                                title={`${minutesElapsed} minutos activa`}
+                                                className={`flex items-center gap-0.5 ${s.time} ${minutesElapsed >= 60 ? 'font-black' : 'font-semibold'} opacity-80 ${styles.textColor}`}
+                                            >
+                                                <IconClock size={s.iconSize} strokeWidth={minutesElapsed >= 60 ? 2.5 : 1.8} />
                                                 {displayTime}
                                             </span>
                                         </div>
 
-                                        {/* Número / Nombre / Ícono de mesa */}
-                                        <div className="flex-1 flex flex-col items-center justify-center z-10 gap-1">
+                                        {/* Nombre / número — izquierda, truncado */}
+                                        <div className="flex-1 flex items-center">
                                             {isVirtual && !hasName ? (
-                                                <>
-                                                    <div className={`opacity-90 ${styles.textColor}`}>
-                                                        {isDeliveryTable
-                                                            ? <IconTruck size={s.iconSize} strokeWidth={1.5} />
-                                                            : <IconShoppingBag size={s.iconSize} strokeWidth={1.5} />}
-                                                    </div>
-                                                    <span className={`${s.mainSm} font-black tracking-tight ${styles.textColor}`}>
-                                                        {displayName}
-                                                    </span>
-                                                </>
+                                                <div className={`opacity-90 ${styles.textColor}`}>
+                                                    {isDeliveryTable
+                                                        ? <IconTruck size={s.iconSize * 2.8} strokeWidth={1.5} />
+                                                        : <IconShoppingBag size={s.iconSize * 2.8} strokeWidth={1.5} />}
+                                                </div>
                                             ) : (
-                                                <span className={`font-black leading-none tracking-tighter ${styles.textColor} ${
-                                                    displayName.length > 10 ? s.mainSm :
-                                                    displayName.length > 6  ? s.mainMd :
-                                                    displayName.length > 3  ? s.mainLg :
-                                                    s.mainXl
-                                                }`}>
+                                                <span className={`${s.name} font-black leading-tight tracking-tight truncate w-full ${styles.textColor}`}>
                                                     {displayName}
                                                 </span>
                                             )}
                                         </div>
 
-                                        {/* Info inferior */}
-                                        <div className="flex flex-col items-center z-10 w-full gap-0.5">
-                                            <p className={`${s.meta} font-bold uppercase tracking-[0.15em] opacity-50 ${styles.textColor}`}>
-                                                {itemCount > 0 ? `${itemCount} items` : 'Sin items'}
-                                            </p>
-                                            <div className={`${s.total} font-black tracking-tight ${styles.textColor}`}>
-                                                ${Number(table.total || 0).toLocaleString("es-AR")}
-                                            </div>
+                                        {/* Divider sutil */}
+                                        <div className={`w-full h-px mb-1 ${styles.textColor === 'text-white' ? 'bg-white/20' : 'bg-black/10'}`} />
+
+                                        {/* Fila inferior: items izquierda + total derecha */}
+                                        <div className="flex items-center justify-between w-full">
+                                            <span className={`${s.meta} font-bold uppercase tracking-widest opacity-60 ${styles.textColor}`}>
+                                                {itemCount > 0 ? `${itemCount} items` : '—'}
+                                            </span>
+                                            <span className={`${s.total} font-black tracking-tight ${styles.textColor}`}>
+                                                ${Number(table.total || 0).toLocaleString('es-AR')}
+                                            </span>
                                         </div>
                                     </motion.div>
                                 );
