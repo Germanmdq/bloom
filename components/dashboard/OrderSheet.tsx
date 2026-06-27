@@ -968,8 +968,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     // Al llegar a 10 se usa el café gratis → guardar el resto (ej: 11 → 1)
                     const stampsFinales = stampsNuevos >= 10 ? stampsNuevos - 10 : stampsNuevos;
 
-                    let newBalance = Number(prof?.balance || 0);
-                    if (paymentMethod === "CUENTA_CORRIENTE") newBalance += finalTotal;
+                    const newBalance = Number(prof?.balance || 0);
 
                     await supabase.from('profiles').update({
                         coffee_stamps: stampsFinales,
@@ -984,28 +983,19 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                 const { error: freeErr } = await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
                 if (freeErr) console.error("❌ [finishOrder] salon_tables FREE failed:", freeErr.message);
 
-                const isCuentaCorriente = paymentMethod === "CUENTA_CORRIENTE";
                 const newOrder = await createOrder.mutateAsync({
                     table_id: tableId,
                     total: finalTotal,
-                    payment_method: isCuentaCorriente ? "CASH" : paymentMethod,
+                    payment_method: paymentMethod,
                     waiter_id: selectedWaiter || null,
                     discount: discount,
-                    status: paymentMethod === "CUENTA_CORRIENTE" ? "pending" : (isWebTable || tableId >= 100) ? 'completed' : 'paid',
-                    paid: paymentMethod !== "CUENTA_CORRIENTE",
+                    status: (isWebTable || tableId >= 100) ? 'completed' : 'paid',
+                    paid: true,
                     customer_id: customerIdForDb,
                     customer_name: customerName || null,
                     delivery_person_id: selectedDeliveryPerson ? parseInt(selectedDeliveryPerson) : null,
                     items: cart,
                 });
-
-                if (isCuentaCorriente && newOrder?.id) {
-                    fetch('/api/orders/paid', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderId: newOrder.id, cuenta_corriente: true }),
-                    }).catch((e) => console.error('[CC] Error marcando cuenta_corriente:', e));
-                }
 
                 if (webOrderId || currentWebOrderId) {
                     const idToComplete = webOrderId || currentWebOrderId;
