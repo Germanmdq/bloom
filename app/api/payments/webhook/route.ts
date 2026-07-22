@@ -119,6 +119,13 @@ async function markOrderPaid(orderId: string) {
     }
   }
 
+  // Intentar liberar la mesa de forma segura (solo si no fue re-ocupada)
+  await supabase.rpc('release_table_for_paid_order', { p_order_id: orderId })
+    .then(({ data, error: rpcErr }) => {
+      if (rpcErr) console.error("[payments/webhook] release_table_for_paid_order error:", rpcErr.message);
+      else console.log("[payments/webhook] release_table result:", JSON.stringify(data));
+    });
+
   return true;
 }
 

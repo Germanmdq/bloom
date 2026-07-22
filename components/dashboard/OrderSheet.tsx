@@ -849,92 +849,177 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
             finishingRef.current = true;
             setIsFinishing(true);
 
-            // 2. Liberar la mesa en DB de forma explícita y sincrónica
-            const { error: ccFreeErr } = await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
-            if (ccFreeErr) console.error("❌ [CC] salon_tables FREE failed:", ccFreeErr.message);
+            // 2. Para mesas reales: usar RPC atómico que libera mesa + crea orden en una transacción
+            //    Para web tables: liberar manualmente (no tienen salon_tables real)
+            if (!isWebTable) {
+                const { data: rpcResult, error: rpcErr } = await supabase.rpc('close_table_and_create_order', {
+                    p_table_id: tableId,
+                    p_total: capturedTotal,
+                    p_payment_method: 'CASH',
+                    p_status: 'pending',
+                    p_paid: false,
+                    p_waiter_id: capturedWaiter || null,
+                    p_customer_id: capturedCustId || null,
+                    p_customer_name: capturedCustName || null,
+                    p_discount: capturedDiscount,
+                    p_items: capturedCart,
+                    p_delivery_person_id: capturedDelivery ? parseInt(capturedDelivery) : null,
+                });
+                if (rpcErr) console.error('❌ [CC] close_table_and_create_order RPC failed:', rpcErr.message);
+                const rpcOrderId = rpcResult?.order_id;
 
-            // 3. Cerrar el panel — finishingRef.current queda true hasta que React desmonte el componente
-            setIsFinishing(false);
-            if (onOrderComplete) onOrderComplete();
-            onClose();
+                // 3. Cerrar el panel
+                setIsFinishing(false);
+                if (onOrderComplete) onOrderComplete();
+                onClose();
 
-            // 4. Registrar orden y balance en background (no bloquea el cierre)
-            void (async () => {
-                try {
-                    let customerIdForDb = capturedCustId;
-                    let ccResolveIssue: 'not_found' | 'multiple' | null = null;
+                // 4. Background: loyalty + cuenta_corriente flag
+                void (async () => {
+                    try {
+                        let customerIdForDb = capturedCustId;
+                        let ccResolveIssue: 'not_found' | 'multiple' | null = null;
 
-                    // Capa 1: resolver customer_id por nombre si no vino del estado
-                    if (!customerIdForDb && capturedCustName) {
-                        const { data: found } = await supabase
-                            .from('profiles').select('id')
-                            .ilike('full_name', capturedCustName.trim()).limit(5);
-                        if (found?.length === 1) {
-                            customerIdForDb = found[0].id;
-                        } else if (!found || found.length === 0) {
-                            ccResolveIssue = 'not_found';
-                        } else {
-                            ccResolveIssue = 'multiple'; // 2+ → ambigüedad, no adivinar
+                        if (!customerIdForDb && capturedCustName) {
+                            const { data: found } = await supabase
+                                .from('profiles').select('id')
+                                .ilike('full_name', capturedCustName.trim()).limit(5);
+                            if (found?.length === 1) {
+                                customerIdForDb = found[0].id;
+                            } else if (!found || found.length === 0) {
+                                ccResolveIssue = 'not_found';
+                            } else {
+                                ccResolveIssue = 'multiple';
+                            }
                         }
-                    }
 
-                    if (customerIdForDb) {
-                        const coffeeCount = capturedCart.reduce((acc, item) => {
-                            const n = item.name.toLowerCase();
-                            return (n.includes('café') || n.includes('cafe') || n.includes('capuccino') ||
-                                    n.includes('submarino') || n.includes('chocolatada') ||
-                                    n.includes('lágrima') || n.includes('lagrima'))
-                                ? acc + item.quantity : acc;
-                        }, 0);
-                        const { data: prof } = await supabase.from('profiles')
-                            .select('coffee_stamps, balance').eq('id', customerIdForDb).single();
-                        const stamps = Number(prof?.coffee_stamps || 0) + coffeeCount;
-                        await supabase.from('profiles').update({
-                            coffee_stamps: stamps >= 10 ? stamps - 10 : stamps,
-                            balance: Number(prof?.balance || 0) + capturedTotal,
-                        }).eq('id', customerIdForDb);
-                    }
-                    const newOrder = await createOrder.mutateAsync({
-                        table_id: tableId,
-                        total: capturedTotal,
-                        payment_method: "CASH",
-                        waiter_id: capturedWaiter || null,
-                        discount: capturedDiscount,
-                        status: 'pending',
-                        paid: false,
-                        customer_id: customerIdForDb,
-                        customer_name: capturedCustName || null,
-                        delivery_person_id: capturedDelivery ? parseInt(capturedDelivery) : null,
-                        items: capturedCart,
-                    });
-                    if (newOrder?.id) {
-                        fetch('/api/orders/paid', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ orderId: newOrder.id, cuenta_corriente: true }),
-                        }).then(res => {
-                            if (!res.ok) console.error('[CC] /api/orders/paid respondió', res.status, '— cuenta_corriente NO seteado, orderId:', newOrder.id);
-                        }).catch(e => console.error('[CC] Error de red marcando cuenta_corriente:', e));
-                    }
+                        if (customerIdForDb) {
+                            const coffeeCount = capturedCart.reduce((acc, item) => {
+                                const n = item.name.toLowerCase();
+                                return (n.includes('café') || n.includes('cafe') || n.includes('capuccino') ||
+                                        n.includes('submarino') || n.includes('chocolatada') ||
+                                        n.includes('lágrima') || n.includes('lagrima'))
+                                    ? acc + item.quantity : acc;
+                            }, 0);
+                            const { data: prof } = await supabase.from('profiles')
+                                .select('coffee_stamps, balance').eq('id', customerIdForDb).single();
+                            const stamps = Number(prof?.coffee_stamps || 0) + coffeeCount;
+                            await supabase.from('profiles').update({
+                                coffee_stamps: stamps >= 10 ? stamps - 10 : stamps,
+                                balance: Number(prof?.balance || 0) + capturedTotal,
+                            }).eq('id', customerIdForDb);
+                        }
 
-                    // Capa 2: alert disruptivo si no se pudo imputar el saldo al cliente
-                    if (ccResolveIssue) {
-                        console.error('[CC] Balance no imputado para:', capturedCustName, '—', ccResolveIssue);
-                        const msg = ccResolveIssue === 'multiple'
-                            ? `Hay varios clientes con el nombre "${capturedCustName}".\nNo se puede determinar a cuál cargar el saldo — imputar al equivocado sería peor que no imputar.`
-                            : `No se encontró ningún cliente con el nombre "${capturedCustName}".`;
-                        setTimeout(() => {
-                            window.alert(
-                                `⚠️ CUENTA CORRIENTE — SALDO NO IMPUTADO\n\n${msg}\n\n` +
-                                `La venta ($${capturedTotal.toLocaleString()}) quedó registrada, pero el saldo NO fue cargado a ninguna cuenta.\n\n` +
-                                `Ajustá el balance manualmente en el panel de Clientes.`
-                            );
-                        }, 500);
+                        if (rpcOrderId) {
+                            fetch('/api/orders/paid', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ orderId: rpcOrderId, cuenta_corriente: true }),
+                            }).then(res => {
+                                if (!res.ok) console.error('[CC] /api/orders/paid respondió', res.status, '— cuenta_corriente NO seteado, orderId:', rpcOrderId);
+                            }).catch(e => console.error('[CC] Error de red marcando cuenta_corriente:', e));
+                        }
+
+                        if (ccResolveIssue) {
+                            console.error('[CC] Balance no imputado para:', capturedCustName, '—', ccResolveIssue);
+                            const msg = ccResolveIssue === 'multiple'
+                                ? `Hay varios clientes con el nombre "${capturedCustName}".\nNo se puede determinar a cuál cargar el saldo — imputar al equivocado sería peor que no imputar.`
+                                : `No se encontró ningún cliente con el nombre "${capturedCustName}".`;
+                            setTimeout(() => {
+                                window.alert(
+                                    `⚠️ CUENTA CORRIENTE — SALDO NO IMPUTADO\n\n${msg}\n\n` +
+                                    `La venta ($${capturedTotal.toLocaleString()}) quedó registrada, pero el saldo NO fue cargado a ninguna cuenta.\n\n` +
+                                    `Ajustá el balance manualmente en el panel de Clientes.`
+                                );
+                            }, 500);
+                        }
+                    } catch (e) {
+                        console.error('[CC] Error en background:', e);
                     }
-                } catch (e) {
-                    console.error('[CC] Error registrando orden en background:', e);
-                }
-            })();
+                })();
+            } else {
+                // Web tables: no tienen salon_tables, usar createOrder normal
+                const { error: ccFreeErr } = await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
+                if (ccFreeErr) console.error("❌ [CC] salon_tables FREE failed:", ccFreeErr.message);
+
+                setIsFinishing(false);
+                if (onOrderComplete) onOrderComplete();
+                onClose();
+
+                void (async () => {
+                    try {
+                        let customerIdForDb = capturedCustId;
+                        let ccResolveIssue: 'not_found' | 'multiple' | null = null;
+
+                        if (!customerIdForDb && capturedCustName) {
+                            const { data: found } = await supabase
+                                .from('profiles').select('id')
+                                .ilike('full_name', capturedCustName.trim()).limit(5);
+                            if (found?.length === 1) {
+                                customerIdForDb = found[0].id;
+                            } else if (!found || found.length === 0) {
+                                ccResolveIssue = 'not_found';
+                            } else {
+                                ccResolveIssue = 'multiple';
+                            }
+                        }
+
+                        if (customerIdForDb) {
+                            const coffeeCount = capturedCart.reduce((acc, item) => {
+                                const n = item.name.toLowerCase();
+                                return (n.includes('café') || n.includes('cafe') || n.includes('capuccino') ||
+                                        n.includes('submarino') || n.includes('chocolatada') ||
+                                        n.includes('lágrima') || n.includes('lagrima'))
+                                    ? acc + item.quantity : acc;
+                            }, 0);
+                            const { data: prof } = await supabase.from('profiles')
+                                .select('coffee_stamps, balance').eq('id', customerIdForDb).single();
+                            const stamps = Number(prof?.coffee_stamps || 0) + coffeeCount;
+                            await supabase.from('profiles').update({
+                                coffee_stamps: stamps >= 10 ? stamps - 10 : stamps,
+                                balance: Number(prof?.balance || 0) + capturedTotal,
+                            }).eq('id', customerIdForDb);
+                        }
+                        const newOrder = await createOrder.mutateAsync({
+                            table_id: tableId,
+                            total: capturedTotal,
+                            payment_method: "CASH",
+                            waiter_id: capturedWaiter || null,
+                            discount: capturedDiscount,
+                            status: 'pending',
+                            paid: false,
+                            customer_id: customerIdForDb,
+                            customer_name: capturedCustName || null,
+                            delivery_person_id: capturedDelivery ? parseInt(capturedDelivery) : null,
+                            items: capturedCart,
+                        });
+                        if (newOrder?.id) {
+                            fetch('/api/orders/paid', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ orderId: newOrder.id, cuenta_corriente: true }),
+                            }).then(res => {
+                                if (!res.ok) console.error('[CC] /api/orders/paid respondió', res.status, '— cuenta_corriente NO seteado, orderId:', newOrder.id);
+                            }).catch(e => console.error('[CC] Error de red marcando cuenta_corriente:', e));
+                        }
+
+                        if (ccResolveIssue) {
+                            console.error('[CC] Balance no imputado para:', capturedCustName, '—', ccResolveIssue);
+                            const msg = ccResolveIssue === 'multiple'
+                                ? `Hay varios clientes con el nombre "${capturedCustName}".\nNo se puede determinar a cuál cargar el saldo — imputar al equivocado sería peor que no imputar.`
+                                : `No se encontró ningún cliente con el nombre "${capturedCustName}".`;
+                            setTimeout(() => {
+                                window.alert(
+                                    `⚠️ CUENTA CORRIENTE — SALDO NO IMPUTADO\n\n${msg}\n\n` +
+                                    `La venta ($${capturedTotal.toLocaleString()}) quedó registrada, pero el saldo NO fue cargado a ninguna cuenta.\n\n` +
+                                    `Ajustá el balance manualmente en el panel de Clientes.`
+                                );
+                            }, 500);
+                        }
+                    } catch (e) {
+                        console.error('[CC] Error registrando orden en background:', e);
+                    }
+                })();
+            }
             return;
         }
 
@@ -978,35 +1063,59 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     console.warn('⚠️ [FinishOrder] No hay customerId vinculado, se omite balance/puntos.');
                 }
 
-                // Liberar la mesa antes del insert de la orden para que no quede
-                // bloqueada si el insert falla (ej: validación en DB).
-                const { error: freeErr } = await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
-                if (freeErr) console.error("❌ [finishOrder] salon_tables FREE failed:", freeErr.message);
+                // ── Crear orden y liberar mesa ──
+                if (!isWebTable) {
+                    // Mesa real: usar RPC atómico (orden + liberar mesa + cerrar tickets en una transacción)
+                    const orderStatus = (tableId >= 100) ? 'completed' : 'paid';
+                    const { data: rpcResult, error: rpcErr } = await supabase.rpc('close_table_and_create_order', {
+                        p_table_id: tableId,
+                        p_total: finalTotal,
+                        p_payment_method: paymentMethod,
+                        p_status: orderStatus,
+                        p_paid: true,
+                        p_waiter_id: selectedWaiter || null,
+                        p_customer_id: customerIdForDb || null,
+                        p_customer_name: customerName || null,
+                        p_discount: discount,
+                        p_items: cart,
+                        p_delivery_person_id: selectedDeliveryPerson ? parseInt(selectedDeliveryPerson) : null,
+                    });
+                    if (rpcErr) {
+                        console.error("❌ [finishOrder] close_table_and_create_order RPC failed:", rpcErr.message);
+                        throw rpcErr;
+                    }
+                    console.log("✅ [finishOrder] RPC success, order_id:", rpcResult?.order_id);
+                } else {
+                    // Web table: liberar manualmente y crear orden por separado
+                    const { error: freeErr } = await supabase.from("salon_tables").update({ status: "FREE", total: 0, items: [] }).eq("id", tableId);
+                    if (freeErr) console.error("❌ [finishOrder] salon_tables FREE failed:", freeErr.message);
 
-                const newOrder = await createOrder.mutateAsync({
-                    table_id: tableId,
-                    total: finalTotal,
-                    payment_method: paymentMethod,
-                    waiter_id: selectedWaiter || null,
-                    discount: discount,
-                    status: (isWebTable || tableId >= 100) ? 'completed' : 'paid',
-                    paid: true,
-                    customer_id: customerIdForDb,
-                    customer_name: customerName || null,
-                    delivery_person_id: selectedDeliveryPerson ? parseInt(selectedDeliveryPerson) : null,
-                    items: cart,
-                });
+                    await createOrder.mutateAsync({
+                        table_id: tableId,
+                        total: finalTotal,
+                        payment_method: paymentMethod,
+                        waiter_id: selectedWaiter || null,
+                        discount: discount,
+                        status: (isWebTable || tableId >= 100) ? 'completed' : 'paid',
+                        paid: true,
+                        customer_id: customerIdForDb,
+                        customer_name: customerName || null,
+                        delivery_person_id: selectedDeliveryPerson ? parseInt(selectedDeliveryPerson) : null,
+                        items: cart,
+                    });
 
-                if (webOrderId || currentWebOrderId) {
-                    const idToComplete = webOrderId || currentWebOrderId;
-                    const { error: updErr } = await supabase.from('orders').update({ status: 'completed' }).eq('id', idToComplete);
-                    if (updErr) console.error("❌ [FinishOrder] Error actualizando pedido web:", updErr.message);
+                    if (webOrderId || currentWebOrderId) {
+                        const idToComplete = webOrderId || currentWebOrderId;
+                        const { error: updErr } = await supabase.from('orders').update({ status: 'completed' }).eq('id', idToComplete);
+                        if (updErr) console.error("❌ [FinishOrder] Error actualizando pedido web:", updErr.message);
+                    }
+
+                    const releasedTables = await releaseCurrentTable(customerIdForDb);
+                    if (releasedTables.length === 0) {
+                        console.warn(`⚠️ [FinishOrder] No se encontró salon_tables id=${tableId} ni espejos de cliente para liberar.`);
+                    }
                 }
 
-                const releasedTables = await releaseCurrentTable(customerIdForDb);
-                if (releasedTables.length === 0) {
-                    console.warn(`⚠️ [FinishOrder] No se encontró salon_tables id=${tableId} ni espejos de cliente para liberar.`);
-                }
             }
 
             // ── INVENTARIO: descuenta stock al cobrar (única vez) ──

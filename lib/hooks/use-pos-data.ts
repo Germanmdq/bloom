@@ -97,6 +97,9 @@ export function useCreateOrder() {
             const total = orderData.total ??
                 orderData.items.reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0);
 
+            const status = orderData.status || 'pending';
+            const paid = typeof orderData.paid === 'boolean' ? orderData.paid : status === 'paid' || status === 'completed';
+
             const { data, error } = await supabase
                 .from('orders')
                 .insert({
@@ -106,8 +109,8 @@ export function useCreateOrder() {
                     waiter_id: orderData.waiter_id || null,
                     customer_id: orderData.customer_id || null,
                     customer_name: orderData.customer_name || null,
-                    status: orderData.status || 'paid',
-                    paid: typeof orderData.paid === 'boolean' ? orderData.paid : orderData.status === 'paid' || orderData.status === 'completed',
+                    status,
+                    paid,
                     items: orderData.items || [],
                     discount: orderData.discount || 0,
                     delivery_person_id: orderData.delivery_person_id || null,

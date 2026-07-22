@@ -43,6 +43,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Si la orden se está marcando como pagada, intentar liberar la mesa de forma segura
+    if (patch.paid === true || patch.status === 'paid' || patch.status === 'completed') {
+      await supabase.rpc('release_table_for_paid_order', { p_order_id: orderId })
+        .then(({ data, error: rpcErr }) => {
+          if (rpcErr) console.error("[orders/paid] release_table_for_paid_order error:", rpcErr.message);
+          else console.log("[orders/paid] release_table result:", JSON.stringify(data));
+        });
+    }
+
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Error";

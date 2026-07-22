@@ -246,6 +246,14 @@ export async function GET(request: NextRequest) {
             payment_notes: "Mercado Pago Point Smart (N950)",
           })
           .eq("id", orderId);
+        
+        // Liberar la mesa de forma segura (solo si no fue re-ocupada)
+        await svc.rpc('release_table_for_paid_order', { p_order_id: orderId })
+          .then(({ data, error: rpcErr }) => {
+            if (rpcErr) console.error("[point-intent] release_table_for_paid_order error:", rpcErr.message);
+            else console.log("[point-intent] release_table result:", JSON.stringify(data));
+          });
+
         return NextResponse.json({
           state: data.state,
           paid: true,
