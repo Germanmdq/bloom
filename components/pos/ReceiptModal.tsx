@@ -1,7 +1,8 @@
 "use client";
 
 import { CartItem } from "@/lib/store/order-store";
-import { useEffect, useRef } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 
 interface ReceiptModalProps {
@@ -11,6 +12,7 @@ interface ReceiptModalProps {
     cart: CartItem[];
     total: number;
     customerName?: string;
+    customerId?: string | null;
     isKitchen?: boolean;
     isPreview?: boolean;
     // Factura C / ARCA
@@ -51,12 +53,29 @@ function buildAfipQrUrl(cae: string, voucherNumber: number, total: number): stri
 }
 
 export function ReceiptModal({
-    tableId, invoiceType, cart, total, customerName, isKitchen = false, isPreview = false,
+    tableId, invoiceType, cart, total, customerName, customerId, isKitchen = false, isPreview = false,
     cae, voucherNumber, caeExpiration, onClose,
 }: ReceiptModalProps) {
     const printedRef = useRef(false);
+    const [customerCuit, setCustomerCuit] = useState<string | null | undefined>(customerId && !isKitchen ? undefined : null);
 
     useEffect(() => {
+        if (!customerId || isKitchen) {
+            setCustomerCuit(null);
+            return;
+        }
+
+        let cancelled = false;
+        createClient().from("profiles").select("cuit").eq("id", customerId).maybeSingle()
+            .then(({ data }) => {
+                if (!cancelled) setCustomerCuit(data?.cuit?.trim() || null);
+            });
+
+        return () => { cancelled = true; };
+    }, [customerId, isKitchen]);
+
+    useEffect(() => {
+        if (customerId && !isKitchen && customerCuit === undefined) return;
         if (printedRef.current) return;
         printedRef.current = true;
 
@@ -68,7 +87,7 @@ export function ReceiptModal({
         const now = new Date();
         const dateStr = now.toLocaleDateString("es-AR");
         const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-        const headerLeft = customerName ? `Alias: ${customerName}` : `Mesa: ${tableId}`;
+        const headerLeft = customerName ? `${isKitchen ? "Alias" : "Cliente"}: ${customerName}` : `Mesa: ${tableId}`;
         const isLegal = !!cae && !!voucherNumber;
         const isSinValidez = invoiceType === 'Sin Validez' || isPreview;
 
@@ -109,6 +128,7 @@ export function ReceiptModal({
     <div class="sub">Coffee &amp; More · ${dateStr}</div>
     <div class="dash"/>
     <div class="meta"><span>${esc(headerLeft)}</span><span>${timeStr}</span></div>
+    ${customerName && customerCuit ? `<div class="cuit">CUIT: ${esc(customerCuit)}</div>` : ""}
   </div>
   <div class="cols-header"><div>ÍTEM</div><div style="text-align:right">CANT</div><div style="text-align:right">TOTAL</div></div>
   ${itemsHtml}
@@ -146,7 +166,8 @@ export function ReceiptModal({
       <div class="comp-num">${formatVoucherNumber(voucherNumber)}</div>
     </div>
     <div class="comp-date">${dateStr} · ${timeStr}</div>
-    <div class="comp-cf">Consumidor Final</div>
+    <div class="comp-cf">${customerName ? `Cliente: ${esc(customerName)}` : "Consumidor Final"}</div>
+    ${customerName && customerCuit ? `<div class="cuit">CUIT: ${esc(customerCuit)}</div>` : ""}
   </div>
   <div class="dash"/>
   <div class="cols-header"><div>ÍTEM</div><div style="text-align:right">CANT</div><div style="text-align:right">TOTAL</div></div>
@@ -176,7 +197,7 @@ export function ReceiptModal({
         } else {
             renderAndPrint(buildFacturaHtml(""), "", onClose);
         }
-    }, [cart, customerName, isKitchen, onClose, tableId, total, cae, voucherNumber, caeExpiration, invoiceType]);
+    }, [cart, customerName, customerId, customerCuit, isKitchen, onClose, tableId, total, cae, voucherNumber, caeExpiration, invoiceType]);
 
     return null;
 }

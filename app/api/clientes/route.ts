@@ -50,6 +50,7 @@ function buildClientPayload(profile: any, orders: any[]) {
         full_name: profile.full_name || "Cliente S/N",
         email: profile.email || "",
         phone: profile.phone || "",
+        cuit: profile.cuit || null,
         customer_number: profile.customer_number || "",
         points: profile.points || 0,
         balance: Number(profile.balance || 0),

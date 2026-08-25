@@ -105,7 +105,7 @@ export default function ReportsPage() {
 
         try {
             const [salesRes, comprasRes, gastosFijosRes, productsRes] = await Promise.all([
-                supabase.from('orders').select('id, total, payment_method, items, table_id, customer_name, created_at, cae, voucher_number, cae_expiration').gte('created_at', thresholdDate).order('created_at', { ascending: false }),
+                supabase.from('orders').select('id, total, payment_method, items, table_id, customer_id, customer_name, created_at, cae, voucher_number, cae_expiration').gte('created_at', thresholdDate).order('created_at', { ascending: false }),
                 supabase.from('compras').select('total, created_at').gte('created_at', thresholdDate),
                 supabase.from('gastos_fijos').select('nombre, monto, estado, updated_at, historial_pagos, categoria'),
                 supabase.from('products').select('name, categories(name)')
@@ -974,6 +974,7 @@ export default function ReportsPage() {
                     }))}
                     total={Number(reprintOrder.total)}
                     customerName={reprintOrder.customer_name || ''}
+                    customerId={reprintOrder.customer_id}
                     isKitchen={false}
                     isPreview={false}
                     cae={reprintCaeData?.cae}

@@ -1976,6 +1976,7 @@ export function OrderSheet({ tableId, onClose, onOrderComplete, webOrderId, webO
                     cart={completedOrderData ? completedOrderData.cart : cart}
                     total={completedOrderData ? completedOrderData.total : total}
                     customerName={customerName}
+                    customerId={selectedCustomerId || webOrderData?.customer_id}
                     isKitchen={isKitchenReceipt}
                     isPreview={isPrecuenta}
                     cae={caeData?.cae}

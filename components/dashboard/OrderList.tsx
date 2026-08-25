@@ -843,6 +843,7 @@ export function OrderList() {
                     }))}
                     total={Number(reprintOrder.total)}
                     customerName={reprintOrder.customer_name || ''}
+                    customerId={reprintOrder.customer_id}
                     isKitchen={false}
                     isPreview={false}
                     cae={reprintCaeData?.cae}

@@ -3,9 +3,10 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export async function POST(req: Request) {
     try {
-        const { full_name, phone, birthdate } = await req.json() as {
+        const { full_name, phone, cuit, birthdate } = await req.json() as {
             full_name: string;
             phone: string;
+            cuit?: string | null;
             birthdate: string | null;
         };
 
@@ -49,6 +50,7 @@ export async function POST(req: Request) {
         await svc.from("profiles").update({
             full_name: full_name.trim(),
             phone: phone.trim(),
+            cuit: cuit?.trim() || null,
             customer_number: customerNumber,
             is_customer: true,
             ...(birthdate ? { birthdate } : {}),

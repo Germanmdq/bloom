@@ -27,6 +27,7 @@ export default function ClientesPage() {
     const [showNewModal, setShowNewModal] = useState(false);
     const [newName, setNewName] = useState("");
     const [newPhone, setNewPhone] = useState("");
+    const [newCuit, setNewCuit] = useState("");
     const [newAddress, setNewAddress] = useState("");
     const [isCreating, setIsCreating] = useState(false);
     const [createMsg, setCreateMsg] = useState<string | null>(null);
@@ -38,7 +39,7 @@ export default function ClientesPage() {
         const res = await fetch('/api/auth/register-phone', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ full_name: newName.trim(), phone: newPhone.trim(), birthdate: null }),
+            body: JSON.stringify({ full_name: newName.trim(), phone: newPhone.trim(), cuit: newCuit.trim() || null, birthdate: null }),
         });
         const json = await res.json();
         if (!res.ok) {
@@ -52,13 +53,14 @@ export default function ClientesPage() {
         const pwd = newPhone.replace(/\D/g, '').slice(-4);
         setCreateMsg(`✓ Cliente creado. Contraseña: ${pwd}`);
         setIsCreating(false);
-        setNewName(""); setNewPhone(""); setNewAddress("");
+        setNewName(""); setNewPhone(""); setNewCuit(""); setNewAddress("");
         fetchClients();
     }
 
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState("");
     const [editPhone, setEditPhone] = useState("");
+    const [editCuit, setEditCuit] = useState("");
     const [editBirthdate, setEditBirthdate] = useState("");
     const [isSaving, setIsSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState<string | null>(null);
@@ -81,6 +83,7 @@ export default function ClientesPage() {
             setSaveMsg(null);
             setEditName(selectedClient.full_name || "");
             setEditPhone(selectedClient.phone || "");
+            setEditCuit(selectedClient.cuit || "");
             setEditBirthdate(selectedClient.birthdate || "");
             setExpandedOrderId(null);
             setIsOrdersHistoryOpen(false);
@@ -117,6 +120,7 @@ export default function ClientesPage() {
         const { error } = await supabase.from('profiles').update({
             full_name: editName.trim() || null,
             phone: editPhone.trim() || null,
+            cuit: editCuit.trim() || null,
             birthdate: editBirthdate || null,
         }).eq('id', selectedClient.id);
         setIsSaving(false);
@@ -125,8 +129,8 @@ export default function ClientesPage() {
         } else {
             setSaveMsg('✓ Guardado');
             setIsEditing(false);
-            setSelectedClient({ ...selectedClient, full_name: editName.trim(), phone: editPhone.trim(), birthdate: editBirthdate });
-            setClients(prev => prev.map(c => c.id === selectedClient.id ? { ...c, full_name: editName.trim(), phone: editPhone.trim(), birthdate: editBirthdate } : c));
+            setSelectedClient({ ...selectedClient, full_name: editName.trim(), phone: editPhone.trim(), cuit: editCuit.trim() || null, birthdate: editBirthdate });
+            setClients(prev => prev.map(c => c.id === selectedClient.id ? { ...c, full_name: editName.trim(), phone: editPhone.trim(), cuit: editCuit.trim() || null, birthdate: editBirthdate } : c));
         }
     }
 
@@ -546,6 +550,12 @@ export default function ClientesPage() {
                                             className="w-full bg-white/10 text-white placeholder:text-white/30 font-bold rounded-2xl px-5 py-3 outline-none focus:ring-2 focus:ring-[#FFD60A]/40 text-sm"
                                         />
                                         <input
+                                            value={editCuit}
+                                            onChange={e => setEditCuit(e.target.value)}
+                                            placeholder="CUIT (opcional)"
+                                            className="w-full bg-white/10 text-white placeholder:text-white/30 font-bold rounded-2xl px-5 py-3 outline-none focus:ring-2 focus:ring-[#FFD60A]/40 text-sm"
+                                        />
+                                        <input
                                             type="date"
                                             value={editBirthdate}
                                             onChange={e => setEditBirthdate(e.target.value)}
@@ -878,6 +888,11 @@ export default function ClientesPage() {
                             <input
                                 value={newPhone} onChange={e => setNewPhone(e.target.value)}
                                 placeholder="Teléfono * (últimos 4 = contraseña)"
+                                className="w-full bg-gray-50 rounded-2xl px-5 py-4 font-bold outline-none focus:ring-2 focus:ring-black/10 text-sm"
+                            />
+                            <input
+                                value={newCuit} onChange={e => setNewCuit(e.target.value)}
+                                placeholder="CUIT (opcional)"
                                 className="w-full bg-gray-50 rounded-2xl px-5 py-4 font-bold outline-none focus:ring-2 focus:ring-black/10 text-sm"
                             />
                             <input
