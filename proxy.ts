@@ -14,7 +14,7 @@ export async function proxy(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
+        cookiesToSet.forEach(({ name, value }) => {
           request.cookies.set(name, value);
         });
         response = NextResponse.next({ request });
@@ -36,7 +36,17 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith("/dashboard")) {
-    if (!user || !isAdminEmail(user.email)) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/auth", request.url));
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!isAdminEmail(user.email) && profile?.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/auth", request.url));
     }
   }
